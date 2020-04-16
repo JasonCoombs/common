@@ -9,6 +9,7 @@ enum PacketType
    HeadlessReadyType = 0;
    PeerConnectedType = 1;
    PeerDisconnectedType = 2;
+   WindowStatusType   = 3;  // Sends headless::WindowStatus
    TxSignedType = 4;
    CancelTxSignType = 5;
    XbtSpentType = 6;

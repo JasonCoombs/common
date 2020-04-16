@@ -1150,6 +1150,19 @@ void HeadlessContainer::ProcessSettlCPResponse(unsigned int id, const std::strin
    cbSettlCPMap_.erase(itCb);
 }
 
+void HeadlessContainer::ProcessWindowStatus(unsigned int id, const std::string &data)
+{
+   headless::WindowStatus message;
+   if (!message.ParseFromString(data)) {
+      logger_->error("[HeadlessContainer::ProcessExtAddrChain] Failed to parse reply");
+      emit Error(id, "failed to parse");
+      return;
+   }
+   SPDLOG_LOGGER_DEBUG(logger_, "local signed visible: {}", message.visible());
+   isWindowVisible_ = message.visible();
+   emit windowVisibilityChanged(isWindowVisible_);
+}
+
 void HeadlessContainer::ProcessSyncWalletInfo(unsigned int id, const std::string &data)
 {
    headless::SyncWalletInfoResponse response;
@@ -1602,8 +1615,12 @@ void RemoteSigner::onPacketReceived(headless::RequestPacket packet)
       ProcessSettlCPResponse(packet.id(), packet.data());
       break;
 
+   case headless::WindowStatusType:
+      ProcessWindowStatus(packet.id(), packet.data());
+      break;
+
    default:
-      logger_->warn("[HeadlessContainer] Unknown packet type: {}", packet.type());
+      logger_->error("[HeadlessContainer] Unknown packet type: {}", packet.type());
       break;
    }
 }

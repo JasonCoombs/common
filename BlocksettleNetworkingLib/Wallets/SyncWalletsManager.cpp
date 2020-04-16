@@ -87,7 +87,6 @@ void WalletsManager::reset()
    QMutexLocker lock(&mtxWallets_);
    wallets_.clear();
    hdWallets_.clear();
-//   hdDummyWallet_.reset();
    walletNames_.clear();
    readyWallets_.clear();
    isReady_ = false;

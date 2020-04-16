@@ -44,22 +44,18 @@ std::vector<std::shared_ptr<hd::Leaf>> hd::Group::getLeaves() const
    for (const auto &leaf : leaves_) {
       result.emplace_back(leaf.second);
    }
-   return result;
-}
-
-std::vector<std::shared_ptr<bs::sync::Wallet>> hd::Group::getAllLeaves() const
-{
-   std::vector<std::shared_ptr<hd::Leaf>> result;
-   result.reserve(leaves_.size());
-   for (const auto &leaf : leaves_) {
-      result.emplace_back(leaf.second);
-   }
 
    auto byPriority = [](const std::shared_ptr<hd::Leaf> &left, const std::shared_ptr<hd::Leaf> &right) {
       return left->path().priority() < right->path().priority();
    };
    std::sort(result.begin(), result.end(), byPriority);
 
+   return result;
+}
+
+std::vector<std::shared_ptr<bs::sync::Wallet>> hd::Group::getAllLeaves() const
+{
+   const auto &result = getLeaves();
    return std::vector<std::shared_ptr<bs::sync::Wallet>>(result.begin(), result.end());
 }
 

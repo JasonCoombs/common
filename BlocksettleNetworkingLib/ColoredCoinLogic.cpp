@@ -625,8 +625,12 @@ std::set<BinaryData> ColoredCoinTracker::processZcBatch(
          }
       }
 
-      //zc tx carries its zc id as the tx index
-      processedZcIndex_ = tx.getZcIndex();
+      try { //zc tx carries its zc id as the tx index
+         processedZcIndex_ = tx.getZcIndex();
+      }
+      catch (const std::exception &) {
+         return {};  // likely caused by an edge case - will recover later anyway
+      }
       ++txIter;
    }
 

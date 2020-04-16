@@ -154,7 +154,18 @@ bs::PayoutSignatureType bs::TradesVerification::whichSignature(const Tx &tx, uin
       tsvFlags |= SCRIPT_VERIFY_P2SH_SHA256 | SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_SEGWIT;
       tsv.setFlags(tsvFlags);
 
-      auto verifierState = tsv.evaluateState();
+      /*
+      Strict signature state checks expects all supporting UTXOs before checking. Loose
+      checks pass returns sign status for all available & relevant UTXOs.
+
+      - payin hash not provided: verifying payout during settlement handshake, using
+        strict checks.
+      - payin hash provided: checking broadcasted/mined payoout, need to know who 
+        signed the payin output, not whether the tx is valid within our context; using
+        loose checks.
+      */
+      bool strictVerification = providedPayinHash.empty() ? true : false;
+      auto verifierState = tsv.evaluateState(strictVerification);
 
       auto inputState = verifierState.getSignedStateForInput(inputId);
 

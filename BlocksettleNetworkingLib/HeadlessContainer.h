@@ -154,6 +154,7 @@ protected:
    void ProcessChatNodeResponse(unsigned int id, const std::string &data);
    void ProcessSettlAuthResponse(unsigned int id, const std::string &data);
    void ProcessSettlCPResponse(unsigned int id, const std::string &data);
+   void ProcessWindowStatus(unsigned int id, const std::string &data);
 
 protected:
    std::shared_ptr<HeadlessListener>   listener_;

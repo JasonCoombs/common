@@ -392,12 +392,15 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   if (!amount || !CheckSpendLimit(amount, rootWalletId)) {
+   auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
+   const bool autoSign = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer) && isAutoSignActive(rootWalletId);
+
+   if (amount && !checkSpendLimit(amount, rootWalletId, autoSign)) {
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxSpendLimitExceed);
       return false;
    }
 
-   const auto onPassword = [this, wallets, txSignReq, rootWalletId, clientId, id = packet.id(), partial
+   const auto onPassword = [this, autoSign, wallets, txSignReq, rootWalletId, clientId, id = packet.id(), partial
       , reqType, amount
       , keepDuplicatedRecipients = request.keepduplicatedrecipients()]
       (bs::error::ErrorCode result, const SecureBinaryData &pass)
@@ -409,7 +412,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       }
 
       // check spend limits one more time after password received
-      if (!CheckSpendLimit(amount, rootWalletId)) {
+      if (!checkSpendLimit(amount, rootWalletId, autoSign)) {
          SignTXResponse(clientId, id, reqType, ErrorCode::TxSpendLimitExceed);
          return;
       }
@@ -429,10 +432,11 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, pass);
          }
 
-         
-         onXbtSpent(amount, isAutoSignActive(rootWalletId));
-         if (callbacks_) {
-            callbacks_->xbtSpent(amount, false);
+         if (amount) {
+            onXbtSpent(amount, autoSign);
+            if (callbacks_) {
+               callbacks_->xbtSpent(amount, false);
+            }
          }
          return;
       }
@@ -484,9 +488,9 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
          }
 
-         onXbtSpent(amount, isAutoSignActive(rootWalletId));
+         onXbtSpent(amount, autoSign);
          if (callbacks_) {
-            callbacks_->xbtSpent(amount, false);
+            callbacks_->xbtSpent(amount, autoSign);
          }
       }
       catch (const std::exception &e) {
@@ -1589,55 +1593,6 @@ bool HeadlessContainerListener::onSettlGetRootPubkey(const std::string &clientId
    return sendData(packet.SerializeAsString(), clientId);
 }
 
-// FIXME: needs to review and reimplement setLimits at all
-//bool HeadlessContainerListener::onSetLimits(const std::string &clientId, headless::RequestPacket &packet)
-//{
-//   headless::SetLimitsRequest request;
-//   if (!request.ParseFromString(packet.data())) {
-//      logger_->error("[HeadlessContainerListener] failed to parse SetLimitsRequest");
-//      AutoSignActiveResponse(clientId, {}, false, "request parse error", packet.id());
-//      return false;
-//   }
-//   if (request.rootwalletid().empty()) {
-//      logger_->error("[HeadlessContainerListener] no wallet specified in SetLimitsRequest");
-//      AutoSignActiveResponse(clientId, request.rootwalletid(), false, "invalid request", packet.id());
-//      return false;
-//   }
-//   if (!request.activateautosign()) {
-//      deactivateAutoSign(clientId, request.rootwalletid());
-//      return true;
-//   }
-
-//   if (!request.password().empty()) {
-//      activateAutoSign(clientId, request.rootwalletid(), BinaryData::CreateFromHex(request.password()));
-//   }
-//   else {
-//      const auto &wallet = walletsMgr_->getHDWalletById(request.rootwalletid());
-//      if (!wallet) {
-//         logger_->error("[HeadlessContainerListener] failed to find root wallet by id {} (to activate auto-sign)"
-//            , request.rootwalletid());
-//         AutoSignActiveResponse(clientId, request.rootwalletid(), false, "missing wallet", packet.id());
-//         return false;
-//      }
-//      if (!wallet->encryptionTypes().empty() && !isAutoSignActive(request.rootwalletid())) {
-//         addPendingAutoSignReq(request.rootwalletid());
-//         if (callbacks_) {
-//            bs::core::wallet::TXSignRequest txReq;
-//            txReq.walletId = request.rootwalletid();
-//            txReq.autoSign = true;
-//            callbacks_->pwd(txReq, {});
-//         }
-//      }
-//      else {
-//         if (callbacks_) {
-//            //callbacks_->asAct(request.rootwalletid());
-//         }
-//         AutoSignActiveResponse(clientId, request.rootwalletid(), true, {}, packet.id());
-//      }
-//   }
-//   return true;
-//}
-
 bool HeadlessContainerListener::onGetHDWalletInfo(const std::string &clientId, headless::RequestPacket &packet)
 {
    headless::GetHDWalletInfoRequest request;
@@ -1688,8 +1643,13 @@ void HeadlessContainerListener::GetHDWalletInfoResponse(const std::string &clien
    }
 }
 
-void HeadlessContainerListener::AutoSignActivatedEvent(bs::error::ErrorCode result, const std::string &walletId)
+void HeadlessContainerListener::AutoSignActivatedEvent(ErrorCode result
+   , const std::string &walletId)
 {
+   if (callbacks_) {
+      callbacks_->autoSignActivated(result == ErrorCode::NoError, walletId);
+   }
+
    headless::AutoSignActEvent autoSignActEvent;
    autoSignActEvent.set_rootwalletid(walletId);
    autoSignActEvent.set_errorcode(static_cast<uint>(result));
@@ -1701,9 +1661,10 @@ void HeadlessContainerListener::AutoSignActivatedEvent(bs::error::ErrorCode resu
    sendData(packet.SerializeAsString());
 }
 
-bool HeadlessContainerListener::CheckSpendLimit(uint64_t value, const std::string &walletId)
+bool HeadlessContainerListener::checkSpendLimit(uint64_t value, const std::string &walletId
+   , bool autoSign)
 {  
-   if (isAutoSignActive(walletId)) {
+   if (autoSign && isAutoSignActive(walletId)) {
       if (value > limits_.autoSignSpendXBT) {
          logger_->warn("[HeadlessContainerListener] requested auto-sign spend {} exceeds limit {}", value
             , limits_.autoSignSpendXBT);
@@ -1818,7 +1779,14 @@ bool HeadlessContainerListener::isAutoSignActive(const std::string &walletId) co
    if (walletId.empty()) {
       return !passwords_.empty();
    }
-   return (passwords_.find(walletId) != passwords_.end());
+   if (passwords_.find(walletId) != passwords_.end()) {
+      return true;
+   }
+   const auto &rootWallet = walletsMgr_->getHDRootForLeaf(walletId);
+   if (!rootWallet) {
+      return false;
+   }
+   return (passwords_.find(rootWallet->walletId()) != passwords_.end());
 }
 
 void HeadlessContainerListener::walletsListUpdated()
@@ -1827,6 +1795,17 @@ void HeadlessContainerListener::walletsListUpdated()
 
    headless::RequestPacket packet;
    packet.set_type(headless::WalletsListUpdatedType);
+   sendData(packet.SerializeAsString());
+}
+
+void HeadlessContainerListener::windowVisibilityChanged(bool visible)
+{
+   headless::WindowStatus msg;
+   msg.set_visible(visible);
+
+   headless::RequestPacket packet;
+   packet.set_type(headless::WindowStatusType);
+   packet.set_data(msg.SerializeAsString());
    sendData(packet.SerializeAsString());
 }
 

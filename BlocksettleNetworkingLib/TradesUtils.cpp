@@ -57,7 +57,7 @@ bool bs::tradeutils::getSpendableTxOutList(const std::vector<std::shared_ptr<bs:
 
    for (const auto &wallet : wallets) {
       auto cbWrap = [result, size = wallets.size(), walletId = wallet->walletId()]
-      (std::vector<UTXO> utxos)
+         (std::vector<UTXO> utxos)
       {
          FastLock lock(result->lockFlag);
          result->utxosMap.emplace(walletId, std::move(utxos));
