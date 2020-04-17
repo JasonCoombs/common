@@ -22,6 +22,8 @@ enum CLIRequestType
    DisablePMProductType             = 18;
    ExportRequestsType               = 19;
    ChangeUserStatusType             = 20;
+   LoadConfigType                   = 21;
+   SetConfigType                    = 22;
 }
 
 enum ArmoryConnectionState
@@ -248,4 +250,31 @@ message ChangeUserStatusResponse
    required string   user_email  = 1;
    required int32    new_score   = 2;
    required bool     processed   = 3;
+}
+
+message LoadConfigsRquest
+{
+   required string   pattern = 1;
+}
+
+message ConfigContainer
+{
+   required string name    = 1;
+   required string value   = 2;
+}
+
+message LoadConfigResponse
+{
+   repeated ConfigContainer config = 1;
+}
+
+message SetConfigRequest
+{
+   required ConfigContainer config = 1;
+}
+
+message SetConfigResponse
+{
+   required bool     result         = 1;
+   optional string   error_message  = 2;
 }

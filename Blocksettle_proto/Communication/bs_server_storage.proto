@@ -36,6 +36,7 @@ enum StorageType
    StorageCCDefinitions = 4;
    StorageTradeHist     = 5;
    StorageUserScore     = 6;
+   StorageConfig        = 7;
 }
 
 
@@ -412,6 +413,7 @@ message UserScoreData
    string               user_email  = 1;
    uint64               score       = 2;
    bool                 loaded      = 3;
+   bool                 user_banned = 4;
 }
 
 message DealerSettlementStats
@@ -442,6 +444,40 @@ message StorageUserScoreMessage
    }
 }
 
+message LoadConfigsRequest
+{
+   string   pattern = 1;
+}
+
+message ConfigParamter
+{
+   string name    = 1;
+   string value   = 2;
+}
+
+message LoadedConfigs
+{
+   repeated ConfigParamter config = 1;
+}
+
+message SetConfigResponse
+{
+   bool     updated = 1;
+   string   error_message = 2;
+}
+
+message StorageConfigMessage
+{
+   oneof data
+   {
+      LoadedConfigs        configs_update       = 1;
+      LoadConfigsRequest   load_config_request  = 2;
+      LoadedConfigs        load_config_response = 3;
+      ConfigParamter       set_config_request   = 4;
+      SetConfigResponse    set_config_response  = 5;
+   }
+}
+
 message StorageMessage
 {
    StorageMessageType   type     = 1;
@@ -453,5 +489,6 @@ message StorageMessage
       StorageCCDefinitionsMessage   cc_definitions = 6;
       StorageTradeHistMessage       trade_hist     = 7;
       StorageUserScoreMessage       user_score     = 8;
+      StorageConfigMessage          config         = 9;
    }
 }
