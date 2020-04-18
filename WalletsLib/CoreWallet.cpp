@@ -14,6 +14,7 @@
 #include "CoinSelection.h"
 #include "Wallets.h"
 #include "XBTAmount.h"
+#include "ArmoryConnection.h"
 
 #define SAFE_NUM_CONFS        6
 #define ASSETMETA_PREFIX      0xAC
@@ -655,6 +656,38 @@ bool wallet::TXSignRequest::isSourceOfTx(const Tx &signedTx) const
    } catch (...) {
       return false;
    }
+}
+
+bool wallet::TXSignRequest::populateSupportingTx(std::shared_ptr<ArmoryConnection> connPtr)
+{
+   std::set<BinaryData> hashes;
+   for (const auto& input : inputs) {
+      hashes.emplace(input.getTxHash());
+   }
+
+   //using TXsCb = std::function<void(const AsyncClient::TxBatchResult &, std::exception_ptr)>;
+
+   auto promPtr = std::make_shared<std::promise<AsyncClient::TxBatchResult>>();
+   auto fut = promPtr->get_future();
+   auto lbd = [promPtr](const AsyncClient::TxBatchResult& result, std::exception_ptr eptr)->void
+   {
+      if (eptr != nullptr) {
+         promPtr->set_exception(eptr);
+      }
+      else {
+         promPtr->set_value(result);
+      }
+   };
+
+   if (!connPtr->getTXsByHash(hashes, lbd))
+      return false;
+
+   auto&& txBatchResult = fut.get();
+   for (auto& txPair : txBatchResult) {
+      supportingTxMap_.emplace(txPair.first, txPair.second->serialize());
+   }
+
+   return true;
 }
 
 bool wallet::TXMultiSignRequest::isValid() const noexcept

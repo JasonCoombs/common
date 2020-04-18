@@ -94,16 +94,17 @@ message Change
 
 message SignTxRequest
 {
-   repeated string walletId = 1;
-   repeated bytes  inputs = 2;
-   repeated bytes  recipients = 3;
-   uint64          fee = 4;
-   bool            RBF = 5;
-   bytes           unsignedState = 6;
-   Change          change = 7;
-   bool            populateUTXOs = 8;
-   repeated uint32 out_sort_order = 9;
-   bool            keepDuplicatedRecipients = 11;
+   repeated string                  walletId = 1;
+   repeated bytes                   inputs = 2;
+   repeated bytes                   recipients = 3;
+   uint64                           fee = 4;
+   bool                             RBF = 5;
+   bytes                            unsignedState = 6;
+   Change                           change = 7;
+   bool                             populateUTXOs = 8;
+   repeated uint32                  out_sort_order = 9;
+   bool                             keepDuplicatedRecipients = 11;
+   repeated SupportingTransaction   supportingTxs = 20;
 }
 
 message SignTxReply
@@ -555,4 +556,10 @@ message InputSigs
       bytes  data = 2;
    }
    repeated InputSig inputSig = 1;
+}
+
+message SupportingTransaction
+{
+   bytes hash = 1;
+   bytes rawtx = 2;
 }

@@ -41,6 +41,8 @@ namespace spdlog {
    class logger;
 }
 
+class ArmoryConnection;
+
 namespace bs {
    namespace sync {
       enum class SyncState
@@ -258,6 +260,7 @@ namespace bs {
             std::vector<std::string>   walletIds;
             std::vector<UTXO>          inputs;
             std::vector<std::shared_ptr<ScriptRecipient>>   recipients;
+            std::map<BinaryData, BinaryData> supportingTxMap_;
             OutputSortOrder   outSortOrder{ OutputOrderType::PrevState
                , OutputOrderType::Recipients, OutputOrderType::Change };
             struct {
@@ -299,6 +302,7 @@ namespace bs {
             bool isSourceOfTx(const Tx &signedTx) const;
 
             void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ResolverFeed> &resolver=nullptr);
+            bool populateSupportingTx(std::shared_ptr<ArmoryConnection>);
 
          private:
             Signer getSigner(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const;

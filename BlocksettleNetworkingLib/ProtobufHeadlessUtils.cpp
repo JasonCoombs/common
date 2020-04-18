@@ -56,6 +56,14 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
       change->set_value(txSignReq.change.value);
    }
 
+   for (auto& supportingTx : txSignReq.supportingTxMap_) {
+      auto supportingTxMsg = request.add_supportingtxs();
+      supportingTxMsg->set_hash(
+         supportingTx.first.getPtr(), supportingTx.first.getSize());
+      supportingTxMsg->set_rawtx(
+         supportingTx.second.getPtr(), supportingTx.second.getSize());
+   }
+
    return  request;
 }
 
@@ -113,6 +121,15 @@ bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::Si
    }
 
    txSignReq.populateUTXOs = request.populateutxos();
+
+   for (unsigned i=0; i<request.supportingtxs_size(); i++)
+   {
+      const auto& supportingtx = request.supportingtxs(i);
+      auto txHash = BinaryData::fromString(supportingtx.hash());
+      auto rawTx = BinaryData::fromString(supportingtx.rawtx());
+
+      txSignReq.supportingTxMap_.emplace(txHash, rawTx);
+   }
 
    return txSignReq;
 }
