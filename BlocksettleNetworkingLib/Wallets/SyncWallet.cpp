@@ -588,11 +588,11 @@ void Wallet::onZeroConfReceived(const std::vector<bs::TXEntry> &entries)
                wct_->balanceUpdated(walletId());
             }
          };
-         armory->getTxByHash(op.getTxHash(), cbPrevTX);
+         armory->getTxByHash(op.getTxHash(), cbPrevTX, true);
       }
    };
    for (const auto &entry : entries) {
-      armory_->getTxByHash(entry.txHash, cbTX);
+      armory_->getTxByHash(entry.txHash, cbTX, true);
    }
    updateBalances([this, handle = validityFlag_.handle(), logger=logger_]() mutable {    // TxNs are not updated for ZCs
       ValidityGuard lock(handle);
