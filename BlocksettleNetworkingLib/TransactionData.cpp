@@ -661,17 +661,6 @@ bool TransactionData::UpdateRecipientAmount(unsigned int recipientId, double amo
    return result;
 }
 
-std::vector<unsigned int> TransactionData::GetRecipientIdList() const
-{
-   std::vector<unsigned int> idList;
-   idList.reserve(recipients_.size());
-   for (const auto& it : recipients_) {
-      idList.emplace_back(it.first);
-   }
-
-   return idList;
-}
-
 std::shared_ptr<ScriptRecipient> TransactionData::GetScriptRecipient(unsigned int recipientId) const
 {
    const auto &itRecip = recipients_.find(recipientId);

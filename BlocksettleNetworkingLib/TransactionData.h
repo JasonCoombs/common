@@ -105,7 +105,6 @@ public:
    bool IsTransactionValid() const;
 
    size_t GetRecipientsCount() const;
-   std::vector<unsigned int> GetRecipientIdList() const;
 
    unsigned int RegisterNewRecipient();
    std::vector<unsigned int> allRecipientIds() const;
