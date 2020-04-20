@@ -48,7 +48,8 @@ void hd::Leaf::synchronize(const std::function<void()> &cbDone)
    const auto &cbProcess = [this, cbDone, handle = validityFlag_.handle()]
       (bs::sync::WalletData data) mutable
    {
-      ValidityGuard lock(handle);
+      // Do not lock handle here as this could cause deadlocks!
+      // hd::Leaf is destroyed and this callback is called on same thread (main thread) and so it's OK.
       if (!handle.isValid()) {
          return;
       }

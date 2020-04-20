@@ -58,9 +58,9 @@ namespace bs {
             std::string walletId() const override;
             std::string shortName() const override { return suffix_; }
             wallet::Type type() const override { return type_; }
-            bool isWatchingOnly() const;
+            bool isWatchingOnly() const override;
             bool hasExtOnlyAddresses() const override;
-            NetworkType networkType(void) const { return netType_; }
+            NetworkType networkType(void) const override { return netType_; }
 
             bool containsAddress(const bs::Address &addr) override;
             bool containsHiddenAddress(const bs::Address &addr) const override;
@@ -89,8 +89,8 @@ namespace bs {
             bs::Address getAddressByIndex(unsigned int index, bool ext) const;
 
             SecureBinaryData getPublicKeyFor(const bs::Address &) override;
-            std::shared_ptr<ResolverFeed> getResolver(void) const;
-            std::shared_ptr<ResolverFeed> getPublicResolver(void) const;
+            std::shared_ptr<ResolverFeed> getResolver(void) const override;
+            std::shared_ptr<ResolverFeed> getPublicResolver(void) const override;
             ReentrantLock lockDecryptedContainer() override;
 
             const bs::hd::Path &path() const { return path_; }
@@ -101,14 +101,14 @@ namespace bs {
             static std::pair<std::shared_ptr<hd::Leaf>, BinaryData> deserialize(
                const BinaryData &ser, NetworkType netType, std::shared_ptr<spdlog::logger> logger);
 
-            void shutdown(void);
-            std::string getFilename(void) const;
+            void shutdown(void) override;
+            std::string getFilename(void) const override;
             std::vector<bs::Address> extendAddressChain(unsigned count, bool extInt) override;
 
             std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) override;
 
-            virtual bs::hd::Path::Elem getExtPath(void) const { return addrTypeExternal_; }
-            virtual bs::hd::Path::Elem getIntPath(void) const { return addrTypeInternal_; }
+            bs::hd::Path::Elem getExtPath(void) const override { return addrTypeExternal_; }
+            bs::hd::Path::Elem getIntPath(void) const override { return addrTypeInternal_; }
 
             std::shared_ptr<AssetEntry> getRootAsset(void) const;
 

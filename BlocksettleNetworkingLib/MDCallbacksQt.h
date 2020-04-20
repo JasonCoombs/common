@@ -61,8 +61,8 @@ public:
       emit Disconnected();
    }
 
-   virtual void onRequestRejected(const std::string &security
-      , const std::string &reason)
+   void onRequestRejected(const std::string &security
+      , const std::string &reason) override
    {
       emit MDReqRejected(security, reason);
    }

@@ -135,6 +135,7 @@ public:
    virtual bool isWalletOffline(const std::string &) const { return true; }
 
    bool isLocal() const { return mode_ == OpMode::Local || mode_ == OpMode::LocalInproc; }
+   bool isWindowVisible() const { return isWindowVisible_; } // available only for local signer
 
 signals:
    void connected();
@@ -144,6 +145,8 @@ signals:
    void ready();
    void Error(bs::signer::RequestId id, std::string error);
    void TXSigned(bs::signer::RequestId id, BinaryData signedTX, bs::error::ErrorCode result, const std::string &errorReason = {});
+   // emited only for local signer
+   void windowVisibilityChanged(bool visible);
 
    void QWalletInfo(unsigned int id, const bs::hd::WalletInfo &);
    void PasswordChanged(const std::string &walletId, bool success);
@@ -154,6 +157,7 @@ signals:
 protected:
    std::shared_ptr<spdlog::logger> logger_;
    const OpMode mode_;
+   bool isWindowVisible_{};
 };
 
 
