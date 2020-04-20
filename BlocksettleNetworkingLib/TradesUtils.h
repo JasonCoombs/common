@@ -152,6 +152,9 @@ namespace bs {
 
       PayoutVerifyResult verifySignedPayout(PayoutVerifyArgs args);
 
+      // Maximum XBT amount multiplier for possible price changes
+      double reservationQuantityMultiplier();
+
    } // namespace tradeutils
 } // namespace bs
 
