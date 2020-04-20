@@ -679,7 +679,7 @@ bool wallet::TXSignRequest::populateSupportingTx(std::shared_ptr<ArmoryConnectio
       }
    };
 
-   if (!connPtr->getTXsByHash(hashes, lbd))
+   if (!connPtr->getTXsByHash(hashes, lbd, true))
       return false;
 
    auto&& txBatchResult = fut.get();
