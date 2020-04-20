@@ -884,7 +884,7 @@ bool WalletsManager::getTransactionDirection(Tx tx, const std::string &walletId
       return false;
    }
    else {
-      armory_->getTXsByHash(opTxHashes, cbProcess);
+      armory_->getTXsByHash(opTxHashes, cbProcess, true);
    }
    return true;
 }
