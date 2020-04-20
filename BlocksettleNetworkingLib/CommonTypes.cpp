@@ -214,3 +214,15 @@ const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
       default:       return "";
    }
 }
+
+bool bs::network::isTradingEnabled(UserType userType)
+{
+   switch (userType) {
+      case UserType::Market:
+      case UserType::Trading:
+      case UserType::Dealing:
+         return true;
+      default:
+         return false;
+   }
+}
