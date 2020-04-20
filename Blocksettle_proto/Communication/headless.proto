@@ -84,12 +84,17 @@ message AuthenticationReply
    NetworkType  netType = 3;
 }
 
-
 message Change
 {
    string   address = 1;
    string   index = 2;
    uint64   value = 3;
+}
+
+message SupportingTransaction
+{
+   bytes hash = 1;
+   bytes rawtx = 2;
 }
 
 message SignTxRequest
@@ -556,10 +561,4 @@ message InputSigs
       bytes  data = 2;
    }
    repeated InputSig inputSig = 1;
-}
-
-message SupportingTransaction
-{
-   bytes hash = 1;
-   bytes rawtx = 2;
 }
