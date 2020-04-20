@@ -841,6 +841,11 @@ int hd::Leaf::addAddress(const bs::Address &addr, const std::string &index, bool
    return id;
 }
 
+bs::hd::Purpose hd::Leaf::purpose() const
+{
+   return static_cast<bs::hd::Purpose>(path().get(0) & ~bs::hd::hardFlag);
+}
+
 bool hd::Leaf::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint64_t val, bool excludeReservation)
 {  // process the UTXOs for the purposes of handling internal/external addresses
    const ArmoryConnection::UTXOsCb &cbWrap = [this, cb, val](const std::vector<UTXO> &utxos) {
