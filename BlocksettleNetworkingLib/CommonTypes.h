@@ -53,6 +53,8 @@ namespace bs {
 
       static_assert(static_cast<int>(UserType::Undefined) == 0, "First value should be 0");
 
+      bool isTradingEnabled(UserType);
+
       struct Side {
          enum Type {
             Undefined,
