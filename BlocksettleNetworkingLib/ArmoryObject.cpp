@@ -174,7 +174,7 @@ bool ArmoryObject::getTxByHash(const BinaryData &hash, const TxCb &cb, bool allo
          cb(tx);
       }
    };
-   return ArmoryConnection::getTxByHash(hash, cbWrap);
+   return ArmoryConnection::getTxByHash(hash, cbWrap, allowCachedResult);
 }
 
 bool ArmoryObject::getTXsByHash(const std::set<BinaryData> &hashes, const TXsCb &cb, bool allowCachedResult)
@@ -224,7 +224,7 @@ bool ArmoryObject::getTXsByHash(const std::set<BinaryData> &hashes, const TXsCb 
          cb(*result, nullptr);
       }
    };
-   return ArmoryConnection::getTXsByHash(missedHashes, cbWrap);
+   return ArmoryConnection::getTXsByHash(missedHashes, cbWrap, allowCachedResult);
 }
 
 bool ArmoryObject::getRawHeaderForTxHash(const BinaryData& inHash, const BinaryDataCb &callback)
