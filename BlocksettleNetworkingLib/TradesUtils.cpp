@@ -434,3 +434,8 @@ bs::tradeutils::PayoutVerifyResult bs::tradeutils::verifySignedPayout(bs::tradeu
       return result;
    }
 }
+
+double bs::tradeutils::reservationQuantityMultiplier()
+{
+   return 1.2;
+}
