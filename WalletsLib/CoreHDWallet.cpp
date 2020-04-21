@@ -246,6 +246,10 @@ std::shared_ptr<hd::Group> hd::Wallet::createGroup(bs::hd::CoinType ct)
       }
    }
    else {
+      if (ct != bs::hd::CoinType::Bitcoin_main || ct != bs::hd::CoinType::Bitcoin_test) {
+         throw std::logic_error("Incorrect HW coin type");
+      }
+
       result = std::make_shared<HWGroup>(
          walletPtr_, ct, netType_, extOnlyFlag_, logger_);
    }
