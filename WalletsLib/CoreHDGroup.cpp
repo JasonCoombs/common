@@ -728,3 +728,10 @@ std::shared_ptr<hd::SettlementLeaf> hd::SettlementGroup::getLeafForSettlementID(
    }
    return nullptr;
 }
+
+std::set<AddressEntryType> bs::core::hd::HWGroup::getAddressTypeSet(void) const
+{
+   return { AddressEntryType_P2PKH, AddressEntryType_P2WPKH,
+      static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH)
+   };
+}
