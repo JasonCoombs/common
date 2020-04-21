@@ -65,8 +65,6 @@ namespace bs {
          static Elem keyToElem(const std::string &key);
          static std::string elemToKey(Elem);
 
-
-
       private:
          std::vector<Elem> path_;
          bool isAbsolute_ = false;

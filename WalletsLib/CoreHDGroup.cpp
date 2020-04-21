@@ -391,13 +391,6 @@ std::set<AddressEntryType> hd::Group::getAddressTypeSet(void) const
       };
 }
 
-std::set<AddressEntryType> bs::core::hd::Group::getAddressTypeHWSet(void) const
-{
-   return { AddressEntryType_P2PKH, AddressEntryType_P2WPKH,
-      AddressEntryType(AddressEntryType_P2SH | AddressEntryType_P2WPKH)
-   };
-}
-
 void hd::Group::commit(const std::shared_ptr<DBIfaceTransaction> &tx, bool force)
 {
    if (!force && !needsCommit()) {

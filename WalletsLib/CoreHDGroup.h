@@ -65,7 +65,6 @@ namespace bs {
 
             virtual void shutdown(void);
             virtual std::set<AddressEntryType> getAddressTypeSet(void) const;
-            std::set<AddressEntryType> getAddressTypeHWSet(void) const;
             bool isExtOnly(void) const { return isExtOnly_; }
 
             virtual std::shared_ptr<hd::Group> getCopy(

@@ -313,7 +313,11 @@ void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInf
       { AddressEntryType_P2PKH, walletInfo.xpubLegacy_ }
    };
 
-   for (const auto &aet : groupXBT->getAddressTypeHWSet()) {
+   // Adding legacy address support explicitly
+   auto addressTypeSet = groupXBT->getAddressTypeSet();
+   addressTypeSet.insert(AddressEntryType_P2PKH);
+
+   for (const auto &aet : addressTypeSet) {
       groupXBT->createLeafFromXpub(xpubs[aet], aet, 0u, lookup);
    }
    writeToDB();
