@@ -44,6 +44,9 @@ namespace bs {
 
          void append(Elem elem);
          void append(const std::string &key);
+         void append(const Path& childPath);
+         void pop();
+
          size_t length() const { return path_.size(); }
          Elem get(int index) const;   // negative index is an offset from end
          void clear();
@@ -54,6 +57,9 @@ namespace bs {
 
          bool isHardened(size_t index) const;
          void setHardened(size_t index, bool value = true);
+
+         std::vector<Elem>::const_iterator begin() const;
+         std::vector<Elem>::const_iterator end() const;
 
          static Path fromString(const std::string &);
          static Elem keyToElem(const std::string &key);

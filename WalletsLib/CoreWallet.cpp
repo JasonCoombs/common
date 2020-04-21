@@ -14,6 +14,7 @@
 #include "CoinSelection.h"
 #include "Wallets.h"
 #include "XBTAmount.h"
+#include "ArmoryConnection.h"
 
 #define SAFE_NUM_CONFS        6
 #define ASSETMETA_PREFIX      0xAC
@@ -657,6 +658,38 @@ bool wallet::TXSignRequest::isSourceOfTx(const Tx &signedTx) const
    }
 }
 
+bool wallet::TXSignRequest::populateSupportingTx(std::shared_ptr<ArmoryConnection> connPtr)
+{
+   std::set<BinaryData> hashes;
+   for (const auto& input : inputs) {
+      hashes.emplace(input.getTxHash());
+   }
+
+   //using TXsCb = std::function<void(const AsyncClient::TxBatchResult &, std::exception_ptr)>;
+
+   auto promPtr = std::make_shared<std::promise<AsyncClient::TxBatchResult>>();
+   auto fut = promPtr->get_future();
+   auto lbd = [promPtr](const AsyncClient::TxBatchResult& result, std::exception_ptr eptr)->void
+   {
+      if (eptr != nullptr) {
+         promPtr->set_exception(eptr);
+      }
+      else {
+         promPtr->set_value(result);
+      }
+   };
+
+   if (!connPtr->getTXsByHash(hashes, lbd, true))
+      return false;
+
+   auto&& txBatchResult = fut.get();
+   for (auto& txPair : txBatchResult) {
+      supportingTxMap_.emplace(txPair.first, txPair.second->serialize());
+   }
+
+   return true;
+}
+
 bool wallet::TXMultiSignRequest::isValid() const noexcept
 {
    if (inputs.empty() || recipients.empty()) {
@@ -1015,17 +1048,28 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
    bs::CheckRecipSigner signer;
    std::map<unsigned int, std::shared_ptr<ScriptSpender_Signed>> spenders;
 
-   signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-
    for (int i = 0; i < request.inputs.size(); ++i) {
       const auto &utxo = request.inputs[i];
       const auto &addr = bs::Address::fromUTXO(utxo);
       if (!containsAddress(addr)) {
          throw std::runtime_error("can't sign for foreign address");
       }
-      const auto &spender = (addr.getType() == AddressEntryType_P2WPKH)
-         ? std::make_shared<ScriptSpender_P2WPKH_Signed>(utxo)
-         : std::make_shared<ScriptSpender_Signed>(utxo);
+      std::shared_ptr<ScriptSpender_Signed> spender;
+      switch (addr.getType())
+      {
+      case AddressEntryType_P2WPKH:
+         spender = std::make_shared<ScriptSpender_P2WPKH_Signed>(utxo);
+         break;
+      case AddressEntryType_P2SH:
+         spender = std::make_shared<ScriptSpender_P2SH_Signed>(utxo);
+         break;
+      case AddressEntryType_P2PKH:
+         spender = std::make_shared<ScriptSpender_Signed_Legacy>(utxo);
+         break;
+      default:
+         break;
+      }
+
       if (request.RBF) {
          spender->setSequence(UINT32_MAX - 2);
       }
@@ -1071,8 +1115,16 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       if (itSig == inputSigs.end()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
-      spender.second->setWitnessData(itSig->second, 2);
+
+      if (spender.second->isSegWit()) {
+         spender.second.get()->setSignedWitnessData(itSig->second, 2);
+      }
+      else {
+         spender.second.get()->setSignedScript(itSig->second);
+      }
    }
+
+   //std::cout << signer.serialize().toHexStr() << std::endl;
    if (!signer.verify()) {
       throw std::runtime_error("failed to verify signer");
    }

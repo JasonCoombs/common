@@ -222,27 +222,38 @@ std::shared_ptr<hd::Group> hd::Wallet::createGroup(bs::hd::CoinType ct)
       return result;
    }
 
-   switch (ct) {
-   case bs::hd::CoinType::BlockSettle_Auth:
-      result = std::make_shared<AuthGroup>(
-         walletPtr_, netType_, logger_);
-      break;
+   if (!isHardwareWallet()) {
+      switch (ct) {
+      case bs::hd::CoinType::BlockSettle_Auth:
+         result = std::make_shared<AuthGroup>(
+            walletPtr_, netType_, logger_);
+         break;
 
-   case bs::hd::CoinType::BlockSettle_CC:
-      result = std::make_shared<CCGroup>(
-         walletPtr_, netType_, logger_);
-      break;
+      case bs::hd::CoinType::BlockSettle_CC:
+         result = std::make_shared<CCGroup>(
+            walletPtr_, netType_, logger_);
+         break;
 
-   case bs::hd::CoinType::BlockSettle_Settlement:
-      result = std::make_shared<SettlementGroup>(
-         walletPtr_, netType_, logger_);
-      break;
+      case bs::hd::CoinType::BlockSettle_Settlement:
+         result = std::make_shared<SettlementGroup>(
+            walletPtr_, netType_, logger_);
+         break;
 
-   default:
-      result = std::make_shared<Group>(
-         walletPtr_, ct, netType_, extOnlyFlag_, logger_);
-      break;
+      default:
+         result = std::make_shared<Group>(
+            walletPtr_, ct, netType_, extOnlyFlag_, logger_);
+         break;
+      }
    }
+   else {
+      if (ct != bs::hd::CoinType::Bitcoin_main && ct != bs::hd::CoinType::Bitcoin_test) {
+         throw std::logic_error("Incorrect HW coin type");
+      }
+
+      result = std::make_shared<HWGroup>(
+         walletPtr_, ct, netType_, extOnlyFlag_, logger_);
+   }
+
    addGroup(result);
    writeToDB();
    return result;
@@ -304,16 +315,17 @@ void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
 void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup)
 {
    assert(isHardwareWallet());
-   const auto groupXBT = createGroup(getXBTGroupType());
-   assert(groupXBT);
+   const auto groupHW = createGroup(getXBTGroupType());
+   assert(groupHW);
 
    std::map<AddressEntryType, std::string> xpubs = {
       { static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH), walletInfo.xpubNestedSegwit_ },
-      { AddressEntryType_P2WPKH, walletInfo.xpubNativeSegwit_ }
+      { AddressEntryType_P2WPKH, walletInfo.xpubNativeSegwit_ },
+      { AddressEntryType_P2PKH, walletInfo.xpubLegacy_ }
    };
 
-   for (const auto &aet : groupXBT->getAddressTypeSet()) {
-      groupXBT->createLeafFromXpub(xpubs[aet], aet, 0u, lookup);
+   for (const auto &aet : groupHW->getAddressTypeSet()) {
+      groupHW->createLeafFromXpub(xpubs[aet], aet, 0u, lookup);
    }
    writeToDB();
 }
