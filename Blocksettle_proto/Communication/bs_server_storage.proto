@@ -396,6 +396,8 @@ message UserScoreUpdateEvent
       AttemptToCancelTradeAfterSign    = 20;
       SignedPayinToCancelledTrade      = 21;
       DealerFillRatioFailed            = 22;
+
+      PayinDoubleSpend                 = 23;
    };
 
    string               user_email     = 1;
