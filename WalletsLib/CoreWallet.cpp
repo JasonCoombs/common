@@ -1155,12 +1155,12 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       signer.setFlags(SCRIPT_VERIFY_SEGWIT);
 
       for (const auto &input : txMultiReq.inputs) {
-         const auto itWallet = wallets.find(input.walletId_);
+         const auto itWallet = wallets.find(input.walletId);
          if (itWallet == wallets.end()) {
-            throw std::runtime_error("missing wallet for id " + input.walletId_);
+            throw std::runtime_error("missing wallet for id " + input.walletId);
          }
          auto lock = itWallet->second->lockDecryptedContainer();
-         auto spender = std::make_shared<ScriptSpender>(input.utxo_, itWallet->second->getResolver());
+         auto spender = std::make_shared<ScriptSpender>(input.utxo, itWallet->second->getResolver());
          if (txMultiReq.RBF) {
             spender->setSequence(UINT32_MAX - 2);
          }
@@ -1199,13 +1199,13 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
    for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
       auto inputData = txMultiReq.inputs[i];
 
-      const auto itWallet = wallets.find(inputData.walletId_);
+      const auto itWallet = wallets.find(inputData.walletId);
       if (itWallet == wallets.end()) {
-         throw std::runtime_error("missing wallet for id " + inputData.walletId_);
+         throw std::runtime_error("missing wallet for id " + inputData.walletId);
       }
       
       auto wallet = itWallet->second;
-      auto& utxo = inputData.utxo_;
+      auto& utxo = inputData.utxo;
       const auto &addr = bs::Address::fromUTXO(utxo);
       if (!wallet->containsAddress(addr)) {
          throw std::runtime_error("can't sign for foreign address");
@@ -1220,7 +1220,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
          spender = std::make_shared<ScriptSpender_P2SH_Signed>(utxo);
          break;
       case AddressEntryType_P2PKH:
-         spender = std::make_shared<ScriptSpender_Signed_Legacy>(utxo);
+         throw std::runtime_error("not implemented for legacy type");
          break;
       default:
          break;

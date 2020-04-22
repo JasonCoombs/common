@@ -312,8 +312,8 @@ namespace bs {
          struct TXMultiSignRequest
          {
             struct UtxoData {
-               UTXO utxo_;
-               std::string walletId_;
+               UTXO utxo;
+               std::string walletId;
             };
 
             std::vector<UtxoData>  inputs;     // per-wallet UTXOs

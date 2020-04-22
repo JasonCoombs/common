@@ -458,8 +458,8 @@ bs::signer::RequestId HeadlessContainer::signMultiTXRequest(const bs::core::wall
 
    headless::SignTXMultiRequest request;
    for (const auto &input : txMultiReq.inputs) {
-      request.add_walletids(input.walletId_);
-      signer.addSpender(std::make_shared<ScriptSpender>(input.utxo_));
+      request.add_walletids(input.walletId);
+      signer.addSpender(std::make_shared<ScriptSpender>(input.utxo));
    }
    for (const auto &recip : txMultiReq.recipients) {
       signer.addRecipient(recip);
