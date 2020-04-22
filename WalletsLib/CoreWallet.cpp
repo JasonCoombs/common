@@ -1155,12 +1155,12 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       signer.setFlags(SCRIPT_VERIFY_SEGWIT);
 
       for (const auto &input : txMultiReq.inputs) {
-         const auto itWallet = wallets.find(input.second);
+         const auto itWallet = wallets.find(input.walletId);
          if (itWallet == wallets.end()) {
-            throw std::runtime_error("missing wallet for id " + input.second);
+            throw std::runtime_error("missing wallet for id " + input.walletId);
          }
          auto lock = itWallet->second->lockDecryptedContainer();
-         auto spender = std::make_shared<ScriptSpender>(input.first, itWallet->second->getResolver());
+         auto spender = std::make_shared<ScriptSpender>(input.utxo, itWallet->second->getResolver());
          if (txMultiReq.RBF) {
             spender->setSequence(UINT32_MAX - 2);
          }
@@ -1189,6 +1189,70 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
    }
 }
 
+
+BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMultiSignRequest &txMultiReq
+   , const WalletMap &wallets, const InputSigs &inputSigs)
+{
+   bs::CheckRecipSigner signer;
+   std::map<unsigned int, std::shared_ptr<ScriptSpender_Signed>> spenders;
+
+   for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
+      auto inputData = txMultiReq.inputs[i];
+
+      const auto itWallet = wallets.find(inputData.walletId);
+      if (itWallet == wallets.end()) {
+         throw std::runtime_error("missing wallet for id " + inputData.walletId);
+      }
+      
+      auto wallet = itWallet->second;
+      auto& utxo = inputData.utxo;
+      const auto &addr = bs::Address::fromUTXO(utxo);
+      if (!wallet->containsAddress(addr)) {
+         throw std::runtime_error("can't sign for foreign address");
+      }
+      std::shared_ptr<ScriptSpender_Signed> spender;
+      switch (addr.getType())
+      {
+      case AddressEntryType_P2WPKH:
+         spender = std::make_shared<ScriptSpender_P2WPKH_Signed>(utxo);
+         break;
+      case AddressEntryType_P2SH:
+         spender = std::make_shared<ScriptSpender_P2SH_Signed>(utxo);
+         break;
+      case AddressEntryType_P2PKH:
+         throw std::runtime_error("not implemented for legacy type");
+         break;
+      default:
+         break;
+      }
+
+      if (txMultiReq.RBF) {
+         spender->setSequence(UINT32_MAX - 2);
+      }
+      spender->setFeed(wallet->getPublicResolver());
+      spenders[i] = spender;
+      signer.addSpender(spender);
+   }
+
+   for (const auto &recipient : txMultiReq.recipients) {
+      signer.addRecipient(recipient);
+   }
+
+   signer.sign();
+
+   for (const auto &spender : spenders) {
+      const auto &itSig = inputSigs.find(spender.first);
+      if (itSig == inputSigs.end() || !spender.second->isSegWit()) {
+         throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
+      }
+      spender.second.get()->setSignedWitnessData(itSig->second, 2);
+   }
+
+   if (!signer.verify()) {
+      throw std::logic_error("signer failed to verify");
+   }
+   return signer.serialize();
+}
 
 BinaryData wallet::computeID(const BinaryData &input)
 {
