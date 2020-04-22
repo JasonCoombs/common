@@ -100,14 +100,16 @@ std::vector<UTXO> bs::UtxoReservation::get(const std::string &reserveId) const
 
 // For a given wallet ID, filter out all associated UTXOs from a list of UTXOs.
 // True if success, false if failure.
-void bs::UtxoReservation::filter(std::vector<UTXO> &utxos) const
+void bs::UtxoReservation::filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const
 {
+   filtered.clear();
    std::lock_guard<std::mutex> lock(mutex_);
 
    auto it = utxos.begin();
    while (it != utxos.end()) {
       if (reserved_.find(*it) != reserved_.end()) {
          it = utxos.erase(it);
+         filtered.push_back(*it);
       } else {
          ++it;
       }
