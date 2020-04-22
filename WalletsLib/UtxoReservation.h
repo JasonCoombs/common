@@ -47,7 +47,7 @@ namespace bs {
 
       // Pass in a vector of UTXOs. If any of the UTXOs are in the wallet ID
       // being queried, remove the UTXOs from the vector.
-      void filter(std::vector<UTXO> &utxos) const;
+      void filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const;
 
       bool containsReservedUTXO(const std::vector<UTXO> &utxos) const;
 

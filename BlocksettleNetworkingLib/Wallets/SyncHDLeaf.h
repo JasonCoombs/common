@@ -63,6 +63,7 @@ namespace bs {
             bool hasId(const std::string &) const override;
 
             bool getSpendableTxOutList(const ArmoryConnection::UTXOsCb &, uint64_t val, bool excludeReservation) override;
+            std::vector<UTXO> getIncompleteUTXOs() const override;
             BTCNumericTypes::balance_type getSpendableBalance() const override;
             bool getHistoryPage(uint32_t id, std::function<void(const bs::sync::Wallet *wallet
                , std::vector<ClientClasses::LedgerEntry>)>, bool onlyNew = false) const;
@@ -118,6 +119,8 @@ namespace bs {
                   return (path == other.path);
                }
             };
+
+            std::vector<UTXO> incompleteUTXOs_;
 
          protected:
             void onRefresh(const std::vector<BinaryData> &ids, bool online) override;
