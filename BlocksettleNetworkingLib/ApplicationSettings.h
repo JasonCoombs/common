@@ -141,6 +141,7 @@ public:
       proxyServerPubKey,
       ccServerPubKey,
       HideCreateAccountPromptTestnet,
+      HideLegacyWalletWarning,
       _last
    };
 
