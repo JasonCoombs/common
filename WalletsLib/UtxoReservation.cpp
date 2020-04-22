@@ -108,8 +108,8 @@ void bs::UtxoReservation::filter(std::vector<UTXO> &utxos, std::vector<UTXO> &fi
    auto it = utxos.begin();
    while (it != utxos.end()) {
       if (reserved_.find(*it) != reserved_.end()) {
-         it = utxos.erase(it);
          filtered.push_back(*it);
+         it = utxos.erase(it);
       } else {
          ++it;
       }
