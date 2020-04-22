@@ -88,7 +88,7 @@ public:
 
    bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
-   bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock
+   bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
    bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
       , const std::vector<UTXO> &, uint32_t topBlock);

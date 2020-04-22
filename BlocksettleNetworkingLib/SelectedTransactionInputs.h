@@ -38,10 +38,11 @@ public:
       , bool isSegWitInputsOnly, bool confirmedOnly = false
       , const CbSelectionChanged &selectionChanged = nullptr
       , const std::function<void()> &cbInputsReset = nullptr);
-   SelectedTransactionInputs(const std::shared_ptr<bs::sync::hd::Group> &
+   SelectedTransactionInputs(const std::vector<std::shared_ptr<bs::sync::Wallet>> &
       , bool isSegWitInputsOnly, bool confirmedOnly = false
       , const CbSelectionChanged &selectionChanged = nullptr
       , const std::function<void()> &cbInputsReset = nullptr);
+
    SelectedTransactionInputs(const std::vector<UTXO> &
       , const CbSelectionChanged &selectionChanged = nullptr);
    ~SelectedTransactionInputs() noexcept = default;

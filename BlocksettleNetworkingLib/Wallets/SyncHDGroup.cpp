@@ -37,6 +37,17 @@ std::shared_ptr<hd::Leaf> hd::Group::getLeaf(const bs::hd::Path &path) const
    return itLeaf->second;
 }
 
+std::shared_ptr<bs::sync::hd::Leaf> bs::sync::hd::Group::getLeaf(bs::hd::Purpose purpose) const
+{
+   for (auto& leaf : getLeaves()) {
+      if (leaf->purpose() == purpose) {
+         return leaf;
+      }
+   }
+
+   return nullptr;
+}
+
 std::vector<std::shared_ptr<hd::Leaf>> hd::Group::getLeaves() const
 {
    std::vector<std::shared_ptr<hd::Leaf>> result;
