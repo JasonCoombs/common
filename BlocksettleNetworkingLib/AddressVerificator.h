@@ -65,6 +65,8 @@ public:
 
    std::pair<bs::Address, UTXO> getRevokeData(const bs::Address &authAddr);
 
+   std::vector<UTXO>    FilterAuthFundingUTXO(const std::vector<UTXO>& authInputs);
+
 protected:
    void onNewBlock(unsigned int, unsigned int) override
    {

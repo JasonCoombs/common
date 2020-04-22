@@ -1085,3 +1085,28 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &addr
    signer.sign();
    return signer.serialize();
 }
+
+std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
+{
+   std::vector<UTXO> result;
+
+   for (const auto& utxo : authInputs) {
+      const auto authAddr = utxo.getRecipientScrAddr();
+      auto maStructPtr = getValidationAddress(authAddr);
+      if (maStructPtr == nullptr) {
+         continue;
+      }
+
+      if (!isValid(authAddr)) {
+         continue;
+      }
+
+      if (maStructPtr->isFirstOutpoint(utxo.getTxHash(), utxo.getTxOutIndex())) {
+         continue;
+      }
+
+      result.emplace_back(utxo);
+   }
+
+   return result;
+}

@@ -221,3 +221,8 @@ std::pair<bs::Address, UTXO> AddressVerificator::getRevokeData(const bs::Address
 {
    return AuthAddressLogic::getRevokeData(*validationMgr_, authAddr);
 }
+
+std::vector<UTXO> AddressVerificator::FilterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
+{
+   return validationMgr_->filterAuthFundingUTXO(authInputs);
+}
