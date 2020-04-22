@@ -265,8 +265,9 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                      utxos.emplace_back(std::move(input.first));
                   }
                   if (args.utxoReservation) {
+                     std::vector<UTXO> filtered;
                      // Ignore filter return value as it fails if there were no reservations before
-                     args.utxoReservation->filter(utxos);
+                     args.utxoReservation->filter(utxos, filtered);
                   }
                   inputsCb(utxos, false);
                };

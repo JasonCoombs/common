@@ -291,7 +291,7 @@ bool Wallet::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint64_t
       }
       std::vector<UTXO> txOutListCopy = txOutList;
       if (UtxoReservation::instance() && excludeReservation) {
-         UtxoReservation::instance()->filter(txOutListCopy);
+         UtxoReservation::instance()->filter(txOutListCopy, reservedUTXOs_);
       }
       cb(bs::selectUtxoForAmount(std::move(txOutListCopy), val));
    };
@@ -341,6 +341,11 @@ bool Wallet::getRBFTxOutList(const ArmoryConnection::UTXOsCb &cb) const
 
    armory_->getRBFoutputs(walletIDs, cb);
    return true;
+}
+
+std::vector<UTXO> Wallet::getIncompleteUTXOs() const
+{
+   return reservedUTXOs_;
 }
 
 void Wallet::setWCT(WalletCallbackTarget *wct)

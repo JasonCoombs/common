@@ -77,6 +77,8 @@ public:
    std::vector<UTXO> GetAllTransactions() const;
    std::map<UTXO, std::string> getSelectedInputs() const;
 
+   std::vector<UTXO> getIncompleteUTXOs() const;
+
    std::shared_ptr<bs::sync::Wallet> GetWallet() const
    {
       return wallets_.empty() ? nullptr : wallets_.front();

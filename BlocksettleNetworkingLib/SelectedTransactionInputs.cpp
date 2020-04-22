@@ -334,6 +334,16 @@ std::map<UTXO, std::string> SelectedTransactionInputs::getSelectedInputs() const
    return result;
 }
 
+std::vector<UTXO> SelectedTransactionInputs::getIncompleteUTXOs() const
+{
+   std::vector<UTXO> result;
+   for (const auto &wallet : wallets_) {
+      const auto &incomplete = wallet->getIncompleteUTXOs();
+      result.insert(result.cend(), incomplete.cbegin(), incomplete.cend());
+   }
+   return result;
+}
+
 void SelectedTransactionInputs::SetUseAutoSel(const bool autoSelect)
 {
    if (autoSelect != useAutoSel_) {
