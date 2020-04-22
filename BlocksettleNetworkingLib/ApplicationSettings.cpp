@@ -166,7 +166,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { Binaries_Dl_Url,         SettingDef(QString(), QLatin1String("https://pubb.blocksettle.com/downloads/terminal"))},
       { ResetPassword_Url,       SettingDef(QString(), QLatin1String("https://pubb.blocksettle.com/pub-forgot-password"))},
       { GetAccount_UrlProd,      SettingDef(QString(), QLatin1String("http://blocksettle.com")) },
-      { GetAccount_UrlTest,      SettingDef(QString(), QLatin1String("https://test.blocksettle.com/#login")) },
+      { GetAccount_UrlTest,      SettingDef(QString(), QLatin1String("https://test.blocksettle.com")) },
       { GettingStartedGuide_Url, SettingDef(QString(), QLatin1String("http://pubb.blocksettle.com/PDF/BlockSettle%20Getting%20Started.pdf")) },
       { WalletFiltering,         SettingDef(QLatin1String("WalletWidgetFilteringFlags"), 0x06) },
       { FxRfqLimit,              SettingDef(QLatin1String("FxRfqLimit"), 5) },
