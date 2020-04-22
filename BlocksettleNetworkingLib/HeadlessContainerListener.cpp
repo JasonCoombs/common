@@ -424,8 +424,17 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          // from signer ui instead of password
          if (rootWallet->isHardwareWallet() && rootWallet->encryptionKeys()[0].toBinStr() == "Ledger") {
             // For ledger hw data is not prepared straight away
+            Blocksettle::Communication::headless::InputSigs sigs;
+            assert(sigs.ParseFromString(pass.toBinStr()));
+
+            bs::core::Wallet::InputSigs inputSigs;
+            for (size_t i = 0; i < sigs.inputsig_size(); ++i) {
+               auto sig = sigs.inputsig(i);
+               inputSigs[sig.index()] = BinaryData::fromString(sig.data());
+            }
+
             auto wallet = wallets[0];
-            auto signedTx = wallet->signTXRequestWithWitness(txSignReq, { { 0 , static_cast<const BinaryData&>(pass)} });
+            auto signedTx = wallet->signTXRequestWithWitness(txSignReq, inputSigs);
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, signedTx);
          }
          else {

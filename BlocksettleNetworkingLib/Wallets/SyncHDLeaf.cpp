@@ -841,10 +841,16 @@ int hd::Leaf::addAddress(const bs::Address &addr, const std::string &index, bool
    return id;
 }
 
+bs::hd::Purpose hd::Leaf::purpose() const
+{
+   return static_cast<bs::hd::Purpose>(path().get(0) & ~bs::hd::hardFlag);
+}
+
 bool hd::Leaf::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint64_t val, bool excludeReservation)
 {  // process the UTXOs for the purposes of handling internal/external addresses
    const ArmoryConnection::UTXOsCb &cbWrap = [this, cb, val](const std::vector<UTXO> &utxos) {
       std::vector<UTXO> filteredUTXOs;
+      incompleteUTXOs_.clear();
       for (const auto &utxo : utxos) {
          const auto nbConf = armory_->getConfirmationsNumber(utxo.getHeight());
          const auto addr = bs::Address::fromUTXO(utxo);
@@ -852,12 +858,22 @@ bool hd::Leaf::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint64
          if (nbConf >= confCutOff) {
             filteredUTXOs.emplace_back(std::move(utxo));
          }
+         else {
+            incompleteUTXOs_.emplace_back(std::move(utxo));
+         }
       }
       if (cb) {
          cb(bs::selectUtxoForAmount(std::move(filteredUTXOs), val));
       }
    };
    return bs::sync::Wallet::getSpendableTxOutList(cbWrap, std::numeric_limits<uint64_t>::max(), excludeReservation);
+}
+
+std::vector<UTXO> hd::Leaf::getIncompleteUTXOs() const
+{
+   auto result = bs::sync::Wallet::getIncompleteUTXOs();
+   result.insert(result.cend(), incompleteUTXOs_.cbegin(), incompleteUTXOs_.cend());
+   return result;
 }
 
 BTCNumericTypes::balance_type hd::Leaf::getSpendableBalance() const
@@ -1036,14 +1052,18 @@ bool hd::CCLeaf::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint
          return;
       }
       std::vector<UTXO> filteredUTXOs;
+      incompleteUTXOs_.clear();
       for (const auto &utxo : utxos) {
          const auto nbConf = armory_->getConfirmationsNumber(utxo.getHeight());
          if (nbConf >= kIntConfCount) {
             filteredUTXOs.emplace_back(std::move(utxo));
          }
+         else {
+            incompleteUTXOs_.emplace_back(std::move(utxo));
+         }
       }
       if (UtxoReservation::instance() && excludeReservation) {
-         UtxoReservation::instance()->filter(filteredUTXOs);
+         UtxoReservation::instance()->filter(filteredUTXOs, reservedUTXOs_);
       }
       if (cb) {
          cb(bs::selectUtxoForAmount(std::move(filteredUTXOs), val));

@@ -202,6 +202,7 @@ namespace bs {
          virtual bool getSpendableTxOutList(const ArmoryConnection::UTXOsCb &, uint64_t val, bool excludeReservation);
          virtual bool getSpendableZCList(const ArmoryConnection::UTXOsCb &) const;
          virtual bool getRBFTxOutList(const ArmoryConnection::UTXOsCb &) const;
+         virtual std::vector<UTXO> getIncompleteUTXOs() const;
 
          //custom ACT
          template<class U> void setCustomACT(
@@ -265,6 +266,7 @@ namespace bs {
          ValidityFlag validityFlag_;
 
          std::map<BinaryData, Tx>   zcEntries_;
+         std::vector<UTXO> reservedUTXOs_;
 
       private:
          std::string regId_;

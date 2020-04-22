@@ -37,7 +37,7 @@ namespace bs {
             Group(const std::shared_ptr<AssetWallet_Single> &, bs::hd::Path::Elem, NetworkType netType
                , bool isExtOnly, const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
-            ~Group(void);
+            virtual ~Group(void);
 
             size_t getNumLeaves() const { return leaves_.size(); }
             std::shared_ptr<hd::Leaf> getLeafByPath(const bs::hd::Path &) const;
@@ -116,6 +116,7 @@ namespace bs {
             AuthGroup(std::shared_ptr<AssetWallet_Single>,
                NetworkType netType,
                const std::shared_ptr<spdlog::logger> &);
+            ~AuthGroup() override = default;
 
             wallet::Type type() const override { return wallet::Type::Authentication; }
 
@@ -149,6 +150,7 @@ namespace bs {
                , NetworkType netType, const std::shared_ptr<spdlog::logger> &logger)
                : Group(walletPtr, bs::hd::CoinType::BlockSettle_CC, netType, true, logger)
             {} //CC groups are always ext only
+            ~CCGroup() override = default;
 
             wallet::Type type() const override { return wallet::Type::ColorCoin; }
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
@@ -168,6 +170,7 @@ namespace bs {
                : Group(walletPtr, bs::hd::CoinType::BlockSettle_Settlement
                   , netType, true, logger)
             {} //Settlement groups are always ext only
+            ~SettlementGroup() override = default;
 
             wallet::Type type() const override { return wallet::Type::ColorCoin; }
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
@@ -203,6 +206,22 @@ namespace bs {
             std::shared_ptr<hd::Leaf> createLeaf(const bs::Address&, const bs::hd::Path&);
             void deserialize(BinaryDataRef value) override;
          };
+
+         ///////////////////////////////////////////////////////////////////////
+
+         class HWGroup : public Group 
+         {
+         public:
+            HWGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
+               , bs::hd::Path::Elem index, NetworkType netType, bool isExtOnly
+               , const std::shared_ptr<spdlog::logger> &logger)
+               : Group(walletPtr, index, netType, isExtOnly, logger)
+            {}
+            ~HWGroup() override = default;
+
+            std::set<AddressEntryType> getAddressTypeSet(void) const override;
+         };
+
 
       }  //namespace hd
    }  //namespace core

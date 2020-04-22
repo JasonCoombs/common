@@ -53,6 +53,8 @@ namespace bs {
 
       static_assert(static_cast<int>(UserType::Undefined) == 0, "First value should be 0");
 
+      bool isTradingEnabled(UserType);
+
       struct Side {
          enum Type {
             Undefined,
@@ -182,7 +184,7 @@ namespace bs {
 
       struct QuoteReqNotification
       {
-         double quantity;
+         double quantity{};
          std::string quoteRequestId;
          std::string security;
          std::string product;
@@ -194,8 +196,8 @@ namespace bs {
          std::string settlementId;
          std::string requestorRecvAddress;
 
-         Side::Type  side;
-         Asset::Type assetType;
+         Side::Type  side{};
+         Asset::Type assetType{};
 
          enum Status {
             StatusUndefined,
@@ -205,11 +207,11 @@ namespace bs {
             Rejected,
             TimedOut
          };
-         Status status;
+         Status status{};
 
          QDateTime   expirationTime;
-         int         timeSkewMs;
-         uint64_t    celerTimestamp;
+         int         timeSkewMs{};
+         uint64_t    celerTimestamp{};
 
          bool empty() const { return quoteRequestId.empty(); }
       };

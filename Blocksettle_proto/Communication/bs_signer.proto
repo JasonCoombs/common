@@ -420,4 +420,5 @@ message ImportHwWalletRequest
    string xpubRoot = 4;
    string xpubNestedSegwit = 5;
    string xpubNativeSegwit = 6;
+   string xpubLegacy = 7;
 }

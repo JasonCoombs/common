@@ -291,7 +291,7 @@ bool Wallet::getSpendableTxOutList(const ArmoryConnection::UTXOsCb &cb, uint64_t
       }
       std::vector<UTXO> txOutListCopy = txOutList;
       if (UtxoReservation::instance() && excludeReservation) {
-         UtxoReservation::instance()->filter(txOutListCopy);
+         UtxoReservation::instance()->filter(txOutListCopy, reservedUTXOs_);
       }
       cb(bs::selectUtxoForAmount(std::move(txOutListCopy), val));
    };
@@ -341,6 +341,11 @@ bool Wallet::getRBFTxOutList(const ArmoryConnection::UTXOsCb &cb) const
 
    armory_->getRBFoutputs(walletIDs, cb);
    return true;
+}
+
+std::vector<UTXO> Wallet::getIncompleteUTXOs() const
+{
+   return reservedUTXOs_;
 }
 
 void Wallet::setWCT(WalletCallbackTarget *wct)
@@ -588,11 +593,11 @@ void Wallet::onZeroConfReceived(const std::vector<bs::TXEntry> &entries)
                wct_->balanceUpdated(walletId());
             }
          };
-         armory->getTxByHash(op.getTxHash(), cbPrevTX);
+         armory->getTxByHash(op.getTxHash(), cbPrevTX, true);
       }
    };
    for (const auto &entry : entries) {
-      armory_->getTxByHash(entry.txHash, cbTX);
+      armory_->getTxByHash(entry.txHash, cbTX, true);
    }
    updateBalances([this, handle = validityFlag_.handle(), logger=logger_]() mutable {    // TxNs are not updated for ZCs
       ValidityGuard lock(handle);
@@ -833,6 +838,10 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
             recipMap.emplace(idMap++, recip);
          }
       }
+      if (recipMap.empty()) {
+         const auto &tmpAddr = bs::Address::fromUTXO(inputs.front());
+         recipMap[idMap++] = tmpAddr.getRecipient(bs::XBTAmount{ 0.00001 });
+      }
 
       PaymentStruct payment(recipMap, 0, feePerByte, ADJUST_FEE);
       for (auto &utxo : utxos) {
@@ -855,19 +864,6 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
          SPDLOG_LOGGER_ERROR(logger_, "coin selection failed: {}, all inputs will be used", e.what());
       }
    }
-/*   else {    // use all supplied inputs
-      size_t nbUtxos = 0;
-      for (auto &utxo : utxos) {
-         inputAmount += utxo.getValue();
-         nbUtxos++;
-         if (inputAmount >= (spendVal + fee)) {
-            break;
-         }
-      }
-      if (nbUtxos < utxos.size()) {
-         utxos.erase(utxos.begin() + nbUtxos, utxos.end());
-      }
-   }*/
 
    if (utxos.empty()) {
       throw std::logic_error("No UTXOs");
@@ -887,6 +883,7 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
       }
       for (const auto &spender : prevStateSigner.spenders()) {
          signer.addSpender(spender);
+         spendVal += spender->getValue();
       }
    }
    signer.setFlags(SCRIPT_VERIFY_SEGWIT);
@@ -902,9 +899,6 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
       signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue()));
       request.inputs.push_back(utxo);
       inputAmount += utxo.getValue();
-/*      if (inputAmount >= (spendVal + fee)) {
-         break;
-      }*/   // use all provided inputs now (will be uncommented if some logic depends on it)
    }
    if (!inputAmount) {
       throw std::logic_error("No inputs detected");

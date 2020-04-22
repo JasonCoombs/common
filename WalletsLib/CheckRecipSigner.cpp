@@ -57,7 +57,7 @@ void bs::TxAddressChecker::containsInputAddress(Tx tx, std::function<void(bool)>
       return;
    }
 
-   if (!armory_->getTxByHash(op.getTxHash(), cbTX)) {
+   if (!armory_->getTxByHash(op.getTxHash(), cbTX, true)) {
       cb(false);
    }
 }
@@ -174,7 +174,7 @@ void CheckRecipSigner::hasInputAddress(const bs::Address &addr, std::function<vo
       cb(false);
    }
    else {
-      armory_->getTXsByHash(txHashSet_, cbTXs);
+      armory_->getTXsByHash(txHashSet_, cbTXs, true);
    }
 }
 
@@ -317,7 +317,7 @@ bool CheckRecipSigner::GetInputAddressList(const std::shared_ptr<spdlog::logger>
          cb({});
       }
       else {
-         armory_->getTXsByHash(txHashSet_, cbTXs);
+         armory_->getTXsByHash(txHashSet_, cbTXs, true);
       }
    };
 
@@ -337,7 +337,7 @@ bool CheckRecipSigner::GetInputAddressList(const std::shared_ptr<spdlog::logger>
       return false;
    }
    else {
-      armory_->getTXsByHash(outputHashSet, cbOutputTXs);
+      armory_->getTXsByHash(outputHashSet, cbOutputTXs, true);
    }
    return true;
 }
@@ -424,7 +424,7 @@ void TxChecker::hasSpender(const bs::Address &addr, const std::shared_ptr<Armory
       cb(false);
    }
    else {
-      armory->getTXsByHash(result->txHashSet, cbTXs);
+      armory->getTXsByHash(result->txHashSet, cbTXs, true);
    }
 }
 

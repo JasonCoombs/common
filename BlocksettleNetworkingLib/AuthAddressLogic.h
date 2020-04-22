@@ -290,6 +290,8 @@ public:
       const bs::Address&, std::shared_ptr<ResolverFeed>) const;
    BinaryData revokeUserAddress(
       const bs::Address&, std::shared_ptr<ResolverFeed>);
+
+   std::vector<UTXO> filterAuthFundingUTXO(const std::vector<UTXO>& authInputs);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

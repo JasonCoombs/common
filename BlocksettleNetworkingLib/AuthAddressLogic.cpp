@@ -10,7 +10,20 @@
 */
 #include "AuthAddressLogic.h"
 
-constexpr uint64_t kAuthValueThreshold = 1000;
+namespace {
+   constexpr uint64_t kAuthValueThreshold = 1000;
+
+   const auto kMaxFutureWaitTime = std::chrono::seconds(30);
+
+   template<class T>
+   void checkFutureWait(std::future<T> &f)
+   {
+      if (f.wait_for(kMaxFutureWaitTime) != std::future_status::ready) {
+         throw std::runtime_error("future wait timeout");
+      }
+   }
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void ValidationAddressACT::onRefresh(const std::vector<BinaryData>& ids, bool online)
@@ -344,6 +357,7 @@ unsigned ValidationAddressManager::update()
 
    //grab all txouts
    connPtr_->getOutpointsFor(addrVec, opLbd, topBlock_, zcIndex_);
+   checkFutureWait(futPtr);
    return futPtr.get();
 }
 
@@ -542,6 +556,7 @@ BinaryData ValidationAddressManager::fundUserAddress(
    };
 
    getOutpointBatch(addr, outpointCb);
+   checkFutureWait(fut);
    if (!fut.get()) {
       throw AuthLogicException("can only vet virgin user addresses");
    }
@@ -557,6 +572,7 @@ BinaryData ValidationAddressManager::fundUserAddress(
    };
    getSpendableTxOutFor(validationAddr, spendableCb);
 
+   checkFutureWait(fut2);
    const auto utxo = fut2.get();
    if (!utxo.isInitialized()) {
       throw AuthLogicException("could not select a utxo to vet with");
@@ -702,6 +718,7 @@ BinaryData ValidationAddressManager::revokeValidationAddress(
    };
 
    walletObj_->getSpendableTxOutListForValue(UINT64_MAX, spendableCb);
+   checkFutureWait(fut);
    auto&& firstUtxo = fut.get();
 
    //spend it
@@ -782,6 +799,7 @@ BinaryData ValidationAddressManager::revokeUserAddress(
    };
 
    connPtr_->getUTXOsForAddress(validationAddr, utxoLbd);
+   checkFutureWait(fut);
    auto&& utxo = fut.get();
 
    //3: spend to the user address
@@ -891,6 +909,7 @@ std::vector<OutpointData> AuthAddressLogic::getValidPaths(
       promPtr->set_value({});
    }
 
+   checkFutureWait(futPtr);
    //sanity check on the address history
    auto&& opMap = futPtr.get();
    if (opMap.size() != 1) {
@@ -1029,6 +1048,7 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    };
 
    vam.connPtr()->getUTXOsForAddress(addr, utxosLbd, true);
+   checkFutureWait(fut);
    auto&& revokeUtxo = fut.get();
 
    //we're sending the coins back to the relevant validation address
@@ -1064,4 +1084,31 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &addr
 
    signer.sign();
    return signer.serialize();
+}
+
+std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
+{
+   std::vector<UTXO> result;
+
+   for (const auto& utxo : authInputs) try {
+      const auto authAddr = utxo.getRecipientScrAddr();
+      auto maStructPtr = getValidationAddress(authAddr);
+      if (maStructPtr == nullptr) {
+         continue;
+      }
+
+      if (!isValid(authAddr)) {
+         continue;
+      }
+
+      if (maStructPtr->isFirstOutpoint(utxo.getTxHash(), utxo.getTxOutIndex())) {
+         continue;
+      }
+
+      result.emplace_back(utxo);
+   } catch (...) {
+      continue;
+   }
+
+   return result;
 }

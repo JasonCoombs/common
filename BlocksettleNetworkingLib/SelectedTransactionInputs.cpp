@@ -27,10 +27,10 @@ SelectedTransactionInputs::SelectedTransactionInputs(const std::shared_ptr<bs::s
    ResetInputs(cbInputsReset);
 }
 
-SelectedTransactionInputs::SelectedTransactionInputs(const std::shared_ptr<bs::sync::hd::Group> &group
+SelectedTransactionInputs::SelectedTransactionInputs(const std::vector<std::shared_ptr<bs::sync::Wallet>> &wallets
    , bool isSegWitInputsOnly, bool confirmedOnly
    , const CbSelectionChanged &selectionChanged, const std::function<void()> &cbInputsReset)
-   : QObject(nullptr), wallets_(group->getAllLeaves())
+   : QObject(nullptr), wallets_(wallets)
    , isSegWitInputsOnly_(isSegWitInputsOnly)
    , confirmedOnly_(confirmedOnly)
    , selectionChanged_(selectionChanged)
@@ -330,6 +330,16 @@ std::map<UTXO, std::string> SelectedTransactionInputs::getSelectedInputs() const
             result[utxo] = {};
          }
       }
+   }
+   return result;
+}
+
+std::vector<UTXO> SelectedTransactionInputs::getIncompleteUTXOs() const
+{
+   std::vector<UTXO> result;
+   for (const auto &wallet : wallets_) {
+      const auto &incomplete = wallet->getIncompleteUTXOs();
+      result.insert(result.cend(), incomplete.cbegin(), incomplete.cend());
    }
    return result;
 }

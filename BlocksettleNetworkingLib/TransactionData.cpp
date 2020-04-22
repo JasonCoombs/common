@@ -55,6 +55,7 @@ bool TransactionData::setWallet(const std::shared_ptr<bs::sync::Wallet> &wallet
    }
    if (wallet != wallet_) {
       wallet_ = wallet;
+      group_ = nullptr;
 
       selectedInputs_ = std::make_shared<SelectedTransactionInputs>(wallet_
          , isSegWitInputsOnly_, confirmedInputs_
@@ -86,25 +87,32 @@ bool TransactionData::setWallet(const std::shared_ptr<bs::sync::Wallet> &wallet
 }
 
 bool TransactionData::setGroup(const std::shared_ptr<bs::sync::hd::Group> &group
-   , uint32_t topBlock, bool resetInputs, const std::function<void()> &cbInputsReset)
+   , uint32_t topBlock, bool excludeLegacy, bool resetInputs, const std::function<void()> &cbInputsReset)
 {
    if (!group) {
       return false;
    }
+   std::vector<std::shared_ptr<bs::sync::Wallet>> wallets;
+   BTCNumericTypes::balance_type spendableBalance = 0;
+   const auto leaves = group->getLeaves();
+   for (const auto &leaf : leaves) {
+      if (excludeLegacy && leaf->purpose() == bs::hd::Purpose::NonSegWit) {
+         continue;
+      }
+
+      spendableBalance += leaf->getSpendableBalance();
+      wallets.push_back(leaf);
+   }
+
    if (group != group_) {
       wallet_ = nullptr;
       group_ = group;
-      const auto leaves = group->getAllLeaves();
+      
       if (!leaves.empty()) {
          wallet_ = leaves.front();
       }
 
-      BTCNumericTypes::balance_type spendableBalance = 0;
-      for (const auto &leaf : leaves) {
-         spendableBalance += leaf->getSpendableBalance();
-      }
-
-      selectedInputs_ = std::make_shared<SelectedTransactionInputs>(group_
+      selectedInputs_ = std::make_shared<SelectedTransactionInputs>(wallets
          , isSegWitInputsOnly_, confirmedInputs_
          , [this]() {
          InvalidateTransactionData();
@@ -121,7 +129,7 @@ bool TransactionData::setGroup(const std::shared_ptr<bs::sync::hd::Group> &group
       if (selectedInputs_) {
          selectedInputs_->ResetInputs(cbInputsReset);
       } else {
-         selectedInputs_ = std::make_shared<SelectedTransactionInputs>(group_
+         selectedInputs_ = std::make_shared<SelectedTransactionInputs>(wallets
             , isSegWitInputsOnly_, confirmedInputs_
             , [this] { InvalidateTransactionData(); }
          , cbInputsReset);
@@ -659,17 +667,6 @@ bool TransactionData::UpdateRecipientAmount(unsigned int recipientId, double amo
    }
 
    return result;
-}
-
-std::vector<unsigned int> TransactionData::GetRecipientIdList() const
-{
-   std::vector<unsigned int> idList;
-   idList.reserve(recipients_.size());
-   for (const auto& it : recipients_) {
-      idList.emplace_back(it.first);
-   }
-
-   return idList;
 }
 
 std::shared_ptr<ScriptRecipient> TransactionData::GetScriptRecipient(unsigned int recipientId) const

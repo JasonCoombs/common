@@ -58,6 +58,16 @@ void hd::Path::setHardened(size_t index, bool value)
    }
 }
 
+std::vector<bs::hd::Path::Elem>::const_iterator hd::Path::begin() const
+{
+   return path_.cbegin();
+}
+
+std::vector<bs::hd::Path::Elem>::const_iterator hd::Path::end() const
+{
+   return path_.cend();
+}
+
 hd::Path::Elem hd::Path::get(int index) const
 {
    if (path_.empty()) {
@@ -155,6 +165,18 @@ std::string hd::Path::elemToKey(hd::Path::Elem elem)
 void hd::Path::append(const std::string &key)
 {
    append(keyToElem(key));
+}
+
+void hd::Path::append(const hd::Path& childPath)
+{
+   for (auto element : childPath) {
+      path_.push_back(element);
+   }
+}
+
+void hd::Path::pop()
+{
+   path_.pop_back();
 }
 
 std::string hd::Path::toString() const
