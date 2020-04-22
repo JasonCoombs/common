@@ -27,10 +27,10 @@ SelectedTransactionInputs::SelectedTransactionInputs(const std::shared_ptr<bs::s
    ResetInputs(cbInputsReset);
 }
 
-SelectedTransactionInputs::SelectedTransactionInputs(const std::shared_ptr<bs::sync::hd::Group> &group
+SelectedTransactionInputs::SelectedTransactionInputs(const std::vector<std::shared_ptr<bs::sync::Wallet>> &wallets
    , bool isSegWitInputsOnly, bool confirmedOnly
    , const CbSelectionChanged &selectionChanged, const std::function<void()> &cbInputsReset)
-   : QObject(nullptr), wallets_(group->getAllLeaves())
+   : QObject(nullptr), wallets_(wallets)
    , isSegWitInputsOnly_(isSegWitInputsOnly)
    , confirmedOnly_(confirmedOnly)
    , selectionChanged_(selectionChanged)

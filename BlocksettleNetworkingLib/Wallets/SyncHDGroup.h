@@ -47,6 +47,7 @@ namespace bs {
 
             size_t getNumLeaves() const { return leaves_.size(); }
             std::shared_ptr<hd::Leaf> getLeaf(const bs::hd::Path &) const;
+            std::shared_ptr<hd::Leaf> getLeaf(bs::hd::Purpose) const;
 //            std::shared_ptr<hd::Leaf> getLeaf(const std::string &key) const;
             std::vector<std::shared_ptr<hd::Leaf>> getLeaves() const;
             std::vector<std::shared_ptr<bs::sync::Wallet>> getAllLeaves() const;
