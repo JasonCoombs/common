@@ -193,6 +193,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString()) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideCreateAccountPromptTestnet,   SettingDef(QStringLiteral("HideCreateAccountPromptTestnet")) },
+      { HideLegacyWalletWarning,          SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
    };
 }
 
