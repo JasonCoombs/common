@@ -311,13 +311,18 @@ namespace bs {
 
          struct TXMultiSignRequest
          {
-            std::map<UTXO, std::string>     inputs;     // per-wallet UTXOs
+            struct UtxoData {
+               UTXO utxo_;
+               std::string walletId_;
+            };
+
+            std::vector<UtxoData>  inputs;     // per-wallet UTXOs
             std::vector<std::shared_ptr<ScriptRecipient>>   recipients;
             BinaryData  prevState;
             bool RBF;
 
             bool isValid() const noexcept;
-            void addInput(const UTXO &utxo, const std::string &walletId) { inputs[utxo] = walletId; }
+            void addInput(const UTXO &utxo, const std::string &walletId) { inputs.push_back({ utxo, walletId }); }
          };
 
 
@@ -356,7 +361,7 @@ namespace bs {
          int id_;
       };
 
-
+      using InputSigs = std::map<unsigned int, BinaryData>;
       class Wallet : protected wallet::MetaData   // Abstract parent for generic wallet classes
       {
       public:
@@ -432,7 +437,6 @@ namespace bs {
             , bool keepDuplicatedRecipients = false);
          virtual BinaryData signPartialTXRequest(const wallet::TXSignRequest &);
 
-         using InputSigs = std::map<unsigned int, BinaryData>;
          virtual BinaryData signTXRequestWithWitness(const wallet::TXSignRequest &
             , const InputSigs &);
 
@@ -463,6 +467,7 @@ namespace bs {
 
       using WalletMap = std::unordered_map<std::string, std::shared_ptr<Wallet>>;   // key is wallet id
       BinaryData SignMultiInputTX(const wallet::TXMultiSignRequest &, const WalletMap &, bool partial = false);
+      BinaryData SignMultiInputTXWithWitness(const wallet::TXMultiSignRequest &, const WalletMap &, const InputSigs &);
 
    }  //namespace core
 }  //namespace bs
