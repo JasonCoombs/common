@@ -1090,7 +1090,7 @@ std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vec
 {
    std::vector<UTXO> result;
 
-   for (const auto& utxo : authInputs) {
+   for (const auto& utxo : authInputs) try {
       const auto authAddr = utxo.getRecipientScrAddr();
       auto maStructPtr = getValidationAddress(authAddr);
       if (maStructPtr == nullptr) {
@@ -1106,6 +1106,8 @@ std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vec
       }
 
       result.emplace_back(utxo);
+   } catch (...) {
+      continue;
    }
 
    return result;
