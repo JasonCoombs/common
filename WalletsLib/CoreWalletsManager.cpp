@@ -103,6 +103,11 @@ WalletsManager::HDWalletPtr WalletsManager::loadWoWallet(NetworkType netType
          wallet->changeControlPassword({}, controlPassphrase);
       }
 
+      if (getHDWalletById(wallet->walletId())) {
+         logger_->error("Wallet {} already exists", wallet->walletId());
+         return nullptr;
+      }
+
       saveWallet(wallet);
       return wallet;
    } catch (const std::exception &e) {
