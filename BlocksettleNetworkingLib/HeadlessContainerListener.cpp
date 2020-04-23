@@ -425,7 +425,12 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          if (rootWallet->isHardwareWallet() && rootWallet->encryptionKeys()[0].toBinStr() == "Ledger") {
             // For ledger hw data is not prepared straight away
             Blocksettle::Communication::headless::InputSigs sigs;
-            assert(sigs.ParseFromString(pass.toBinStr()));
+            if (!sigs.ParseFromString(pass.toBinStr())) {
+               logger_->error("[{}] Cannot parse sig sign response"
+                  , __func__);
+               SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
+               return;
+            }
 
             bs::core::InputSigs inputSigs;
             for (size_t i = 0; i < sigs.inputsig_size(); ++i) {
