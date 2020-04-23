@@ -248,7 +248,7 @@ const UTXO& SelectedTransactionInputs::GetTransaction(size_t i) const
 
 bool SelectedTransactionInputs::IsTransactionSelected(size_t i) const
 {
-   if (i < 0 || i >= selection_.size()) {
+   if (i >= selection_.size()) {
       return false;
    }
 
