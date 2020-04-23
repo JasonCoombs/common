@@ -128,6 +128,7 @@ public:
    void setValue(const bs::sync::dialog::keys::Key &key, const std::string &value);
    void setValue(const bs::sync::dialog::keys::Key &key, int32_t value);
    void setValue(const bs::sync::dialog::keys::Key &key, double value);
+   void setValue(const bs::sync::dialog::keys::Key &key, const QByteArray &value);
 
    void remove(const bs::sync::dialog::keys::Key &key);
 
