@@ -425,17 +425,56 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          if (rootWallet->isHardwareWallet() && rootWallet->encryptionKeys()[0].toBinStr() == "Ledger") {
             // For ledger hw data is not prepared straight away
             Blocksettle::Communication::headless::InputSigs sigs;
-            assert(sigs.ParseFromString(pass.toBinStr()));
+            if (!sigs.ParseFromString(pass.toBinStr())) {
+               logger_->error("[{}] Cannot parse sig sign response"
+                  , __func__);
+               SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
+               return;
+            }
 
-            bs::core::Wallet::InputSigs inputSigs;
+            bs::core::InputSigs inputSigs;
             for (size_t i = 0; i < sigs.inputsig_size(); ++i) {
                auto sig = sigs.inputsig(i);
                inputSigs[sig.index()] = BinaryData::fromString(sig.data());
             }
 
-            auto wallet = wallets[0];
-            auto signedTx = wallet->signTXRequestWithWitness(txSignReq, inputSigs);
-            SignTXResponse(clientId, id, reqType, ErrorCode::NoError, signedTx);
+            if (wallets.size() == 1) {
+               auto signedTx = wallets[0]->signTXRequestWithWitness(txSignReq, inputSigs);
+               SignTXResponse(clientId, id, reqType, ErrorCode::NoError, signedTx);
+            }
+            else {
+               bs::core::wallet::TXMultiSignRequest multiReq;
+               multiReq.recipients = txSignReq.recipients;
+               if (txSignReq.change.value) {
+                  multiReq.recipients.push_back(txSignReq.change.address.getRecipient(bs::XBTAmount{ txSignReq.change.value }));
+               }
+               if (!txSignReq.prevStates.empty()) {
+                  multiReq.prevState = txSignReq.prevStates.front();
+               }
+               multiReq.RBF = txSignReq.RBF;
+
+               bs::core::WalletMap wallets;
+               for (const auto &input : txSignReq.inputs) {
+                  const auto addr = bs::Address::fromUTXO(input);
+                  const auto wallet = walletsMgr_->getWalletByAddress(addr);
+                  if (!wallet) {
+                     logger_->error("[{}] failed to find wallet for input address {}"
+                        , __func__, addr.display());
+                     SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
+                     return;
+                  }
+                  multiReq.addInput(input, wallet->walletId());
+                  wallets[wallet->walletId()] = wallet;
+               }
+
+               BinaryData tx;
+               {
+                  const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
+                  tx = bs::core::SignMultiInputTXWithWitness(multiReq, wallets, inputSigs);
+               }
+               SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
+            }
+
          }
          else {
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, pass);
