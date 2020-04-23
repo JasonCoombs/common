@@ -372,6 +372,15 @@ void hd::Wallet::createChatPrivKey()
    tx->insert(bwKey.getData(), chatNode_.getBase58());
 }
 
+void hd::Wallet::convertHardwareToWo()
+{
+   if (pwdMeta_.at(0).encType != bs::wallet::Hardware) {
+      throw std::logic_error("Only hardware wallet could be converted to WO");
+   }
+   pwdMeta_.at(0).encType = bs::wallet::Unencrypted;
+   writeToDB(true);
+}
+
 BIP32_Node hd::Wallet::getChatNode() const
 {
    if (!chatNode_.getPrivateKey().empty()) {
