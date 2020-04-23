@@ -259,6 +259,7 @@ namespace bs {
          {
             std::vector<std::string>   walletIds;
             std::vector<UTXO>          inputs;
+            std::vector<std::string>   inputIndices;
             std::vector<std::shared_ptr<ScriptRecipient>>   recipients;
             std::map<BinaryData, BinaryData> supportingTxMap_;
             OutputSortOrder   outSortOrder{ OutputOrderType::PrevState

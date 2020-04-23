@@ -213,13 +213,8 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
 
                         auto recipients = std::vector<std::shared_ptr<ScriptRecipient>>(1, recipient);
                         try {
-                           std::vector<std::string> walletIds;
-                           for (const auto &wallet : args.inputXbtWallets) {
-                              walletIds.push_back(wallet->walletId());
-                           }
-
-                           std::string changeIndex = changeAddr.empty() ? "" : xbtWallet->getAddressIndex(changeAddr);
-                           result.signRequest = bs::sync::wallet::createTXRequest(walletIds, selectedInputs, recipients, changeAddr, changeIndex, fee, false);
+                           result.signRequest = bs::sync::wallet::createTXRequest(args.inputXbtWallets, selectedInputs
+                              , recipients, changeAddr, fee, false);
                            result.preimageData = preimages;
                            result.payinHash = result.signRequest.txId(resolver);
 
