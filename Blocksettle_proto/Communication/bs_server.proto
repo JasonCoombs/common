@@ -60,6 +60,7 @@ enum ArmoryMessageType
    ArmoryUpdateAuthAddrs   = 17;
    ArmoryUpdateCcAddrs     = 18;
    ArmoryPushXbtTXs        = 19;
+   ArmoryGetOutputsForOPs  = 20;
 }
 
 enum ArmoryStateData
@@ -147,12 +148,13 @@ message ArmoryStopSettlementRequest
    string settlement_id = 1;
 }
 
+message OutPoints {
+   bytes tx_hash = 1;
+   repeated uint32 out_indices = 2;
+}
+
 message ArmorySpentnessRequest
 {
-   message OutPoints {
-      bytes tx_hash = 1;
-      repeated uint32 out_indices = 2;
-   }
    repeated OutPoints outpoints = 1;
 }
 
@@ -224,6 +226,19 @@ message ArmoryGetOutpointsResponse
    repeated OutPointData outpoints = 1;
 }
 
+message ArmoryGetOutputsForOPsRequest
+{
+   repeated OutPoints outpoints = 1;
+   bool with_ZC = 2;
+   string settlement_id = 3;
+}
+
+message ArmoryGetOutputsForOPsResponse
+{
+   repeated bytes utxos = 1;
+   string settlement_id = 2;
+}
+
 message ArmoryMessage
 {
    ArmoryMessageType type = 1;
@@ -249,6 +264,8 @@ message ArmoryMessage
       ArmoryUpdateAuthAddrsRequest update_auth_addrs = 21;
       ArmoryUpdateCcAddrsRequest update_cc_addrs = 22;
       ArmoryPushXbtTXsRequest push_xbt_txs_request = 23;
+      ArmoryGetOutputsForOPsRequest  outs_for_ops_request = 24;
+      ArmoryGetOutputsForOPsResponse outs_for_ops_response = 25;
    }
 }
 
