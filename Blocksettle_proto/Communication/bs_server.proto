@@ -351,7 +351,7 @@ enum GenoaType
    GenoaCancelCCReservation      = 12;
    GenoaCancelXBTReservation     = 13;
    GenoaReserveCashXBT           = 14;
-   GenoaUpdateXbtCashReserve     = 15;
+   GenoaUpdateReservation        = 15;
    GenoaCompleteXbtCashTransfer  = 16;
    GenoaExecuteFxTrade           = 19;
    GenoaFindOrdersForUser        = 20;
@@ -487,7 +487,7 @@ message GenoaReserveXbtResponse
    CustomerAccountData changed_account = 6;
 }
 
-message GenoaUpdateXbtReserveRequest
+message GenoaUpdateReserveRequest
 {
    string reserve_id = 1;
    repeated KeyValue values = 2;
@@ -677,7 +677,7 @@ message GenoaMessage
       GenoaTradingStatusResponse       trd_status_response        = 11;
       TradeDataXbtMessage              xbt_reserve_request        = 12;
       GenoaReserveXbtResponse          xbt_reserve_response       = 13;
-      GenoaUpdateXbtReserveRequest     xbt_update_res_request     = 14;
+      GenoaUpdateReserveRequest        update_reservation_request = 14;
       bool                             success_response           = 15;
       TradeDataMessage                 fx_trade_request           = 16;
       GenoaFxTradeResponse             fx_trade_response          = 17;
