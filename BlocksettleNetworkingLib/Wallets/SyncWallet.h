@@ -70,14 +70,23 @@ namespace bs {
             }
          };
 
-         // if there is change then changeAddr must be set
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<sync::Wallet*> &wallets
+         // if there is change then changeAddr must be set.
+         // inputIndices required for HW wallets only.
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::string> &walletsIds
+            , const std::vector<UTXO> &inputs
+            , const std::vector<std::string> &inputIndices
+            , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , const bs::Address &changeAddr = {}
+            , const std::string &changeIndex = {}
+            , const uint64_t fee = 0, bool isRBF = false);
+
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<sync::Wallet>> &wallets
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
             , const bs::Address &changeAddr = {}

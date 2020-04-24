@@ -756,17 +756,17 @@ void Wallet::init(bool force)
    }
 }
 
-bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<sync::Wallet*> &wallets
+bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::string> &walletsIds
    , const std::vector<UTXO> &inputs
+   , const std::vector<std::string> &inputIndices
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::Address &changeAddr
-   , const uint64_t fee, bool isRBF)
+   , const std::string &changeIndex
+   , const uint64_t fee
+   , bool isRBF)
 {
    bs::core::wallet::TXSignRequest request;
-   for (const auto &wallet : wallets) {
-      request.walletIds.push_back(wallet->walletId());
-   }
-
+   request.walletIds = walletsIds;
    uint64_t inputAmount = 0;
    uint64_t spendAmount = 0;
 
@@ -778,21 +778,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<sync::
       inputAmount += utxo.getValue();
    }
    request.inputs = inputs;
-
-   for (const auto &utxo : inputs) {
-      auto inputAddress = bs::Address::fromUTXO(utxo);
-      std::string inputIndex;
-      for (const auto &wallet : wallets) {
-         inputIndex = wallet->getAddressIndex(inputAddress);
-         if (!inputIndex.empty()) {
-            break;
-         }
-      }
-      if (inputIndex.empty()) {
-         throw std::logic_error(fmt::format("can't find index for input address {}", inputAddress.display()));
-      }
-      request.inputIndices.push_back(inputIndex);
-   }
+   request.inputIndices = inputIndices;
 
    for (const auto& recipient : recipients) {
       if (recipient == nullptr) {
@@ -816,29 +802,63 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<sync::
 
       request.change.value = changeAmount;
       request.change.address = changeAddr;
-
-      for (const auto &wallet : wallets) {
-         auto index = wallet->getAddressIndex(changeAddr);
-         if (!index.empty()) {
-            request.change.index = index;
-            break;
-         }
-      }
-      if (request.change.index.empty()) {
-         throw std::logic_error("can't find change address index");
-      }
+      request.change.index = changeIndex;
    }
 
    return request;
 }
 
-bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<sync::Wallet>> &wallets
+bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet*> &wallets
    , const std::vector<UTXO> &inputs
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
 {
-   std::vector<sync::Wallet*> walletsCopy;
+   std::vector<std::string> walletIds;
+   for (const auto &wallet : wallets) {
+      walletIds.push_back(wallet->walletId());
+   }
+
+   std::vector<std::string> inputIndices;
+   for (const auto &utxo : inputs) {
+      auto inputAddress = bs::Address::fromUTXO(utxo);
+      std::string inputIndex;
+      for (const auto &wallet : wallets) {
+         inputIndex = wallet->getAddressIndex(inputAddress);
+         if (!inputIndex.empty()) {
+            inputIndices.push_back(inputIndex);
+            break;
+         }
+      }
+      if (inputIndex.empty()) {
+         throw std::logic_error(fmt::format("can't find index for input address {}", inputAddress.display()));
+      }
+   }
+
+   std::string changeIndex;
+   if (changeAddr.isValid()) {
+      for (const auto &wallet : wallets) {
+         auto index = wallet->getAddressIndex(changeAddr);
+         if (!index.empty()) {
+            changeIndex = index;
+            break;
+         }
+      }
+      if (changeIndex.empty()) {
+         throw std::logic_error("can't find change address index");
+      }
+   }
+
+   return createTXRequest(walletIds, inputs, inputIndices, recipients, changeAddr, changeIndex, fee, isRBF);
+}
+
+bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
+   , const std::vector<UTXO> &inputs
+   , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
+   , const bs::Address &changeAddr
+   , const uint64_t fee, bool isRBF)
+{
+   std::vector<Wallet*> walletsCopy;
    for (const auto &wallet : wallets) {
       walletsCopy.push_back(wallet.get());
    }
