@@ -28,6 +28,9 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    for (const auto &utxo : txSignReq.inputs) {
       request.add_inputs(utxo.serialize().toBinStr());
    }
+   for (const auto &inputIndex : txSignReq.inputIndices) {
+      request.add_input_indices(inputIndex);
+   }
 
    for (const auto &recip : txSignReq.recipients) {
       request.add_recipients(recip->getSerializedScript().toBinStr());
@@ -82,6 +85,8 @@ bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::Si
          txSignReq.inputs.push_back(utxo);
       }
    }
+   txSignReq.inputIndices.insert(txSignReq.inputIndices.end()
+      , request.input_indices().begin(), request.input_indices().end());
 
    uint64_t outputVal = 0;
    for (int i = 0; i < request.recipients_size(); i++) {

@@ -257,6 +257,11 @@ void bs::sync::PasswordDialogData::setValue(const dialog::keys::Key &key, double
    setValueImpl(key, value);
 }
 
+void bs::sync::PasswordDialogData::setValue(const bs::sync::dialog::keys::Key &key, const QByteArray &value)
+{
+   setValueImpl(key, value);
+}
+
 void bs::sync::PasswordDialogData::remove(const bs::sync::dialog::keys::Key &key)
 {
    removeImpl(key.toQString());

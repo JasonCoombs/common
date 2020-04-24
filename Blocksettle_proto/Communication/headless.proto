@@ -102,6 +102,7 @@ message SignTxRequest
 {
    repeated string                  walletId = 1;
    repeated bytes                   inputs = 2;
+   repeated string                  input_indices = 12;
    repeated bytes                   recipients = 3;
    uint64                           fee = 4;
    bool                             RBF = 5;

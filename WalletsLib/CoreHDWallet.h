@@ -102,6 +102,7 @@ namespace bs {
             void createStructure(unsigned lookup = UINT32_MAX);
             void createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup = UINT32_MAX);
             void createChatPrivKey();
+            void convertHardwareToWo();
 
             void shutdown();
             bool eraseFile();
