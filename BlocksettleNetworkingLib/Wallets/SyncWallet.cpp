@@ -826,13 +826,11 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       for (const auto &wallet : wallets) {
          inputIndex = wallet->getAddressIndex(inputAddress);
          if (!inputIndex.empty()) {
-            inputIndices.push_back(inputIndex);
             break;
          }
       }
-      if (inputIndex.empty()) {
-         throw std::logic_error(fmt::format("can't find index for input address {}", inputAddress.display()));
-      }
+      // inputIndex could be empty (for example for P2WSH payout input)
+      inputIndices.push_back(inputIndex);
    }
 
    std::string changeIndex;
