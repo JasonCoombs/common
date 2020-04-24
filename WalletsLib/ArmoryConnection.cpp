@@ -687,7 +687,8 @@ bool ArmoryConnection::getOutputsForOutpoints(const std::map<BinaryData
    const std::function<void(const std::vector<UTXO> &, std::exception_ptr)> &cb)
 {
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
-      logger_->error("[{}] invalid state: {}", __func__, (int)state_.load());
+      logger_->error("[ArmoryConnection::getOutputsForOutpoints] invalid state: {}"
+         , (int)state_.load());
       return false;
    }
    const auto cbWrap = [logger = logger_, cb](ReturnMessage<std::vector<UTXO>> msg)
