@@ -80,13 +80,13 @@ namespace bs {
             , const std::string &changeIndex = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<sync::Wallet*> &wallets
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<sync::Wallet>> &wallets
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
             , const bs::Address &changeAddr = {}

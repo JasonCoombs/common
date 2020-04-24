@@ -808,7 +808,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
    return request;
 }
 
-bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<sync::Wallet*> &wallets
+bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet*> &wallets
    , const std::vector<UTXO> &inputs
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::Address &changeAddr
@@ -852,13 +852,13 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<sync::
    return createTXRequest(walletIds, inputs, inputIndices, recipients, changeAddr, changeIndex, fee, isRBF);
 }
 
-bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<sync::Wallet>> &wallets
+bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
    , const std::vector<UTXO> &inputs
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
 {
-   std::vector<sync::Wallet*> walletsCopy;
+   std::vector<Wallet*> walletsCopy;
    for (const auto &wallet : wallets) {
       walletsCopy.push_back(wallet.get());
    }
