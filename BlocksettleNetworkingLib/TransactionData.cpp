@@ -751,29 +751,25 @@ bs::core::wallet::TXSignRequest TransactionData::createTXRequest(bool isRBF
       return {};
    }
 
-   std::vector<std::string> walletIds;
-   for (const auto &wallet : wallets) {
-      walletIds.push_back(wallet->walletId());
-   }
-
-   std::string changeIndex;
    if (!changeAddr.empty()) {
+      bool changeAddrFound = false;
       for (const auto &wallet : wallets) {
-         changeIndex = wallet->getAddressIndex(changeAddr);
-         if (!changeIndex.empty()) {
+         if (!wallet->getAddressIndex(changeAddr).empty()) {
             wallet->setAddressComment(changeAddr, bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
+            changeAddrFound = true;
             break;
          }
       }
-      if (changeIndex.empty()) {
+      if (!changeAddrFound) {
          SPDLOG_LOGGER_ERROR(logger_, "can't find change address index");
          return {};
       }
    }
 
    const auto fee = summary_.totalFee ? summary_.totalFee : totalFee();
-   auto txReq = bs::sync::wallet::createTXRequest(walletIds, inputs(), GetRecipientList()
-      , changeAddr, changeIndex, fee, isRBF);
+
+   auto txReq = bs::sync::wallet::createTXRequest(wallets, inputs(), GetRecipientList()
+      , changeAddr, fee, isRBF);
    if (group_) {
       txReq.walletIds.clear();
       std::set<std::string> walletIds;
