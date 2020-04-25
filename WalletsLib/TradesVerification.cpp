@@ -394,7 +394,7 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
 }
 
 std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySignedPayin(const BinaryData &signedPayin
-   , const BinaryData &payinHash)
+   , const BinaryData &payinHash, const std::vector<UTXO> &prevUTXOs)
 {
    if (signedPayin.empty()) {
       return Result::error("no signed payin provided");
@@ -411,16 +411,36 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
          return Result::error(fmt::format("payin hash mismatch. Expected: {}. From signed payin: {}"
             , payinHash.toHexStr(), payinTx.getThisHash().toHexStr()));
       }
-
-      auto txSize = payinTx.getTxWeight();
-      if (txSize == 0) {
+      if (payinTx.getTxWeight() == 0) {
          return Result::error("failed to get TX weight");
       }
 
       auto result = std::make_shared<Result>();
-      result->success = true;
-      return result;
 
+      std::map<BinaryData, std::map<unsigned, UTXO>> prevUtxoMap;
+      for (const auto &utxo : prevUTXOs) {
+         prevUtxoMap[utxo.getTxHash()][utxo.getTxOutIndex()] = utxo;
+      }
+      try {
+         const auto &bctx = BCTX::parse(signedPayin);
+         TransactionVerifier tsv(*bctx, prevUtxoMap);
+         auto tsvFlags = tsv.getFlags();
+         tsvFlags |= SCRIPT_VERIFY_P2SH_SHA256 | SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_SEGWIT;
+         tsv.setFlags(tsvFlags);
+         result->success = tsv.verify();
+         if (!result->success) {
+            result->errorMsg = "TX verification against previous UTXOs failed";
+         }
+      }
+      catch (const std::exception &e) {
+         result->success = false;
+         result->errorMsg = std::string("TX verify error: ") + e.what();
+      }
+      catch (...) {
+         result->success = false;
+         result->errorMsg = "TX verify unknown error";
+      }
+      return result;
    }
    catch (const std::exception &e) {
       return Result::error(fmt::format("exception during payin processing: {}", e.what()));
