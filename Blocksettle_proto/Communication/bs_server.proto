@@ -1199,7 +1199,6 @@ message TerminalSignPayinRequest
 {
    string settlement_id = 1;
    bytes  unsigned_payin = 2;
-   bytes  signed_payout = 3;
 }
 
 message TerminalOtcStartRequest
