@@ -1141,21 +1141,15 @@ enum SettlementTxType
    SettlementTxPayoutTimeout = 5;
    SettlementTxCcMatchTimeout = 6;
    SettlementTxCcBroadcastTimeout = 7;
-   SettlementTxSetSettlementId = 10;	// used only for tests
+   SettlementTxStopXBTMonitor = 8;
 }
 
-message SettlementTxSetSettlementIdRequest
-{
-   string quote_request_id = 1;
-   string settlement_id = 2;
-}
 
 message SettlementTxMessage
 {
    SettlementTxType type = 1;
    oneof data {
       string trade_id = 2;
-      SettlementTxSetSettlementIdRequest settl_id_request = 3;
    }
 }
 
