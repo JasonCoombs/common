@@ -66,4 +66,33 @@ namespace bs {
       return (at != str.end()) && (dot != str.end());
    }
 
+   int convertToInt(const std::string& str, bool& converted)
+   {
+      converted = false;
+      try {
+         int result = std::stoi(str);
+         converted = true;
+         return result;
+      } catch (...) {
+         return 0;
+      }
+   }
+
+   bool convertToBool(const std::string& str, bool& converted)
+   {
+      auto inStr = toLower(str);
+
+      if (inStr == "false") {
+         converted = true;
+         return false;
+      }
+
+      if (inStr == "true") {
+         converted = true;
+         return true;
+      }
+
+      return convertToInt(inStr, converted) != 0;
+   }
+
 } // namespace bs
