@@ -398,6 +398,10 @@ message UserScoreUpdateEvent
       DealerFillRatioFailed            = 22;
 
       PayinDoubleSpend                 = 23;
+      // when trade failed due to timeout ( payin/payout delivery)
+      // or cancelled
+      // but somehow TX detected
+      ClosedXBTTradeProgressing       = 24;
    };
 
    string               user_email     = 1;
