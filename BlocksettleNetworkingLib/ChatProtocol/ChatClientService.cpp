@@ -34,6 +34,8 @@ ChatClientService::ChatClientService(QObject* parent /*= nullptr*/)
    connect(this, &ChatClientService::SearchUser, worker(), &ChatClientLogic::SearchUser);
    connect(this, &ChatClientService::AcceptNewPublicKeys, worker(), &ChatClientLogic::AcceptNewPublicKeys);
    connect(this, &ChatClientService::DeclineNewPublicKeys, worker(), &ChatClientLogic::DeclineNewPublicKeys);
+   connect(this, &ChatClientService::RequestPrivateMessagesHistoryCount, worker(), &ChatClientLogic::RequestPrivateMessagesHistoryCount);
+   connect(this, &ChatClientService::RequestAllHistoryMessages, worker(), &ChatClientLogic::RequestAllHistoryMessages);
 
    ////////// RETURN SIGNALS //////////
    connect(worker(), &ChatClientLogic::chatUserUserHashChanged, this, &ChatClientService::chatUserUserHashChanged);
@@ -43,6 +45,7 @@ ChatClientService::ChatClientService(QObject* parent /*= nullptr*/)
    connect(worker(), &ChatClientLogic::partyModelChanged, this, &ChatClientService::partyModelChanged);
    connect(worker(), &ChatClientLogic::initDone, this, &ChatClientService::initDone);
    connect(worker(), &ChatClientLogic::searchUserReply, this, &ChatClientService::searchUserReply);
+   connect(worker(), &ChatClientLogic::privateMessagesHistoryCount, this, &ChatClientService::privateMessagesHistoryCount);
 }
 
 ClientPartyModelPtr ChatClientService::getClientPartyModelPtr() const

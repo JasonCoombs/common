@@ -81,6 +81,8 @@ namespace Chat
       void SearchUser(const std::string& userHash, const std::string& searchId) const;
       void AcceptNewPublicKeys(const Chat::UserPublicKeyInfoList& userPublicKeyInfoList) const;
       void DeclineNewPublicKeys(const Chat::UserPublicKeyInfoList& userPublicKeyInfoList);
+      void RequestPrivateMessagesHistoryCount(const std::string& partyId) const;
+      void RequestAllHistoryMessages(const std::string& partyId) const;
 
    signals:
       void dataReceived(const std::string&);
@@ -100,6 +102,7 @@ namespace Chat
       void properlyConnected();
       void searchUserReply(const Chat::SearchUserReplyList& userHashList, const std::string& searchId);
       void otcPrivatePartyReady(const ClientPartyPtr& clientPartyPtr);
+      void privateMessagesHistoryCount(const std::string& partyId, quint64 count);
 
    private slots:
       void sendPacket(const google::protobuf::Message& message);

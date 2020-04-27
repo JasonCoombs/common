@@ -12,6 +12,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QMetaObject>
+#include <utility>
 
 #include "ChatProtocol/ClientDBLogic.h"
 #include "ChatProtocol/CryptManager.h"
@@ -44,7 +45,7 @@ void ClientDBLogic::Init(const Chat::LoggerPtr& loggerPtr, QString chatDbFile, c
    loggerPtr_ = loggerPtr;
    currentChatUserPtr_ = chatUserPtr;
    cryptManagerPtr_ = cryptManagerPtr;
-   chatDbFile_ = chatDbFile;
+   chatDbFile_ = std::move(chatDbFile);
 
    setLogger(loggerPtr);
 
@@ -436,6 +437,63 @@ void ClientDBLogic::checkUnsentMessages(const std::string& partyId)
    {
       emit unsentMessagesFound(partyId);
    }
+}
+
+void ClientDBLogic::requestAllHistoryMessages(const std::string& partyId, const std::string& userHash)
+{
+   const auto messagesCount = privateMessagesCount(partyId, userHash);
+   if (messagesCount == 0)
+   {
+      return;
+   }
+
+   readPrivateHistoryMessages(partyId, userHash, messagesCount, 0);
+}
+
+qint64 ClientDBLogic::privateMessagesCount(const std::string& partyId, const std::string& userHash)
+{
+   const auto cmd =
+      QStringLiteral(
+         "SELECT COUNT(*) FROM party_message "
+         "LEFT JOIN party on party.id=party_message.party_table_id "
+         "LEFT JOIN party_to_user ON party_to_user.party_table_id = party_message.party_table_id "
+         "LEFT JOIN user ON user.user_id = party_to_user.user_table_id "
+         "WHERE user.user_hash = :user_hash "
+         "AND party.party_sub_type <> 1 " // NOT OTC
+         "AND party.party_type <> 0 " // NOT Global
+         "AND party.party_id = :party_id; "
+      );
+
+   QSqlQuery query(getDb());
+   query.prepare(cmd);
+   query.bindValue(QStringLiteral(":user_hash"), QString::fromStdString(userHash));
+   query.bindValue(QStringLiteral(":party_id"), QString::fromStdString(partyId));
+
+   if (!checkExecute(query))
+   {
+      emit error(ClientDBLogicError::RequestPrivateMessagesHistoryCount, partyId);
+      return 0;
+   }
+
+   if (query.first())
+   {
+      const auto messagesCount = query.value(0).toString().toUInt();
+      
+      return messagesCount;
+   }
+
+   return 0;
+}
+
+void ClientDBLogic::requestPrivateMessagesHistoryCount(const std::string& partyId, const std::string& userHash)
+{
+   const auto messagesCount = privateMessagesCount(partyId, userHash);
+   if (messagesCount == 0)
+   {
+      return;
+   }
+
+   emit privateMessagesHistoryCount(partyId, messagesCount);
 }
 
 void ClientDBLogic::readPrivateHistoryMessages(const std::string& partyId, const std::string& userHash, const int limit, const int offset)

@@ -54,6 +54,8 @@ namespace Chat
       void checkRecipientPublicKey(const Chat::UniqieRecipientMap& uniqueRecipientMap);
       void cleanUnusedParties();
       void savePartyRecipients(const Chat::PartyPtr& partyPtr);
+      void requestPrivateMessagesHistoryCount(const std::string& partyId, const std::string& userHash);
+      void requestAllHistoryMessages(const std::string& partyId, const std::string& userHash);
 
       ////////// RETURN SIGNALS //////////
       void initDone();
@@ -65,6 +67,7 @@ namespace Chat
       void unsentMessagesFound(const std::string& partyId);
       void recipientKeysHasChanged(const Chat::UserPublicKeyInfoList& userPkList);
       void recipientKeysUnchanged();
+      void privateMessagesHistoryCount(const std::string& partyId, quint64 count);
    };
 
    using ClientDBServicePtr = std::shared_ptr<ClientDBService>;

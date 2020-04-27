@@ -39,6 +39,7 @@ namespace Chat
       UpdatePartyDisplayName,
       CheckUnsentMessages,
       ReadPrivateHistoryMessages,
+      RequestPrivateMessagesHistoryCount,
       CannotOpenDatabase,
       InsertRecipientKey,
       DeleteRecipientKey,
@@ -74,6 +75,8 @@ namespace Chat
       void checkRecipientPublicKey(const Chat::UniqieRecipientMap& uniqueRecipientMap);
       void clearUnusedParties();
       void savePartyRecipients(const Chat::PartyPtr& partyPtr);
+      void requestPrivateMessagesHistoryCount(const std::string& partyId, const std::string& userHash);
+      void requestAllHistoryMessages(const std::string& partyId, const std::string& userHash);
 
    signals:
       void initDone();
@@ -86,6 +89,7 @@ namespace Chat
       void unsentMessagesFound(const std::string& partyId);
       void recipientKeysHasChanged(const Chat::UserPublicKeyInfoList& userPkList);
       void recipientKeysUnchanged();
+      void privateMessagesHistoryCount(const std::string& partyId, quint64 count);
 
    private slots:
       void rebuildError();
@@ -98,6 +102,7 @@ namespace Chat
       bool getUserTableId(const std::string& userHash, std::string& userTableId);
       void saveRecipientKey(const PartyRecipientPtr& recipient);
       void insertNewUserHash(const std::string& userHash);
+      qint64 privateMessagesCount(const std::string& partyId, const std::string& userHash);
       QSqlDatabase getDb();
 
       ClientDatabaseCreatorPtr   databaseCreatorPtr_;
