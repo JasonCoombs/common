@@ -47,6 +47,8 @@ namespace Chat
       void SearchUser(const std::string& userHash, const std::string& searchId);
       void AcceptNewPublicKeys(const Chat::UserPublicKeyInfoList& userPublicKeyInfoList);
       void DeclineNewPublicKeys(const Chat::UserPublicKeyInfoList& userPublicKeyInfoList);
+      void RequestPrivateMessagesHistoryCount(const std::string& partyId);
+      void RequestAllHistoryMessages(const std::string& partyId);
 
       ////////// RETURN SIGNALS //////////
       void chatUserUserHashChanged(const std::string& chatUserUserHash);
@@ -56,6 +58,7 @@ namespace Chat
       void partyModelChanged();
       void initDone();
       void searchUserReply(const Chat::SearchUserReplyList& userHashList, const std::string& searchId);
+      void privateMessagesHistoryCount(const std::string& partyId, quint64 count);
    };
 
    using ChatClientServicePtr = std::shared_ptr<ChatClientService>;

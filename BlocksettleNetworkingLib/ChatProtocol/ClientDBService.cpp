@@ -36,6 +36,8 @@ ClientDBService::ClientDBService(QObject* parent /* = nullptr */)
    connect(this, &ClientDBService::checkRecipientPublicKey, worker(), &ClientDBLogic::checkRecipientPublicKey);
    connect(this, &ClientDBService::cleanUnusedParties, worker(), &ClientDBLogic::clearUnusedParties);
    connect(this, &ClientDBService::savePartyRecipients, worker(), &ClientDBLogic::savePartyRecipients);
+   connect(this, &ClientDBService::requestPrivateMessagesHistoryCount, worker(), &ClientDBLogic::requestPrivateMessagesHistoryCount);
+   connect(this, &ClientDBService::requestAllHistoryMessages, worker(), &ClientDBLogic::requestAllHistoryMessages);
 
    ////////// RETURN SIGNALS //////////
    connect(worker(), &ClientDBLogic::initDone, this, &ClientDBService::initDone);
@@ -46,4 +48,5 @@ ClientDBService::ClientDBService(QObject* parent /* = nullptr */)
    connect(worker(), &ClientDBLogic::unsentMessagesFound, this, &ClientDBService::unsentMessagesFound);
    connect(worker(), &ClientDBLogic::recipientKeysHasChanged, this, &ClientDBService::recipientKeysHasChanged);
    connect(worker(), &ClientDBLogic::recipientKeysUnchanged, this, &ClientDBService::recipientKeysUnchanged);
+   connect(worker(), &ClientDBLogic::privateMessagesHistoryCount, this, &ClientDBService::privateMessagesHistoryCount);
 }
