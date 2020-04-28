@@ -403,6 +403,7 @@ message UserScoreUpdateEvent
       // or cancelled
       // but somehow TX detected
       ClosedXBTTradeProgressing        = 25;
+      CashReservationFailed            = 26;
    };
 
    string               user_email     = 1;
