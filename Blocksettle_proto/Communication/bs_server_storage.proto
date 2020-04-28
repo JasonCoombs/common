@@ -368,36 +368,42 @@ message UserScoreUpdateEvent
       UnsignedPayinSentBeforeRequested = 0;
       DuplicateUnsignedPayinDelivery   = 1;
       UnsignedPayinFromUnexpectedUser  = 2;
+      UnsignedPayinToAMissingTrade     = 3;
 
-      SignedPayoutSentToAMissingTrade  = 3;
-      SignedPayoutSentBeforeRequested  = 4;
-      DuplicateSignedPayoutDelivery    = 5;
-      SignedPayoutFromUnexpectedUser   = 6;
+      SignedPayoutSentToAMissingTrade  = 4;
+      SignedPayoutSentBeforeRequested  = 5;
+      DuplicateSignedPayoutDelivery    = 6;
+      SignedPayoutFromUnexpectedUser   = 7;
 
-      SignedPayinSentToAMissingTrade   = 7;
-      SignedPayinSentBeforeRequested   = 8;
-      DuplicateSignedPayinDelivery     = 9;
-      SignedPayinFromUnexpectedUser    = 10;
+      SignedPayinSentToAMissingTrade   = 8;
+      SignedPayinSentBeforeRequested   = 9;
+      DuplicateSignedPayinDelivery     = 10;
+      SignedPayinFromUnexpectedUser    = 11;
 
-      PayinPushMempoolConflict         = 11;
-      PayoutPushMempoolConflict        = 12;
+      PayinPushMempoolConflict         = 12;
+      PayoutPushMempoolConflict        = 13;
 
-      InvalidAuthAddressUsed           = 13;
-      SignedPayinTimeout               = 14;
+      InvalidAuthAddressUsed           = 14;
+      SignedPayinTimeout               = 15;
 
-      ReservedUTXOUsed                 = 15;
+      ReservedUTXOUsed                 = 16;
 
-      UserBanFromCLI                   = 16;
-      ResetUserScoreFromCLI            = 17;
+      UserBanFromCLI                   = 17;
+      ResetUserScoreFromCLI            = 18;
 
-      SignedPayoutTimeout              = 18;
+      SignedPayoutTimeout              = 19;
 
-      AttemptToCancelAnothersTrade     = 19;
-      AttemptToCancelTradeAfterSign    = 20;
-      SignedPayinToCancelledTrade      = 21;
-      DealerFillRatioFailed            = 22;
+      AttemptToCancelAnothersTrade     = 20;
+      AttemptToCancelTradeAfterSign    = 21;
+      SignedPayinToCancelledTrade      = 22;
+      DealerFillRatioFailed            = 23;
 
-      PayinDoubleSpend                 = 23;
+      PayinDoubleSpend                 = 24;
+      // when trade failed due to timeout ( payin/payout delivery)
+      // or cancelled
+      // but somehow TX detected
+      ClosedXBTTradeProgressing        = 25;
+      CashReservationFailed            = 26;
    };
 
    string               user_email     = 1;

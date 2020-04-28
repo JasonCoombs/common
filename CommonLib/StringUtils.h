@@ -24,6 +24,9 @@ namespace bs {
    // Very basic email address verification check (checks that there is one '@' symbol and at least one '.' after that)
    bool isValidEmail(const std::string &str);
 
+   int convertToInt(const std::string& str, bool& converted);
+   bool convertToBool(const std::string& str, bool& converted);
+
 } // namespace bs
 
 #endif

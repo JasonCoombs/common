@@ -90,6 +90,7 @@ struct XBTTradeData
       SignedPayinProcessing,
       SettlementBroadcasting,
       SettlementMonitoring,
+      TradeSettlementTimedOut,
       TradeCancelled
    };
 
