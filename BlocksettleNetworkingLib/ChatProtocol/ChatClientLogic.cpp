@@ -71,6 +71,7 @@ void ChatClientLogic::initDbDone()
    connect(clientConnectionLogicPtr_.get(), &ClientConnectionLogic::searchUserReply, this, &ChatClientLogic::searchUserReply);
    connect(clientConnectionLogicPtr_.get(), &ClientConnectionLogic::properlyConnected, this, &ChatClientLogic::properlyConnected);
    connect(clientConnectionLogicPtr_.get(), &ClientConnectionLogic::deletePrivateParty, this, &ChatClientLogic::DeletePrivateParty);
+   connect(clientDBServicePtr_.get(), &ClientDBService::privateMessagesHistoryCount, this, &ChatClientLogic::privateMessagesHistoryCount);
 
    // close connection from callback
    connect(this, &ChatClientLogic::disconnected, this, &ChatClientLogic::onCloseConnection);
@@ -385,4 +386,14 @@ void ChatClientLogic::DeclineNewPublicKeys(const UserPublicKeyInfoList& userPubl
    }
 
    clientPartyLogicPtr_->updateModelAndRefreshPartyDisplayNames();
+}
+
+void ChatClientLogic::RequestPrivateMessagesHistoryCount(const std::string& partyId) const
+{
+   clientDBServicePtr_->requestPrivateMessagesHistoryCount(partyId, currentUserPtr_->userHash());
+}
+
+void ChatClientLogic::RequestAllHistoryMessages(const std::string& partyId) const
+{
+   clientDBServicePtr_->requestAllHistoryMessages(partyId, currentUserPtr_->userHash());
 }
