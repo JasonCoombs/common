@@ -36,7 +36,7 @@ void ValidationAddressACT::onRefresh(const std::vector<BinaryData>& ids, bool on
 }
 
 ////
-void ValidationAddressACT::onZCReceived(const std::vector<bs::TXEntry> &zcs)
+void ValidationAddressACT::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry> &zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
