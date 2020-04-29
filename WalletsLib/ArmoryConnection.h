@@ -108,8 +108,7 @@ public:
    virtual void onPrepareConnection(NetworkType, const std::string &host, const std::string &port) {}
    virtual void onRefresh(const std::vector<BinaryData> &, bool) {}
    virtual void onNewBlock(unsigned int height, unsigned int branchHeight) {}
-   virtual void onZCReceived(const std::string& requestId
-      , const std::vector<bs::TXEntry> &) {}
+   virtual void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>&) {}
    virtual void onZCInvalidated(const std::set<BinaryData> &ids) {}
    virtual void onLoadProgress(BDMPhase, float, unsigned int, unsigned int) {}
    virtual void onNodeStatus(NodeStatus, bool, RpcStatus) {}
