@@ -19,6 +19,7 @@
 #include "BinaryData.h"
 #include "TxClasses.h"
 #include "ValidityFlag.h"
+#include "HDPath.h"
 
 namespace bs {
    namespace network {
@@ -153,6 +154,9 @@ namespace bs {
 
             // If set, selected address would be used to receive XBT balance (used for buy only)
             std::string recvAddress;
+
+            // Need for hw wallet
+            std::shared_ptr<bs::hd::Purpose> walletPurpose;
 
             bool operator==(const Offer &other) const;
             bool operator!=(const Offer &other) const;
