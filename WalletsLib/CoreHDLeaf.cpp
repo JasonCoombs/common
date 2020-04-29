@@ -288,7 +288,12 @@ bs::hd::Path hd::Leaf::getPathForAddress(const bs::Address &addr) const
 
 std::string hd::Leaf::getAddressIndex(const bs::Address &addr)
 {
-   return getPathForAddress(addr).toString();
+   auto path = getPathForAddress(addr);
+   // Path::toString will throw for empty path
+   if (path.length() == 0) {
+      return {};
+   }
+   return path.toString();
 }
 
 bool hd::Leaf::isExternalAddress(const bs::Address &addr) const
