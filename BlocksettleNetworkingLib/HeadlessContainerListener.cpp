@@ -383,6 +383,16 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       }
    }
 
+   if (txSignReq.change.value > 0) {
+      // Check that change belongs to same HD wallet
+      auto wallet = walletsMgr_->getWalletByAddress(txSignReq.change.address);
+      if (!wallet || walletsMgr_->getHDRootForLeaf(wallet->walletId())->walletId() != rootWalletId) {
+         logger_->error("[HeadlessContainerListener] invalid change address");
+         SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WrongAddress);
+         return false;
+      }
+   }
+
    if (wallets.empty()) {
       logger_->error("[HeadlessContainerListener] failed to find any wallets");
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
