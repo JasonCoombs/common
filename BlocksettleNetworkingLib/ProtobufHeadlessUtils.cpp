@@ -9,8 +9,11 @@
 
 */
 #include "ProtobufHeadlessUtils.h"
-#include "CheckRecipSigner.h"
 
+#include <spdlog/spdlog.h>
+
+#include "CheckRecipSigner.h"
+#include "CoreHDLeaf.h"
 
 headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TXSignRequest &txSignReq
    , bool keepDuplicatedRecipients)
@@ -70,9 +73,8 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    return  request;
 }
 
-bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::SignTxRequest &request)
+bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequest &request)
 {
-   //uint64_t inputVal = 0;
    bs::core::wallet::TXSignRequest txSignReq;
 
    for (int i = 0; i < request.walletid_size(); ++i) {
@@ -85,8 +87,12 @@ bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::Si
          txSignReq.inputs.push_back(utxo);
       }
    }
-   txSignReq.inputIndices.insert(txSignReq.inputIndices.end()
-      , request.input_indices().begin(), request.input_indices().end());
+   for (const auto &inputIndex : request.input_indices()) {
+      if (!inputIndex.empty()) {
+         bs::hd::Path::fromString(inputIndex);
+      }
+      txSignReq.inputIndices.push_back(inputIndex);
+   }
 
    uint64_t outputVal = 0;
    for (int i = 0; i < request.recipients_size(); i++) {
@@ -103,6 +109,7 @@ bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::Si
    }
 
    if (request.has_change()) {
+      bs::hd::Path::fromString(request.change().index());
       txSignReq.change.address = bs::Address::fromAddressString(request.change().address());
       txSignReq.change.index = request.change().index();
       txSignReq.change.value = request.change().value();
@@ -137,4 +144,17 @@ bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::Si
    }
 
    return txSignReq;
+}
+
+bs::core::wallet::TXSignRequest bs::signer::pbTxRequestToCore(const headless::SignTxRequest &request
+   , const std::shared_ptr<spdlog::logger> &logger)
+{
+   try {
+      return pbTxRequestToCoreImpl(request);
+   } catch (const std::exception &e) {
+      if (logger) {
+         SPDLOG_LOGGER_ERROR(logger, "deserialization sign request failed: {}", e.what());
+      }
+      return {};
+   }
 }

@@ -329,7 +329,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       }
    }
 
-   bs::core::wallet::TXSignRequest txSignReq = bs::signer::pbTxRequestToCore(request);
+   bs::core::wallet::TXSignRequest txSignReq = bs::signer::pbTxRequestToCore(request, logger_);
 
    if (!txSignReq.isValid()) {
       logger_->error("[HeadlessContainerListener] invalid SignTxRequest");
