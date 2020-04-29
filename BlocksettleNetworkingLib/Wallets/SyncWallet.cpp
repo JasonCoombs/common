@@ -14,6 +14,7 @@
 
 #include "CheckRecipSigner.h"
 #include "CoinSelection.h"
+#include "SyncWalletsManager.h"
 #include "WalletSignerContainer.h"
 #include "WalletUtils.h"
 
@@ -878,132 +879,14 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
    , float feePerByte
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::core::wallet::OutputSortOrder &outSortOrder
-   , const BinaryData prevPart, bool feeCalcUsePrevPart)
+   , const BinaryData prevPart)
 {
-   uint64_t fee = 0;
-   auto utxos = inputs;
-   if (utxos.empty()) {
-      throw std::invalid_argument("No usable UTXOs");
+   std::map<UTXO, std::string> inputsCopy;
+   for (const auto &input : inputs) {
+      inputsCopy[input] = walletId();
    }
-
-   if (feePerByte > 0) {
-      unsigned int idMap = 0;
-      std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipMap;
-      for (const auto &recip : recipients) {
-         if (recip->getValue()) {
-            recipMap.emplace(idMap++, recip);
-         }
-      }
-      if (recipMap.empty()) {
-         const auto &tmpAddr = bs::Address::fromUTXO(inputs.front());
-         recipMap[idMap++] = tmpAddr.getRecipient(bs::XBTAmount{ 0.00001 });
-      }
-
-      PaymentStruct payment(recipMap, 0, feePerByte, ADJUST_FEE);
-      for (auto &utxo : utxos) {
-         const auto scrAddr = bs::Address::fromHash(utxo.getRecipientScrAddr());
-         utxo.txinRedeemSizeBytes_ = (unsigned int)scrAddr.getInputSize();
-         utxo.witnessDataSizeBytes_ = unsigned(scrAddr.getWitnessDataSize());
-         utxo.isInputSW_ = (scrAddr.getWitnessDataSize() != UINT32_MAX);
-      }
-
-      const auto coinSelection = std::make_shared<CoinSelection>([utxos](uint64_t) { return utxos; }
-         , std::vector<AddressBookEntry>{}, getSpendableBalance() * BTCNumericTypes::BalanceDivider
-         , armory_ ? armory_->topBlock() : UINT32_MAX);
-
-      try {
-         const auto selection = coinSelection->getUtxoSelectionForRecipients(payment, utxos);
-         fee = selection.fee_;
-         utxos = selection.utxoVec_;
-      }
-      catch (const std::exception &e) {
-         SPDLOG_LOGGER_ERROR(logger_, "coin selection failed: {}, all inputs will be used", e.what());
-      }
-   }
-
-   if (utxos.empty()) {
-      throw std::logic_error("No UTXOs");
-   }
-
-   bs::core::wallet::TXSignRequest request;
-   request.walletIds = { walletId() };
-   request.populateUTXOs = true;
-   request.outSortOrder = outSortOrder;
-   Signer signer;
-   bs::CheckRecipSigner prevStateSigner;
-   if (!prevPart.empty()) {
-      prevStateSigner.deserializeState(prevPart);
-      if (feePerByte > 0) {
-         fee += prevStateSigner.estimateFee(feePerByte);
-         fee -= 10 * feePerByte;    // subtract TX header size as it's counted twice
-      }
-      for (const auto &spender : prevStateSigner.spenders()) {
-         signer.addSpender(spender);
-         spendVal += spender->getValue();
-      }
-   }
-   signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-   request.fee = fee;
-
-   uint64_t inputAmount = 0;
-   if (feeCalcUsePrevPart) {
-      for (const auto &spender : prevStateSigner.spenders()) {
-         inputAmount += spender->getValue();
-      }
-   }
-   for (const auto &utxo : utxos) {
-      signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue()));
-      request.inputs.push_back(utxo);
-      inputAmount += utxo.getValue();
-   }
-   if (!inputAmount) {
-      throw std::logic_error("No inputs detected");
-   }
-
-   const auto addRecipients = [&request, &signer]
-      (const std::vector<std::shared_ptr<ScriptRecipient>> &recipients)
-   {
-      for (const auto& recipient : recipients) {
-         request.recipients.push_back(recipient);
-         signer.addRecipient(recipient);
-      }
-   };
-
-   if (inputAmount < (spendVal + fee)) {
-      throw std::overflow_error("Not enough inputs (" + std::to_string(inputAmount)
-         + ") to spend " + std::to_string(spendVal + fee));
-   }
-
-   for (const auto &outputType : outSortOrder) {
-      switch (outputType) {
-      case bs::core::wallet::OutputOrderType::Recipients:
-         addRecipients(recipients);
-         break;
-      case bs::core::wallet::OutputOrderType::PrevState:
-         addRecipients(prevStateSigner.recipients());
-         break;
-      case bs::core::wallet::OutputOrderType::Change:
-         if (inputAmount == (spendVal + fee)) {
-            break;
-         }
-         {
-            const uint64_t changeVal = inputAmount - (spendVal + fee);
-            if (changeAddress.empty()) {
-               throw std::invalid_argument("Change address required, but missing");
-            }
-            signer.addRecipient(changeAddress.getRecipient(bs::XBTAmount{ changeVal }));
-            request.change.value = changeVal;
-            request.change.address = changeAddress;
-            request.change.index = getAddressIndex(changeAddress);
-         }
-         break;
-      default:
-         throw std::invalid_argument("Unsupported output type " + std::to_string((int)outputType));
-      }
-   }
-
-   request.prevStates.emplace_back(signer.serializeState());
-   return request;
+   return WalletsManager::createPartialTXRequest(spendVal, inputsCopy, changeAddress, feePerByte
+      , armory_->topBlock(), recipients, outSortOrder, prevPart, false, logger_);
 }
 
 void WalletACT::onLedgerForAddress(const bs::Address &addr
