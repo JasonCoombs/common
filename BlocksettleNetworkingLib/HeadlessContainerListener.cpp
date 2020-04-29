@@ -197,9 +197,6 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::SignSettlementPayoutTxType:
       return onSignSettlementPayoutTxRequest(clientId, packet);
 
-   case headless::SignTXMultiRequestType:
-      return onSignMultiTXRequest(clientId, packet);
-
    case headless::SignAuthAddrRevokeType:
       return onSignAuthAddrRevokeRequest(clientId, packet);
 
@@ -606,46 +603,6 @@ bool HeadlessContainerListener::onUpdateDialogData(const std::string &clientId, 
       callbacks_->updateDialogData(request.passworddialogdata());
    }
    return true;
-}
-
-bool HeadlessContainerListener::onSignMultiTXRequest(const std::string &clientId, const headless::RequestPacket &packet)
-{
-   const auto reqType = headless::SignTXMultiRequestType;
-   headless::SignTXMultiRequest request;
-   if (!request.ParseFromString(packet.data())) {
-      logger_->error("[HeadlessContainerListener] failed to parse SignTXMultiRequest");
-      SignTXResponse(clientId, packet.id(), reqType, ErrorCode::FailedToParse);
-      return false;
-   }
-
-   bs::core::wallet::TXMultiSignRequest txMultiReq;
-   bs::core::WalletMap walletMap;
-   txMultiReq.prevState = BinaryData::fromString(request.signerstate());
-   for (int i = 0; i < request.walletids_size(); i++) {
-      const auto &wallet = walletsMgr_->getWalletById(request.walletids(i));
-      if (!wallet) {
-         logger_->error("[HeadlessContainerListener] failed to find wallet with id {}", request.walletids(i));
-         SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
-         return false;
-      }
-      walletMap[wallet->walletId()] = wallet;
-   }
-
-   const auto cbOnAllPasswords = [this, txMultiReq, walletMap, clientId, reqType, id=packet.id()]
-                                 (const std::unordered_map<std::string, SecureBinaryData> &walletPasswords) {
-      try {
-         const auto wallet = walletsMgr_->getWalletById(walletPasswords.begin()->first);
-         const auto rootWallet = walletsMgr_->getHDRootForLeaf(wallet->walletId());
-         const bs::core::WalletPasswordScoped passLock(rootWallet, walletPasswords.begin()->second);
-         const auto tx = bs::core::SignMultiInputTX(txMultiReq, walletMap);
-         SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
-      }
-      catch (const std::exception &e) {
-         logger_->error("[HeadlessContainerListener] failed to sign multi TX request: {}", e.what());
-         SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
-      }
-   };
-   return RequestPasswordsIfNeeded(packet.id(), clientId, txMultiReq, walletMap, cbOnAllPasswords);
 }
 
 bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::string &clientId

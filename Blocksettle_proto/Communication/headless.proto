@@ -18,7 +18,6 @@ enum RequestType
    AutoSignActType             = 11;
    GetHDWalletInfoRequestType  = 12;
    DisconnectionRequestType    = 13;
-   SignTXMultiRequestType      = 14;
    CancelSignTxRequestType     = 15;
    SyncWalletInfoType          = 16;
    SyncHDWalletType            = 17;
@@ -324,13 +323,6 @@ message GetHDWalletInfoResponse
    uint32	rankN = 4;
    string       error = 5;
    string       rootWalletId = 6;
-}
-
-
-message SignTXMultiRequest
-{
-   repeated string   walletIds = 1;
-   bytes             signerState = 2;
 }
 
 enum WalletFormat

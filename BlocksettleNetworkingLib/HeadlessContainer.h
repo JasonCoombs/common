@@ -68,8 +68,6 @@ public:
       , const bs::core::wallet::SettlementData &, const bs::sync::PasswordDialogData &dialogData
       , const SignTxCb &cb = nullptr) override;
 
-   bs::signer::RequestId signMultiTXRequest(const bs::core::wallet::TXMultiSignRequest &) override;
-
    bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override;
 
