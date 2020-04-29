@@ -303,7 +303,6 @@ namespace bs {
             bool isSourceOfTx(const Tx &signedTx) const;
 
             void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ResolverFeed> &resolver=nullptr);
-            bool populateSupportingTx(std::shared_ptr<ArmoryConnection>);
 
          private:
             Signer getSigner(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const;
