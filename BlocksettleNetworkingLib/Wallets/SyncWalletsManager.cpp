@@ -136,10 +136,10 @@ void WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::fun
    }
 }
 
-void WalletsManager::syncWallets(const CbProgress &cb)
+bool WalletsManager::syncWallets(const CbProgress &cb)
 {
    if (syncState_ == WalletsSyncState::Running) {
-      return;
+      return false;
    }
 
    const auto &cbWalletInfo = [this, cb](const std::vector<bs::sync::WalletInfo> &wi) {
@@ -181,9 +181,10 @@ void WalletsManager::syncWallets(const CbProgress &cb)
    if (!signContainer_) {
       logger_->error("[WalletsManager::{}] signer is not set - aborting"
          , __func__);
-      return;
+      return false;
    }
    signContainer_->syncWalletInfo(cbWalletInfo);
+   return true;
 }
 
 bool WalletsManager::isSynchronising() const
