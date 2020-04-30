@@ -42,6 +42,7 @@ enum RequestType
    SettlementAuthType          = 36;
    SettlementCPType            = 37;
    WindowStatusType            = 38;
+   ResolvePublicSpendersType   = 39;
 }
 
 message RequestPacket

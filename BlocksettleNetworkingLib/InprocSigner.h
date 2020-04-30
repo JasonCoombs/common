@@ -67,6 +67,9 @@ public:
    bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override { return 0; }
 
+   bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
+      , const SignTxCb &cb) override;
+
    bs::signer::RequestId CancelSignTx(const BinaryData &tx) override { return 0; }
 
    bs::signer::RequestId setUserId(const BinaryData &, const std::string &walletId) override;

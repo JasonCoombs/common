@@ -217,6 +217,27 @@ void HeadlessContainer::ProcessSettlementSignTXResponse(unsigned int id, const s
    emit TXSigned(id, BinaryData::fromString(response.signedtx()), static_cast<bs::error::ErrorCode>(response.errorcode()));
 }
 
+void HeadlessContainer::ProcessPubResolveResponse(unsigned int id, const std::string &data)
+{
+   headless::SignTxReply response;
+   if (!response.ParseFromString(data)) {
+      logger_->error("[HeadlessContainer::ProcessPubResolveResponse] failed to parse reply");
+      emit Error(id, "failed to parse");
+      return;
+   }
+   const auto itCb = cbSettlementSignTxMap_.find(id);
+   if (itCb != cbSettlementSignTxMap_.end()) {
+      if (itCb->second) {
+         itCb->second(static_cast<bs::error::ErrorCode>(response.errorcode()), BinaryData::fromString(response.signedtx()));
+      }
+      cbSettlementSignTxMap_.erase(itCb);
+   }
+   else {
+      logger_->error("[HeadlessContainer::ProcessPubResolveResponse] failed to find reqId {}", id);
+      emit Error(id, "failed to find original request");
+   }
+}
+
 void HeadlessContainer::ProcessCreateHDLeafResponse(unsigned int id, const std::string &data)
 {
    headless::CreateHDLeafResponse response;
@@ -344,8 +365,7 @@ bs::signer::RequestId HeadlessContainer::signTXRequest(const bs::core::wallet::T
       logger_->error("[HeadlessContainer::signTXRequest] Invalid TXSignRequest");
       return 0;
    }
-
-   headless::SignTxRequest request = bs::signer::coreTxRequestToPb(txSignReq, keepDuplicatedRecipients);
+   const auto &request = bs::signer::coreTxRequestToPb(txSignReq, keepDuplicatedRecipients);
 
    headless::RequestPacket packet;
    switch (mode) {
@@ -407,6 +427,19 @@ bs::signer::RequestId HeadlessContainer::signSettlementPartialTXRequest(
    headless::RequestPacket packet;
    packet.set_type(headless::SignSettlementPartialTxType);
    packet.set_data(settlementRequest.SerializeAsString());
+
+   const auto reqId = Send(packet);
+   cbSettlementSignTxMap_[reqId] = cb;
+   return reqId;
+}
+
+bs::signer::RequestId HeadlessContainer::resolvePublicSpenders(const bs::core::wallet::TXSignRequest &txReq
+   , const SignTxCb &cb)
+{
+   const auto signTxRequest = bs::signer::coreTxRequestToPb(txReq);
+   headless::RequestPacket packet;
+   packet.set_type(headless::ResolvePublicSpendersType);
+   packet.set_data(signTxRequest.SerializeAsString());
 
    const auto reqId = Send(packet);
    cbSettlementSignTxMap_[reqId] = cb;
@@ -1499,6 +1532,10 @@ void RemoteSigner::onPacketReceived(headless::RequestPacket packet)
    case headless::SignSettlementTxRequestType:
    case headless::SignSettlementPartialTxType:
       ProcessSettlementSignTXResponse(packet.id(), packet.data());
+      break;
+
+   case headless::ResolvePublicSpendersType:
+      ProcessPubResolveResponse(packet.id(), packet.data());
       break;
 
    case headless::CreateHDLeafRequestType:
