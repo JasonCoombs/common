@@ -15,6 +15,12 @@
 #include "CheckRecipSigner.h"
 #include "CoreHDLeaf.h"
 
+namespace {
+
+   const int kValidPathLength = 2;
+
+}
+
 headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TXSignRequest &txSignReq
    , bool keepDuplicatedRecipients)
 {
@@ -89,7 +95,9 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
    }
    for (const auto &inputIndex : request.input_indices()) {
       if (!inputIndex.empty()) {
-         bs::hd::Path::fromString(inputIndex);
+         if (bs::hd::Path::fromString(inputIndex).length() != kValidPathLength) {
+            throw std::runtime_error("unexpected path length for UTXO input address");
+         }
       }
       txSignReq.inputIndices.push_back(inputIndex);
    }
@@ -109,7 +117,9 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
    }
 
    if (request.has_change()) {
-      bs::hd::Path::fromString(request.change().index());
+      if (bs::hd::Path::fromString(request.change().index()).length() != kValidPathLength) {
+         throw std::runtime_error("unexpected path length for change address");
+      }
       txSignReq.change.address = bs::Address::fromAddressString(request.change().address());
       txSignReq.change.index = request.change().index();
       txSignReq.change.value = request.change().value();
