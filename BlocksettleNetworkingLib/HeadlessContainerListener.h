@@ -143,7 +143,6 @@ private:
 
    bool onSignTxRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &packet
       , Blocksettle::Communication::headless::RequestType requestType);
-   bool onSignMultiTXRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &packet);
    bool onSignSettlementPayoutTxRequest(const std::string &clientId
       , const Blocksettle::Communication::headless::RequestPacket &packet);
    bool onSignAuthAddrRevokeRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &);

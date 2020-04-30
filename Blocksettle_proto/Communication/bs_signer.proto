@@ -18,6 +18,7 @@ enum PacketType
    // Request from ui, response from headless
    AutoSignActType = 7;
 
+   VerifyOfflineTxRequestType = 18;
    SignOfflineTxRequestType = 8;
    SyncWalletInfoType = 9;
    SyncHDWalletType = 10;
@@ -421,4 +422,14 @@ message ImportHwWalletRequest
    string xpubNestedSegwit = 5;
    string xpubNativeSegwit = 6;
    string xpubLegacy = 7;
+}
+
+message VerifyOfflineTxRequest
+{
+   bytes content = 1;
+}
+
+message VerifyOfflineTxResponse
+{
+   uint32 error_code = 1;
 }

@@ -446,34 +446,6 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    return reqId;
 }
 
-bs::signer::RequestId HeadlessContainer::signMultiTXRequest(const bs::core::wallet::TXMultiSignRequest &txMultiReq)
-{
-   if (!txMultiReq.isValid()) {
-      logger_->error("[HeadlessContainer::signMultiTXRequest] Invalid TXMultiSignRequest");
-      return 0;
-   }
-
-   Signer signer;
-   signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-
-   headless::SignTXMultiRequest request;
-   for (const auto &input : txMultiReq.inputs) {
-      request.add_walletids(input.walletId);
-      signer.addSpender(std::make_shared<ScriptSpender>(input.utxo));
-   }
-   for (const auto &recip : txMultiReq.recipients) {
-      signer.addRecipient(recip);
-   }
-   request.set_signerstate(signer.serializeState().toBinStr());
-
-   headless::RequestPacket packet;
-   packet.set_type(headless::SignTXMultiRequestType);
-   packet.set_data(request.SerializeAsString());
-   const auto id = Send(packet);
-   signRequests_.insert(id);
-   return id;
-}
-
 bs::signer::RequestId HeadlessContainer::signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
    , const UTXO &utxo, const bs::Address &bsAddr, const SignTxCb &cb)
 {
@@ -1520,7 +1492,6 @@ void RemoteSigner::onPacketReceived(headless::RequestPacket packet)
    case headless::SignTxRequestType:
    case headless::SignPartialTXRequestType:
    case headless::SignSettlementPayoutTxType:
-   case headless::SignTXMultiRequestType:
    case headless::SignAuthAddrRevokeType:
       ProcessSignTXResponse(packet.id(), packet.data());
       break;

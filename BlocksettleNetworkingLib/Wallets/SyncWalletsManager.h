@@ -74,7 +74,7 @@ namespace bs {
          void setSignContainer(const std::shared_ptr<WalletSignerContainer> &container);
          void reset();
 
-         void syncWallets(const CbProgress &cb = nullptr);
+         bool syncWallets(const CbProgress &cb = nullptr);
          
          bool isSynchronising() const;
          bool isWalletsReady() const;
