@@ -74,7 +74,7 @@ namespace bs {
          void setSignContainer(const std::shared_ptr<WalletSignerContainer> &container);
          void reset();
 
-         void syncWallets(const CbProgress &cb = nullptr);
+         bool syncWallets(const CbProgress &cb = nullptr);
          
          bool isSynchronising() const;
          bool isWalletsReady() const;
@@ -153,13 +153,14 @@ namespace bs {
          bool mergeableEntries(const bs::TXEntry &, const bs::TXEntry &) const;
          std::vector<bs::TXEntry> mergeEntries(const std::vector<bs::TXEntry> &) const;
 
-         core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
+         static core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
             , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress = {}
-            , float feePerByte = 0
+            , float feePerByte = 0, uint32_t topHeight = 0
             , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients = {}
             , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
                , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
-         , const BinaryData prevPart = {}, bool feeCalcUsePrevPart = true, bool useAllInputs = false);
+            , const BinaryData prevPart = {}, bool useAllInputs = false
+            , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
          std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;
 

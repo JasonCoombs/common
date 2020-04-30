@@ -16,11 +16,16 @@
 
 using namespace Blocksettle::Communication;
 
+namespace spdlog {
+   class logger;
+}
+
 namespace bs {
 namespace signer {
    headless::SignTxRequest coreTxRequestToPb(const bs::core::wallet::TXSignRequest &txSignReq
       , bool keepDuplicatedRecipients = false);
-   bs::core::wallet::TXSignRequest pbTxRequestToCore(const headless::SignTxRequest &request);
+   bs::core::wallet::TXSignRequest pbTxRequestToCore(const headless::SignTxRequest &request
+      , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 }
 }
 
