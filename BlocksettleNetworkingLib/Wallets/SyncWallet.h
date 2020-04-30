@@ -331,7 +331,7 @@ namespace bs {
          virtual void onRefresh(const std::vector<BinaryData> &ids, bool online) override {
             parent_->onRefresh(ids, online);
          }
-         virtual void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs) override {
+         virtual void onZCReceived(const std::string& , const std::vector<bs::TXEntry>& zcs) override {
             parent_->onZeroConfReceived(zcs);
          }
          virtual void onNewBlock(unsigned int block, unsigned int bh) override {
@@ -350,14 +350,14 @@ namespace bs {
       public:  // all virtual methods have empty implementation by default
          virtual ~WalletCallbackTarget() = default;
 
-         virtual void addressAdded(const std::string &walletId) {}
-         virtual void walletReady(const std::string &walletId) {}
-         virtual void balanceUpdated(const std::string &walletId) {}
-         virtual void metadataChanged(const std::string &walletId) {}
-         virtual void walletCreated(const std::string &walletId) {}
-         virtual void walletDestroyed(const std::string &walletId) {}
-         virtual void walletReset(const std::string &walletId) {}
-         virtual void scanComplete(const std::string &walletId) {}
+         virtual void addressAdded(const std::string &) {}
+         virtual void walletReady(const std::string &) {}
+         virtual void balanceUpdated(const std::string &) {}
+         virtual void metadataChanged(const std::string &) {}
+         virtual void walletCreated(const std::string &) {}
+         virtual void walletDestroyed(const std::string &) {}
+         virtual void walletReset(const std::string &) {}
+         virtual void scanComplete(const std::string &) {}
       };
 
       struct Transaction

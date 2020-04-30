@@ -105,17 +105,23 @@ public:
    // for more brevity if some of them are not needed
    virtual void onDestroy();
    virtual void onStateChanged(ArmoryState) {}
-   virtual void onPrepareConnection(NetworkType, const std::string &host, const std::string &port) {}
-   virtual void onRefresh(const std::vector<BinaryData> &, bool) {}
-   virtual void onNewBlock(unsigned int height, unsigned int branchHeight) {}
-   virtual void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>&) {}
-   virtual void onZCInvalidated(const std::set<BinaryData> &ids) {}
+   // parameters: bet type, host, port
+   virtual void onPrepareConnection(NetworkType, const std::string &, const std::string &) {}
+   // parameters: ids, online
+   virtual void onRefresh(const std::vector<BinaryData> &, bool ) {}
+   // parameters: height, branchHeight
+   virtual void onNewBlock(unsigned int , unsigned int ) {}
+   // parameters: requestId, entries
+   virtual void onZCReceived(const std::string& , const std::vector<bs::TXEntry> &) {}
+   // parameters: ids
+   virtual void onZCInvalidated(const std::set<BinaryData> &) {}
    virtual void onLoadProgress(BDMPhase, float, unsigned int, unsigned int) {}
    virtual void onNodeStatus(NodeStatus, bool, RpcStatus) {}
-   virtual void onError(int errCode, const std::string &errText) {}
-   virtual void onTxBroadcastError(const std::string& requestId
-      , const BinaryData &txHash, int errCode
-      , const std::string &errText) {}
+   // parameters: errCode, errText
+   virtual void onError(int , const std::string &) {}
+   // parameters: requestId, txHash, errCode, errText
+   virtual void onTxBroadcastError(const std::string&
+      , const BinaryData &, int, const std::string &) {}
 
    virtual void onLedgerForAddress(const bs::Address &, const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
 

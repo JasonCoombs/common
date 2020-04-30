@@ -73,7 +73,7 @@ protected:
       refreshUserAddresses();
    }
 
-   void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>&) override
+   void onZCReceived(const std::string& , const std::vector<bs::TXEntry>&) override
    {
       refreshUserAddresses();
    }

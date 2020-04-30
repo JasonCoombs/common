@@ -1237,7 +1237,7 @@ bs::TXEntry bs::TXEntry::fromLedgerEntry(const ClientClasses::LedgerEntry &entry
 {
    bs::TXEntry result{ entry.getTxHash(), { entry.getID() }, entry.getValue()
       , entry.getBlockNum(), entry.getTxTime(), entry.isOptInRBF()
-      , entry.isChainedZC(), false, std::chrono::steady_clock::now() };
+      , entry.isChainedZC(), false, std::chrono::steady_clock::now(), {}};
    for (const auto &addr : entry.getScrAddrList()) {
       try {
          const auto &scrAddr = bs::Address::fromHash(addr);

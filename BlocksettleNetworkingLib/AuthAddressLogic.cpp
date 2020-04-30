@@ -36,7 +36,7 @@ void ValidationAddressACT::onRefresh(const std::vector<BinaryData>& ids, bool on
 }
 
 ////
-void ValidationAddressACT::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs)
+void ValidationAddressACT::onZCReceived(const std::string& , const std::vector<bs::TXEntry>& zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
@@ -1070,9 +1070,9 @@ BinaryData AuthAddressLogic::revoke(const ValidationAddressManager& vam,
    return txObj.getThisHash();
 }
 
-BinaryData AuthAddressLogic::revoke(const bs::Address &addr
+BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const std::shared_ptr<ResolverFeed> &feedPtr
-   , const bs::Address &validationAddr, const UTXO &revokeUtxo)
+   , const bs::Address &, const UTXO &revokeUtxo)
 {
    //User side revoke: burn the validation UTXO as an OP_RETURN
    Signer signer;

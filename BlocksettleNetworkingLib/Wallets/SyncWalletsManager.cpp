@@ -1229,7 +1229,7 @@ void WalletsManager::onCCInfoLoaded()
 //   its own UTXO object while sharing the same UTXO hash.
 // - It is possible, in conjunction with a wallet, to determine if the UTXO is
 //   attached to an internal or external address.
-void WalletsManager::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& entries)
+void WalletsManager::onZCReceived(const std::string& , const std::vector<bs::TXEntry>& entries)
 {
    std::vector<bs::TXEntry> ourZCentries;
 
@@ -1261,7 +1261,7 @@ void WalletsManager::onZCInvalidated(const std::set<BinaryData> &ids)
    QMetaObject::invokeMethod(this, [this, ids] {emit invalidatedZCs(ids); });
 }
 
-void WalletsManager::onTxBroadcastError(const std::string& requestId, const BinaryData &txHash, int errCode, const std::string &errMsg)
+void WalletsManager::onTxBroadcastError(const std::string& , const BinaryData &txHash, int errCode, const std::string &errMsg)
 {
    logger_->error("[WalletsManager::onTxBroadcastError] - TX {} error: {} ({})"
       , txHash.toHexStr(true), errCode, errMsg);
