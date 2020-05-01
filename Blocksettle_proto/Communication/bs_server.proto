@@ -314,6 +314,35 @@ message CCValidateHalvesResponse
    }
 }
 
+message CCValidateHalfRequest
+{
+   enum TxType {
+      Unknown = 0;
+      Requester = 1; 
+      Dealer = 2;
+      Merged = 3;
+   }
+   string request_id = 1;
+   string cc = 2;
+   uint32 qty = 3;
+   bool   req_sells = 4;
+   double price = 5;
+   bytes  coin_input = 6;
+   TxType tx_type = 7;
+}
+
+message CCValidateHalfResponse
+{
+   enum Result {
+      AllOk = 0;
+      ValueMismatch = 1;
+      InvalidInput  = 2;
+   }
+   string request_id = 1;
+   Result result = 2;
+   repeated bytes inputs = 3;
+}
+
 message CCUpdatedGenesisAddress
 {
    string cc_name    = 1;
@@ -337,6 +366,7 @@ enum CcTrackMessageType
    CcTrackDisabledDefinition  = 5;
    CcUpdatedGenesisAddress    = 6;
    CCDefinitionLoaded         = 7;
+   CcTrackValidateUnsignedHalf= 8;
 }
 
 message CcTrackMessage
@@ -350,6 +380,8 @@ message CcTrackMessage
       CCValidateHalvesResponse   cc_valid_response       = 6;
       CCUpdatedGenesisAddress    updated_genesis_address = 7;
       LoadedCCDefinition         loaded_cc_definition    = 8;
+      CCValidateHalfRequest      cc_unsigned_half_req    = 9;
+      CCValidateHalfResponse     cc_unsigned_half_resp   = 10;
    }
 }
 
