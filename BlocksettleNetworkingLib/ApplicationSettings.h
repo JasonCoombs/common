@@ -142,6 +142,7 @@ public:
       ccServerPubKey,
       HideCreateAccountPromptTestnet,
       HideLegacyWalletWarning,
+      DetailedSettlementTxDialogByDefault,
       _last
    };
 

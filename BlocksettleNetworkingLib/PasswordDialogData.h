@@ -103,6 +103,7 @@ public:
    DIALOG_KEY(WalletId)
    DIALOG_KEY(XBT)
    DIALOG_KEY(TxRequest)
+   DIALOG_KEY_BOOL(ExpandTxInfo)
 
 #ifdef QT_CORE_LIB
    Q_OBJECT
