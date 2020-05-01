@@ -30,7 +30,7 @@ public:
    virtual void connected() {}
    virtual void disconnecting() {}
    virtual void disconnected() {}
-   // parameters: security, reason
+   // arguments: security, reason
    virtual void onRequestRejected(const std::string &
       , const std::string &) {}
 
