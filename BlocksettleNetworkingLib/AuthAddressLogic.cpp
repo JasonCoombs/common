@@ -616,7 +616,7 @@ BinaryData ValidationAddressManager::fundUserAddress(
 
    //sign & serialize tx
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData ValidationAddressManager::fundUserAddresses(
@@ -658,7 +658,7 @@ BinaryData ValidationAddressManager::fundUserAddresses(
 
    //sign & serialize tx
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData ValidationAddressManager::vetUserAddress(
@@ -735,7 +735,7 @@ BinaryData ValidationAddressManager::revokeValidationAddress(
 
    //sign & serialize tx
    signer.sign();
-   auto signedTx = signer.serialize();
+   auto signedTx = signer.serializeSignedTx();
    if (signedTx.empty()) {
       throw AuthLogicException("failed to sign");
    }
@@ -822,7 +822,7 @@ BinaryData ValidationAddressManager::revokeUserAddress(
 
    //sign & serialize tx
    signer.sign();
-   auto signedTx = signer.serialize();
+   auto signedTx = signer.serializeSignedTx();
 
    //broadcast the zc
    connPtr_->pushZC(signedTx);
@@ -1083,7 +1083,7 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &
    signer.addRecipient(std::make_shared<Recipient_OPRETURN>(BinaryData::fromString(opReturnMsg)));
 
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
