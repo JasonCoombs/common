@@ -259,10 +259,14 @@ uint64_t ColoredCoinTracker::getCcOutputValue(
 }
 
 ////
+ColoredCoinTrackerClientIface::~ColoredCoinTrackerClientIface() = default;
+CCTrackerClientFactory::~CCTrackerClientFactory() = default;
+
 ColoredCoinTrackerClient::ColoredCoinTrackerClient(std::unique_ptr<ColoredCoinTrackerInterface> ccSnapshots)
    : ccSnapshots_(std::move(ccSnapshots))
-{
-}
+{}
+
+ColoredCoinTrackerClient::~ColoredCoinTrackerClient() = default;
 
 void ColoredCoinTrackerClient::addOriginAddress(const bs::Address &addr)
 {
