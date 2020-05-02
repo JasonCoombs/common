@@ -188,7 +188,7 @@ void AddressVerificator::validateAddress(const std::shared_ptr<AddressVerificati
    }
 
    if (!armory_ || (armory_->state() != ArmoryState::Ready)) {
-      logger_->error("[AddressVerificator::ValidateAddress] invalid Armory state {}", (int)armory_->state());
+      logger_->error("[AddressVerificator::ValidateAddress] invalid BlockSettleDB state {}", (int)armory_->state());
       state->currentState = AddressVerificationState::VerificationFailed;
       ReturnValidationResult(state);
       return;
