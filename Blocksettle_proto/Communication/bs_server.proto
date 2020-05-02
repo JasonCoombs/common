@@ -340,7 +340,8 @@ message CCValidateHalfResponse
    }
    string request_id = 1;
    Result result = 2;
-   repeated bytes inputs = 3;
+   repeated bytes cc_inputs = 3;
+   repeated bytes xbt_inputs = 4;
 }
 
 message CCUpdatedGenesisAddress
