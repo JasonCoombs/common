@@ -993,7 +993,7 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
@@ -1096,7 +1096,7 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
    if (!signer.verify()) {
       throw std::runtime_error("failed to verify signer");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 
@@ -1153,7 +1153,7 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       if (!signer.verify()) {
          throw std::logic_error("signer failed to verify");
       }
-      return signer.serialize();
+      return signer.serializeSignedTx();
    }
 }
 
@@ -1219,7 +1219,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData wallet::computeID(const BinaryData &input)

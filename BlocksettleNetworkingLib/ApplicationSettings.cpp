@@ -175,7 +175,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { PriceUpdateInterval,     SettingDef(QLatin1String("PriceUpdateInterval"), -1) },
       { ShowQuoted,              SettingDef(QLatin1String("ShowQuoted"), true) },
       { DisableBlueDotOnTabOfRfqBlotter,  SettingDef(QLatin1String("DisableBlueDotOnTabOfRfqBlotter"), false) },
-      { AdvancedTxDialogByDefault,        SettingDef(QLatin1String("AdvancedTxDialogByDefault"), true) },
+      { AdvancedTxDialogByDefault,        SettingDef(QLatin1String("AdvancedTxDialogByDefault"), false) },
       { TransactionFilter,                SettingDef(QLatin1String("TransactionFilter"), QVariantList() << QStringList() << 0) },
       { SubscribeToMDOnStart,             SettingDef(QLatin1String("SubscribeToMDOnStart"), false) },
       { MDLicenseAccepted,                SettingDef(QLatin1String("MDLicenseAccepted"), false) },
@@ -192,8 +192,9 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString()) },
       { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString()) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
-      { HideCreateAccountPromptTestnet,   SettingDef(QStringLiteral("HideCreateAccountPromptTestnet")) },
-      { HideLegacyWalletWarning,          SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
+      { HideCreateAccountPromptTestnet,      SettingDef(QStringLiteral("HideCreateAccountPromptTestnet")) },
+      { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
+      { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) }
    };
 }
 
