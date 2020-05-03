@@ -36,7 +36,7 @@ void ValidationAddressACT::onRefresh(const std::vector<BinaryData>& ids, bool on
 }
 
 ////
-void ValidationAddressACT::onZCReceived(const std::vector<bs::TXEntry> &zcs)
+void ValidationAddressACT::onZCReceived(const std::string& , const std::vector<bs::TXEntry>& zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
@@ -616,7 +616,7 @@ BinaryData ValidationAddressManager::fundUserAddress(
 
    //sign & serialize tx
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData ValidationAddressManager::fundUserAddresses(
@@ -658,7 +658,7 @@ BinaryData ValidationAddressManager::fundUserAddresses(
 
    //sign & serialize tx
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData ValidationAddressManager::vetUserAddress(
@@ -735,7 +735,7 @@ BinaryData ValidationAddressManager::revokeValidationAddress(
 
    //sign & serialize tx
    signer.sign();
-   auto signedTx = signer.serialize();
+   auto signedTx = signer.serializeSignedTx();
    if (signedTx.empty()) {
       throw AuthLogicException("failed to sign");
    }
@@ -822,7 +822,7 @@ BinaryData ValidationAddressManager::revokeUserAddress(
 
    //sign & serialize tx
    signer.sign();
-   auto signedTx = signer.serialize();
+   auto signedTx = signer.serializeSignedTx();
 
    //broadcast the zc
    connPtr_->pushZC(signedTx);
@@ -1070,9 +1070,9 @@ BinaryData AuthAddressLogic::revoke(const ValidationAddressManager& vam,
    return txObj.getThisHash();
 }
 
-BinaryData AuthAddressLogic::revoke(const bs::Address &addr
+BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const std::shared_ptr<ResolverFeed> &feedPtr
-   , const bs::Address &validationAddr, const UTXO &revokeUtxo)
+   , const bs::Address &, const UTXO &revokeUtxo)
 {
    //User side revoke: burn the validation UTXO as an OP_RETURN
    Signer signer;
@@ -1083,7 +1083,7 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &addr
    signer.addRecipient(std::make_shared<Recipient_OPRETURN>(BinaryData::fromString(opReturnMsg)));
 
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 std::vector<UTXO> ValidationAddressManager::filterAuthFundingUTXO(const std::vector<UTXO>& authInputs)

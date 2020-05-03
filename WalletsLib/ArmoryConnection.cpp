@@ -337,17 +337,17 @@ void ArmoryConnection::setState(ArmoryState state)
    }
 }
 
-bool ArmoryConnection::broadcastZC(const BinaryData& rawTx)
+std::string ArmoryConnection::broadcastZC(const BinaryData& rawTx)
 {
    if (!bdv_ || ((state_ != ArmoryState::Ready) && (state_ != ArmoryState::Connected))) {
       logger_->error("[ArmoryConnection::broadcastZC] invalid state: {} (BDV null: {})"
          , (int)state_.load(), (bdv_ == nullptr));
-      return false;
+      return "";
    }
 
    if (rawTx.empty()) {
       SPDLOG_LOGGER_ERROR(logger_, "broadcast failed: empty rawTx");
-      return false;
+      return "";
    }
 
    try
@@ -356,20 +356,19 @@ bool ArmoryConnection::broadcastZC(const BinaryData& rawTx)
       if (!tx.isInitialized() || tx.getThisHash().empty()) {
          logger_->error("[ArmoryConnection::broadcastZC] invalid TX data (size {}) - aborting broadcast"
                         , rawTx.getSize());
-         return false;
+         return "";
       }
    } catch (const BlockDeserializingException &e) {
       SPDLOG_LOGGER_ERROR(logger_, "broadcast failed: BlockDeserializingException, details: '{}'", e.what());
-      return false;
+      return "";
    } catch (const std::exception &e) {
       SPDLOG_LOGGER_ERROR(logger_, "broadcast failed: {}", e.what());
-      return false;
+      return "";
    }
 
    SPDLOG_LOGGER_DEBUG(logger_, "broadcast new TX: {}", rawTx.toHexStr());
 
-   bdv_->broadcastZC(rawTx);
-   return true;
+   return bdv_->broadcastZC(rawTx);
 }
 
 bool ArmoryConnection::getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &cb)
@@ -993,25 +992,23 @@ bool ArmoryConnection::getFeeSchedule(const FloatMapCb &cb)
    return true;
 }
 
-bool ArmoryConnection::pushZC(const BinaryData& rawTx) const
+std::string ArmoryConnection::pushZC(const BinaryData& rawTx) const
 {
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::pushZC] invalid state: {}", (int)state_.load());
-      return false;
+      return "";
    }
 
-   bdv_->broadcastZC(rawTx);
-   return true;
+   return bdv_->broadcastZC(rawTx);
 }
 
-bool ArmoryConnection::pushZCs(const std::vector<BinaryData> &txs) const
+std::string ArmoryConnection::pushZCs(const std::vector<BinaryData> &txs) const
 {
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::pushZCs] invalid state: {}", (int)state_.load());
-      return false;
+      return "";
    }
-   bdv_->broadcastZC(txs);
-   return true;
+   return bdv_->broadcastZC(txs);
 }
 
 unsigned int ArmoryConnection::getConfirmationsNumber(uint32_t blockNum) const
@@ -1061,12 +1058,12 @@ void ArmoryConnection::onRefresh(const std::vector<BinaryData>& ids)
    });
 }
 
-void ArmoryConnection::onZCsReceived(const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
+void ArmoryConnection::onZCsReceived(const std::string& requestId, const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
 {
    const auto newEntries = bs::TXEntry::fromLedgerEntries(entries);
 
-   addToMaintQueue([newEntries](ArmoryCallbackTarget *tgt) {
-      tgt->onZCReceived(newEntries);
+   addToMaintQueue([requestId, newEntries](ArmoryCallbackTarget *tgt) {
+      tgt->onZCReceived(requestId, newEntries);
    });
 }
 
@@ -1153,9 +1150,9 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
       break;
 
    case BDMAction_ZC:
-      logger_->debug("[ArmoryCallback::run] BDMAction_ZC: {} entries"
-         , bdmNotif.ledgers_.size());
-      connection_->onZCsReceived(bdmNotif.ledgers_);
+      logger_->debug("[ArmoryCallback::run] BDMAction_ZC: {} entries. Request ID {}"
+         , bdmNotif.ledgers_.size(), bdmNotif.requestID_);
+      connection_->onZCsReceived(bdmNotif.requestID_, bdmNotif.ledgers_);
       break;
 
    case BDMAction_InvalidatedZC:
@@ -1181,16 +1178,17 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
 
    case BDMAction_BDV_Error: {
       const auto bdvError = bdmNotif.error_;
-      logger_->debug("[ArmoryCallback::run] BDMAction_BDV_Error {}, str: {}"
-         , (int)bdvError.errCode_, bdvError.errorStr_);
+      logger_->debug("[ArmoryCallback::run] BDMAction_BDV_Error {}, str: {}. request ID {}"
+         , (int)bdvError.errCode_, bdvError.errorStr_, bdmNotif.requestID_);
       switch (static_cast<ArmoryErrorCodes>(bdvError.errCode_)) {
       case ArmoryErrorCodes::ZcBroadcast_Error:
       case ArmoryErrorCodes::ZcBroadcast_AlreadyInChain:
       case ArmoryErrorCodes::ZcBatch_Timeout:
       case ArmoryErrorCodes::ZcBroadcast_AlreadyInMempool:
       case ArmoryErrorCodes::ZcBroadcast_VerifyRejected:
-         connection_->addToMaintQueue([bdvError](ArmoryCallbackTarget *tgt) {
-            tgt->onTxBroadcastError(bdvError.errData_, bdvError.errCode_, bdvError.errorStr_);
+      case ArmoryErrorCodes::ZcBroadcast_Pending:
+         connection_->addToMaintQueue([requestId = bdmNotif.requestID_, bdvError](ArmoryCallbackTarget *tgt) {
+            tgt->onTxBroadcastError(requestId, bdvError.errData_, bdvError.errCode_, bdvError.errorStr_);
          });
          break;
       default:
@@ -1239,7 +1237,7 @@ bs::TXEntry bs::TXEntry::fromLedgerEntry(const ClientClasses::LedgerEntry &entry
 {
    bs::TXEntry result{ entry.getTxHash(), { entry.getID() }, entry.getValue()
       , entry.getBlockNum(), entry.getTxTime(), entry.isOptInRBF()
-      , entry.isChainedZC(), false, std::chrono::steady_clock::now() };
+      , entry.isChainedZC(), false, std::chrono::steady_clock::now(), {}};
    for (const auto &addr : entry.getScrAddrList()) {
       try {
          const auto &scrAddr = bs::Address::fromHash(addr);

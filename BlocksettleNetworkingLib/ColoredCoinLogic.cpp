@@ -1596,10 +1596,11 @@ ColoredCoinTracker::OutpointMap ColoredCoinTrackerClient::getCCUtxoForAddresses(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ColoredCoinACT::onZCReceived(const std::vector<bs::TXEntry> &zcs)
+void ColoredCoinACT::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
+   dbns->requestId_ = requestId;
 
    notifQueue_.push_back(std::move(dbns));
 }

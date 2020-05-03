@@ -202,7 +202,7 @@ public:
    }
 
    ////
-   void onZCReceived(const std::vector<bs::TXEntry> &zcs) override;
+   void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs) override;
    void onNewBlock(unsigned int, unsigned int) override;
    void onRefresh(const std::vector<BinaryData> &, bool) override;
    void onStateChanged(ArmoryState) override;

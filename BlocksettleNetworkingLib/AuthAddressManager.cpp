@@ -578,7 +578,7 @@ void AuthAddressManager::SetState(const bs::Address &addr, AddressVerificationSt
 
 bool AuthAddressManager::BroadcastTransaction(const BinaryData& transactionData)
 {
-   return armory_->broadcastZC(transactionData);
+   return !armory_->broadcastZC(transactionData).empty();
 }
 
 void AuthAddressManager::setDefault(const bs::Address &addr)
