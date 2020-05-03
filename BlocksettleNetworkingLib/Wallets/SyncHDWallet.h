@@ -55,9 +55,14 @@ namespace bs {
             bs::wallet::KeyRank encryptionRank() const { return encryptionRank_; }
             bool isPrimary() const;
             bool isOffline() const { return isOffline_; }
-            bool isHardwareWallet() const;
+            bool isHardwareWallet() const; // WO wallet could be signed with hw device
+            bool isHardwareOfflineWallet() const; // WO wallet couldn't be signed with hw device
             bool isFullWallet() const; // Non-primary but could be promoted
             NetworkType networkType() const { return netType_; }
+
+            // Each leaf should be treated as different wallet only
+            // e.g. we cannot mix segwit UTXOs from different leaf
+            bool canMixLeafs() const;
 
             std::shared_ptr<Group> getGroup(bs::hd::CoinType ct) const;
             std::shared_ptr<Group> createGroup(bs::hd::CoinType ct, bool isExtOnly);

@@ -297,6 +297,11 @@ bool bs::core::hd::Wallet::isHardwareWallet() const
    return !pwdMeta_.empty() && pwdMeta_[0].encType == bs::wallet::EncryptionType::Hardware;
 }
 
+bool bs::core::hd::Wallet::isHardwareOffline() const
+{
+   return !pwdMeta_.empty() && pwdMeta_[0].encType == bs::wallet::EncryptionType::HardwareOffline;
+}
+
 void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
 {
    auto nbTries = std::make_shared<int>(0);
@@ -377,7 +382,7 @@ void hd::Wallet::convertHardwareToWo()
    if (pwdMeta_.at(0).encType != bs::wallet::Hardware) {
       throw std::logic_error("Only hardware wallet could be converted to WO");
    }
-   pwdMeta_.at(0).encType = bs::wallet::Unencrypted;
+   pwdMeta_.at(0).encType = bs::wallet::HardwareOffline;
    writeToDB(true);
 }
 

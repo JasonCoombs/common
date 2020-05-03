@@ -110,6 +110,7 @@ public:
    bool isPasswordOnly() const;
 
    Q_INVOKABLE bool isHardwareWallet() const;
+   Q_INVOKABLE bool isHardwareWalletOffline() const;
 
 signals:
    void walletChanged();

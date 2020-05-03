@@ -24,7 +24,8 @@ namespace bs {
          Unencrypted,
          Password,
          Auth,
-         Hardware
+         Hardware, // this one could be sign with device
+         HardwareOffline // this one is hardware watching only type
       };
 
       // first - required number of keys (M), second - total number of keys (N)
