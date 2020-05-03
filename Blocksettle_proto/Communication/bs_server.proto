@@ -108,10 +108,11 @@ enum ArmoryPushTxResult
 
 message ArmoryPushTxResponse
 {
-   bytes tx_hash = 1;
-   ArmoryPushTxResult result = 2;
-   string error_message = 3;
-   string settlement_id = 4;
+   bytes                tx_hash        = 1;
+   ArmoryPushTxResult   result         = 2;
+   string               error_message  = 3;
+   string               settlement_id  = 4;
+   bool                 pushed_by_us   = 5;
 }
 
 message ArmoryPushXbtTXsRequest

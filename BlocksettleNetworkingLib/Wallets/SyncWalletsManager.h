@@ -198,9 +198,9 @@ namespace bs {
          void onCCInfoLoaded();
 
       private:
-         void onZCReceived(const std::vector<bs::TXEntry> &) override;
+         void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>&) override;
          void onZCInvalidated(const std::set<BinaryData> &ids) override;
-         void onTxBroadcastError(const BinaryData &txHash, int errCode
+         void onTxBroadcastError(const std::string& requestId, const BinaryData &txHash, int errCode
             , const std::string &errMsg) override;
          void onNewBlock(unsigned int height, unsigned int branchHeight) override;
          void onStateChanged(ArmoryState) override;

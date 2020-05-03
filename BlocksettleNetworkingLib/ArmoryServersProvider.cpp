@@ -33,10 +33,10 @@ const QList<ArmoryServer> ArmoryServersProvider::defaultServers_ = {
    ArmoryServer::fromTextSettings(QStringLiteral(ARMORY_BLOCKSETTLE_NAME":1:armory.blocksettle.com:81:")),
    ArmoryServer::fromTextSettings(kEnableLocalAutostart ?
       QStringLiteral("%1:0:127.0.0.1::").arg(tr("Local Auto-launch Node")) :
-      QStringLiteral("%1:0:127.0.0.1::").arg(tr("Local ArmoryDB Node"))),
+      QStringLiteral("%1:0:127.0.0.1::").arg(tr("Local BlockSettleDB Node"))),
    ArmoryServer::fromTextSettings(kEnableLocalAutostart ?
       QStringLiteral("%1:1:127.0.0.1::").arg(tr("Local Auto-launch Node")) :
-      QStringLiteral("%1:1:127.0.0.1:81:").arg(tr("Local ArmoryDB Node")))
+      QStringLiteral("%1:1:127.0.0.1:81:").arg(tr("Local BlockSettleDB Node")))
 };
 
 const int ArmoryServersProvider::kDefaultServersCount = ArmoryServersProvider::defaultServers_.size();

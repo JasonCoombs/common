@@ -10,7 +10,6 @@
 */
 #include "CoreWallet.h"
 
-#include "CheckRecipSigner.h"
 #include "CoinSelection.h"
 #include "Wallets.h"
 #include "XBTAmount.h"
@@ -232,87 +231,83 @@ bool wallet::TXSignRequest::isValid() const noexcept
 
 Signer wallet::TXSignRequest::getSigner(const std::shared_ptr<ResolverFeed> &resolver) const
 {
-   bs::CheckRecipSigner prevStateSigner;
-   bs::CheckRecipSigner signer;
+   if (!signerCreated_) {
+      bs::CheckRecipSigner prevStateSigner;
+      if (!prevStates.empty()) {
+         for (const auto &prevState : prevStates) {
+            prevStateSigner.deserializeState(prevState);
+         }
 
-   if (!prevStates.empty()) {
-      for (const auto &prevState : prevStates) {
-         prevStateSigner.deserializeState(prevState);
+         signer_.setFlags(prevStateSigner.getFlags());
+         for (const auto &spender : prevStateSigner.spenders()) {
+            signer_.addSpender(spender);
+         }
+      } else {
+         signer_.setFlags(SCRIPT_VERIFY_SEGWIT);
+
+         for (const auto &utxo : inputs) {   // TODO: maybe this loop should always run, not only if prevStates are empty
+            std::shared_ptr<ScriptSpender> spender;
+            if (resolver) {
+               spender = std::make_shared<ScriptSpender>(utxo, resolver);
+            } else if (populateUTXOs) {
+               spender = std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue());
+            } else {
+               spender = std::make_shared<ScriptSpender>(utxo);
+            }
+            if (RBF) {
+               spender->setSequence(UINT32_MAX - 2);
+            }
+            signer_.addSpender(spender);
+         }
       }
 
-      signer.setFlags(prevStateSigner.getFlags());
-      for (const auto &spender : prevStateSigner.spenders()) {
-         signer.addSpender(spender);
+      if (populateUTXOs) {
+         for (const auto &utxo : inputs) {
+            try {
+               signer_.populateUtxo(utxo);
+            } catch (const std::exception &) {}
+         }
       }
-   }
-   else {
-      signer.setFlags(SCRIPT_VERIFY_SEGWIT);
 
-      for (const auto &utxo : inputs) {   // TODO: maybe this loop should always run, not only if prevStates are empty
-         std::shared_ptr<ScriptSpender> spender;
-         if (resolver) {
-            spender = std::make_shared<ScriptSpender>(utxo, resolver);
-         } else if (populateUTXOs) {
-            spender = std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue());
-         } else {
-            spender = std::make_shared<ScriptSpender>(utxo);
-         }
-         if (RBF) {
-            spender->setSequence(UINT32_MAX - 2);
-         }
-         signer.addSpender(spender);
-      }
-   }
-
-   if (populateUTXOs) {
-      for (const auto &utxo : inputs) {
-         try {
-            signer.populateUtxo(utxo);
-         }
-         catch (const std::exception &) {}
-      }
-   }
-
-   for (const auto &orderType : outSortOrder) {
-      switch (orderType) {
-      case OutputOrderType::PrevState:
-         for (const auto &recip : prevStateSigner.recipients()) {
-            signer.addRecipient(recip);
-         }
-         break;
-
-      case OutputOrderType::Recipients:
-         for (const auto& recipient : recipients) {
-            signer.addRecipient(recipient);
-         }
-         break;
-
-      case OutputOrderType::Change:
-         if (!change.value) {
+      for (const auto &orderType : outSortOrder) {
+         switch (orderType) {
+         case OutputOrderType::PrevState:
+            for (const auto &recip : prevStateSigner.recipients()) {
+               signer_.addRecipient(recip);
+            }
             break;
-         }
-         {
-            const auto changeRecip = change.address.getRecipient(bs::XBTAmount{ change.value });
-            if (changeRecip) {
-               signer.addRecipient(changeRecip);
-            }
-            else {
-               throw std::runtime_error("failed to get change recipient for " + std::to_string(change.value));
-            }
-         }
-         break;
 
-      default:
-         throw std::invalid_argument("invalid output order type " + std::to_string((int)orderType));
+         case OutputOrderType::Recipients:
+            for (const auto& recipient : recipients) {
+               signer_.addRecipient(recipient);
+            }
+            break;
+
+         case OutputOrderType::Change:
+            if (!change.value) {
+               break;
+            }
+            {
+               const auto changeRecip = change.address.getRecipient(bs::XBTAmount{ change.value });
+               if (changeRecip) {
+                  signer_.addRecipient(changeRecip);
+               } else {
+                  throw std::runtime_error("failed to get change recipient for " + std::to_string(change.value));
+               }
+            }
+            break;
+
+         default:
+            throw std::invalid_argument("invalid output order type " + std::to_string((int)orderType));
+         }
       }
+      signer_.removeDupRecipients();
+      signerCreated_ = true;
    }
-
-   signer.removeDupRecipients();
-
    if (resolver) {
-      signer.setFeed(resolver);
+      signer_.setFeed(resolver);
    }
-   return signer;
+   return signer_;
 }
 
 static UtxoSelection computeSizeAndFee(const std::vector<UTXO> &inUTXOs, const PaymentStruct &inPS)
@@ -993,7 +988,7 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
@@ -1096,7 +1091,7 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
    if (!signer.verify()) {
       throw std::runtime_error("failed to verify signer");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 
@@ -1153,7 +1148,7 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       if (!signer.verify()) {
          throw std::logic_error("signer failed to verify");
       }
-      return signer.serialize();
+      return signer.serializeSignedTx();
    }
 }
 
@@ -1219,7 +1214,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
    }
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 BinaryData wallet::computeID(const BinaryData &input)

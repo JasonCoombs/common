@@ -60,6 +60,7 @@ DIALOG_KEY_INIT(TxInputProduct)
 DIALOG_KEY_INIT(WalletId)
 DIALOG_KEY_INIT(XBT)
 DIALOG_KEY_INIT(TxRequest)
+DIALOG_KEY_INIT(ExpandTxInfo)
 
 Any toPbVariant(const QVariant& v)
 {
