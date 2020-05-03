@@ -19,6 +19,7 @@
 #include "Address.h"
 #include "Assets.h"
 #include "BtcDefinitions.h"
+#include "CheckRecipSigner.h"
 #include "EasyCoDec.h"
 #include "Script.h"
 #include "Signer.h"
@@ -261,7 +262,7 @@ namespace bs {
             std::vector<UTXO>          inputs;
             std::vector<std::string>   inputIndices;
             std::vector<std::shared_ptr<ScriptRecipient>>   recipients;
-            std::map<BinaryData, BinaryData> supportingTxMap_;
+            std::map<BinaryData, BinaryData> supportingTXs;
             OutputSortOrder   outSortOrder{ OutputOrderType::PrevState
                , OutputOrderType::Recipients, OutputOrderType::Change };
             struct {
@@ -275,6 +276,27 @@ namespace bs {
             bool        populateUTXOs{ false };
             std::string comment;
 
+            TXSignRequest() {}
+            TXSignRequest(const TXSignRequest &other)
+            {
+               walletIds = other.walletIds;
+               inputs = other.inputs;
+               inputIndices = other.inputIndices;
+               recipients = other.recipients;
+               supportingTXs = other.supportingTXs;
+               outSortOrder = other.outSortOrder;
+               change = other.change;
+               fee = other.fee;
+               RBF = other.RBF;
+               prevStates = other.prevStates;
+               populateUTXOs = other.populateUTXOs;
+               comment = other.comment;
+            }
+
+            TXSignRequest operator=(const TXSignRequest &other)
+            {
+               return other;
+            }
             bool isValid() const noexcept;
             BinaryData serializeState(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
                return getSigner(resolver).serializeState();
@@ -306,6 +328,10 @@ namespace bs {
 
          private:
             Signer getSigner(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const;
+
+         private:
+            mutable bs::CheckRecipSigner  signer_;
+            mutable bool   signerCreated_{ false };
          };
 
 

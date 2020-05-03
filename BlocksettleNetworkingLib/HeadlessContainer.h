@@ -71,6 +71,9 @@ public:
    bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override;
 
+   bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
+      , const SignTxCb &cb) override;
+
    bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) override;
 
    bs::signer::RequestId CancelSignTx(const BinaryData &txId) override;
@@ -133,6 +136,7 @@ protected:
    bs::signer::RequestId Send(const Blocksettle::Communication::headless::RequestPacket &, bool incSeqNo = true);
    void ProcessSignTXResponse(unsigned int id, const std::string &data);
    void ProcessSettlementSignTXResponse(unsigned int id, const std::string &data);
+   void ProcessPubResolveResponse(unsigned int id, const std::string &data);
    void ProcessCreateHDLeafResponse(unsigned int id, const std::string &data);
    void ProcessHDWalletPromotionResponse(unsigned int id, const std::string& data);
    void ProcessGetHDWalletInfoResponse(unsigned int id, const std::string &data);

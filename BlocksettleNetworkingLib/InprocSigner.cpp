@@ -164,6 +164,33 @@ bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core
    return reqId;
 }
 
+bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet::TXSignRequest &txReq
+   , const SignTxCb &cb)
+{
+   std::set<std::shared_ptr<bs::core::Wallet>> wallets;
+   for (const auto &input : txReq.inputs) {
+      const auto &addr = bs::Address::fromUTXO(input);
+      const auto &wallet = walletsMgr_->getWalletByAddress(addr);
+      if (wallet) {
+         wallets.insert(wallet);
+      }
+   }
+   if (wallets.empty()) {
+      logger_->error("[{}] failed to find any associated wallets", __func__);
+      return 0;
+   }
+   const auto reqId = seqId_++;
+   for (const auto &wallet : wallets) {
+      try {
+         txReq.txId(wallet->getPublicResolver());
+      } catch (const std::exception &) {}
+   }
+   const auto &resolvedState = txReq.serializeState();
+   cb(resolvedState.empty() ? bs::error::ErrorCode::InternalError : bs::error::ErrorCode::NoError
+      , resolvedState);
+   return reqId;
+}
+
 bool InprocSigner::createHDLeaf(const std::string &rootWalletId, const bs::hd::Path &path
    , const std::vector<bs::wallet::PasswordData> &pwdData
    , bs::sync::PasswordDialogData
