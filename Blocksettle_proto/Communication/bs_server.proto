@@ -277,14 +277,16 @@ message CCDefinitionsData
 
 message CCTxValidRequest
 {
-   string cc = 1;
-   repeated OutPointData outpoints = 2;
+   string request_id = 1;
+   string cc = 2;
+   repeated OutPointData outpoints = 3;
 }
 
 message CCTxValidResponse
 {
-   repeated OutPointData outpoints = 1;
-   repeated bool is_valid = 2;
+   string request_id = 1;
+   repeated OutPointData outpoints = 2;
+   repeated bool is_valid = 3;
 }
 
 message CCValidateHalvesRequest
