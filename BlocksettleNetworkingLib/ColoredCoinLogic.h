@@ -33,10 +33,27 @@ struct ParsedCcTx
 {
    BinaryData txHash_;
 
+   //tx's cc outpoints
    std::vector<std::pair<BinaryData, unsigned>> outpoints_;
+
+   //tx's cc outputs
    std::vector<std::pair<uint64_t, BinaryData>> outputs_;
 
+   //hash is set only if this is a valid cc tx
    bool isInitialized(void) const { return txHash_.getSize() == 32; }
+};
+
+////
+struct CcTxCandidate
+{
+   std::map<BinaryData, uint64_t> ccPerAddr_;
+   std::map<BinaryData, uint64_t> xbtPerAddr_;
+
+   uint64_t totalCcRedeemed_ = UINT64_MAX;
+   uint64_t totalCcSpent_ = UINT64_MAX;
+   uint64_t totalXbtSpent_ = UINT64_MAX;
+
+   bool isValidCcTx_ = false;
 };
 
 ////
@@ -379,6 +396,12 @@ public:
       const std::shared_ptr<ColoredCoinZCSnapshot>&,
       const BinaryData&, bool);
 
+   //returns effect of a tx on cc utxo map if it was mined
+   CcTxCandidate parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot>&,
+      const std::shared_ptr<ColoredCoinZCSnapshot>&,
+      const Tx&) const;
+
    ////
    void addOriginAddress(const bs::Address&) override;
    void addRevocationAddress(const bs::Address&) override;
@@ -410,7 +433,7 @@ public:
    std::vector<std::shared_ptr<CcOutpoint>> getSpendableOutpointsForAddress(
       const BinaryData&) const;
 
-   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const;
+   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex, bool allowZC) const;
 
    // Determine whether the TX was valid CC at any point in time (including current ZC)
    bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const;
