@@ -279,22 +279,11 @@ namespace bs {
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
             {
-               walletIds = other.walletIds;
-               inputs = other.inputs;
-               inputIndices = other.inputIndices;
-               recipients = other.recipients;
-               supportingTXs = other.supportingTXs;
-               outSortOrder = other.outSortOrder;
-               change = other.change;
-               fee = other.fee;
-               RBF = other.RBF;
-               prevStates = other.prevStates;
-               populateUTXOs = other.populateUTXOs;
-               comment = other.comment;
+               *this = std::move(other);
             }
 
             TXSignRequest &operator=(const TXSignRequest &other)
-            {  // If anyone knows how to get rid of this stupid code duplication, please replace the code below
+            {
                walletIds = other.walletIds;
                inputs = other.inputs;
                inputIndices = other.inputIndices;
@@ -307,6 +296,8 @@ namespace bs {
                prevStates = other.prevStates;
                populateUTXOs = other.populateUTXOs;
                comment = other.comment;
+               signer_.reset();
+               signerCreated_ = false;
                return *this;
             }
             bool isValid() const noexcept;
