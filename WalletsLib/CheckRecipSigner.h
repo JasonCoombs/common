@@ -78,6 +78,8 @@ namespace bs {
 
       bool verifyPartial(void);
 
+      void reset();
+
    private:
       static BinaryData getRecipientOutputScript(const std::shared_ptr<ScriptRecipient> &recip) {
          const auto &recipScr = recip->getSerializedScript();
