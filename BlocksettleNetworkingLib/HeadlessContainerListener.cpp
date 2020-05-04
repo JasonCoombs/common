@@ -200,6 +200,9 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::SignAuthAddrRevokeType:
       return onSignAuthAddrRevokeRequest(clientId, packet);
 
+   case headless::ResolvePublicSpendersType:
+      return onResolvePubSpenders(clientId, packet);
+
    case headless::CreateHDLeafRequestType:
       return onCreateHDLeaf(clientId, packet);
 
@@ -330,7 +333,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
    }
 
    bs::core::wallet::TXSignRequest txSignReq = bs::signer::pbTxRequestToCore(request, logger_);
-
    if (!txSignReq.isValid()) {
       logger_->error("[HeadlessContainerListener] invalid SignTxRequest");
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxInvalidRequest);
@@ -757,6 +759,47 @@ bool HeadlessContainerListener::onSignAuthAddrRevokeRequest(const std::string &c
       , packet.type(), dialogData, onPassword);
 }
 
+bool HeadlessContainerListener::onResolvePubSpenders(const std::string &clientId
+   , const headless::RequestPacket &packet)
+{
+   headless::SignTxRequest request;
+   if (!request.ParseFromString(packet.data())) {
+      logger_->error("[{}] failed to parse request", __func__);
+      SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::FailedToParse);
+      return false;
+   }
+
+   bs::core::wallet::TXSignRequest txSignReq = bs::signer::pbTxRequestToCore(request, logger_);
+   if (txSignReq.inputs.empty()) {
+      logger_->error("[HeadlessContainerListener::onResolvePubSpenders] invalid SignTxRequest");
+      SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::TxInvalidRequest);
+      return false;
+   }
+
+   std::set<std::shared_ptr<bs::core::Wallet>> wallets;  // all wallets that participate in spenders resolution
+   for (const auto &walletId : txSignReq.walletIds) {
+      const auto &wallet = walletsMgr_->getWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[HeadlessContainerListener::onResolvePubSpenders] failed"
+            " to find wallet by id {}", walletId);
+         continue;
+      }
+      wallets.insert(wallet);
+   }
+   for (const auto &wallet : wallets) {
+      try {
+         txSignReq.txId(wallet->getPublicResolver());
+      } catch (const std::exception &) {}
+   }
+   const auto &resolvedState = txSignReq.serializeState();
+   if (resolvedState.empty()) {
+      SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::InternalError);
+      return false;
+   }
+   SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::NoError, resolvedState);
+   return true;
+}
+
 void HeadlessContainerListener::SignTXResponse(const std::string &clientId, unsigned int id, headless::RequestType reqType
    , bs::error::ErrorCode errorCode, const BinaryData &tx)
 {
@@ -774,6 +817,9 @@ void HeadlessContainerListener::SignTXResponse(const std::string &clientId, unsi
 
    if (!sendData(packet.SerializeAsString(), clientId)) {
       logger_->error("[HeadlessContainerListener] failed to send response signTX packet");
+   }
+   if (reqType == headless::ResolvePublicSpendersType) {
+      return;
    }
    if (errorCode == bs::error::ErrorCode::NoError && callbacks_) {
       callbacks_->txSigned(tx);

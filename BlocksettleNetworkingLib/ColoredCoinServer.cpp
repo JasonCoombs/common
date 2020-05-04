@@ -14,6 +14,7 @@
 #include "ColoredCoinCache.h"
 #include "ColoredCoinLogic.h"
 #include "DispatchQueue.h"
+#include "FutureValue.h"
 #include "StringUtils.h"
 #include "ZMQ_BIP15X_DataConnection.h"
 #include "ZMQ_BIP15X_ServerConnection.h"
@@ -590,4 +591,25 @@ void CcTrackerServer::processRegisterCc(CcTrackerServer::ClientData &client, con
    trackerPtr->clients_.insert(c);
    trackerPtr->sendSnapshot(c);
    trackerPtr->sendZcSnapshot(c);
+}
+
+
+CCTrackerClientFactoryConnected::CCTrackerClientFactoryConnected(const std::shared_ptr<spdlog::logger> &logger
+   , const std::string &host, const std::string &port, const std::string &pubKey)
+{
+   auto ccTrackerKeyCb = [pubKey](const std::string &oldKey, const std::string &newKey
+      , const std::string& srvAddrPort, const std::shared_ptr<FutureValue<bool>> &prompt)
+   {
+      prompt->setValue((newKey == pubKey));
+   };
+   trackerClient_ = std::make_shared<CcTrackerClient>(logger);
+   trackerClient_->openConnection(host, port, ccTrackerKeyCb);
+}
+
+CCTrackerClientFactoryConnected::~CCTrackerClientFactoryConnected() = default;
+
+std::shared_ptr<ColoredCoinTrackerClientIface> CCTrackerClientFactoryConnected::createClient(uint32_t lotSize)
+{
+   auto trackerClient = CcTrackerClient::createClient(trackerClient_, lotSize);
+   return std::make_shared<ColoredCoinTrackerClient>(std::move(trackerClient));
 }

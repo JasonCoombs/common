@@ -85,6 +85,8 @@ struct DBNotificationStruct
    unsigned int branchHeight_;
    unsigned int errCode_;
 
+   std::string requestId_;
+
    DBNotificationStruct(DBNotificationStruct_Enum type) :
       type_(type)
    {}
@@ -103,16 +105,23 @@ public:
    // for more brevity if some of them are not needed
    virtual void onDestroy();
    virtual void onStateChanged(ArmoryState) {}
-   virtual void onPrepareConnection(NetworkType, const std::string &host, const std::string &port) {}
-   virtual void onRefresh(const std::vector<BinaryData> &, bool) {}
-   virtual void onNewBlock(unsigned int height, unsigned int branchHeight) {}
-   virtual void onZCReceived(const std::vector<bs::TXEntry> &) {}
-   virtual void onZCInvalidated(const std::set<BinaryData> &ids) {}
+   // arguments: net type, host, port
+   virtual void onPrepareConnection(NetworkType, const std::string &, const std::string &) {}
+   // arguments: ids, online
+   virtual void onRefresh(const std::vector<BinaryData> &, bool ) {}
+   // arguments: height, branchHeight
+   virtual void onNewBlock(unsigned int , unsigned int ) {}
+   // arguments: requestId, entries
+   virtual void onZCReceived(const std::string& , const std::vector<bs::TXEntry> &) {}
+   // arguments: ids
+   virtual void onZCInvalidated(const std::set<BinaryData> &) {}
    virtual void onLoadProgress(BDMPhase, float, unsigned int, unsigned int) {}
    virtual void onNodeStatus(NodeStatus, bool, RpcStatus) {}
-   virtual void onError(int errCode, const std::string &errText) {}
-   virtual void onTxBroadcastError(const BinaryData &txHash, int errCode
-      , const std::string &errText) {}
+   // arguments: errCode, errText
+   virtual void onError(int , const std::string &) {}
+   // arguments: requestId, txHash, errCode, errText
+   virtual void onTxBroadcastError(const std::string&
+      , const BinaryData &, int, const std::string &) {}
 
    virtual void onLedgerForAddress(const bs::Address &, const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
 
@@ -163,8 +172,6 @@ public:
    bool getNodeStatus(const std::function<void(const std::shared_ptr<::ClientClasses::NodeStatusStruct>)>& userCB);
 
    bool goOnline();
-
-   bool broadcastZC(const BinaryData& rawTx);
 
    unsigned int topBlock() const { return topBlock_; }
 
@@ -221,8 +228,10 @@ public:
 
    virtual bool estimateFee(unsigned int nbBlocks, const FloatCb &);
    virtual bool getFeeSchedule(const FloatMapCb&);
-   bool pushZC(const BinaryData &) const;
-   bool pushZCs(const std::vector<BinaryData> &) const;
+
+   std::string broadcastZC(const BinaryData& rawTx);
+   std::string pushZC(const BinaryData &) const;
+   std::string pushZCs(const std::vector<BinaryData> &) const;
 
    bool isTransactionVerified(const ClientClasses::LedgerEntry &) const;
    bool isTransactionVerified(uint32_t blockNum) const;
@@ -262,7 +271,7 @@ private:
    void registerBDV(NetworkType);
    void setTopBlock(unsigned int topBlock);
    void onRefresh(const std::vector<BinaryData> &);
-   void onZCsReceived(const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &);
+   void onZCsReceived(const std::string& requestId, const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &);
    void onZCsInvalidated(const std::set<BinaryData> &);
 
    void stopServiceThreads();

@@ -108,10 +108,11 @@ enum ArmoryPushTxResult
 
 message ArmoryPushTxResponse
 {
-   bytes tx_hash = 1;
-   ArmoryPushTxResult result = 2;
-   string error_message = 3;
-   string settlement_id = 4;
+   bytes                tx_hash        = 1;
+   ArmoryPushTxResult   result         = 2;
+   string               error_message  = 3;
+   string               settlement_id  = 4;
+   bool                 pushed_by_us   = 5;
 }
 
 message ArmoryPushXbtTXsRequest
@@ -277,14 +278,16 @@ message CCDefinitionsData
 
 message CCTxValidRequest
 {
-   string cc = 1;
-   repeated OutPointData outpoints = 2;
+   string request_id = 1;
+   string cc = 2;
+   repeated OutPointData outpoints = 3;
 }
 
 message CCTxValidResponse
 {
-   repeated OutPointData outpoints = 1;
-   repeated bool is_valid = 2;
+   string request_id = 1;
+   repeated OutPointData outpoints = 2;
+   repeated bool is_valid = 3;
 }
 
 message CCValidateHalvesRequest
@@ -314,6 +317,39 @@ message CCValidateHalvesResponse
    }
 }
 
+message CCValidateHalfRequest
+{
+   enum TxType {
+      Unknown = 0;
+      Requester = 1; 
+      Dealer = 2;
+      Merged = 3;
+   }
+   string request_id = 1;
+   string cc = 2;
+   uint32 qty = 3;
+   bool   req_sells = 4;
+   double price = 5;
+   bytes  coin_input = 6;
+   TxType tx_type = 7;
+}
+
+message CCValidateHalfResponse
+{
+   enum Result {
+      AllOk = 0;
+      ValueMismatch = 1;
+      InvalidInput  = 2;
+      InvalidCCData = 3;
+      OutputsDisorder = 4;
+      InvalidOutput = 5;
+   }
+   string request_id = 1;
+   Result result = 2;
+   repeated bytes cc_inputs = 3;
+   repeated bytes xbt_inputs = 4;
+}
+
 message CCUpdatedGenesisAddress
 {
    string cc_name    = 1;
@@ -337,6 +373,7 @@ enum CcTrackMessageType
    CcTrackDisabledDefinition  = 5;
    CcUpdatedGenesisAddress    = 6;
    CCDefinitionLoaded         = 7;
+   CcTrackValidateUnsignedHalf= 8;
 }
 
 message CcTrackMessage
@@ -350,6 +387,8 @@ message CcTrackMessage
       CCValidateHalvesResponse   cc_valid_response       = 6;
       CCUpdatedGenesisAddress    updated_genesis_address = 7;
       LoadedCCDefinition         loaded_cc_definition    = 8;
+      CCValidateHalfRequest      cc_unsigned_half_req    = 9;
+      CCValidateHalfResponse     cc_unsigned_half_resp   = 10;
    }
 }
 

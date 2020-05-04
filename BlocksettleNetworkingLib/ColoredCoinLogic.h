@@ -202,7 +202,7 @@ public:
    }
 
    ////
-   void onZCReceived(const std::vector<bs::TXEntry> &zcs) override;
+   void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs) override;
    void onNewBlock(unsigned int, unsigned int) override;
    void onRefresh(const std::vector<BinaryData> &, bool) override;
    void onStateChanged(ArmoryState) override;
@@ -387,40 +387,82 @@ public:
    bool goOnline(void) override;
 };
 
-class ColoredCoinTrackerClient
+class ColoredCoinTrackerClientIface
+{
+public:
+   virtual ~ColoredCoinTrackerClientIface();
+
+   virtual void addOriginAddress(const bs::Address&) {}
+   virtual void addRevocationAddress(const bs::Address&) {}
+
+   virtual bool goOnline() { return true; }
+
+   virtual uint64_t getCcOutputValue(const BinaryData &txHash
+      , unsigned int txOutIndex, unsigned int height) const = 0;
+
+   //in: prefixed address
+   virtual uint64_t getCcValueForAddress(const BinaryData&) const = 0;
+
+   //in: prefixed address
+   virtual std::vector<std::shared_ptr<CcOutpoint>> getSpendableOutpointsForAddress(
+      const BinaryData&) const = 0;
+
+   virtual bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const = 0;
+
+   // Determine whether the TX was valid CC at any point in time (including current ZC)
+   virtual bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const = 0;
+
+   //in: set of prefixed addresses
+   virtual uint64_t getUnconfirmedCcValueForAddresses(const std::set<BinaryData>&) const = 0;
+   virtual uint64_t getConfirmedCcValueForAddresses(const std::set<BinaryData>&) const = 0;
+
+   virtual ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
+      , bool withZc) const = 0;
+};
+
+class ColoredCoinTrackerClient : public ColoredCoinTrackerClientIface
 {
 protected:
    std::unique_ptr<ColoredCoinTrackerInterface> ccSnapshots_;
 
 public:
    ColoredCoinTrackerClient(std::unique_ptr<ColoredCoinTrackerInterface> ccSnapshots);
+   ~ColoredCoinTrackerClient() override;
 
-   void addOriginAddress(const bs::Address&);
-   void addRevocationAddress(const bs::Address&);
+   void addOriginAddress(const bs::Address&) override;
+   void addRevocationAddress(const bs::Address&) override;
 
-   bool goOnline();
+   bool goOnline() override;
 
    uint64_t getCcOutputValue(const BinaryData &txHash
-      , unsigned int txOutIndex, unsigned int height) const;
+      , unsigned int txOutIndex, unsigned int height) const override;
 
    //in: prefixed address
-   uint64_t getCcValueForAddress(const BinaryData&) const;
+   uint64_t getCcValueForAddress(const BinaryData&) const override;
 
    //in: prefixed address
    std::vector<std::shared_ptr<CcOutpoint>> getSpendableOutpointsForAddress(
-      const BinaryData&) const;
+      const BinaryData&) const override;
 
-   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const;
+   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const override;
 
    // Determine whether the TX was valid CC at any point in time (including current ZC)
-   bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const;
+   bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const override;
 
    //in: set of prefixed addresses
-   uint64_t getUnconfirmedCcValueForAddresses(const std::set<BinaryData>&) const;
-   uint64_t getConfirmedCcValueForAddresses(const std::set<BinaryData>&) const;
+   uint64_t getUnconfirmedCcValueForAddresses(const std::set<BinaryData>&) const override;
+   uint64_t getConfirmedCcValueForAddresses(const std::set<BinaryData>&) const override;
 
-   ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&, bool withZc) const;
-
+   ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
+      , bool withZc) const override;
 };
 
-#endif
+class CCTrackerClientFactory
+{
+public:
+   virtual ~CCTrackerClientFactory();
+
+   virtual std::shared_ptr<ColoredCoinTrackerClientIface> createClient(uint32_t lotSize) = 0;
+};
+
+#endif   //_H_COLOREDCOINLOGIC

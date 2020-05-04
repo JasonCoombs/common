@@ -108,6 +108,9 @@ public:
    virtual bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) = 0;
 
+   virtual bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
+      , const SignTxCb &cb) = 0;
+
    virtual bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) = 0;
 
    virtual bs::signer::RequestId CancelSignTx(const BinaryData &txId) = 0;

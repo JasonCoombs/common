@@ -30,12 +30,13 @@ public:
    virtual void connected() {}
    virtual void disconnecting() {}
    virtual void disconnected() {}
-   virtual void onRequestRejected(const std::string &security
-      , const std::string &reason) {}
+   // arguments: security, reason
+   virtual void onRequestRejected(const std::string &
+      , const std::string &) {}
 
-   virtual void onMDUpdate(bs::network::Asset::Type, const std::string &security
+   virtual void onMDUpdate(bs::network::Asset::Type, const std::string &
       , bs::network::MDFields) {}
-   virtual void onMDSecurityReceived(const std::string &security
+   virtual void onMDSecurityReceived(const std::string &
       , const bs::network::SecurityDef &) {}
    virtual void allSecuritiesReceived() {}
 

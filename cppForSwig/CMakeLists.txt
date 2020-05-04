@@ -7,8 +7,8 @@ SET(CPP_FOR_SWIG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../ArmoryDB/cppForSwig)
 SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/Accounts.cpp
    ${CPP_FOR_SWIG_ROOT}/Addresses.cpp
-   ${CPP_FOR_SWIG_ROOT}/Assets.cpp
    ${CPP_FOR_SWIG_ROOT}/AssetEncryption.cpp
+   ${CPP_FOR_SWIG_ROOT}/Assets.cpp
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.cpp
    ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.cpp
    ${CPP_FOR_SWIG_ROOT}/BinaryData.cpp
@@ -43,10 +43,11 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/UniversalTimer.cpp
    ${CPP_FOR_SWIG_ROOT}/WalletFileInterface.cpp
    ${CPP_FOR_SWIG_ROOT}/WalletHeader.cpp
-   ${CPP_FOR_SWIG_ROOT}/Wallets.cpp
    ${CPP_FOR_SWIG_ROOT}/WalletManager.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketClient.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketMessage.cpp
+   ${CPP_FOR_SWIG_ROOT}/ZeroConfNotifications.cpp
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/mdb.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/midl.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdbpp.cpp
@@ -94,8 +95,8 @@ ENDIF (WIN32)
 SET (HEADERS
    ${CPP_FOR_SWIG_ROOT}/Accounts.h
    ${CPP_FOR_SWIG_ROOT}/Addresses.h
-   ${CPP_FOR_SWIG_ROOT}/Assets.h
    ${CPP_FOR_SWIG_ROOT}/AssetEncryption.h
+   ${CPP_FOR_SWIG_ROOT}/Assets.h
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.h
    ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.h
    ${CPP_FOR_SWIG_ROOT}/BDVCodec.h
@@ -116,9 +117,9 @@ SET (HEADERS
    ${CPP_FOR_SWIG_ROOT}/lmdb_wrapper.h
    ${CPP_FOR_SWIG_ROOT}/NetworkConfig.h
    ${CPP_FOR_SWIG_ROOT}/ReentrantLock.h
+   ${CPP_FOR_SWIG_ROOT}/Script.h
    ${CPP_FOR_SWIG_ROOT}/SecureBinaryData.h
    ${CPP_FOR_SWIG_ROOT}/Signer.h
-   ${CPP_FOR_SWIG_ROOT}/Script.h
    ${CPP_FOR_SWIG_ROOT}/SocketObject.h
    ${CPP_FOR_SWIG_ROOT}/SocketService.h
    ${CPP_FOR_SWIG_ROOT}/StringSockets.h
@@ -126,13 +127,14 @@ SET (HEADERS
    ${CPP_FOR_SWIG_ROOT}/Transactions.h
    ${CPP_FOR_SWIG_ROOT}/TxClasses.h
    ${CPP_FOR_SWIG_ROOT}/TxEvalState.h
+   ${CPP_FOR_SWIG_ROOT}/UniversalTimer.h
    ${CPP_FOR_SWIG_ROOT}/WalletFileInterface.h
    ${CPP_FOR_SWIG_ROOT}/WalletHeader.h
-   ${CPP_FOR_SWIG_ROOT}/Wallets.h
    ${CPP_FOR_SWIG_ROOT}/WalletManager.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets.h
    ${CPP_FOR_SWIG_ROOT}/WebSocketClient.h
    ${CPP_FOR_SWIG_ROOT}/WebSocketMessage.h
-   ${CPP_FOR_SWIG_ROOT}/UniversalTimer.h
+   ${CPP_FOR_SWIG_ROOT}/ZeroConfNotifications.h
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdb.h
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/midl.h
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdbpp.h

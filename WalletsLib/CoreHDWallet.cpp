@@ -1025,7 +1025,7 @@ BinaryData hd::Wallet::signSettlementTXRequest(const wallet::TXSignRequest &txRe
    signer.setFeed(resolver);
 
    signer.sign();
-   return signer.serialize();
+   return signer.serializeSignedTx();
 }
 
 

@@ -68,7 +68,7 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
       change->set_value(txSignReq.change.value);
    }
 
-   for (auto& supportingTx : txSignReq.supportingTxMap_) {
+   for (auto& supportingTx : txSignReq.supportingTXs) {
       auto supportingTxMsg = request.add_supportingtxs();
       supportingTxMsg->set_hash(
          supportingTx.first.getPtr(), supportingTx.first.getSize());
@@ -116,12 +116,15 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
          , static_cast<bs::core::wallet::OutputOrderType>(request.out_sort_order(2)) };
    }
 
-   if (request.has_change()) {
-      if (bs::hd::Path::fromString(request.change().index()).length() != kValidPathLength) {
-         throw std::runtime_error("unexpected path length for change address");
+   if (request.has_change() && request.change().value()) {
+      if (!request.change().index().empty()) {
+         if (bs::hd::Path::fromString(request.change().index()).length() != kValidPathLength) {
+            throw std::runtime_error("unexpected path length "
+               + std::to_string(request.change().index().length()) + " for change address");
+         }
+         txSignReq.change.index = request.change().index();
       }
       txSignReq.change.address = bs::Address::fromAddressString(request.change().address());
-      txSignReq.change.index = request.change().index();
       txSignReq.change.value = request.change().value();
    }
 
@@ -150,7 +153,7 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
       auto txHash = BinaryData::fromString(supportingtx.hash());
       auto rawTx = BinaryData::fromString(supportingtx.rawtx());
 
-      txSignReq.supportingTxMap_.emplace(txHash, rawTx);
+      txSignReq.supportingTXs.emplace(txHash, rawTx);
    }
 
    return txSignReq;

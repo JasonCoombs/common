@@ -259,10 +259,14 @@ uint64_t ColoredCoinTracker::getCcOutputValue(
 }
 
 ////
+ColoredCoinTrackerClientIface::~ColoredCoinTrackerClientIface() = default;
+CCTrackerClientFactory::~CCTrackerClientFactory() = default;
+
 ColoredCoinTrackerClient::ColoredCoinTrackerClient(std::unique_ptr<ColoredCoinTrackerInterface> ccSnapshots)
    : ccSnapshots_(std::move(ccSnapshots))
-{
-}
+{}
+
+ColoredCoinTrackerClient::~ColoredCoinTrackerClient() = default;
 
 void ColoredCoinTrackerClient::addOriginAddress(const bs::Address &addr)
 {
@@ -1596,10 +1600,11 @@ ColoredCoinTracker::OutpointMap ColoredCoinTrackerClient::getCCUtxoForAddresses(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ColoredCoinACT::onZCReceived(const std::vector<bs::TXEntry> &zcs)
+void ColoredCoinACT::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
+   dbns->requestId_ = requestId;
 
    notifQueue_.push_back(std::move(dbns));
 }
