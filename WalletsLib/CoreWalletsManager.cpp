@@ -121,12 +121,13 @@ WalletsManager::HDWalletPtr WalletsManager::createHwWallet(NetworkType netType, 
 {
    logger_->debug("Creating Hardware WO-wallet");
 
+   bs::wallet::HardwareEncKey hwEncKey(walletInfo.type, walletInfo.deviceId);
    bs::wallet::PasswordData passData;
    passData.metaData.encType = bs::wallet::EncryptionType::Hardware;
-   passData.metaData.encKey = BinaryData::fromString(walletInfo.deviceId_);
+   passData.metaData.encKey = hwEncKey.toBinaryData();
 
-   auto walletId = wallet::computeID(BinaryData::fromString(walletInfo.xpubRoot_)).toBinStr();
-   const auto wallet = std::make_shared<hd::Wallet>(walletInfo.label_, walletInfo.vendor_, walletId
+   auto walletId = wallet::computeID(BinaryData::fromString(walletInfo.xpubRoot)).toBinStr();
+   const auto wallet = std::make_shared<hd::Wallet>(walletInfo.label, walletInfo.vendor, walletId
       ,netType, passData, walletsPath, logger_);
 
    if (!ctrlPass.empty()) {

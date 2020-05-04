@@ -260,7 +260,6 @@ void WalletInfo::setPasswordData(const std::vector<PasswordData> &passwordData)
       case EncryptionType::Auth:
       case EncryptionType::Password:
       case EncryptionType::Hardware:
-      case EncryptionType::HardwareOffline:
          encTypes_.append(pw.metaData.encType);
          break;
       default:
@@ -296,12 +295,6 @@ bool bs::hd::WalletInfo::isHardwareWallet() const
 {
    return static_cast<bool>(std::count(encTypes_.begin(),
       encTypes_.end(), bs::wallet::EncryptionType::Hardware));
-}
-
-bool bs::hd::WalletInfo::isHardwareWalletOffline() const
-{
-   return static_cast<bool>(std::count(encTypes_.begin(),
-      encTypes_.end(), bs::wallet::EncryptionType::HardwareOffline));
 }
 
 #include "moc_SignerUiDefs.cpp"

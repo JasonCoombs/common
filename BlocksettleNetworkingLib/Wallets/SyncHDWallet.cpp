@@ -33,8 +33,7 @@ hd::Wallet::Wallet(const bs::sync::WalletInfo &info, WalletSignerContainer *cont
    netType_ = getNetworkType();  // netType_ = info.netType ???
    bool isHw = false;
    for (auto type : info.encryptionTypes) {
-      if (bs::wallet::EncryptionType::Hardware == type ||
-         bs::wallet::EncryptionType::HardwareOffline == type) {
+      if (bs::wallet::EncryptionType::Hardware == type) {
          isHw = true;
          break;
       }
@@ -454,19 +453,41 @@ void hd::Wallet::getSettlementPayinAddress(const SecureBinaryData &settlementID
 
 bool bs::sync::hd::Wallet::isHardwareWallet() const
 {
-   return std::find(encryptionTypes_.begin(), encryptionTypes_.end(),
-      bs::wallet::EncryptionType::Hardware) != encryptionTypes_.cend();
+   auto hwEncKey = getHwEncKey();
+   if (!hwEncKey) {
+      return false;
+   }
+
+   return hwEncKey->deviceType()
+      != bs::wallet::HardwareEncKey::WalletType::Offline;
 }
 
 bool bs::sync::hd::Wallet::isHardwareOfflineWallet() const
 {
-   return std::find(encryptionTypes_.begin(), encryptionTypes_.end(),
-      bs::wallet::EncryptionType::HardwareOffline) != encryptionTypes_.cend();
+   auto hwEncKey = getHwEncKey();
+   if (!hwEncKey) {
+      return false;
+   }
+
+   return hwEncKey->deviceType()
+      == bs::wallet::HardwareEncKey::WalletType::Offline;
 }
 
 bool bs::sync::hd::Wallet::canMixLeafs() const
 {
-   return !(isHardwareWallet() || isHardwareOfflineWallet());
+   return encryptionTypes_.empty()
+      || encryptionTypes_[0] != bs::wallet::EncryptionType::Hardware;
+}
+
+std::unique_ptr<bs::wallet::HardwareEncKey> bs::sync::hd::Wallet::getHwEncKey() const
+{
+   if (encryptionTypes_.empty() || encryptionKeys_.empty() ||
+      encryptionTypes_[0] != bs::wallet::EncryptionType::Hardware) {
+      return nullptr;
+   }
+
+   return std::unique_ptr<bs::wallet::HardwareEncKey>(
+      new bs::wallet::HardwareEncKey(encryptionKeys_[0]));
 }
 
 bool hd::Wallet::isFullWallet() const

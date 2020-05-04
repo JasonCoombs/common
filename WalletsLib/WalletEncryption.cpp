@@ -32,3 +32,38 @@ BinaryData mergeKeys(const BinaryData &a, const BinaryData &b)
 }
 */
 #include "moc_WalletEncryption.cpp"
+
+bs::wallet::HardwareEncKey::HardwareEncKey(WalletType walletType, const std::string& hwDeviceId)
+   : walletType_(walletType)
+   , hwDeviceId_(hwDeviceId)
+{
+}
+
+bs::wallet::HardwareEncKey::HardwareEncKey(BinaryData binaryData)
+{
+   if (sizeof(uint32_t) >= binaryData.getSize())
+      std::logic_error("Incorrect binary data size");
+
+   walletType_ = static_cast<WalletType>(
+      BinaryData::StrToIntLE<uint32_t>(binaryData.getSliceRef(0, sizeof(uint32_t))));
+   hwDeviceId_ = binaryData.getSliceRef(sizeof(uint32_t),
+      binaryData.getSize() - sizeof(uint32_t)).toBinStr();
+}
+
+BinaryData bs::wallet::HardwareEncKey::toBinaryData() const
+{
+   BinaryWriter packer;
+   packer.put_uint32_t(static_cast<uint32_t>(walletType_));
+   packer.put_String(hwDeviceId_);
+   return packer.getData();
+}
+
+std::string bs::wallet::HardwareEncKey::deviceId()
+{
+   return hwDeviceId_;
+}
+
+bs::wallet::HardwareEncKey::WalletType bs::wallet::HardwareEncKey::deviceType()
+{
+   return walletType_;
+}

@@ -24,8 +24,7 @@ namespace bs {
          Unencrypted,
          Password,
          Auth,
-         Hardware, // this one could be sign with device
-         HardwareOffline // this one is hardware watching only type
+         Hardware
       };
 
       // first - required number of keys (M), second - total number of keys (N)
@@ -45,6 +44,27 @@ namespace bs {
          PasswordMetaData  metaData;
          BinaryData        salt;
          SecureBinaryData  controlPassword;
+      };
+
+      struct HardwareEncKey {
+         enum WalletType : uint32_t
+         {
+            Offline,
+            Trezor,
+            Ledger
+         };
+
+         HardwareEncKey(WalletType walletType, const std::string& hwDeviceId_);
+         HardwareEncKey(BinaryData binaryData);
+
+         BinaryData toBinaryData() const;
+
+         std::string deviceId();
+         WalletType deviceType();
+
+      private:
+         WalletType walletType_;
+         std::string hwDeviceId_;
       };
    }  // wallet
 }  //namespace bs

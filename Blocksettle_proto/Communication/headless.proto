@@ -384,7 +384,6 @@ enum EncryptionType
    EncryptionTypePassword    = 1;
    EncryptionTypeAutheID     = 2;
    EncryptionTypeHw          = 3;
-   EncryptionTypeHwOffline   = 4;
 }
 
 message SyncWalletResponse

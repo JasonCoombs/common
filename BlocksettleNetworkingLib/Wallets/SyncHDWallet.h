@@ -123,6 +123,8 @@ namespace bs {
             void walletCreated(const std::string &walletId) override;
             void walletDestroyed(const std::string &walletId) override;
 
+            std::unique_ptr<bs::wallet::HardwareEncKey> getHwEncKey() const;
+
          protected:
             WalletCallbackTarget *wct_{};
             const std::string walletId_;
