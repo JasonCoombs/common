@@ -279,6 +279,11 @@ namespace bs {
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
             {
+               *this = std::move(other);
+            }
+
+            TXSignRequest &operator=(const TXSignRequest &other)
+            {
                walletIds = other.walletIds;
                inputs = other.inputs;
                inputIndices = other.inputIndices;
@@ -291,11 +296,9 @@ namespace bs {
                prevStates = other.prevStates;
                populateUTXOs = other.populateUTXOs;
                comment = other.comment;
-            }
-
-            TXSignRequest operator=(const TXSignRequest &other)
-            {
-               return other;
+               signer_.reset();
+               signerCreated_ = false;
+               return *this;
             }
             bool isValid() const noexcept;
             BinaryData serializeState(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
@@ -324,6 +327,7 @@ namespace bs {
 
             bool isSourceOfTx(const Tx &signedTx) const;
 
+            void resetSigner();
             void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ResolverFeed> &resolver=nullptr);
 
          private:

@@ -229,6 +229,13 @@ bool wallet::TXSignRequest::isValid() const noexcept
    return true;
 }
 
+void wallet::TXSignRequest::resetSigner()
+{
+   signerCreated_ = false;
+   signer_.reset();
+   getSigner();
+}
+
 Signer wallet::TXSignRequest::getSigner(const std::shared_ptr<ResolverFeed> &resolver) const
 {
    if (!signerCreated_) {
@@ -893,15 +900,12 @@ Signer Wallet::getSigner(const wallet::TXSignRequest &request,
       for (const auto &spender : prevStateSigner.spenders()) {
          signer.addSpender(spender);
       }
+      for (const auto &recip : prevStateSigner.recipients()) {
+         signer.addRecipient(recip);
+      }
    }
    else {
       signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-   }
-
-   if (!request.prevStates.empty()) {
-      for (const auto &prevState : request.prevStates) {
-         signer.deserializeState(prevState);
-      }
    }
 
    if (request.populateUTXOs) {

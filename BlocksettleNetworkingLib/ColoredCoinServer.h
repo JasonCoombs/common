@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "ColoredCoinLogic.h"
 #include "DataConnectionListener.h"
 #include "ServerConnectionListener.h"
 #include "DispatchQueue.h"
@@ -25,11 +26,9 @@
 namespace spdlog {
    class logger;
 }
-
 class ArmoryConnection;
 class CcTrackerImpl;
 class CcTrackerSrvImpl;
-class ColoredCoinTrackerInterface;
 class ZmqBIP15XDataConnection;
 class ZmqBIP15XServerConnection;
 class ZmqContext;
@@ -146,6 +145,21 @@ private:
 
    uint64_t startedTrackerCount_{};
 
+};
+
+
+class CCTrackerClientFactoryConnected : public CCTrackerClientFactory
+{
+public:
+   CCTrackerClientFactoryConnected(const std::shared_ptr<spdlog::logger> &
+      , const std::string &host, const std::string &port
+      , const std::string &pubKey);
+   ~CCTrackerClientFactoryConnected() override;
+
+   std::shared_ptr<ColoredCoinTrackerClientIface> createClient(uint32_t lotSize) override;
+
+private:
+   std::shared_ptr<CcTrackerClient> trackerClient_;
 };
 
 #endif
