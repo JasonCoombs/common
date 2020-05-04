@@ -1221,37 +1221,38 @@ bool ColoredCoinTrackerClient::isTxHashValid(
    strict checks only, allowZc defaults to false 
    */
 
+   if (allowZC) {
+      //if we're allowing for zc replies, checking that snapshot
+      //takes precedence
+      const auto zcPtr = ccSnapshots_->zcSnapshot();
+      if (zcPtr != nullptr) {
+         auto result = opExists(
+            zcPtr->utxoSet_, txHash, 
+            txOutIndex, /*has to be set cause of strict check*/
+            true /*strict check*/);
+
+         if (result) {
+            return true;
+         }
+
+         //no zc utxo for this hash|id. is it spent by a zc?
+         auto spentIter = zcPtr->spentOutputs_.find(txHash);
+         if (spentIter != zcPtr->spentOutputs_.end()) {
+            auto idIter = spentIter->second.find(txOutIndex);
+            if (idIter != spentIter->second.end())
+               return false;
+         }
+      }
+   }
+
    const auto ssPtr = ccSnapshots_->snapshot();
    if (!ssPtr) {
       return false;
    }
-   bool result = opExists(
-      ssPtr->utxoSet_, 
-      txHash, 
-      txOutIndex /*has to be set cause of strict check*/, 
+   return opExists(
+      ssPtr->utxoSet_, txHash, 
+      txOutIndex, /*has to be set cause of strict check*/
       true /*strict check*/);
-   if (result) {
-      return true;
-   }
-
-   if (!allowZC) { 
-      /*
-      Fail the check if we don't allow for unconfirmed
-      CC outputs. This is the default behavior.
-      */
-      return false;
-   }
-
-   const auto zcPtr = ccSnapshots_->zcSnapshot();
-   if (!zcPtr) {
-      return  false;
-   }
-   result = opExists(
-      zcPtr->utxoSet_, 
-      txHash, 
-      txOutIndex, 
-      true);
-   return result;
 }
 
 ////
