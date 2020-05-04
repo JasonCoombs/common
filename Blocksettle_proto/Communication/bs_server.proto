@@ -342,6 +342,7 @@ message CCValidateHalfResponse
       InvalidInput  = 2;
       InvalidCCData = 3;
       OutputsDisorder = 4;
+      InvalidOutput = 5;
    }
    string request_id = 1;
    Result result = 2;
