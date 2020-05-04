@@ -293,9 +293,21 @@ namespace bs {
                comment = other.comment;
             }
 
-            TXSignRequest operator=(const TXSignRequest &other)
-            {
-               return other;
+            TXSignRequest &operator=(const TXSignRequest &other)
+            {  // If anyone knows how to get rid of this stupid code duplication, please replace the code below
+               walletIds = other.walletIds;
+               inputs = other.inputs;
+               inputIndices = other.inputIndices;
+               recipients = other.recipients;
+               supportingTXs = other.supportingTXs;
+               outSortOrder = other.outSortOrder;
+               change = other.change;
+               fee = other.fee;
+               RBF = other.RBF;
+               prevStates = other.prevStates;
+               populateUTXOs = other.populateUTXOs;
+               comment = other.comment;
+               return *this;
             }
             bool isValid() const noexcept;
             BinaryData serializeState(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
@@ -324,6 +336,7 @@ namespace bs {
 
             bool isSourceOfTx(const Tx &signedTx) const;
 
+            void resetSigner();
             void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ResolverFeed> &resolver=nullptr);
 
          private:

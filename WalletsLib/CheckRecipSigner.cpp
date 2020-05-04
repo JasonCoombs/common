@@ -354,6 +354,12 @@ bool CheckRecipSigner::verifyPartial(void)
    return false;
 }
 
+void CheckRecipSigner::reset()
+{
+   spenders_.clear();
+   recipients_.clear();
+}
+
 int TxChecker::receiverIndex(const bs::Address &addr) const
 {
    if (!tx_.isInitialized()) {
