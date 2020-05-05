@@ -473,7 +473,7 @@ bool bs::sync::hd::Wallet::isHardwareOfflineWallet() const
       == bs::wallet::HardwareEncKey::WalletType::Offline;
 }
 
-bool bs::sync::hd::Wallet::canMixLeafs() const
+bool bs::sync::hd::Wallet::canMixLeaves() const
 {
    return encryptionTypes_.empty()
       || encryptionTypes_[0] != bs::wallet::EncryptionType::Hardware;

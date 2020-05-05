@@ -62,7 +62,7 @@ namespace bs {
 
             // Each leaf should be treated as different wallet only
             // e.g. we cannot mix segwit UTXOs from different leaf
-            bool canMixLeafs() const;
+            bool canMixLeaves() const;
 
             std::shared_ptr<Group> getGroup(bs::hd::CoinType ct) const;
             std::shared_ptr<Group> createGroup(bs::hd::CoinType ct, bool isExtOnly);
