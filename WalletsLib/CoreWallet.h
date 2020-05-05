@@ -104,14 +104,15 @@ namespace bs {
 
 
          struct HwWalletInfo {
-            std::string vendor_;
-            std::string label_;
-            std::string deviceId_;
+            bs::wallet::HardwareEncKey::WalletType type;
+            std::string vendor;
+            std::string label;
+            std::string deviceId;
 
-            std::string xpubRoot_;
-            std::string xpubNestedSegwit_;
-            std::string xpubNativeSegwit_;
-            std::string xpubLegacy_;
+            std::string xpubRoot;
+            std::string xpubNestedSegwit;
+            std::string xpubNativeSegwit;
+            std::string xpubLegacy;
          };
 
          class AssetEntrySettlement : public AssetEntryMeta // For saving own auth address for settlement

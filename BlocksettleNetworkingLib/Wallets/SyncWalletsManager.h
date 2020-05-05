@@ -84,7 +84,8 @@ namespace bs {
          HDWalletPtr getPrimaryWallet() const;
 //         std::shared_ptr<hd::DummyWallet> getDummyWallet() const { return hdDummyWallet_; }
          std::vector<WalletPtr> getAllWallets() const;
-         std::multimap<std::string, std::string> getHwDeviceIdToWallet() const;
+         std::vector<std::string> getHwWallets(
+            bs::wallet::HardwareEncKey::WalletType walletType, std::string deviceId = {}) const;
          WalletPtr getWalletById(const std::string& walletId) const;
          WalletPtr getWalletByAddress(const bs::Address &addr) const;
          WalletPtr getDefaultWallet() const;
