@@ -486,8 +486,7 @@ std::unique_ptr<bs::wallet::HardwareEncKey> bs::sync::hd::Wallet::getHwEncKey() 
       return nullptr;
    }
 
-   return std::unique_ptr<bs::wallet::HardwareEncKey>(
-      new bs::wallet::HardwareEncKey(encryptionKeys_[0]));
+   return std::make_unique<bs::wallet::HardwareEncKey>(encryptionKeys_[0]);
 }
 
 bool hd::Wallet::isFullWallet() const

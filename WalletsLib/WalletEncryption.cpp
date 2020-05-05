@@ -44,10 +44,10 @@ bs::wallet::HardwareEncKey::HardwareEncKey(BinaryData binaryData)
    if (sizeof(uint32_t) >= binaryData.getSize())
       std::logic_error("Incorrect binary data size");
 
-   walletType_ = static_cast<WalletType>(
-      BinaryData::StrToIntLE<uint32_t>(binaryData.getSliceRef(0, sizeof(uint32_t))));
-   hwDeviceId_ = binaryData.getSliceRef(sizeof(uint32_t),
-      binaryData.getSize() - sizeof(uint32_t)).toBinStr();
+   BinaryReader reader(std::move(binaryData));
+   walletType_ = static_cast<WalletType>(reader.get_uint32_t());
+   hwDeviceId_ = BinaryDataRef(reader.getCurrPtr(),
+      reader.getSizeRemaining()).toBinStr();
 }
 
 BinaryData bs::wallet::HardwareEncKey::toBinaryData() const

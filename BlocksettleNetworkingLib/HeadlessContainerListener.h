@@ -208,8 +208,6 @@ private:
 
    void sendSyncWallets(std::string clientId = {});
 
-
-
 private:
    std::shared_ptr<spdlog::logger>     logger_;
    ServerConnection                    *connection_{};
