@@ -140,7 +140,6 @@ public:
       LastAqDir,
       proxyServerPubKey,
       ccServerPubKey,
-      HideCreateAccountPromptTestnet,
       HideLegacyWalletWarning,
       DetailedSettlementTxDialogByDefault,
       _last
