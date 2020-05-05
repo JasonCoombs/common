@@ -192,7 +192,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString()) },
       { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString()) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
-      { HideCreateAccountPromptTestnet,      SettingDef(QStringLiteral("HideCreateAccountPromptTestnet")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) }
    };
