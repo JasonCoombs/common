@@ -41,6 +41,7 @@ struct ParsedCcTx
 
    //hash is set only if this is a valid cc tx
    bool isInitialized(void) const { return txHash_.getSize() == 32; }
+   bool hasOutputs(void) const { return isInitialized() && !outputs_.empty(); }
 };
 
 ////
@@ -261,7 +262,7 @@ public:
 class ColoredCoinTracker : public ColoredCoinTrackerInterface
 {
    /*
-   This class tracks the UTXO set for a single colored coin.
+   This class tracks the UTXO set for a single colored coin instrument.
    */
    
    friend class ColoredCoinACT;
@@ -402,6 +403,8 @@ public:
       const BinaryData&, bool);
 
    //returns effect of a tx on cc utxo map if it was mined
+   CcTxCandidate parseCcCandidateTx(
+      const Tx&, bool withZc = true) const;
    CcTxCandidate parseCcCandidateTx(
       const std::shared_ptr<ColoredCoinSnapshot>&,
       const std::shared_ptr<ColoredCoinZCSnapshot>&,

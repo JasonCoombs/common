@@ -369,10 +369,11 @@ ParsedCcTx ColoredCoinTracker::processTx(
       result.outputs_.push_back(std::make_pair(val, output.getScrAddressStr()));
    }
 
-   //return as is if no new CC output was detected
-   if (result.outputs_.size() == 0) {
-      return result;
-   }
+   /*
+   A tx that consumes CC but does not assign new ones is still valid as it
+   affects the cc ledger (consumes utxos).
+   */
+
    //total output CC value should be inferior or equal to redeemed CC value
    if (outputValue > ccValue) {
       return result;
@@ -489,7 +490,7 @@ std::set<BinaryData> ColoredCoinTracker::processTxBatch(
          }
       }
 
-      if (parsedTx.isInitialized()) {
+      if (parsedTx.hasOutputs()) {
          //This tx creates valid CC utxos, add them to the map and 
          //track the spender hashes if any
 
@@ -630,7 +631,7 @@ std::set<BinaryData> ColoredCoinTracker::processZcBatch(
          zcSpentIter->second.insert(input.second);
       }
 
-      if (parsedTx.isInitialized()) {
+      if (parsedTx.hasOutputs()) {
          //This tx creates valid CC utxos, add them to the map and 
          //track the spender hashes if any
 
@@ -1653,6 +1654,20 @@ void ColoredCoinTrackerClient::parseCcCandidateTx(const Tx &tx
 
 ////
 CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
+   const Tx& tx, bool withZc) const
+{
+   auto ssPtr = snapshot();
+   
+   std::shared_ptr<ColoredCoinZCSnapshot> zcPtr = nullptr;
+   if (withZc) { //defaults to true
+      zcPtr = zcSnapshot();
+   }
+
+   return parseCcCandidateTx(ssPtr, zcPtr, tx);
+}
+
+////
+CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
    const std::shared_ptr<ColoredCoinSnapshot>& ssPtr,
    const std::shared_ptr<ColoredCoinZCSnapshot>& zcPtr,
    const Tx& tx) const
@@ -1666,7 +1681,7 @@ CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
    CcTxCandidate candidateResult;
 
    //if the tx hash is set, this is a valid CC tx
-   if (processResult.txHash_.empty())
+   if (!processResult.isInitialized())
       return candidateResult;
 
    candidateResult.isValidCcTx_ = true;
