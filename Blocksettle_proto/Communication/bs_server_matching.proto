@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package Blocksettle.Server.Matching;
+
+
+message XbtMatchedRequest
+{
+   string settlement_id = 1;
+   string cl_order_id = 2;
+   string email_requestor = 3;
+   string email_dealer = 4;
+   bool requestor_sell = 5;
+   double price = 6;
+   string security_id = 7;
+   string currency = 8;
+   double qty = 9;
+   double contra_qty = 10;
+   int32  subsystem = 11;
+   string requestor_auth_addr_pubkey_hex = 12;
+   string dealer_auth_addr_pubkey_hex = 13;
+}
+
+message XbtResponseCommon
+{
+   string settlement_id = 1;
+   bool success = 2;
+   string error_msg = 3;
+}
+
+
+message MatchingMessage
+{
+   oneof data {
+      XbtMatchedRequest xbt_matched_request = 1;
+      XbtResponseCommon xbt_matched_response = 2;
+   }
+}
