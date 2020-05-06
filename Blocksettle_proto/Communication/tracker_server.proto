@@ -21,29 +21,54 @@ message Request
         TrackerKey tracker_key = 2;
     }
 
+    message ParseCcTxCandidate
+    {
+        int32 id = 1;
+        bytes cc_snapshot = 2;
+        bytes zc_snapshot = 3;
+        bytes tx = 4;
+    }
+
     oneof data
     {
         RegisterCc register_cc = 1;
+        ParseCcTxCandidate tx_candidate = 2;
     }
 }
 
 message Response
 {
-    message UpdateCcSnapshot
-    {
-        int32 id = 1;
-        bytes data = 2;
-    }
+   message UpdateCcSnapshot
+   {
+       int32 id = 1;
+       bytes data = 2;
+   }
 
-    message UpdateCcZcSnapshot
-    {
-        int32 id = 1;
-        bytes data = 2;
-    }
+   message UpdateCcZcSnapshot
+   {
+       int32 id = 1;
+       bytes data = 2;
+   }
 
-    oneof data
-    {
-        UpdateCcSnapshot update_cc_snapshot = 1;
-        UpdateCcZcSnapshot update_cc_zc_snapshot = 2;
-    }
+   message ParseCcCandidateTxResult
+   {
+       int32 id = 1;
+       message AddrValuePair {
+          bytes  address = 1;
+          uint64 value = 2;
+       }
+       repeated AddrValuePair cc_by_addr = 2;
+       repeated AddrValuePair xbt_by_addr = 3;
+       uint64 total_cc_redeemed = 4;
+       uint64 total_cc_spent = 5;
+       uint64 total_xbt_spent = 6;
+       bool   is_valid = 7;
+   }
+
+   oneof data
+   {
+       UpdateCcSnapshot update_cc_snapshot = 1;
+       UpdateCcZcSnapshot update_cc_zc_snapshot = 2;
+       ParseCcCandidateTxResult parse_tx_candidate = 3;
+   }
 }

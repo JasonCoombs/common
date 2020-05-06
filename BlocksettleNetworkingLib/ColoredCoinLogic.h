@@ -55,6 +55,7 @@ struct CcTxCandidate
 
    bool isValidCcTx_ = false;
 };
+using CcTxCandidateCb = std::function<void(const CcTxCandidate &)>;
 
 ////
 struct CcOutpoint
@@ -250,6 +251,10 @@ public:
    virtual void setSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
    virtual void setZcSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
 
+   virtual void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot>&,
+      const std::shared_ptr<ColoredCoinZCSnapshot>&,
+      const Tx&, const CcTxCandidateCb &) const = 0;
 };
 
 ////
@@ -401,6 +406,13 @@ public:
       const std::shared_ptr<ColoredCoinSnapshot>&,
       const std::shared_ptr<ColoredCoinZCSnapshot>&,
       const Tx&) const;
+   void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot> &s,
+      const std::shared_ptr<ColoredCoinZCSnapshot> &zcS,
+      const Tx &tx, const CcTxCandidateCb &cb) const override
+   {
+      cb(parseCcCandidateTx(s, zcS, tx));
+   }
 
    ////
    void addOriginAddress(const bs::Address&) override;
@@ -441,6 +453,8 @@ public:
 
    virtual ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const = 0;
+
+   virtual void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const = 0;
 };
 
 class ColoredCoinTrackerClient : public ColoredCoinTrackerClientIface
@@ -478,6 +492,8 @@ public:
 
    ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const override;
+
+   void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const override;
 };
 
 class CCTrackerClientFactory

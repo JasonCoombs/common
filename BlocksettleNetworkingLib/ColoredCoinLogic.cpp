@@ -1643,6 +1643,14 @@ ColoredCoinTracker::OutpointMap ColoredCoinTrackerClient::getCCUtxoForAddresses(
    return outpointMap;
 }
 
+void ColoredCoinTrackerClient::parseCcCandidateTx(const Tx &tx
+   , const CcTxCandidateCb &cb) const
+{
+   auto ssPtr = ccSnapshots_->snapshot();
+   auto zcPtr = ccSnapshots_->zcSnapshot();
+   ccSnapshots_->parseCcCandidateTx(ssPtr, zcPtr, tx, cb);
+}
+
 ////
 CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
    const std::shared_ptr<ColoredCoinSnapshot>& ssPtr,
