@@ -404,6 +404,7 @@ message UserScoreUpdateEvent
       // but somehow TX detected
       ClosedXBTTradeProgressing        = 25;
       CashReservationFailed            = 26;
+      UnexpectedDealerCCHalf           = 27;
    };
 
    string               user_email     = 1;
