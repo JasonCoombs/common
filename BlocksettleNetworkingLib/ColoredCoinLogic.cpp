@@ -89,13 +89,17 @@ Parsing CC tx:
 namespace  {
 
    bool opExists(const CcUtxoSet &utxoSet
-      , const BinaryData &txHash, uint32_t txOutIndex)
+      , const BinaryData &txHash, uint32_t txOutIndex, bool strict = true)
    {
       auto hashIter = utxoSet.find(txHash);
       if (hashIter == utxoSet.end()) {
          return false;
       }
       if (txOutIndex == UINT32_MAX) {
+         if (strict) { //strict checks expect a valid txOutIndex
+            return false;
+         }
+
          return true;
       }
       auto idIter = hashIter->second.find(txOutIndex);
@@ -298,7 +302,14 @@ ParsedCcTx ColoredCoinTracker::processTx(
    , const std::shared_ptr<ColoredCoinZCSnapshot>& zcPtr
    , const Tx& tx) const
 {
+   /*
+   Core CC logic, modify with utmost care
+   */
+
    ParsedCcTx result;
+   
+   if (!tx.isSegWit())
+      return result;
 
    //how many inputs are CC
    uint64_t ccValue = 0;
@@ -345,6 +356,12 @@ ParsedCcTx ColoredCoinTracker::processTx(
       if (outputValue + val > ccValue) {
          break;
       }
+      //is the output P2WPKH?
+      if (BtcUtils::getTxOutScriptType(output.getScriptRef()) != 
+         TXOUT_SCRIPT_P2WPKH) {
+         break;
+      }
+
       //tally output value
       outputValue += val;
 
@@ -352,10 +369,11 @@ ParsedCcTx ColoredCoinTracker::processTx(
       result.outputs_.push_back(std::make_pair(val, output.getScrAddressStr()));
    }
 
-   //return as is if no new CC output was detected
-   if (result.outputs_.size() == 0) {
-      return result;
-   }
+   /*
+   A tx that consumes CC but does not assign new ones is still valid as it
+   affects the cc ledger (consumes utxos).
+   */
+
    //total output CC value should be inferior or equal to redeemed CC value
    if (outputValue > ccValue) {
       return result;
@@ -472,7 +490,7 @@ std::set<BinaryData> ColoredCoinTracker::processTxBatch(
          }
       }
 
-      if (parsedTx.isInitialized()) {
+      if (parsedTx.hasOutputs()) {
          //This tx creates valid CC utxos, add them to the map and 
          //track the spender hashes if any
 
@@ -613,7 +631,7 @@ std::set<BinaryData> ColoredCoinTracker::processZcBatch(
          zcSpentIter->second.insert(input.second);
       }
 
-      if (parsedTx.isInitialized()) {
+      if (parsedTx.hasOutputs()) {
          //This tx creates valid CC utxos, add them to the map and 
          //track the spender hashes if any
 
@@ -1198,26 +1216,53 @@ std::vector<std::shared_ptr<CcOutpoint>> ColoredCoinTrackerClient::getSpendableO
    return ColoredCoinTracker::getSpendableOutpointsForAddress(ssPtr, zcPtr, scrAddr, false);
 }
 
-bool ColoredCoinTrackerClient::isTxHashValid(const BinaryData &txHash, uint32_t txOutIndex) const
+bool ColoredCoinTrackerClient::isTxHashValid(
+   const BinaryData &txHash, 
+   uint32_t txOutIndex, 
+   bool allowZC) const
 {
+   /*
+   This is the main check for CC validity, using 
+   strict checks only, allowZc defaults to false 
+   */
+
+   if (allowZC) {
+      //if we're allowing for zc replies, checking that snapshot
+      //takes precedence
+      const auto zcPtr = ccSnapshots_->zcSnapshot();
+      if (zcPtr != nullptr) {
+         auto result = opExists(
+            zcPtr->utxoSet_, txHash, 
+            txOutIndex, /*has to be set cause of strict check*/
+            true /*strict check*/);
+
+         if (result) {
+            return true;
+         }
+
+         //no zc utxo for this hash|id. is it spent by a zc?
+         auto spentIter = zcPtr->spentOutputs_.find(txHash);
+         if (spentIter != zcPtr->spentOutputs_.end()) {
+            auto idIter = spentIter->second.find(txOutIndex);
+            if (idIter != spentIter->second.end())
+               return false;
+         }
+      }
+   }
+
    const auto ssPtr = ccSnapshots_->snapshot();
    if (!ssPtr) {
       return false;
    }
-   bool result = opExists(ssPtr->utxoSet_, txHash, txOutIndex);
-   if (result) {
-      return true;
-   }
-
-   const auto zcPtr = ccSnapshots_->zcSnapshot();
-   if (!zcPtr) {
-      return  false;
-   }
-   result = opExists(zcPtr->utxoSet_, txHash, txOutIndex);
-   return result;
+   return opExists(
+      ssPtr->utxoSet_, txHash, 
+      txOutIndex, /*has to be set cause of strict check*/
+      true /*strict check*/);
 }
 
-bool ColoredCoinTrackerClient::isTxHashValidHistory(const BinaryData &txHash, uint32_t txOutIndex) const
+////
+bool ColoredCoinTrackerClient::isTxHashValidHistory(
+   const BinaryData &txHash, uint32_t txOutIndex) const
 {
    const auto ssPtr = ccSnapshots_->snapshot();
    if (!ssPtr) {
@@ -1385,7 +1430,7 @@ void ColoredCoinTracker::addZcUtxo(
 void ColoredCoinTracker::reorg(bool hard)
 {
    if (!hard) {
-      throw std::runtime_error("not implemented yet");
+      throw ColoredCoinException("not implemented yet");
    }
    std::shared_ptr<ColoredCoinSnapshot> snapshot = nullptr;
    std::shared_ptr<ColoredCoinZCSnapshot> zcSnapshot = nullptr;
@@ -1599,8 +1644,89 @@ ColoredCoinTracker::OutpointMap ColoredCoinTrackerClient::getCCUtxoForAddresses(
    return outpointMap;
 }
 
+////
+CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
+   const Tx& tx, bool withZc) const
+{
+   auto ssPtr = snapshot();
+   
+   std::shared_ptr<ColoredCoinZCSnapshot> zcPtr = nullptr;
+   if (withZc) { //defaults to true
+      zcPtr = zcSnapshot();
+   }
+
+   return parseCcCandidateTx(ssPtr, zcPtr, tx);
+}
+
+////
+CcTxCandidate ColoredCoinTracker::parseCcCandidateTx(
+   const std::shared_ptr<ColoredCoinSnapshot>& ssPtr,
+   const std::shared_ptr<ColoredCoinZCSnapshot>& zcPtr,
+   const Tx& tx) const
+{
+   //sanity check: candidates should not have a height set
+   if (tx.getTxHeight() != UINT32_MAX)
+      throw ColoredCoinException("cc candidate cannot have a valid height");
+
+   auto processResult = processTx(ssPtr, zcPtr, tx);
+
+   CcTxCandidate candidateResult;
+
+   //if the tx hash is set, this is a valid CC tx
+   if (!processResult.isInitialized())
+      return candidateResult;
+
+   candidateResult.isValidCcTx_ = true;
+
+   //go through outpoints to tally redeemed CC value
+   candidateResult.totalCcRedeemed_ = 0;
+   for (auto& op : processResult.outpoints_)
+   {
+      auto val = getCcOutputValue(
+         ssPtr, zcPtr,
+         op.first, op.second,
+         UINT32_MAX);
+      candidateResult.totalCcRedeemed_ += val;
+   }
+
+   //go through outputs
+   candidateResult.totalCcSpent_ = 0;
+   candidateResult.totalXbtSpent_ = 0;
+   for (unsigned i=0; i<tx.getNumTxOut(); i++)
+   {
+      auto txout = tx.getTxOutCopy(i);
+
+      if (i >= processResult.outputs_.size())
+      {
+         //xbt output
+         auto val = txout.getValue();
+         candidateResult.totalXbtSpent_ += val;
+         auto insertIter = candidateResult.xbtPerAddr_.emplace(
+            txout.getScrAddressStr(), val);
+
+         if (!insertIter.second)
+            insertIter.first->second += val;
+      }
+      else
+      {
+         //cc output
+         auto& outputPair = processResult.outputs_[i];
+         candidateResult.totalCcSpent_ += outputPair.first;
+
+         auto insertIter = candidateResult.ccPerAddr_.emplace(
+            outputPair.second, outputPair.first);
+
+         if (!insertIter.second)
+            insertIter.first->second += outputPair.first;
+      }
+   }
+
+   return candidateResult;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-void ColoredCoinACT::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>& zcs)
+void ColoredCoinACT::onZCReceived(
+   const std::string& requestId, const std::vector<bs::TXEntry>& zcs)
 {
    auto dbns = std::make_shared<DBNotificationStruct>(DBNS_ZC);
    dbns->zc_ = zcs;
@@ -1643,7 +1769,7 @@ void ColoredCoinACT::onStateChanged(ArmoryState state)
 void ColoredCoinACT::start()
 {
    if (ccPtr_ == nullptr) {
-      throw std::runtime_error("null cc manager ptr");
+      throw ColoredCoinException("null cc manager ptr");
    }
    auto thrLbd = [this](void)->void
    {
@@ -1760,7 +1886,7 @@ void ColoredCoinACT::processNotification()
             break;
 
          default:
-            throw std::runtime_error("unexpected notification type");
+            throw ColoredCoinException("unexpected notification type");
          }
 
          onUpdate(notifPtr);
