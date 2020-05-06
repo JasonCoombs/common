@@ -41,6 +41,7 @@ struct ParsedCcTx
 
    //hash is set only if this is a valid cc tx
    bool isInitialized(void) const { return txHash_.getSize() == 32; }
+   bool hasOutputs(void) const { return isInitialized() && !outputs_.empty(); }
 };
 
 ////
@@ -55,6 +56,7 @@ struct CcTxCandidate
 
    bool isValidCcTx_ = false;
 };
+using CcTxCandidateCb = std::function<void(const CcTxCandidate &)>;
 
 ////
 struct CcOutpoint
@@ -250,13 +252,17 @@ public:
    virtual void setSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
    virtual void setZcSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
 
+   virtual void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot>&,
+      const std::shared_ptr<ColoredCoinZCSnapshot>&,
+      const Tx&, const CcTxCandidateCb &) const = 0;
 };
 
 ////
 class ColoredCoinTracker : public ColoredCoinTrackerInterface
 {
    /*
-   This class tracks the UTXO set for a single colored coin.
+   This class tracks the UTXO set for a single colored coin instrument.
    */
    
    friend class ColoredCoinACT;
@@ -398,9 +404,18 @@ public:
 
    //returns effect of a tx on cc utxo map if it was mined
    CcTxCandidate parseCcCandidateTx(
+      const Tx&, bool withZc = true) const;
+   CcTxCandidate parseCcCandidateTx(
       const std::shared_ptr<ColoredCoinSnapshot>&,
       const std::shared_ptr<ColoredCoinZCSnapshot>&,
       const Tx&) const;
+   void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot> &s,
+      const std::shared_ptr<ColoredCoinZCSnapshot> &zcS,
+      const Tx &tx, const CcTxCandidateCb &cb) const override
+   {
+      cb(parseCcCandidateTx(s, zcS, tx));
+   }
 
    ////
    void addOriginAddress(const bs::Address&) override;
@@ -441,6 +456,8 @@ public:
 
    virtual ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const = 0;
+
+   virtual void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const = 0;
 };
 
 class ColoredCoinTrackerClient : public ColoredCoinTrackerClientIface
@@ -478,6 +495,8 @@ public:
 
    ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const override;
+
+   void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const override;
 };
 
 class CCTrackerClientFactory

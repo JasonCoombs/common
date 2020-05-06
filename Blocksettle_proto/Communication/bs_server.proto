@@ -280,14 +280,19 @@ message CCTxValidRequest
 {
    string request_id = 1;
    string cc = 2;
-   repeated OutPointData outpoints = 3;
+   bytes  tx = 3;
+   string cc_recv_address = 4;
+   string xbt_recv_address = 5;
+   uint32 qty = 6;
+   uint64 xbt_recv_amount = 7;
 }
 
 message CCTxValidResponse
 {
    string request_id = 1;
-   repeated OutPointData outpoints = 2;
-   repeated bool is_valid = 3;
+   bool   is_valid = 2;
+   string debug_string = 3;
+   bytes  tx_hash = 4;
 }
 
 message CCValidateHalvesRequest
@@ -301,6 +306,7 @@ message CCValidateHalvesRequest
    double quantity = 7;
    double price = 8;
    bool   requester_buys = 9;
+   bytes  tx_hash = 10;
 }
 
 message CCValidateHalvesResponse
@@ -347,7 +353,6 @@ message CCValidateHalfResponse
    string request_id = 1;
    Result result = 2;
    repeated bytes cc_inputs = 3;
-   repeated bytes xbt_inputs = 4;
 }
 
 message CCUpdatedGenesisAddress

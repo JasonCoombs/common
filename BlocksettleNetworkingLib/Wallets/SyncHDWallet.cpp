@@ -31,9 +31,15 @@ hd::Wallet::Wallet(const bs::sync::WalletInfo &info, WalletSignerContainer *cont
    , isOffline_(info.watchOnly)
 {
    netType_ = getNetworkType();  // netType_ = info.netType ???
-   const bool isHw = std::count(info.encryptionTypes.begin(), info.encryptionTypes.end(),
-      bs::wallet::EncryptionType::Hardware) != 0;
-    if (info.watchOnly && !isHw) {
+   bool isHw = false;
+   for (auto type : info.encryptionTypes) {
+      if (bs::wallet::EncryptionType::Hardware == type) {
+         isHw = true;
+         break;
+      }
+   }
+   
+   if (info.watchOnly && !isHw) {
       encryptionTypes_ = { bs::wallet::EncryptionType::Unencrypted };
    }
    else {
@@ -447,16 +453,44 @@ void hd::Wallet::getSettlementPayinAddress(const SecureBinaryData &settlementID
 
 bool bs::sync::hd::Wallet::isHardwareWallet() const
 {
-   for (auto enc : encryptionTypes_) {
-      if (enc == bs::wallet::EncryptionType::Hardware) {
-         return true;
-      }
+   auto hwEncKey = getHwEncKey();
+   if (!hwEncKey) {
+      return false;
    }
 
-   return false;
+   return hwEncKey->deviceType()
+      != bs::wallet::HardwareEncKey::WalletType::Offline;
+}
+
+bool bs::sync::hd::Wallet::isHardwareOfflineWallet() const
+{
+   auto hwEncKey = getHwEncKey();
+   if (!hwEncKey) {
+      return false;
+   }
+
+   return hwEncKey->deviceType()
+      == bs::wallet::HardwareEncKey::WalletType::Offline;
+}
+
+bool bs::sync::hd::Wallet::canMixLeaves() const
+{
+   return encryptionTypes_.empty()
+      || encryptionTypes_[0] != bs::wallet::EncryptionType::Hardware;
+}
+
+std::unique_ptr<bs::wallet::HardwareEncKey> bs::sync::hd::Wallet::getHwEncKey() const
+{
+   if (encryptionTypes_.empty() || encryptionKeys_.empty() ||
+      encryptionTypes_[0] != bs::wallet::EncryptionType::Hardware) {
+      return nullptr;
+   }
+
+   return std::make_unique<bs::wallet::HardwareEncKey>(encryptionKeys_[0]);
 }
 
 bool hd::Wallet::isFullWallet() const
 {
-   return !isOffline() && !isHardwareWallet() && !isPrimary();
+   return !isOffline() && !isHardwareWallet()
+      && !isHardwareOfflineWallet() && !isPrimary();
 }

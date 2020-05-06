@@ -36,6 +36,8 @@ class ZmqContext;
 namespace bs {
    namespace tracker_server {
       class Request_RegisterCc;
+      class Request_ParseCcTxCandidate;
+      class Response_ParseCcCandidateTxResult;
       class Response_UpdateCcSnapshot;
       class Response_UpdateCcZcSnapshot;
    }
@@ -80,8 +82,12 @@ private:
    void scheduleRestart();
    void reconnect();
 
+   void parseCcCandidateTx(const std::shared_ptr<ColoredCoinSnapshot> &
+      , const std::shared_ptr<ColoredCoinZCSnapshot>&, const Tx &, int id);
+
    void processUpdateCcSnapshot(const bs::tracker_server::Response_UpdateCcSnapshot &response);
    void processUpdateCcZcSnapshot(const bs::tracker_server::Response_UpdateCcZcSnapshot &response);
+   void processParseCcCandidateTx(const bs::tracker_server::Response_ParseCcCandidateTxResult &);
 
    std::shared_ptr<spdlog::logger> logger_;
    std::unique_ptr<ZmqBIP15XDataConnection> connection_;
@@ -98,7 +104,6 @@ private:
    ZmqBipNewKeyCb newKeyCb_;
    State state_{State::Offline};
    std::chrono::steady_clock::time_point nextRestart_{};
-
 };
 
 class CcTrackerServer : public ServerConnectionListener
@@ -129,6 +134,7 @@ private:
    };
 
    void processRegisterCc(ClientData &client, const bs::tracker_server::Request_RegisterCc &request);
+   void processParseTxCandidate(ClientData &client, const bs::tracker_server::Request_ParseCcTxCandidate &);
 
    std::shared_ptr<spdlog::logger> logger_;
    std::shared_ptr<ArmoryConnection> armory_;
@@ -144,7 +150,6 @@ private:
    std::thread dispatchThread_;
 
    uint64_t startedTrackerCount_{};
-
 };
 
 
