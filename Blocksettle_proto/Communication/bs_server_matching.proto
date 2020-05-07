@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package Blocksettle.Server.Matching;
 
+import "bs_server.proto";
 
 message XbtMatchedRequest
 {
@@ -27,11 +28,20 @@ message XbtResponseCommon
    string error_msg = 3;
 }
 
+message XbtUnsignedPayinRequest
+{
+   string email = 1;
+   string settlement_id = 2;
+   bytes unsigned_payin = 3;
+   repeated PreimageData preimage_data = 4;
+}
 
 message MatchingMessage
 {
    oneof data {
-      XbtMatchedRequest xbt_matched_request = 1;
-      XbtResponseCommon xbt_matched_response = 2;
+      XbtMatchedRequest          xbt_matched_request = 1;
+      XbtResponseCommon          xbt_matched_response = 2;
+      XbtUnsignedPayinRequest    xbt_unsigned_payin_request = 3;
+      XbtResponseCommon          xbt_unsigned_payin_response = 4;
    }
 }
