@@ -415,13 +415,14 @@ message UpdateWalletRequest
 
 message ImportHwWalletRequest
 {
-   string vendor = 1;
-   string label = 2;
-   string deviceId = 3;
-   string xpubRoot = 4;
-   string xpubNestedSegwit = 5;
-   string xpubNativeSegwit = 6;
-   string xpubLegacy = 7;
+   uint32 walletType = 1;
+   string vendor = 2;
+   string label = 3;
+   string deviceId = 4;
+   string xpubRoot = 5;
+   string xpubNestedSegwit = 6;
+   string xpubNativeSegwit = 7;
+   string xpubLegacy = 8;
 }
 
 message VerifyOfflineTxRequest

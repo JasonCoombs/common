@@ -83,6 +83,7 @@ namespace bs {
             bool isExtOnly() const { return extOnlyFlag_; }
 
             bool isHardwareWallet() const;
+            bool isHardwareOffline() const;
 
             std::shared_ptr<Group> getGroup(bs::hd::CoinType ct) const;
             std::shared_ptr<Group> createGroup(bs::hd::CoinType ct);

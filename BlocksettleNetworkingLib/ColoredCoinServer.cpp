@@ -127,6 +127,24 @@ public:
       zcSnapshotUpdatedCb_ = std::move(cb);
    }
 
+   void parseCcCandidateTx(const std::shared_ptr<ColoredCoinSnapshot> &s
+      , const std::shared_ptr<ColoredCoinZCSnapshot>&zcS, const Tx &tx
+      , const CcTxCandidateCb &cb) const override
+   {
+      parseCcTxCb_ = cb;
+      auto parent = parent_.lock();
+      assert(parent);
+      parent->parseCcCandidateTx(s, zcS, tx, id_);
+   }
+
+   void parseCcCandidateTxResult(const CcTxCandidate &result)
+   {
+      if (parseCcTxCb_ != nullptr) {
+         parseCcTxCb_(result);
+      }
+      parseCcTxCb_ = nullptr;
+   }
+
    std::weak_ptr<CcTrackerClient> parent_;
    uint64_t coinsPerShare_;
    std::atomic_bool isOnline_{false};
@@ -140,7 +158,7 @@ public:
 
    SnapshotUpdatedCb snapshotUpdatedCb_;
    SnapshotUpdatedCb zcSnapshotUpdatedCb_;
-
+   mutable CcTxCandidateCb parseCcTxCb_{ nullptr };
 };
 
 class CcTrackerSrvImpl : public ColoredCoinTracker
@@ -224,6 +242,7 @@ public:
    const uint64_t index_;
 };
 
+
 CcTrackerClient::CcTrackerClient(const std::shared_ptr<spdlog::logger> &logger)
    : logger_(logger)
 {
@@ -286,11 +305,13 @@ void CcTrackerClient::OnDataReceived(const std::string &data)
          case bs::tracker_server::Response::kUpdateCcZcSnapshot:
             processUpdateCcZcSnapshot(response.update_cc_zc_snapshot());
             return;
+         case bs::tracker_server::Response::kParseTxCandidate:
+            processParseCcCandidateTx(response.parse_tx_candidate());
+            return;
          case bs::tracker_server::Response::DATA_NOT_SET:
             SPDLOG_LOGGER_ERROR(logger_, "got invalid empty response from server");
             return;
       }
-
       SPDLOG_LOGGER_CRITICAL(logger_, "unhandled request detected!");
    });
 }
@@ -419,6 +440,18 @@ void CcTrackerClient::reconnect()
    connection_->openConnection(host_, port_, this);
 }
 
+void CcTrackerClient::parseCcCandidateTx(const std::shared_ptr<ColoredCoinSnapshot> &s
+   , const std::shared_ptr<ColoredCoinZCSnapshot> &zcS, const Tx &tx, int id)
+{
+   bs::tracker_server::Request request;
+   auto d = request.mutable_tx_candidate();
+   d->set_id(id);
+   d->set_cc_snapshot(serializeColoredCoinSnapshot(s));
+   d->set_zc_snapshot(serializeColoredCoinZcSnapshot(zcS));
+   d->set_tx(tx.serialize().toBinStr());
+   connection_->send(request.SerializeAsString());
+}
+
 void CcTrackerClient::processUpdateCcSnapshot(const bs::tracker_server::Response_UpdateCcSnapshot &response)
 {
    auto it = clientsById_.find(response.id());
@@ -448,6 +481,31 @@ void CcTrackerClient::processUpdateCcZcSnapshot(const bs::tracker_server::Respon
       tracker->zcSnapshotUpdatedCb_();
    }
 }
+
+void CcTrackerClient::processParseCcCandidateTx(const bs::tracker_server::Response_ParseCcCandidateTxResult &response)
+{
+   auto it = clientsById_.find(response.id());
+   if (it == clientsById_.end()) {
+      SPDLOG_LOGGER_ERROR(logger_, "unknown id");
+      return;
+   }
+   CcTrackerImpl *tracker = it->second;
+   CcTxCandidate result;
+   for (int i = 0; i < response.cc_by_addr_size(); ++i) {
+      const auto &avPair = response.cc_by_addr(i);
+      result.ccPerAddr_[BinaryData::fromString(avPair.address())] = avPair.value();
+   }
+   for (int i = 0; i < response.xbt_by_addr_size(); ++i) {
+      const auto &avPair = response.xbt_by_addr(i);
+      result.xbtPerAddr_[BinaryData::fromString(avPair.address())] = avPair.value();
+   }
+   result.totalCcRedeemed_ = response.total_cc_redeemed();
+   result.totalCcSpent_ = response.total_cc_spent();
+   result.totalXbtSpent_ = response.total_xbt_spent();
+   result.isValidCcTx_ = response.is_valid();
+   tracker->parseCcCandidateTxResult(result);
+}
+
 
 CcTrackerServer::CcTrackerServer(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ArmoryConnection> &armory)
@@ -494,6 +552,9 @@ void CcTrackerServer::OnDataFromClient(const std::string &clientId, const std::s
       switch (request.data_case()) {
          case bs::tracker_server::Request::kRegisterCc:
             processRegisterCc(client, request.register_cc());
+            return;
+         case bs::tracker_server::Request::kTxCandidate:
+            processParseTxCandidate(client, request.tx_candidate());
             return;
          case bs::tracker_server::Request::DATA_NOT_SET:
             SPDLOG_LOGGER_ERROR(logger_, "invalid request from client {}", bs::toHex(clientId));
@@ -591,6 +652,39 @@ void CcTrackerServer::processRegisterCc(CcTrackerServer::ClientData &client, con
    trackerPtr->clients_.insert(c);
    trackerPtr->sendSnapshot(c);
    trackerPtr->sendZcSnapshot(c);
+}
+
+void CcTrackerServer::processParseTxCandidate(ClientData &client
+   , const bs::tracker_server::Request_ParseCcTxCandidate &request)
+{
+   auto it = client.trackers.find(request.id());
+   if (it == client.trackers.end()) {
+      SPDLOG_LOGGER_ERROR(logger_, "failed to find tracker for id {}", request.id());
+      return;
+   }
+   const auto &tracker = it->second;
+   const auto &ccSnap = deserializeColoredCoinSnapshot(request.cc_snapshot());
+   const auto &zcSnap = deserializeColoredCoinZcSnapshot(request.zc_snapshot());
+   const auto &result = tracker->parseCcCandidateTx(ccSnap, zcSnap, Tx(BinaryData::fromString(request.tx())));
+
+   bs::tracker_server::Response response;
+   auto d = response.mutable_parse_tx_candidate();
+   d->set_id(request.id());
+   for (const auto &addrPair : result.ccPerAddr_) {
+      auto avPair = d->add_cc_by_addr();
+      avPair->set_address(addrPair.first.toBinStr());
+      avPair->set_value(addrPair.second);
+   }
+   for (const auto &addrPair : result.xbtPerAddr_) {
+      auto avPair = d->add_cc_by_addr();
+      avPair->set_address(addrPair.first.toBinStr());
+      avPair->set_value(addrPair.second);
+   }
+   d->set_total_cc_redeemed(result.totalCcRedeemed_);
+   d->set_total_cc_spent(result.totalCcSpent_);
+   d->set_total_xbt_spent(result.totalXbtSpent_);
+   d->set_is_valid(result.isValidCcTx_);
+   server_->SendDataToClient(client.clientId, response.SerializeAsString());
 }
 
 

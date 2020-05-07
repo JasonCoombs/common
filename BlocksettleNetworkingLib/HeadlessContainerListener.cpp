@@ -431,7 +431,13 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       if (rootWallet->isWatchingOnly()) {
          // when signing tx for watching-only wallet we receiving signed tx
          // from signer ui instead of password
-         if (rootWallet->isHardwareWallet() && rootWallet->encryptionKeys()[0].toBinStr() == "Ledger") {
+         bool isLedgerHw = false;
+         if (rootWallet->isHardwareWallet()) {
+            bs::wallet::HardwareEncKey hwEncKey(rootWallet->encryptionKeys()[0]);
+            isLedgerHw = hwEncKey.deviceType() == bs::wallet::HardwareEncKey::WalletType::Ledger;
+         }
+
+         if (isLedgerHw) {
             // For ledger hw data is not prepared straight away
             Blocksettle::Communication::headless::InputSigs sigs;
             if (!sigs.ParseFromString(pass.toBinStr())) {
@@ -483,7 +489,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
                }
                SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
             }
-
          }
          else {
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, pass);

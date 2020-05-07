@@ -33,11 +33,30 @@ struct ParsedCcTx
 {
    BinaryData txHash_;
 
+   //tx's cc outpoints
    std::vector<std::pair<BinaryData, unsigned>> outpoints_;
+
+   //tx's cc outputs
    std::vector<std::pair<uint64_t, BinaryData>> outputs_;
 
+   //hash is set only if this is a valid cc tx
    bool isInitialized(void) const { return txHash_.getSize() == 32; }
+   bool hasOutputs(void) const { return isInitialized() && !outputs_.empty(); }
 };
+
+////
+struct CcTxCandidate
+{
+   std::map<BinaryData, uint64_t> ccPerAddr_;
+   std::map<BinaryData, uint64_t> xbtPerAddr_;
+
+   uint64_t totalCcRedeemed_ = UINT64_MAX;
+   uint64_t totalCcSpent_ = UINT64_MAX;
+   uint64_t totalXbtSpent_ = UINT64_MAX;
+
+   bool isValidCcTx_ = false;
+};
+using CcTxCandidateCb = std::function<void(const CcTxCandidate &)>;
 
 ////
 struct CcOutpoint
@@ -233,13 +252,17 @@ public:
    virtual void setSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
    virtual void setZcSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
 
+   virtual void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot>&,
+      const std::shared_ptr<ColoredCoinZCSnapshot>&,
+      const Tx&, const CcTxCandidateCb &) const = 0;
 };
 
 ////
 class ColoredCoinTracker : public ColoredCoinTrackerInterface
 {
    /*
-   This class tracks the UTXO set for a single colored coin.
+   This class tracks the UTXO set for a single colored coin instrument.
    */
    
    friend class ColoredCoinACT;
@@ -379,6 +402,21 @@ public:
       const std::shared_ptr<ColoredCoinZCSnapshot>&,
       const BinaryData&, bool);
 
+   //returns effect of a tx on cc utxo map if it was mined
+   CcTxCandidate parseCcCandidateTx(
+      const Tx&, bool withZc = true) const;
+   CcTxCandidate parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot>&,
+      const std::shared_ptr<ColoredCoinZCSnapshot>&,
+      const Tx&) const;
+   void parseCcCandidateTx(
+      const std::shared_ptr<ColoredCoinSnapshot> &s,
+      const std::shared_ptr<ColoredCoinZCSnapshot> &zcS,
+      const Tx &tx, const CcTxCandidateCb &cb) const override
+   {
+      cb(parseCcCandidateTx(s, zcS, tx));
+   }
+
    ////
    void addOriginAddress(const bs::Address&) override;
    void addRevocationAddress(const bs::Address&) override;
@@ -407,7 +445,7 @@ public:
    virtual std::vector<std::shared_ptr<CcOutpoint>> getSpendableOutpointsForAddress(
       const BinaryData&) const = 0;
 
-   virtual bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const = 0;
+   virtual bool isTxHashValid(const BinaryData &, uint32_t txOutIndex, bool allowZC) const = 0;
 
    // Determine whether the TX was valid CC at any point in time (including current ZC)
    virtual bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const = 0;
@@ -418,6 +456,8 @@ public:
 
    virtual ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const = 0;
+
+   virtual void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const = 0;
 };
 
 class ColoredCoinTrackerClient : public ColoredCoinTrackerClientIface
@@ -444,7 +484,7 @@ public:
    std::vector<std::shared_ptr<CcOutpoint>> getSpendableOutpointsForAddress(
       const BinaryData&) const override;
 
-   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const override;
+   bool isTxHashValid(const BinaryData &, uint32_t txOutIndex, bool allowZC) const override;
 
    // Determine whether the TX was valid CC at any point in time (including current ZC)
    bool isTxHashValidHistory(const BinaryData &, uint32_t txOutIndex = UINT32_MAX) const override;
@@ -455,6 +495,8 @@ public:
 
    ColoredCoinTracker::OutpointMap getCCUtxoForAddresses(const std::set<BinaryData>&
       , bool withZc) const override;
+
+   void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const override;
 };
 
 class CCTrackerClientFactory

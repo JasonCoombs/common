@@ -2081,18 +2081,20 @@ std::shared_ptr<ColoredCoinTrackerClient> WalletsManager::tracker(const std::str
    return it != trackers_.end() ? it->second : nullptr;
 }
 
-std::multimap<std::string, std::string> bs::sync::WalletsManager::getHwDeviceIdToWallet() const
+std::vector<std::string> bs::sync::WalletsManager::getHwWallets(bs::wallet::HardwareEncKey::WalletType walletType,
+   std::string deviceId) const
 {
-   std::multimap<std::string, std::string> resp;
+   std::vector<std::string> hwWallets;
    for (auto &walletPtr : hdWallets_) {
       if (!walletPtr->isHardwareWallet()) {
          continue;
       }
 
-      auto encKeys = walletPtr->encryptionKeys();
-      resp.insert(std::make_pair<std::string, std::string>(
-         encKeys[0].toBinStr(), walletPtr->walletId()));
+      bs::wallet::HardwareEncKey key(walletPtr->encryptionKeys()[0]);
+      if (key.deviceType() == walletType && key.deviceId() == deviceId) {
+         hwWallets.push_back(walletPtr->walletId());
+      }
    }
 
-   return resp;
+   return hwWallets;
 }

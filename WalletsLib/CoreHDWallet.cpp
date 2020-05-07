@@ -294,7 +294,22 @@ void hd::Wallet::changeControlPassword(const SecureBinaryData &oldPass, const Se
 
 bool bs::core::hd::Wallet::isHardwareWallet() const
 {
-   return !pwdMeta_.empty() && pwdMeta_[0].encType == bs::wallet::EncryptionType::Hardware;
+   if (pwdMeta_.empty() || pwdMeta_[0].encType != bs::wallet::EncryptionType::Hardware) {
+      return false;
+   }
+
+   bs::wallet::HardwareEncKey key(pwdMeta_[0].encKey);
+   return key.deviceType() != bs::wallet::HardwareEncKey::WalletType::Offline;
+}
+
+bool bs::core::hd::Wallet::isHardwareOffline() const
+{
+   if (pwdMeta_.empty() || pwdMeta_[0].encType != bs::wallet::EncryptionType::Hardware) {
+      return false;
+   }
+
+   bs::wallet::HardwareEncKey key(pwdMeta_[0].encKey);
+   return key.deviceType() == bs::wallet::HardwareEncKey::WalletType::Offline;
 }
 
 void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
@@ -319,9 +334,9 @@ void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInf
    assert(groupHW);
 
    std::map<AddressEntryType, std::string> xpubs = {
-      { static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH), walletInfo.xpubNestedSegwit_ },
-      { AddressEntryType_P2WPKH, walletInfo.xpubNativeSegwit_ },
-      { AddressEntryType_P2PKH, walletInfo.xpubLegacy_ }
+      { static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH), walletInfo.xpubNestedSegwit },
+      { AddressEntryType_P2WPKH, walletInfo.xpubNativeSegwit },
+      { AddressEntryType_P2PKH, walletInfo.xpubLegacy }
    };
 
    for (const auto &aet : groupHW->getAddressTypeSet()) {
@@ -374,10 +389,11 @@ void hd::Wallet::createChatPrivKey()
 
 void hd::Wallet::convertHardwareToWo()
 {
-   if (pwdMeta_.at(0).encType != bs::wallet::Hardware) {
+   if (!isHardwareWallet()) {
       throw std::logic_error("Only hardware wallet could be converted to WO");
    }
-   pwdMeta_.at(0).encType = bs::wallet::Unencrypted;
+   bs::wallet::HardwareEncKey woEnkKey(bs::wallet::HardwareEncKey::WalletType::Offline, {});
+   pwdMeta_[0].encKey = woEnkKey.toBinaryData();
    writeToDB(true);
 }
 
