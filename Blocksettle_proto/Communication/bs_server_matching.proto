@@ -24,8 +24,6 @@ message XbtMatchedRequest
 message XbtResponseCommon
 {
    string settlement_id = 1;
-   bool success = 2;
-   string error_msg = 3;
 }
 
 message XbtUnsignedPayinRequest
@@ -36,12 +34,43 @@ message XbtUnsignedPayinRequest
    repeated PreimageData preimage_data = 4;
 }
 
+message XbtUnsignedPayinResponse
+{
+   string settlement_id = 1;
+   bytes payin_hash = 2;
+}
+
+message XbtSignedPayoutResponse
+{
+   string settlement_id = 1;
+   bytes unsigned_payin = 2;
+}
+
+message XbtSignedDataRequest
+{
+   string email = 1;
+   string settlement_id = 2;
+   bytes signed_tx = 3;
+}
+
+message XbtFailedNotification
+{
+   string settlement_id = 1;
+   string error_msg = 2;
+}
+
 message MatchingMessage
 {
    oneof data {
       XbtMatchedRequest          xbt_matched_request = 1;
       XbtResponseCommon          xbt_matched_response = 2;
       XbtUnsignedPayinRequest    xbt_unsigned_payin_request = 3;
-      XbtResponseCommon          xbt_unsigned_payin_response = 4;
+      XbtUnsignedPayinResponse   xbt_unsigned_payin_response = 4;
+      XbtSignedDataRequest       xbt_signed_payout_request = 5;
+      XbtSignedPayoutResponse    xbt_signed_payout_response = 6;
+      XbtSignedDataRequest       xbt_signed_payin_request = 7;
+      XbtResponseCommon          xbt_signed_payin_response = 8;
+      XbtFailedNotification      xbt_failed_notification = 9;
+      XbtResponseCommon          xbt_settled_notification = 10;
    }
 }
