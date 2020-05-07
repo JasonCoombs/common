@@ -46,6 +46,12 @@ message XbtSignedPayoutResponse
    bytes unsigned_payin = 2;
 }
 
+message XbtCancelRequest
+{
+   string email = 1;
+   string settlement_id = 2;
+}
+
 message XbtSignedDataRequest
 {
    string email = 1;
@@ -70,7 +76,8 @@ message MatchingMessage
       XbtSignedPayoutResponse    xbt_signed_payout_response = 6;
       XbtSignedDataRequest       xbt_signed_payin_request = 7;
       XbtResponseCommon          xbt_signed_payin_response = 8;
-      XbtFailedNotification      xbt_failed_notification = 9;
-      XbtResponseCommon          xbt_settled_notification = 10;
+      XbtCancelRequest           xbt_cancel_request = 9;
+      XbtFailedNotification      xbt_failed_notification = 10;
+      XbtResponseCommon          xbt_settled_notification = 11;
    }
 }
