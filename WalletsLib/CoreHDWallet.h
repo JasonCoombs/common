@@ -137,6 +137,8 @@ namespace bs {
             BinaryData signSettlementTXRequest(const wallet::TXSignRequest &
                , const wallet::SettlementData &);
 
+            BinaryData signTXRequestWithWallet(const bs::core::wallet::TXSignRequest &request);
+
          protected:
             std::string    name_, desc_;
             NetworkType    netType_ = NetworkType::Invalid;

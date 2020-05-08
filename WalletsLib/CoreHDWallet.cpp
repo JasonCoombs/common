@@ -13,6 +13,7 @@
 #include "SystemFileUtils.h"
 #include "Wallets.h"
 #include "Assets.h"
+#include "headless.pb.h"
 
 
 #define LOG(logger, method, ...) \
@@ -343,6 +344,46 @@ void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInf
       groupHW->createLeafFromXpub(xpubs[aet], aet, 0u, lookup);
    }
    writeToDB();
+}
+
+BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet::TXSignRequest &request)
+{
+   const auto &leaf = getLeaf(request.walletIds.front());
+   if (!leaf) {
+      throw std::logic_error(fmt::format("Cannot find wallet {}", request.walletIds.front()));
+   }
+
+   BinaryData signedTx;
+   if (isHardwareWallet()) {
+      bs::wallet::HardwareEncKey hwEncKey(encryptionKeys()[0]);
+
+      std::set<BinaryData> binaryData;
+      auto signedDeviceSigs = lbdPwdPrompts_.back()(binaryData);
+
+      if (hwEncKey.deviceType() == bs::wallet::HardwareEncKey::WalletType::Trezor) {
+         signedTx = signedDeviceSigs;
+      }
+      else if (hwEncKey.deviceType() == bs::wallet::HardwareEncKey::WalletType::Ledger) {
+         // For ledger hw data is not prepared straight away
+         Blocksettle::Communication::headless::InputSigs sigs;
+         if (!sigs.ParseFromString(signedDeviceSigs.toBinStr())) {
+            throw std::exception("Cannot parse offline sig sign response from ledger");
+         }
+
+         bs::core::InputSigs inputSigs;
+         for (size_t i = 0; i < sigs.inputsig_size(); ++i) {
+            auto sig = sigs.inputsig(i);
+            inputSigs[sig.index()] = BinaryData::fromString(sig.data());
+         }
+
+         signedTx = leaf->signTXRequestWithWitness(request, inputSigs);
+      }
+   }
+   else {
+      signedTx = leaf->signTXRequest(request);
+   }
+
+   return signedTx;
 }
 
 void hd::Wallet::createStructure(unsigned lookup)
