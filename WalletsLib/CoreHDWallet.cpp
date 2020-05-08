@@ -357,6 +357,10 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
    if (isHardwareWallet()) {
       bs::wallet::HardwareEncKey hwEncKey(encryptionKeys()[0]);
 
+      if (lbdPwdPrompts_.empty()) {
+         throw std::logic_error(fmt::format("Incorrect hw wallet data {}", request.walletIds.front()));
+      }
+
       std::set<BinaryData> binaryData;
       auto signedDeviceSigs = lbdPwdPrompts_.back()(binaryData);
 
