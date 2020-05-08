@@ -371,7 +371,7 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
          // For ledger hw data is not prepared straight away
          Blocksettle::Communication::headless::InputSigs sigs;
          if (!sigs.ParseFromString(signedDeviceSigs.toBinStr())) {
-            throw std::exception("Cannot parse offline sig sign response from ledger");
+            throw std::runtime_error("Cannot parse offline sig sign response from ledger");
          }
 
          bs::core::InputSigs inputSigs;
