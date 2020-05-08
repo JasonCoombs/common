@@ -358,7 +358,7 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
       bs::wallet::HardwareEncKey hwEncKey(encryptionKeys()[0]);
 
       if (lbdPwdPrompts_.empty()) {
-         throw std::logic_error(fmt::format("Incorrect hw wallet data {}", request.walletIds.front()));
+         throw std::logic_error("password lambda not set");
       }
 
       std::set<BinaryData> binaryData;
