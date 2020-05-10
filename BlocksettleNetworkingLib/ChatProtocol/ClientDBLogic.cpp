@@ -508,12 +508,14 @@ void ClientDBLogic::readPrivateHistoryMessages(const std::string& partyId, const
          "WHERE user.user_hash = :user_hash "
          "AND party.party_sub_type <> 1 " // NOT OTC
          "AND party.party_type <> 0 " // NOT Global
+         "AND party.party_id = :party_id "
          "ORDER BY timestamp DESC LIMIT %1 OFFSET %2; "
       ).arg(limit).arg(offset);
 
    QSqlQuery query(getDb());
    query.prepare(cmd);
    query.bindValue(QStringLiteral(":user_hash"), QString::fromStdString(userHash));
+   query.bindValue(QStringLiteral(":party_id"), QString::fromStdString(partyId));
 
    if (!checkExecute(query))
    {
