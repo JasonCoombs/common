@@ -408,6 +408,7 @@ message UserScoreUpdateEvent
       // CC releated events
       CCAlreadyPushed                  = 27;
       CCDoubleSpend                    = 28;
+      UnexpectedDealerCCHalf           = 29;
    };
 
    string               user_email     = 1;
