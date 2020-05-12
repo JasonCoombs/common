@@ -1284,7 +1284,7 @@ bool ColoredCoinTrackerClient::isTxHashValidHistory(
    if (!zcPtr) {
       return  false;
    }
-   bool result = opExists(zcPtr->utxoSet_, txHash, txOutIndex);
+   bool result = opExists(zcPtr->utxoSet_, txHash, txOutIndex, false);
    return result;
 }
 
