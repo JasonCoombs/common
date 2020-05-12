@@ -193,7 +193,23 @@ void WalletInfo::setRootId(const QString &rootId)
 
 EncryptionType WalletInfo::encType()
 {
-   return encTypes_.isEmpty() ? bs::wallet::EncryptionType::Unencrypted : encTypes_.at(0);
+   if (encTypes_.isEmpty()) {
+      return  bs::wallet::EncryptionType::Unencrypted;
+   }
+   else if (isHardwareWallet()) {
+      if (encKeys_.isEmpty()) {
+         return bs::wallet::EncryptionType::Unencrypted;
+      }
+
+      HardwareEncKey hwKey(BinaryData::fromString(
+         encKeys_.at(0).toStdString()));
+
+      if (hwKey.deviceType() == HardwareEncKey::WalletType::Offline) {
+         return bs::wallet::EncryptionType::Unencrypted;
+      }
+   }
+
+   return encTypes_.at(0);
 }
 
 void WalletInfo::setEncType(int encType)

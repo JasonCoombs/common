@@ -1177,15 +1177,13 @@ message TradeHistMessage
 
 enum SettlementTxType
 {
-   SettlementTxUnknownType = 0;
-   SettlementTxRegistered  = 1;
-   SettlementTxCCRegistered  = 2;
-   SettlementTxUnsignedPayinTimeout = 3;
-   SettlementTxSignedPayinTimeout = 4;
-   SettlementTxPayoutTimeout = 5;
-   SettlementTxCcMatchTimeout = 6;
-   SettlementTxCcBroadcastTimeout = 7;
-   SettlementTxStopXBTMonitor = 8;
+   SettlementTxUnknownType          = 0;
+   SettlementTxUnsignedPayinTimeout = 1;
+   SettlementTxSignedPayinTimeout   = 2;
+   SettlementTxPayoutTimeout        = 3;
+   SettlementTxCcMatchTimeout       = 4;
+   SettlementTxCcBroadcastTimeout   = 5;
+   SettlementTxStopXBTMonitor       = 6;
 }
 
 
