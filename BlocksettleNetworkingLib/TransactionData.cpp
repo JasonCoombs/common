@@ -386,7 +386,7 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
 
 void TransactionData::setSelectedUtxo(const std::vector<UTXO>& utxos)
 {
-   std::vector<std::pair<BinaryData, uint32_t>> utxosHashes;
+   UtxoHashes utxosHashes;
    utxosHashes.reserve(utxos.size());
    for (auto utxo : utxos) {
       utxosHashes.push_back({ utxo.getTxHash(), utxo.getTxOutIndex() });
