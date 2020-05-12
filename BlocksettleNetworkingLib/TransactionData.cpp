@@ -384,6 +384,20 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
    return maxAmount_;
 }
 
+void TransactionData::setSelectedUtxo(const std::vector<UTXO>& utxos)
+{
+   for (const auto &utxo : utxos) {
+      bool result = selectedInputs_->SetUTXOSelection(utxo.getTxHash(), utxo.getTxOutIndex());
+      if (!result) {
+         SPDLOG_LOGGER_WARN(logger_, "selecting input failed for imported TX");
+      }
+      else {
+         selectedInputs_->SetUseAutoSel(false);
+      }
+   }
+   InvalidateTransactionData();
+}
+
 bool TransactionData::RecipientsReady() const
 {
    if (recipients_.empty()) {

@@ -134,6 +134,8 @@ public:
 
    double CalculateMaxAmount(const bs::Address &recipient = {}, bool force = false) const;
 
+   void setSelectedUtxo(const std::vector<UTXO>& utxos);
+
    void clear();
    std::vector<UTXO> inputs() const;
 
