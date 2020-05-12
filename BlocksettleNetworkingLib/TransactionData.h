@@ -134,7 +134,10 @@ public:
 
    double CalculateMaxAmount(const bs::Address &recipient = {}, bool force = false) const;
 
+   using UtxoHashes = std::vector<std::pair<BinaryData, uint32_t>>;
+   void setSelectedUtxo(const UtxoHashes& utxosHashes);
    void setSelectedUtxo(const std::vector<UTXO>& utxos);
+   
 
    void clear();
    std::vector<UTXO> inputs() const;
