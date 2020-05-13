@@ -409,6 +409,7 @@ message UserScoreUpdateEvent
       CCAlreadyPushed                  = 27;
       CCDoubleSpend                    = 28;
       UnexpectedDealerCCHalf           = 29;
+      UnexpectedRequesterCCHalf        = 30;
    };
 
    string               user_email     = 1;
