@@ -473,9 +473,9 @@ message GenoaCCReservation
    double amount = 5;
    double price = 6;
    bool   requester_buys = 7;
-   string requester_tx_data = 8;
+   bytes  requester_tx_data = 8;
    string requester_recv_address = 9;
-   string dealer_tx_data = 10;
+   bytes  dealer_tx_data = 10;
    string dealer_recv_address = 11;
    uint64 created_timestamp = 12;
 }
@@ -1070,9 +1070,9 @@ message TradeInfoCcData
    string currency = 5;
    double quantity = 6;
    double price = 7;
-   string requester_tx_data = 8;
+   bytes  requester_tx_data = 8;
    string requester_recpt_address = 9;
-   string dealer_tx_data = 10;
+   bytes  dealer_tx_data = 10;
    string dealer_recpt_address = 11;
    int32  validation_score = 12;
    string scorechain_url = 13;
@@ -1184,6 +1184,7 @@ enum SettlementTxType
    SettlementTxCcMatchTimeout       = 4;
    SettlementTxCcBroadcastTimeout   = 5;
    SettlementTxStopXBTMonitor       = 6;
+   SettlementTxCcHandshakeTimeout   = 7;
 }
 
 
