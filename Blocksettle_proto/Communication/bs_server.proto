@@ -327,7 +327,7 @@ message CCValidateHalfRequest
 {
    enum TxType {
       Unknown = 0;
-      Requester = 1; 
+      Requester = 1;
       Dealer = 2;
       Merged = 3;
    }
@@ -1258,8 +1258,10 @@ message TerminalOtcVerifyRequest
    bytes  buyer_auth_pubkey = 5;
    int64  price = 6;
    int64  amount = 7;
-   bytes  unsigned_payin = 8;
-   repeated PreimageData preimage_data = 9;
+   string chat_id_seller = 8;
+   string chat_id_buyer = 9;
+   bytes  unsigned_payin = 10;
+   repeated PreimageData preimage_data = 11;
 }
 
 message TerminalOtcUpdateMessage
