@@ -228,6 +228,9 @@ QString WalletInfo::email() const
 
 bool WalletInfo::isEidAuthOnly() const
 {
+   if (encTypes_.isEmpty())
+      return false;
+
    for (auto encType : encTypes()) {
       if (encType != EncryptionType::Auth) {
          return false;
@@ -238,6 +241,9 @@ bool WalletInfo::isEidAuthOnly() const
 
 bool WalletInfo::isPasswordOnly() const
 {
+   if (encTypes_.isEmpty())
+      return false;
+
    for (auto encType : encTypes()) {
       if (encType != EncryptionType::Password) {
          return false;
@@ -305,6 +311,12 @@ void WalletInfo::setName(const QString &name)
 
    name_ = name;
    emit walletChanged();
+}
+
+bool bs::hd::WalletInfo::isWo() const
+{
+   return encTypes_.isEmpty()
+      || encTypes_[0] == bs::wallet::EncryptionType::Unencrypted;
 }
 
 bool bs::hd::WalletInfo::isHardwareWallet() const

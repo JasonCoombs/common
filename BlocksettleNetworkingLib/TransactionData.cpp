@@ -384,6 +384,32 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
    return maxAmount_;
 }
 
+void TransactionData::setSelectedUtxo(const std::vector<UTXO>& utxos)
+{
+   UtxoHashes utxosHashes;
+   utxosHashes.reserve(utxos.size());
+   for (auto utxo : utxos) {
+      utxosHashes.push_back({ utxo.getTxHash(), utxo.getTxOutIndex() });
+   }
+   setSelectedUtxo(utxosHashes);
+}
+
+void TransactionData::setSelectedUtxo(const UtxoHashes& utxosHashes)
+{
+   for (const auto &utxo : utxosHashes) {
+      bool result = selectedInputs_->SetUTXOSelection(utxo.first, utxo.second);
+      if (!result) {
+         SPDLOG_LOGGER_WARN(logger_, "selecting input failed for predefined utxo set");
+      }
+      else {
+         selectedInputs_->SetUseAutoSel(false);
+      }
+   }
+   if (!selectedInputs_->UseAutoSel()) {
+      InvalidateTransactionData();
+   }
+}
+
 bool TransactionData::RecipientsReady() const
 {
    if (recipients_.empty()) {
