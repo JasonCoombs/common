@@ -22,6 +22,7 @@ message File
 
 message SignedTX
 {
-   bytes	transaction = 1;
-   string	comment = 2;
+   bytes    transaction = 1;
+   string   comment = 2;
+   bool     allow_broadcasts = 3; // Copied from TXSignRequest::allowBroadcasts
 }

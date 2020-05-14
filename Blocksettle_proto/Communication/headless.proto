@@ -112,6 +112,8 @@ message SignTxRequest
    repeated uint32                  out_sort_order = 9;
    bool                             keepDuplicatedRecipients = 11;
    repeated SupportingTransaction   supportingTxs = 20;
+   bool                             allow_broadcasts = 21;
+   uint64                           expired_timestamp_ms = 22;
 }
 
 message SignTxReply

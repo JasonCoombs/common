@@ -795,7 +795,7 @@ bs::core::wallet::TXSignRequest TransactionData::createTXRequest(bool isRBF
    const auto fee = summary_.totalFee ? summary_.totalFee : totalFee();
 
    auto txReq = bs::sync::wallet::createTXRequest(wallets, inputs(), GetRecipientList()
-      , changeAddr, fee, isRBF);
+      , true, changeAddr, fee, isRBF);
    if (group_) {
       txReq.walletIds.clear();
       std::set<std::string> walletIds;
@@ -824,7 +824,7 @@ bs::core::wallet::TXSignRequest TransactionData::createUnsignedTransaction(bool 
    if (!wallet_) {
       return {};
    }
-   auto unsignedTxReq = wallet_->createTXRequest(inputs(), GetRecipientList(), summary_.totalFee, isRBF, changeAddress);
+   auto unsignedTxReq = wallet_->createTXRequest(inputs(), GetRecipientList(), true, summary_.totalFee, isRBF, changeAddress);
    if (!unsignedTxReq.isValid()) {
       throw std::runtime_error("missing unsigned TX");
    }

@@ -48,6 +48,7 @@ std::vector<bs::core::wallet::TXSignRequest> bs::core::wallet::ParseOfflineTXFil
             }
             txReq.prevStates.push_back(BinaryData::fromString(tx.transaction()));
             txReq.comment = tx.comment();
+            txReq.allowBroadcasts = tx.allow_broadcasts();
          }
          else {
             continue;
@@ -89,7 +90,8 @@ ErrorCode bs::core::wallet::ExportTxToFile(const bs::core::wallet::TXSignRequest
    }
 }
 
-ErrorCode bs::core::wallet::ExportSignedTxToFile(const BinaryData &signedTx, const QString &fileNamePath, const std::string &comment)
+ErrorCode bs::core::wallet::ExportSignedTxToFile(const BinaryData &signedTx, const QString &fileNamePath
+   , bool allowBroadcasts, const std::string &comment)
 {
    QFile f(fileNamePath);
    if (f.exists()) {
@@ -102,6 +104,7 @@ ErrorCode bs::core::wallet::ExportSignedTxToFile(const BinaryData &signedTx, con
    Storage::Signer::SignedTX response;
    response.set_transaction(signedTx.toBinStr());
    response.set_comment(comment);
+   response.set_allow_broadcasts(allowBroadcasts);
 
    Storage::Signer::File fileContainer;
    auto container = fileContainer.add_payload();
