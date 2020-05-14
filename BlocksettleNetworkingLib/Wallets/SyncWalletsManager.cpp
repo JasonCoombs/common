@@ -246,28 +246,28 @@ void WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
 
 void WalletsManager::balanceUpdated(const std::string &walletId)
 {
-   addToMaintQueue([this, walletId] {
+   addToMainQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletBalanceUpdated(walletId); });
    });
 }
 
 void WalletsManager::addressAdded(const std::string &walletId)
 {
-   addToMaintQueue([this, walletId] {
+   addToMainQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
 
 void WalletsManager::metadataChanged(const std::string &walletId)
 {
-   addToMaintQueue([this, walletId] {
+   addToMainQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletMetaChanged(walletId); });
    });
 }
 
 void WalletsManager::walletReset(const std::string &walletId)
 {
-   addToMaintQueue([this, walletId] {
+   addToMainQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
@@ -310,12 +310,12 @@ void WalletsManager::walletCreated(const std::string &walletId)
          break;
       }
    };
-   addToMaintQueue(lbdMaint);
+   addToMainQueue(lbdMaint);
 }
 
 void WalletsManager::walletDestroyed(const std::string &walletId)
 {
-   addToMaintQueue([this, walletId] {
+   addToMainQueue([this, walletId] {
       const auto &wallet = getWalletById(walletId);
       eraseWallet(wallet);
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
@@ -1458,7 +1458,7 @@ void WalletsManager::trackAddressChainUse(
    }
 }
 
-void WalletsManager::addToMaintQueue(const MaintQueueCb &cb)
+void WalletsManager::addToMainQueue(const MaintQueueCb &cb)
 {
    std::unique_lock<std::mutex> lock(maintMutex_);
    maintQueue_.push_back(cb);

@@ -229,9 +229,9 @@ public:
    virtual bool estimateFee(unsigned int nbBlocks, const FloatCb &);
    virtual bool getFeeSchedule(const FloatMapCb&);
 
-   std::string broadcastZC(const BinaryData& rawTx);
-   std::string pushZC(const BinaryData &) const;
-   std::string pushZCs(const std::vector<BinaryData> &) const;
+   virtual std::string broadcastZC(const BinaryData& rawTx);
+   virtual std::string pushZC(const BinaryData &) const;
+   virtual std::string pushZCs(const std::vector<BinaryData> &) const;
 
    bool isTransactionVerified(const ClientClasses::LedgerEntry &) const;
    bool isTransactionVerified(uint32_t blockNum) const;
@@ -262,7 +262,7 @@ public:
 
 protected:
    using CallbackQueueCb = std::function<void(ArmoryCallbackTarget *)>;
-   void addToMaintQueue(const CallbackQueueCb &);
+   virtual void addToMainQueue(const CallbackQueueCb &);
 
    using EmptyCb = std::function<void()>;
    void runOnMaintThread(EmptyCb cb);

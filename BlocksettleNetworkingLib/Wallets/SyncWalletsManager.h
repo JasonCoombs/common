@@ -243,7 +243,7 @@ namespace bs {
          void startWalletRescan(const HDWalletPtr &);
 
          using MaintQueueCb = std::function<void()>;
-         void addToMaintQueue(const MaintQueueCb &);
+         void addToMainQueue(const MaintQueueCb &);
          void maintenanceThreadFunc();
 
          void processCreatedCCLeaf(const std::string &cc, bs::error::ErrorCode result

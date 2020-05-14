@@ -93,11 +93,11 @@ bool AddressVerificator::SetBSAddressList(const std::unordered_set<std::string>&
    for (const auto &addr : addressList) {
       const auto bsAddr = bs::Address::fromAddressString(addr);
       if (bsAddressList_.find(bsAddr) != bsAddressList_.end()) {
-         logger_->warn("[{}] BS address {} already exists in the list"
-            , __func__, bsAddr.display());
+         logger_->warn("[AddressVerificator::SetBSAddressList] BS address {} already exists in the list"
+            , bsAddr.display());
          continue;
       }
-      logger_->debug("[{}] BS address: {}", __func__, bsAddr.display());
+      logger_->debug("[AddressVerificator::SetBSAddressList] BS address: {}", bsAddr.display());
       bsAddressList_.emplace(bsAddr.prefixed());
       validationMgr_->addValidationAddress(bsAddr);
    }
@@ -140,7 +140,7 @@ void AddressVerificator::startAddressVerification()
          refreshUserAddresses();
       }
       catch (const std::exception &e) {
-         logger_->error("[{}] failure: {}", __func__, e.what());
+         logger_->error("[AddressVerificator::startAddressVerification] failure: {}", e.what());
          return;
       }
    });
@@ -149,7 +149,7 @@ void AddressVerificator::startAddressVerification()
 void AddressVerificator::refreshUserAddresses()
 {
    std::lock_guard<std::mutex> lock(userAddressesMutex_);
-   logger_->debug("[{}] updating {} user address[es]", __func__, userAddresses_.size());
+   logger_->debug("[AddressVerificator::refreshUserAddresses] updating {} user address[es]", userAddresses_.size());
    for (const auto &addr : userAddresses_) {
       AddCommandToQueue(CreateAddressValidationCommand(addr));
    }
@@ -198,7 +198,7 @@ void AddressVerificator::validateAddress(const std::shared_ptr<AddressVerificati
       state->currentState = AuthAddressLogic::getAuthAddrState(*validationMgr_, state->address);
    }
    catch (const std::exception &e) {
-      logger_->error("[{}] failed to validate state for {}: {}", __func__
+      logger_->error("[AddressVerificator::validateAddress] failed to validate state for {}: {}"
          , state->address.display(), e.what());
       state->currentState = AddressVerificationState::VerificationFailed;
    }
