@@ -761,7 +761,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
    , const std::vector<UTXO> &inputs
    , const std::vector<std::string> &inputIndices
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
-   , const bs::Address &changeAddr
+   , bool allowBroadcasts, const bs::Address &changeAddr
    , const std::string &changeIndex
    , const uint64_t fee
    , bool isRBF)
@@ -806,12 +806,15 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
       request.change.index = changeIndex;
    }
 
+   request.allowBroadcasts = allowBroadcasts;
+
    return request;
 }
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet*> &wallets
    , const std::vector<UTXO> &inputs
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
+   , bool allowBroadcasts
    , const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
 {
@@ -848,30 +851,30 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       }
    }
 
-   return createTXRequest(walletIds, inputs, inputIndices, recipients, changeAddr, changeIndex, fee, isRBF);
+   return createTXRequest(walletIds, inputs, inputIndices, recipients, allowBroadcasts, changeAddr, changeIndex, fee, isRBF);
 }
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
    , const std::vector<UTXO> &inputs
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
-   , const bs::Address &changeAddr
+   , bool allowBroadcasts, const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
 {
    std::vector<Wallet*> walletsCopy;
    for (const auto &wallet : wallets) {
       walletsCopy.push_back(wallet.get());
    }
-   return createTXRequest(walletsCopy, inputs, recipients, changeAddr, fee, isRBF);
+   return createTXRequest(walletsCopy, inputs, recipients, allowBroadcasts, changeAddr, fee, isRBF);
 }
 
 bs::core::wallet::TXSignRequest Wallet::createTXRequest(const std::vector<UTXO> &inputs
-   , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients, const uint64_t fee
+   , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients, bool allowBroadcasts, const uint64_t fee
    , bool isRBF, const bs::Address &changeAddress)
 {
    if (!changeAddress.empty()) {
       setAddressComment(changeAddress, wallet::Comment::toString(wallet::Comment::ChangeAddress));
    }
-   return wallet::createTXRequest({ this }, inputs, recipients, changeAddress, fee, isRBF);
+   return wallet::createTXRequest({ this }, inputs, recipients, allowBroadcasts, changeAddress, fee, isRBF);
 }
 
 bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal

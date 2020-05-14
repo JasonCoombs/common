@@ -76,6 +76,10 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
          supportingTx.second.getPtr(), supportingTx.second.getSize());
    }
 
+   request.set_allow_broadcasts(txSignReq.allowBroadcasts);
+   request.set_expired_timestamp_ms(static_cast<uint64_t>(
+      txSignReq.expiredTimestamp.time_since_epoch() / std::chrono::milliseconds(1)));
+
    return  request;
 }
 
@@ -155,6 +159,10 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
 
       txSignReq.supportingTXs.emplace(txHash, rawTx);
    }
+
+   txSignReq.allowBroadcasts = request.allow_broadcasts();
+   txSignReq.expiredTimestamp = std::chrono::system_clock::time_point{}
+      + std::chrono::milliseconds(request.expired_timestamp_ms());
 
    return txSignReq;
 }

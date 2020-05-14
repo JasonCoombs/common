@@ -276,6 +276,10 @@ namespace bs {
             std::vector<BinaryData>       prevStates;
             bool        populateUTXOs{ false };
             std::string comment;
+            // true for normal transactions, false for offline OTC
+            bool allowBroadcasts{false};
+            // timestamp when settlement TX sign expires
+            std::chrono::system_clock::time_point expiredTimestamp{};
 
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
@@ -297,6 +301,8 @@ namespace bs {
                prevStates = other.prevStates;
                populateUTXOs = other.populateUTXOs;
                comment = other.comment;
+               allowBroadcasts = other.allowBroadcasts;
+               expiredTimestamp = other.expiredTimestamp;
                signer_.reset();
                signerCreated_ = false;
                return *this;
