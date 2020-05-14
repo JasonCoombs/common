@@ -202,7 +202,7 @@ public:
 
    using SpentnessCb = std::function<void(const std::map<BinaryData
       , std::map<unsigned int, SpentnessResult>> &, std::exception_ptr)>;
-   bool getSpentnessForOutputs(const std::map<BinaryData, std::set<unsigned>> &
+   virtual bool getSpentnessForOutputs(const std::map<BinaryData, std::set<unsigned>> &
       , const SpentnessCb &);
    bool getSpentnessForZcOutputs(const std::map<BinaryData, std::set<unsigned>> &
       , const SpentnessCb &);
