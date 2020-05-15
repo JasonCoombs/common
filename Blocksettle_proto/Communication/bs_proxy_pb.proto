@@ -27,6 +27,8 @@ message Request
         int32 user_type = 3;
 
         bool enabled = 4;
+
+        string terminal_user_id = 5;
     }
 
     message UserStatusUpdated

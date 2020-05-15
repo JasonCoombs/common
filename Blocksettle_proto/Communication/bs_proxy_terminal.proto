@@ -104,6 +104,8 @@ message Response
         bool enabled = 8;
 
         float fee_rate = 9;
+
+        string terminal_user_id = 10;
     }
 
     message Celer
