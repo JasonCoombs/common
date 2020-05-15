@@ -37,6 +37,7 @@ enum StorageType
    StorageTradeHist     = 5;
    StorageUserScore     = 6;
    StorageConfig        = 7;
+   StorageAccounts      = 8;
 }
 
 
@@ -492,6 +493,20 @@ message StorageConfigMessage
    }
 }
 
+message StorageAccountsMessage
+{
+   string email = 1;
+
+   message TerminalUserId
+   {
+      string terminal_user_id = 1;
+   }
+
+   oneof data {
+      TerminalUserId terminal_user_id = 2;
+   }
+}
+
 message StorageMessage
 {
    StorageMessageType   type     = 1;
@@ -504,5 +519,6 @@ message StorageMessage
       StorageTradeHistMessage       trade_hist     = 7;
       StorageUserScoreMessage       user_score     = 8;
       StorageConfigMessage          config         = 9;
+      StorageAccountsMessage        accounts       = 10;
    }
 }
