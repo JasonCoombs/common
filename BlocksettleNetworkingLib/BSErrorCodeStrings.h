@@ -56,7 +56,7 @@ inline QString ErrorCodeToString(bs::error::ErrorCode errorCode) {
    case bs::error::ErrorCode::TxFailedToWriteRequestFile:
       return QObject::tr("Failed to write TX request file");
    case bs::error::ErrorCode::TxSettlementExpired:
-      return QObject::tr("Settlement have been expired already");
+      return QObject::tr("Settlement has elapsed");
    }
 
    return QObject::tr("Unknown error");
