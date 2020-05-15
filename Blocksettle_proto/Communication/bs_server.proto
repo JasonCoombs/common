@@ -933,13 +933,6 @@ message CelerSetUserPropertiesRequest
    }
 }
 
-message CelerGetUserPropertiesRequest
-{
-   string email = 1;
-   string email_hash = 2;
-   string propery_name = 3;
-}
-
 message CelerSetUserPropertiesResponse
 {
    string email = 1;
