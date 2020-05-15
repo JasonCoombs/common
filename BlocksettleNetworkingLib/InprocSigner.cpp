@@ -181,9 +181,7 @@ bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet
    }
    const auto reqId = seqId_++;
    for (const auto &wallet : wallets) {
-      try {
-         txReq.txId(wallet->getPublicResolver());
-      } catch (const std::exception &) {}
+      txReq.resolveSpenders(wallet->getPublicResolver());
    }
    const auto &resolvedState = txReq.serializeState();
    cb(resolvedState.empty() ? bs::error::ErrorCode::InternalError : bs::error::ErrorCode::NoError
