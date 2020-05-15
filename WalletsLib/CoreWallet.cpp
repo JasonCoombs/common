@@ -1013,29 +1013,11 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       throw std::invalid_argument("inputSigs do not equal to inputs count");
    }
    bs::CheckRecipSigner signer;
-   std::map<unsigned int, std::shared_ptr<ScriptSpender_Signed>> spenders;
+   std::map<unsigned int, std::shared_ptr<ScriptSpender>> spenders;
 
    for (int i = 0; i < request.inputs.size(); ++i) {
       const auto &utxo = request.inputs[i];
-      const auto &addr = bs::Address::fromUTXO(utxo);
-      if (!containsAddress(addr)) {
-         throw std::runtime_error("can't sign for foreign address");
-      }
-      std::shared_ptr<ScriptSpender_Signed> spender;
-      switch (addr.getType())
-      {
-      case AddressEntryType_P2WPKH:
-         spender = std::make_shared<ScriptSpender_P2WPKH_Signed>(utxo);
-         break;
-      case AddressEntryType_P2SH:
-         spender = std::make_shared<ScriptSpender_P2SH_Signed>(utxo);
-         break;
-      case AddressEntryType_P2PKH:
-         spender = std::make_shared<ScriptSpender_Signed_Legacy>(utxo);
-         break;
-      default:
-         break;
-      }
+      const auto &spender = std::make_shared<ScriptSpender>(utxo);
 
       if (request.RBF) {
          spender->setSequence(UINT32_MAX - 2);
@@ -1075,20 +1057,14 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
 #endif //NDEBUG
 
    signer.setFeed(getPublicResolver());
-   signer.sign();
+   signer.resolveSpenders();
 
    for (const auto &spender : spenders) {
       const auto &itSig = inputSigs.find(spender.first);
       if (itSig == inputSigs.end()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
-
-      if (spender.second->isSegWit()) {
-         spender.second.get()->setSignedWitnessData(itSig->second, 2);
-      }
-      else {
-         spender.second.get()->setSignedScript(itSig->second);
-      }
+      spender.second->injectSignature(SecureBinaryData(itSig->second), spender.first);
    }
 
    //std::cout << signer.serialize().toHexStr() << std::endl;
@@ -1161,7 +1137,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
    , const WalletMap &wallets, const InputSigs &inputSigs)
 {
    bs::CheckRecipSigner signer;
-   std::map<unsigned int, std::shared_ptr<ScriptSpender_Signed>> spenders;
+   std::map<unsigned int, std::shared_ptr<ScriptSpender>> spenders;
 
    for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
       auto inputData = txMultiReq.inputs[i];
@@ -1170,28 +1146,9 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
       if (itWallet == wallets.end()) {
          throw std::runtime_error("missing wallet for id " + inputData.walletId);
       }
-      
-      auto wallet = itWallet->second;
-      auto& utxo = inputData.utxo;
-      const auto &addr = bs::Address::fromUTXO(utxo);
-      if (!wallet->containsAddress(addr)) {
-         throw std::runtime_error("can't sign for foreign address");
-      }
-      std::shared_ptr<ScriptSpender_Signed> spender;
-      switch (addr.getType())
-      {
-      case AddressEntryType_P2WPKH:
-         spender = std::make_shared<ScriptSpender_P2WPKH_Signed>(utxo);
-         break;
-      case AddressEntryType_P2SH:
-         spender = std::make_shared<ScriptSpender_P2SH_Signed>(utxo);
-         break;
-      case AddressEntryType_P2PKH:
-         throw std::runtime_error("not implemented for legacy type");
-         break;
-      default:
-         break;
-      }
+      const auto &wallet = itWallet->second;
+      const auto &utxo = inputData.utxo;
+      const auto &spender = std::make_shared<ScriptSpender>(utxo);
 
       if (txMultiReq.RBF) {
          spender->setSequence(UINT32_MAX - 2);
@@ -1199,20 +1156,19 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
       spender->setFeed(wallet->getPublicResolver());
       spenders[i] = spender;
       signer.addSpender(spender);
+      signer.resolveSpenders();
    }
 
    for (const auto &recipient : txMultiReq.recipients) {
       signer.addRecipient(recipient);
    }
 
-   signer.sign();
-
    for (const auto &spender : spenders) {
       const auto &itSig = inputSigs.find(spender.first);
       if (itSig == inputSigs.end() || !spender.second->isSegWit()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
-      spender.second.get()->setSignedWitnessData(itSig->second, 2);
+      spender.second->injectSignature(SecureBinaryData(itSig->second), spender.first);
    }
 
    if (!signer.verify()) {
