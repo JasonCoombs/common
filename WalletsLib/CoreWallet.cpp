@@ -1064,7 +1064,8 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       if (itSig == inputSigs.end()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
-      spender.second->injectSignature(SecureBinaryData(itSig->second), spender.first);
+      auto sig = SecureBinaryData(itSig->second);
+      spender.second->injectSignature(sig, spender.first);
    }
 
    //std::cout << signer.serialize().toHexStr() << std::endl;
@@ -1168,7 +1169,8 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
       if (itSig == inputSigs.end() || !spender.second->isSegWit()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
-      spender.second->injectSignature(SecureBinaryData(itSig->second), spender.first);
+      auto sig = SecureBinaryData(itSig->second);
+      spender.second->injectSignature(sig, spender.first);
    }
 
    if (!signer.verify()) {
