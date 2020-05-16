@@ -85,6 +85,7 @@ void Wallet::synchronize(const std::function<void()> &cbDone)
 
 std::string Wallet::getAddressComment(const bs::Address &address) const
 {
+   std::lock_guard<std::mutex> lock(mutex_);
    const auto &itComment = addrComments_.find(address);
    if (itComment != addrComments_.end()) {
       return itComment->second;
@@ -97,6 +98,7 @@ bool Wallet::setAddressComment(const bs::Address &address, const std::string &co
    if (address.empty() || comment.empty()) {
       return false;
    }
+   std::lock_guard<std::mutex> lock(mutex_);
    addrComments_[address] = comment;
    if (sync && signContainer_) {
       signContainer_->syncAddressComment(walletId(), address, comment);

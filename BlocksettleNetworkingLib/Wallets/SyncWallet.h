@@ -278,6 +278,7 @@ namespace bs {
          std::shared_ptr<spdlog::logger>     logger_; // May need to be set manually.
          mutable std::vector<bs::Address>    usedAddresses_;
 
+         mutable std::mutex mutex_;
          std::map<bs::Address, std::string>  addrComments_;
          std::map<BinaryData, std::string>   txComments_;
 
