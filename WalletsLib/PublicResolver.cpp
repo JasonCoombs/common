@@ -14,7 +14,7 @@ bs::PublicResolver::PublicResolver(const std::map<bs::Address, BinaryData> &prei
    : ResolverFeed()
 {
    for (const auto &preimage : preimageMap) {
-      preimageMap_[preimage.first.unprefixed()] = preimage.second;
+      addPreimage(preimage.first.unprefixed(), preimage.second);
    }
 }
 
@@ -22,7 +22,19 @@ bs::PublicResolver::PublicResolver(const std::map<std::string, BinaryData> &prei
    : ResolverFeed()
 {
    for (const auto &preimage : preimageMap) {
-      preimageMap_[Address::fromAddressString(preimage.first).unprefixed()] = preimage.second;
+      addPreimage(Address::fromAddressString(preimage.first).unprefixed()
+         , preimage.second);
+   }
+}
+
+void bs::PublicResolver::addPreimage(const BinaryData &unprefixedAddr
+   , const BinaryData &preimage)
+{
+   preimageMap_[unprefixedAddr] = preimage;
+
+   if ((preimage.getSize() == 22) && (preimage[0] == 0) && (preimage[1] == 0x14)) {
+      const auto &nestedHash = preimage.getSliceCopy(2, 20);
+      preimageMap_[nestedHash] = {};
    }
 }
 
