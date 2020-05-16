@@ -230,6 +230,8 @@ namespace bs {
             static SecureBinaryData decodeEasyCodeChecksum(const EasyCoDec::Data &, size_t ckSumSize = 2);
             static BinaryData decodeEasyCodeLineChecksum(const std::string&easyCodeHalf, size_t ckSumSize = 2, size_t keyValueSize = 16);
             static Seed fromEasyCodeChecksum(const EasyCoDec::Data &, NetworkType, size_t ckSumSize = 2);
+            static Seed fromBip39(const std::string& sentence,
+               NetworkType netType, const std::vector<std::vector<std::string>>& dictionaries);
 
             SecureBinaryData toXpriv(void) const;
             static Seed fromXpriv(const SecureBinaryData&, NetworkType);
