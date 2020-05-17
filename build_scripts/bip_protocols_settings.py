@@ -11,7 +11,7 @@ class BipProtocolsSettings(Configurator):
         Configurator.__init__(self, settings)
         ref_version = subprocess.check_output("git ls-remote https://github.com/bitcoin/bips.git master", shell=True)
         self._version = ref_version.decode().split('\t')[0]
-        self._script_revision = '3'
+        self._script_revision = '1'
         self._package_name = 'bips-' + self._version
         self._package_url = 'https://github.com/bitcoin/bips/archive/master.zip'
         self._package_dir_name = self._package_name
