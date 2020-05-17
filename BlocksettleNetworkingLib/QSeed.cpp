@@ -14,6 +14,7 @@
 
 #include "WalletBackupFile.h"
 #include "QSeed.h"
+#include "QTextStream"
 
 using namespace bs::wallet;
 
@@ -71,8 +72,17 @@ QSeed QSeed::fromDigitalBackup(const QString &filename, QNetworkType netType)
    return seed;
 }
 
+QSeed bs::wallet::QSeed::fromMnemonicWordList(const QString &sentence,
+   QNetworkType netType, const std::vector<std::vector<std::string>>& dictionaries)
+{
+   return bs::core::wallet::Seed::fromBip39(sentence.toStdString(),
+      fromQNetworkType(netType), dictionaries);
+}
+
 QString QSeed::lastError() const
 {
    return lastError_;
 }
+
+
 

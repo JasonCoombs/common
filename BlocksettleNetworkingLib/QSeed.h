@@ -65,6 +65,8 @@ public:
 
    static QSeed fromPaperKey(const QString &key, QNetworkType netType);
    static QSeed fromDigitalBackup(const QString &filename, QNetworkType netType);
+   static QSeed fromMnemonicWordList(const QString &sentence, QNetworkType netType,
+      const std::vector<std::vector<std::string>>& dictionaries);
 
    QString part1() const { return QString::fromStdString(toEasyCodeChecksum().part1); }
    QString part2() const { return QString::fromStdString(toEasyCodeChecksum().part2); }
