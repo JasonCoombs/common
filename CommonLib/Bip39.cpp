@@ -113,66 +113,52 @@ bool validate_mnemonic(const std::vector<std::string> &words, const std::vector<
    return std::equal(mnemonic.begin(), mnemonic.end(), words.begin());
 }
 
-bool pkcs5_pbkdf2(const uint8_t* passphrase, size_t passphrase_length,
-   const uint8_t* salt, size_t salt_length, uint8_t* key, size_t key_length,
-   size_t iterations)
+bool pkcs5_pbkdf2(const SecureBinaryData& passphrase, const BinaryData& salt,
+   SecureBinaryData& key, size_t iterations)
 {
-   uint8_t* asalt;
-   size_t asaltSize;
-   size_t count, index, iteration, length;
-   uint8_t buffer[64U];
-   uint8_t digest1[64U];
-   uint8_t digest2[64U];
+   BinaryData asalt = salt;
+   SecureBinaryData buffer(64U);
+   SecureBinaryData digest1(64U);
+   SecureBinaryData digest2(64U);
 
-   /* An iteration count of 0 is equivalent to a count of 1. */
-   /* A key_length of 0 is a no-op. */
-   /* A salt_length of 0 is perfectly valid. */
-
-   if (salt_length > SIZE_MAX - 4)
-      return false;
-   asaltSize = salt_length + 4;
-   asalt = new uint8_t[asaltSize];
-   if (asalt == nullptr)
-      return false;
-
-   memcpy(asalt, salt, salt_length);
-   for (count = 1; key_length > 0; count++)
+   size_t keyLength = key.getSize();
+   BinaryWriter packer(keyLength);
+   for (size_t count = 1; keyLength > 0; count++)
    {
-      asalt[salt_length + 0] = (count >> 24) & 0xff;
-      asalt[salt_length + 1] = (count >> 16) & 0xff;
-      asalt[salt_length + 2] = (count >> 8) & 0xff;
-      asalt[salt_length + 3] = (count >> 0) & 0xff;
-      BtcUtils::getHMAC512(passphrase, passphrase_length, asalt, asaltSize, digest1);
-      memcpy(buffer, digest1, sizeof(buffer));
+      asalt.append((count >> 24) & 0xff);
+      asalt.append((count >> 16) & 0xff);
+      asalt.append((count >> 8) & 0xff);
+      asalt.append(count & 0xff);
+      BtcUtils::getHMAC512(passphrase.getPtr(), passphrase.getSize(),
+         asalt.getPtr(), asalt.getSize(), digest1.getPtr());
+      buffer = digest1;
 
-      for (iteration = 1; iteration < iterations; iteration++)
+      for (size_t iteration = 1; iteration < iterations; iteration++)
       {
-         BtcUtils::getHMAC512(passphrase, passphrase_length, digest1, sizeof(digest1),
-            digest2);
-         memcpy(digest1, digest2, sizeof(digest1));
-         for (index = 0; index < sizeof(buffer); index++)
+         BtcUtils::getHMAC512(passphrase.getPtr(), passphrase.getSize(), digest1.getPtr(), digest1.getSize(),
+            digest2.getPtr());
+         digest1 = digest2;
+         for (size_t index = 0; index < buffer.getSize(); index++)
             buffer[index] ^= digest1[index];
       }
 
-      length = (key_length < sizeof(buffer) ? key_length : sizeof(buffer));
-      memcpy(key, buffer, length);
-      key += length;
-      key_length -= length;
+      const size_t length = (keyLength < buffer.getSize() ? keyLength : buffer.getSize());
+      packer.put_BinaryData(buffer.getSliceRef(0, length));
+      keyLength -= length;
    };
-
-   delete[] asalt;
+   key = packer.getData();
 
    return true;
 }
 
-SecureBinaryData pib39GetSeedFromMnemonic(std::string sentence)
+SecureBinaryData bip39GetSeedFromMnemonic(const std::string& sentence)
 {
    const std::string salt(saltPrefix);
 
-   std::array<uint8_t, 64> result;
-   const auto success = pkcs5_pbkdf2(reinterpret_cast<const uint8_t *>(sentence.data()), sentence.size(),
-      reinterpret_cast<const uint8_t *>(salt.data()), salt.size(),
-      result.data(), result.size(), hmacIteration);
+   SecureBinaryData result(64);
+   const auto success = pkcs5_pbkdf2(SecureBinaryData::fromString(sentence),
+      BinaryData::fromString(salt),
+      result, hmacIteration);
 
-   return success ? SecureBinaryData(result.data(), result.size()) : SecureBinaryData();
+   return success ? result : SecureBinaryData();
 }

@@ -31,6 +31,6 @@ bool pkcs5_pbkdf2(const uint8_t* passphrase, size_t passphrase_length,
    size_t iterations);
 
 // return bip39 root seed which could be converted to bip32 root key
-SecureBinaryData pib39GetSeedFromMnemonic(std::string sentence);
+SecureBinaryData bip39GetSeedFromMnemonic(const std::string& sentence);
 
 #endif // __BS_BIP39_H_

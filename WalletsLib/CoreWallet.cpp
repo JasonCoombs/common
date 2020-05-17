@@ -785,8 +785,8 @@ wallet::Seed wallet::Seed::fromBip39(const std::string& sentence,
       return seed;
    }
 
-   SecureBinaryData bit39Seed = pib39GetSeedFromMnemonic(sentence);
-   seed = bs::core::wallet::Seed(bit39Seed, netType);
+   SecureBinaryData bip39Seed = bip39GetSeedFromMnemonic(sentence);
+   seed = bs::core::wallet::Seed(bip39Seed, netType);
 
    return seed;
 }
