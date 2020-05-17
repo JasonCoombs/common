@@ -14,6 +14,7 @@
 #include "Wallets.h"
 #include "XBTAmount.h"
 #include "ArmoryConnection.h"
+#include "Bip39.h"
 
 #define SAFE_NUM_CONFS        6
 #define ASSETMETA_PREFIX      0xAC
@@ -757,6 +758,39 @@ wallet::Seed wallet::Seed::fromEasyCodeChecksum(const EasyCoDec::Data &easyData,
 {
    return wallet::Seed(decodeEasyCodeChecksum(easyData, ckSumSize), netType);
 }
+
+wallet::Seed wallet::Seed::fromBip39(const std::string& sentence,
+   NetworkType netType, const std::vector<std::vector<std::string>>& dictionaries)
+{
+   wallet::Seed seed(NetworkType::Invalid);
+   if (dictionaries.empty()) {
+      return seed;
+   }
+
+   std::vector<std::string> words;
+   std::istringstream iss(sentence);
+   std::copy(std::istream_iterator<std::string>(iss),
+      std::istream_iterator<std::string>(),
+      std::back_inserter(words));
+
+   bool success = false;
+   for (const auto& dict : dictionaries) {
+      if (validate_mnemonic(words, dict)) {
+         success = true;
+         break;
+      }
+   }
+
+   if (!success) {
+      return seed;
+   }
+
+   SecureBinaryData bip39Seed = bip39GetSeedFromMnemonic(sentence);
+   seed = bs::core::wallet::Seed(bip39Seed, netType);
+
+   return seed;
+}
+
 
 SecureBinaryData wallet::Seed::toXpriv() const
 {
