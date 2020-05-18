@@ -1047,7 +1047,6 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       throw std::invalid_argument("inputSigs do not equal to inputs count");
    }
    bs::CheckRecipSigner signer;
-   std::map<unsigned int, std::shared_ptr<ScriptSpender>> spenders;
 
    for (int i = 0; i < request.inputs.size(); ++i) {
       const auto &utxo = request.inputs[i];
@@ -1057,7 +1056,6 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
          spender->setSequence(UINT32_MAX - 2);
       }
       signer.addSpender(spender);
-      spenders[i] = spender;
    }
 
    for (const auto& recipient : request.recipients) {
@@ -1093,13 +1091,13 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
    signer.setFeed(getPublicResolver());
    signer.resolveSpenders();
 
-   for (const auto &spender : spenders) {
-      const auto &itSig = inputSigs.find(spender.first);
+   for (unsigned int i = 0; i < request.inputs.size(); ++i) {
+      const auto &itSig = inputSigs.find(i);
       if (itSig == inputSigs.end()) {
-         throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
+         throw std::invalid_argument("can't find sig for input #" + std::to_string(i));
       }
       auto sig = SecureBinaryData(itSig->second);
-      spender.second->injectSignature(sig, spender.first);
+      signer.injectSignature(i, sig);
    }
 
    //std::cout << signer.serialize().toHexStr() << std::endl;
@@ -1204,7 +1202,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
          throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
       }
       auto sig = SecureBinaryData(itSig->second);
-      spender.second->injectSignature(sig, spender.first);
+      spender.second->injectSignature(sig);
    }
 
    if (!signer.verify()) {
