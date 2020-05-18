@@ -230,6 +230,8 @@ namespace bs {
             static SecureBinaryData decodeEasyCodeChecksum(const EasyCoDec::Data &, size_t ckSumSize = 2);
             static BinaryData decodeEasyCodeLineChecksum(const std::string&easyCodeHalf, size_t ckSumSize = 2, size_t keyValueSize = 16);
             static Seed fromEasyCodeChecksum(const EasyCoDec::Data &, NetworkType, size_t ckSumSize = 2);
+            static Seed fromBip39(const std::string& sentence,
+               NetworkType netType, const std::vector<std::vector<std::string>>& dictionaries);
 
             SecureBinaryData toXpriv(void) const;
             static Seed fromXpriv(const SecureBinaryData&, NetworkType);
@@ -276,6 +278,10 @@ namespace bs {
             std::vector<BinaryData>       prevStates;
             bool        populateUTXOs{ false };
             std::string comment;
+            // true for normal transactions, false for offline OTC
+            bool allowBroadcasts{false};
+            // timestamp when settlement TX sign expires
+            std::chrono::system_clock::time_point expiredTimestamp{};
 
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
@@ -297,6 +303,8 @@ namespace bs {
                prevStates = other.prevStates;
                populateUTXOs = other.populateUTXOs;
                comment = other.comment;
+               allowBroadcasts = other.allowBroadcasts;
+               expiredTimestamp = other.expiredTimestamp;
                signer_.reset();
                signerCreated_ = false;
                return *this;
@@ -307,6 +315,9 @@ namespace bs {
             }
             BinaryData txId(const std::shared_ptr<ResolverFeed> &resolver=nullptr) const {
                return getSigner(resolver).getTxId();
+            }
+            void resolveSpenders(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
+               getSigner(resolver).resolveSpenders();
             }
             size_t estimateTxVirtSize() const;
 

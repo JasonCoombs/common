@@ -307,7 +307,7 @@ ParsedCcTx ColoredCoinTracker::processTx(
    */
 
    ParsedCcTx result;
-   
+
    if (!tx.isSegWit())
       return result;
 

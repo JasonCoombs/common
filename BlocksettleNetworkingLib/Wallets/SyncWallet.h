@@ -76,6 +76,7 @@ namespace bs {
             , const std::vector<UTXO> &inputs
             , const std::vector<std::string> &inputIndices
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const std::string &changeIndex = {}
             , const uint64_t fee = 0, bool isRBF = false);
@@ -83,12 +84,14 @@ namespace bs {
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
@@ -187,6 +190,7 @@ namespace bs {
          // changeAddress must be set if there is change
          virtual core::wallet::TXSignRequest createTXRequest(const std::vector<UTXO> &
             , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , bool allowBroadcasts
             , const uint64_t fee = 0, bool isRBF = false
             , const bs::Address &changeAddress = {});
          virtual core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
@@ -274,6 +278,7 @@ namespace bs {
          std::shared_ptr<spdlog::logger>     logger_; // May need to be set manually.
          mutable std::vector<bs::Address>    usedAddresses_;
 
+         mutable std::mutex mutex_;
          std::map<bs::Address, std::string>  addrComments_;
          std::map<BinaryData, std::string>   txComments_;
 

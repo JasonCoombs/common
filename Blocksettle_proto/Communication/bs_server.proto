@@ -892,6 +892,7 @@ enum CelerType
    CelerGetBalanceRequest        = 29;
    CelerGetAccountsRequest       = 30;
    CelerNewAccountAck            = 31;
+   CelerGetUserProperty          = 32;
 }
 
 message CelerSavedTrade
@@ -939,6 +940,22 @@ message CelerSetUserPropertiesResponse
    repeated bool results = 3;
 }
 
+message CelerGetUserPropertyRequest
+{
+   string email = 1;
+   string email_hash = 2;
+   string propery_name = 3;
+}
+
+message CelerGetUserPropertyResponse
+{
+   bool success = 1;
+   string email = 2;
+   string email_hash = 3;
+   string propery_name = 4;
+   string value = 5;
+}
+
 message CelerUpdateBalanceRequest
 {
    string entity_name = 1;
@@ -964,6 +981,8 @@ message CelerMessage
       CelerResultResponse response = 9;
       bytes opaque_data = 10;	// for Celer-encoded messages
       CelerSecurityDefData security_def = 11;
+      CelerGetUserPropertyRequest  get_user_prop_request = 12;
+      CelerGetUserPropertyResponse get_user_prop_response = 13;
    }
    int64 sequence_num = 15;
 }
@@ -1206,12 +1225,13 @@ enum TerminalMessageType
    TerminalSignedPayoutRequest   = 4;
    TerminalXBTTradeCancel        = 5;
    TerminalCCTradeCancel         = 6;
-   TerminalOtcStart     = 10;
-   TerminalOtcVerify    = 11;
-   TerminalOtcSealPayin = 12;
-   TerminalOtcTxProcess = 13;
-   TerminalOtcCancel    = 14;
-   TerminalOtcUpdate    = 15;
+   TerminalOtcStart              = 10;
+   TerminalOtcVerify             = 11;
+   TerminalOtcSealPayin          = 12;
+   TerminalOtcTxProcess          = 13;
+   TerminalOtcCancel             = 14;
+   TerminalOtcUpdate             = 15;
+   TerminalUpdateBalance         = 16;
 }
 
 message PreimageData {
@@ -1278,6 +1298,11 @@ message TerminalOtcTxMessage
    bytes  signed_tx = 2;
 }
 
+message TerminalUpdateBalanceMessage
+{
+   repeated BalanceData balances = 1;
+}
+
 message TerminalMessage
 {
    TerminalMessageType type = 1;
@@ -1292,6 +1317,7 @@ message TerminalMessage
       TerminalOtcVerifyRequest otc_verify = 12;
       TerminalOtcUpdateMessage otc_update = 13;
       TerminalOtcTxMessage     otc_tx = 14;
+      TerminalUpdateBalanceMessage update_balance_message = 15;
    }
 }
 

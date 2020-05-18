@@ -34,6 +34,7 @@ namespace bs {
          TxRequestFileExist,
          TxFailedToOpenRequestFile,
          TxFailedToWriteRequestFile,
+         TxSettlementExpired,
 
          // Change wallet error codes
          WalletFailedRemoveLastEidDevice,
