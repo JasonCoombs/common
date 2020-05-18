@@ -344,13 +344,11 @@ bool CheckRecipSigner::GetInputAddressList(const std::shared_ptr<spdlog::logger>
 
 bool CheckRecipSigner::verifyPartial(void)
 {
-   for (auto& spender : spenders_)
-   {
-      if (spender->resolved()) {
+   for (const auto &spender : spenders_) {
+      if (spender->isResolved()) {
          return true;
       }
    }
-
    return false;
 }
 

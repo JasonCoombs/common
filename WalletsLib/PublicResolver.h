@@ -28,6 +28,10 @@ namespace bs
 
       BinaryData getByVal(const BinaryData &addr) override;
       const SecureBinaryData& getPrivKeyForPubkey(const BinaryData &pk) override;
+
+   private:
+      void addPreimage(const BinaryData &unprefixedAddr, const BinaryData &preimage);
+
    private:
       std::map<BinaryData, BinaryData>   preimageMap_;
    };

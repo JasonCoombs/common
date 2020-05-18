@@ -733,9 +733,7 @@ bool HeadlessContainerListener::onResolvePubSpenders(const std::string &clientId
       wallets.insert(wallet);
    }
    for (const auto &wallet : wallets) {
-      try {
-         txSignReq.txId(wallet->getPublicResolver());
-      } catch (const std::exception &) {}
+      txSignReq.resolveSpenders(wallet->getPublicResolver());
    }
    const auto &resolvedState = txSignReq.serializeState();
    if (resolvedState.empty()) {

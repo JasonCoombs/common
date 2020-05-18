@@ -316,6 +316,9 @@ namespace bs {
             BinaryData txId(const std::shared_ptr<ResolverFeed> &resolver=nullptr) const {
                return getSigner(resolver).getTxId();
             }
+            void resolveSpenders(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
+               getSigner(resolver).resolveSpenders();
+            }
             size_t estimateTxVirtSize() const;
 
             using ContainsAddressCb = std::function<bool(const bs::Address &address)>;
