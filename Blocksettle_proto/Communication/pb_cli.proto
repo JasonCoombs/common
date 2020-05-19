@@ -24,6 +24,7 @@ enum CLIRequestType
    ChangeUserStatusType             = 20;
    LoadConfigType                   = 21;
    SetConfigType                    = 22;
+   MigrateUserIds                   = 23;
 }
 
 enum ArmoryConnectionState
