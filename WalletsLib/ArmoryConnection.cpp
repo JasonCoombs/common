@@ -14,6 +14,7 @@
 #include <exception>
 #include <condition_variable>
 #include <spdlog/spdlog.h>
+
 #include "ArmoryErrors.h"
 #include "ClientClasses.h"
 #include "DbHeader.h"
@@ -57,7 +58,7 @@ ArmoryConnection::ArmoryConnection(const std::shared_ptr<spdlog::logger> &logger
    : logger_(logger)
 {
    maintThreadRunning_ = true;
-   maintThread_ = std::thread(&ArmoryConnection::maintenanceThreadFunc, this);
+   thread_ = std::thread(&ArmoryConnection::threadFunction, this);
 }
 
 ArmoryConnection::~ArmoryConnection() noexcept
@@ -101,7 +102,7 @@ bool ArmoryConnection::removeTarget(ArmoryCallbackTarget *act)
    return result;
 }
 
-void ArmoryConnection::maintenanceThreadFunc()
+void ArmoryConnection::threadFunction()
 {
    const auto &forEachTarget = [this](const std::function<void(ArmoryCallbackTarget *tgt)> &cb) {
       decltype(activeTargets_) notifiedACTs;
@@ -151,7 +152,7 @@ void ArmoryConnection::maintenanceThreadFunc()
    }
 }
 
-void ArmoryConnection::addToMaintQueue(const CallbackQueueCb &cb)
+void ArmoryConnection::addToQueue(const CallbackQueueCb &cb)
 {
    std::unique_lock<std::mutex> lock(actMutex_);
    actQueue_.push_back(cb);
@@ -160,7 +161,7 @@ void ArmoryConnection::addToMaintQueue(const CallbackQueueCb &cb)
 
 void ArmoryConnection::runOnMaintThread(ArmoryConnection::EmptyCb cb)
 {
-   if (std::this_thread::get_id() == maintThread_.get_id() || !maintThreadRunning_) {
+   if (std::this_thread::get_id() == thread_.get_id() || !maintThreadRunning_) {
       cb();
       return;
    }
@@ -186,7 +187,7 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
    , const std::string &port, const std::string &dataDir, const BinaryData &serverKey
    , const SecureBinaryData &passphrase, const BIP151Cb &cbBIP151)
 {
-   addToMaintQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
+   addToQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
       tgt->onPrepareConnection(netType, host, port);
    });
 
@@ -215,14 +216,14 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
          catch (const std::exception &e) {
             logger_->error("[ArmoryConnection::setupConnection] registerBDV exception: {}", e.what());
             setState(ArmoryState::Error);
-            addToMaintQueue([e](ArmoryCallbackTarget *tgt) {
+            addToQueue([e](ArmoryCallbackTarget *tgt) {
                tgt->onError(static_cast<int>(ErrorCodes::BDV_Error), e.what());
             });
          }
          catch (...) {
             logger_->error("[ArmoryConnection::setupConnection] registerBDV exception");
             setState(ArmoryState::Error);
-            addToMaintQueue([](ArmoryCallbackTarget *tgt) {
+            addToQueue([](ArmoryCallbackTarget *tgt) {
                tgt->onError(static_cast<int>(ErrorCodes::BDV_Error), {});
             });
          }
@@ -331,7 +332,7 @@ void ArmoryConnection::setState(ArmoryState state)
    if (state_ != state) {
       logger_->debug("[ArmoryConnection::setState] from {} to {}", (int)state_.load(), (int)state);
       state_ = state;
-      addToMaintQueue([state](ArmoryCallbackTarget *tgt) {
+      addToQueue([state](ArmoryCallbackTarget *tgt) {
          tgt->onStateChanged(static_cast<ArmoryState>(state));
       });
    }
@@ -404,7 +405,7 @@ bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId, 
                         (ReturnMessage<AsyncClient::LedgerDelegate> delegate) {
       try {
          auto ld = std::make_shared<AsyncClient::LedgerDelegate>(delegate.get());
-         addToMaintQueue([addr, ld] (ArmoryCallbackTarget *tgt) {
+         addToQueue([addr, ld] (ArmoryCallbackTarget *tgt) {
             tgt->onLedgerForAddress(addr, ld);
          });
       }
@@ -412,7 +413,7 @@ bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId, 
          logger_->error("[ArmoryConnection::getLedgerDelegateForAddress (cbWrap)] Return data "
             "error - {} - Wallet {} - Address {}", e.what(), walletId
             , addr.empty() ? "<empty>" : addr.display());
-         addToMaintQueue([addr](ArmoryCallbackTarget *tgt) {
+         addToQueue([addr](ArmoryCallbackTarget *tgt) {
             tgt->onLedgerForAddress(addr, nullptr);
          });
       }
@@ -1053,7 +1054,7 @@ void ArmoryConnection::onRefresh(const std::vector<BinaryData>& ids)
          , online, idString, ids.size());
    }
 #endif   //NDEBUG
-   addToMaintQueue([ids, online](ArmoryCallbackTarget *tgt) {
+   addToQueue([ids, online](ArmoryCallbackTarget *tgt) {
       tgt->onRefresh(ids, online);
    });
 }
@@ -1062,14 +1063,14 @@ void ArmoryConnection::onZCsReceived(const std::string& requestId, const std::ve
 {
    const auto newEntries = bs::TXEntry::fromLedgerEntries(entries);
 
-   addToMaintQueue([requestId, newEntries](ArmoryCallbackTarget *tgt) {
+   addToQueue([requestId, newEntries](ArmoryCallbackTarget *tgt) {
       tgt->onZCReceived(requestId, newEntries);
    });
 }
 
 void ArmoryConnection::onZCsInvalidated(const std::set<BinaryData> &ids)
 {
-   addToMaintQueue([ids](ArmoryCallbackTarget *tgt) {
+   addToQueue([ids](ArmoryCallbackTarget *tgt) {
       tgt->onZCInvalidated(ids);
    });
 }
@@ -1101,8 +1102,8 @@ void ArmoryConnection::shutdown()
       cbRemote_->resetConnection();
    }
 
-   if (maintThread_.joinable()) {
-      maintThread_.join();
+   if (thread_.joinable()) {
+      thread_.join();
    }
 }
 
@@ -1116,7 +1117,7 @@ void ArmoryCallback::progress(BDMPhase phase,
                   , (int)phase, walletIdVec.size(), progress, progressNumeric
                   , secondsRem);
    if (connection_) {
-      connection_->addToMaintQueue([phase, progress, secondsRem, progressNumeric]
+      connection_->addToQueue([phase, progress, secondsRem, progressNumeric]
       (ArmoryCallbackTarget *tgt) {
          tgt->onLoadProgress(phase, progress, secondsRem, progressNumeric);
       });
@@ -1142,7 +1143,7 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
       logger_->debug("[ArmoryCallback::run] BDMAction_NewBlock {}", bdmNotif.height_);
       connection_->setTopBlock(bdmNotif.height_);
       connection_->setState(ArmoryState::Ready);
-      connection_->addToMaintQueue([height=bdmNotif.height_, branchHgt=bdmNotif.branchHeight_]
+      connection_->addToQueue([height=bdmNotif.height_, branchHgt=bdmNotif.branchHeight_]
          (ArmoryCallbackTarget *tgt)
       {
          tgt->onNewBlock(height, branchHgt);
@@ -1170,7 +1171,7 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
       const auto nodeStatus = *bdmNotif.nodeStatus_;
       logger_->debug("[ArmoryCallback::run] BDMAction_NodeStatus: status={}, RPC status={}"
          , (int)nodeStatus.status(), (int)nodeStatus.rpcStatus());
-      connection_->addToMaintQueue([nodeStatus](ArmoryCallbackTarget *tgt) {
+      connection_->addToQueue([nodeStatus](ArmoryCallbackTarget *tgt) {
          tgt->onNodeStatus(nodeStatus.status(), nodeStatus.isSegWitEnabled(), nodeStatus.rpcStatus());
       });
       break;
@@ -1187,12 +1188,12 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
       case ArmoryErrorCodes::ZcBroadcast_AlreadyInMempool:
       case ArmoryErrorCodes::ZcBroadcast_VerifyRejected:
       case ArmoryErrorCodes::ZcBroadcast_Pending:
-         connection_->addToMaintQueue([requestId = bdmNotif.requestID_, bdvError](ArmoryCallbackTarget *tgt) {
+         connection_->addToQueue([requestId = bdmNotif.requestID_, bdvError](ArmoryCallbackTarget *tgt) {
             tgt->onTxBroadcastError(requestId, bdvError.errData_, bdvError.errCode_, bdvError.errorStr_);
          });
          break;
       default:
-         connection_->addToMaintQueue([bdvError](ArmoryCallbackTarget *tgt) {
+         connection_->addToQueue([bdvError](ArmoryCallbackTarget *tgt) {
             tgt->onError(bdvError.errCode_, bdvError.errorStr_);
          });
          break;

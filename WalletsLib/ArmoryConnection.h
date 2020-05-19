@@ -202,7 +202,7 @@ public:
 
    using SpentnessCb = std::function<void(const std::map<BinaryData
       , std::map<unsigned int, SpentnessResult>> &, std::exception_ptr)>;
-   bool getSpentnessForOutputs(const std::map<BinaryData, std::set<unsigned>> &
+   virtual bool getSpentnessForOutputs(const std::map<BinaryData, std::set<unsigned>> &
       , const SpentnessCb &);
    bool getSpentnessForZcOutputs(const std::map<BinaryData, std::set<unsigned>> &
       , const SpentnessCb &);
@@ -229,9 +229,9 @@ public:
    virtual bool estimateFee(unsigned int nbBlocks, const FloatCb &);
    virtual bool getFeeSchedule(const FloatMapCb&);
 
-   std::string broadcastZC(const BinaryData& rawTx);
-   std::string pushZC(const BinaryData &) const;
-   std::string pushZCs(const std::vector<BinaryData> &) const;
+   virtual std::string broadcastZC(const BinaryData& rawTx);
+   virtual std::string pushZC(const BinaryData &) const;
+   virtual std::string pushZCs(const std::vector<BinaryData> &) const;
 
    bool isTransactionVerified(const ClientClasses::LedgerEntry &) const;
    bool isTransactionVerified(uint32_t blockNum) const;
@@ -262,7 +262,7 @@ public:
 
 protected:
    using CallbackQueueCb = std::function<void(ArmoryCallbackTarget *)>;
-   void addToMaintQueue(const CallbackQueueCb &);
+   virtual void addToQueue(const CallbackQueueCb &);
 
    using EmptyCb = std::function<void()>;
    void runOnMaintThread(EmptyCb cb);
@@ -279,7 +279,7 @@ private:
    bool addGetTxCallback(const BinaryData &hash, const TxCb &);  // returns true if hash exists
    void callGetTxCallbacks(const BinaryData &hash, const AsyncClient::TxResult &);
 
-   void maintenanceThreadFunc();
+   void threadFunction();
 
 protected:
    std::shared_ptr<spdlog::logger>  logger_;
@@ -308,9 +308,9 @@ protected:
 
    std::deque<CallbackQueueCb>   actQueue_;
    std::deque<EmptyCb>           runQueue_;
-   std::thread    maintThread_;
-   std::condition_variable actCV_;
-   std::mutex              actMutex_;
+   std::thread                   thread_;
+   std::condition_variable       actCV_;
+   std::mutex                    actMutex_;
 };
 
 #endif // __ARMORY_CONNECTION_H__
