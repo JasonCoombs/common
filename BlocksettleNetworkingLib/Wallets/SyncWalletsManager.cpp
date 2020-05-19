@@ -50,8 +50,8 @@ WalletsManager::WalletsManager(const std::shared_ptr<spdlog::logger>& logger
    init(armory.get());
 
    ccResolver_ = std::make_shared<CCResolver>();
-   maintThreadRunning_ = true;
-   maintThread_ = std::thread(&WalletsManager::maintenanceThreadFunc, this);
+   threadRunning_ = true;
+   thread_ = std::thread(&WalletsManager::threadFunction, this);
 }
 
 WalletsManager::~WalletsManager() noexcept
@@ -62,12 +62,12 @@ WalletsManager::~WalletsManager() noexcept
       hdWallet->setWCT(nullptr);
    }
    {
-      std::unique_lock<std::mutex> lock(maintMutex_);
-      maintThreadRunning_ = false;
-      maintCV_.notify_one();
+      std::unique_lock<std::mutex> lock(mutex_);
+      threadRunning_ = false;
+      queueCv_.notify_one();
    }
-   if (maintThread_.joinable()) {
-      maintThread_.join();
+   if (thread_.joinable()) {
+      thread_.join();
    }
 
    cleanup();
@@ -246,28 +246,28 @@ void WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
 
 void WalletsManager::balanceUpdated(const std::string &walletId)
 {
-   addToMainQueue([this, walletId] {
+   addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletBalanceUpdated(walletId); });
    });
 }
 
 void WalletsManager::addressAdded(const std::string &walletId)
 {
-   addToMainQueue([this, walletId] {
+   addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
 
 void WalletsManager::metadataChanged(const std::string &walletId)
 {
-   addToMainQueue([this, walletId] {
+   addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletMetaChanged(walletId); });
    });
 }
 
 void WalletsManager::walletReset(const std::string &walletId)
 {
-   addToMainQueue([this, walletId] {
+   addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
@@ -310,12 +310,12 @@ void WalletsManager::walletCreated(const std::string &walletId)
          break;
       }
    };
-   addToMainQueue(lbdMaint);
+   addToQueue(lbdMaint);
 }
 
 void WalletsManager::walletDestroyed(const std::string &walletId)
 {
-   addToMainQueue([this, walletId] {
+   addToQueue([this, walletId] {
       const auto &wallet = getWalletById(walletId);
       eraseWallet(wallet);
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
@@ -1458,36 +1458,36 @@ void WalletsManager::trackAddressChainUse(
    }
 }
 
-void WalletsManager::addToMainQueue(const MaintQueueCb &cb)
+void WalletsManager::addToQueue(const MaintQueueCb &cb)
 {
-   std::unique_lock<std::mutex> lock(maintMutex_);
-   maintQueue_.push_back(cb);
-   maintCV_.notify_one();
+   std::unique_lock<std::mutex> lock(mutex_);
+   queue_.push_back(cb);
+   queueCv_.notify_one();
 }
 
-void WalletsManager::maintenanceThreadFunc()
+void WalletsManager::threadFunction()
 {
-   while (maintThreadRunning_) {
+   while (threadRunning_) {
       {
-         std::unique_lock<std::mutex> lock(maintMutex_);
-         if (maintQueue_.empty()) {
-            maintCV_.wait_for(lock, std::chrono::milliseconds{ 500 });
+         std::unique_lock<std::mutex> lock(mutex_);
+         if (queue_.empty()) {
+            queueCv_.wait_for(lock, std::chrono::milliseconds{ 500 });
          }
       }
-      if (!maintThreadRunning_) {
+      if (!threadRunning_) {
          break;
       }
-      decltype(maintQueue_) tempQueue;
+      decltype(queue_) tempQueue;
       {
-         std::unique_lock<std::mutex> lock(maintMutex_);
-         tempQueue.swap(maintQueue_);
+         std::unique_lock<std::mutex> lock(mutex_);
+         tempQueue.swap(queue_);
       }
       if (tempQueue.empty()) {
          continue;
       }
 
       for (const auto &cb : tempQueue) {
-         if (!maintThreadRunning_) {
+         if (!threadRunning_) {
             break;
          }
          cb();

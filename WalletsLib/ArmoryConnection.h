@@ -262,7 +262,7 @@ public:
 
 protected:
    using CallbackQueueCb = std::function<void(ArmoryCallbackTarget *)>;
-   virtual void addToMainQueue(const CallbackQueueCb &);
+   virtual void addToQueue(const CallbackQueueCb &);
 
    using EmptyCb = std::function<void()>;
    void runOnMaintThread(EmptyCb cb);
@@ -279,7 +279,7 @@ private:
    bool addGetTxCallback(const BinaryData &hash, const TxCb &);  // returns true if hash exists
    void callGetTxCallbacks(const BinaryData &hash, const AsyncClient::TxResult &);
 
-   void maintenanceThreadFunc();
+   void threadFunction();
 
 protected:
    std::shared_ptr<spdlog::logger>  logger_;
@@ -308,9 +308,9 @@ protected:
 
    std::deque<CallbackQueueCb>   actQueue_;
    std::deque<EmptyCb>           runQueue_;
-   std::thread    maintThread_;
-   std::condition_variable actCV_;
-   std::mutex              actMutex_;
+   std::thread                   thread_;
+   std::condition_variable       actCV_;
+   std::mutex                    actMutex_;
 };
 
 #endif // __ARMORY_CONNECTION_H__

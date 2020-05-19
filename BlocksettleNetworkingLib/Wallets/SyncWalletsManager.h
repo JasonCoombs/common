@@ -75,7 +75,7 @@ namespace bs {
          void reset();
 
          bool syncWallets(const CbProgress &cb = nullptr);
-         
+
          bool isSynchronising() const;
          bool isWalletsReady() const;
 
@@ -243,8 +243,8 @@ namespace bs {
          void startWalletRescan(const HDWalletPtr &);
 
          using MaintQueueCb = std::function<void()>;
-         void addToMainQueue(const MaintQueueCb &);
-         void maintenanceThreadFunc();
+         void addToQueue(const MaintQueueCb &);
+         void threadFunction();
 
          void processCreatedCCLeaf(const std::string &cc, bs::error::ErrorCode result
             , const std::string &walletId);
@@ -310,7 +310,7 @@ namespace bs {
          std::map<QObject *, std::map<unsigned int
             , std::pair<QPointer<QObject>, std::function<void(float)>>>> feeCallbacks_;
 
-         enum class WalletsSyncState 
+         enum class WalletsSyncState
          {
             NotSynced = 0,
             Running,
@@ -319,11 +319,11 @@ namespace bs {
 
          std::atomic<WalletsSyncState>  syncState_{ WalletsSyncState::NotSynced };
 
-         std::atomic_bool           maintThreadRunning_{ false };
-         std::deque<MaintQueueCb>   maintQueue_;
-         std::thread                maintThread_;
-         std::condition_variable    maintCV_;
-         std::mutex                 maintMutex_;
+         std::atomic_bool           threadRunning_{ false };
+         std::deque<MaintQueueCb>   queue_;
+         std::thread                thread_;
+         std::condition_variable    queueCv_;
+         std::mutex                 mutex_;
 
          std::shared_ptr<CcTrackerClient> trackerClient_;
 
