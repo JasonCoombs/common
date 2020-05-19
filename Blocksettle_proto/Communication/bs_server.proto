@@ -425,7 +425,8 @@ enum GenoaType
    GenoaAuthFeeConfirm           = 28;
    GenoaGetUserAccounts          = 29;
    GenoaGetAccountBalance        = 30;
-   GenoEODUpdate                 = 31;
+   GenoaEODUpdate                = 31;
+   GenoaMigrateUserIds           = 32;
 }
 
 message GenoaConnectedBroadcast
