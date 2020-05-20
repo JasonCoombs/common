@@ -767,26 +767,12 @@ wallet::Seed wallet::Seed::fromBip39(const std::string& sentence,
       return seed;
    }
 
-   std::vector<std::string> words;
-   std::istringstream iss(sentence);
-   std::copy(std::istream_iterator<std::string>(iss),
-      std::istream_iterator<std::string>(),
-      std::back_inserter(words));
-
-   bool success = false;
-   for (const auto& dict : dictionaries) {
-      if (validate_mnemonic(words, dict)) {
-         success = true;
-         break;
-      }
-   }
-
-   if (!success) {
+   if (!validateMnemonic(sentence, dictionaries)) {
       return seed;
    }
 
-   SecureBinaryData bip39Seed = bip39GetSeedFromMnemonic(sentence);
-   seed = bs::core::wallet::Seed(bip39Seed, netType);
+   SecureBinaryData bip32Seed = bip39GetSeedFromMnemonic(sentence);
+   seed = bs::core::wallet::Seed(bip32Seed, netType);
 
    return seed;
 }

@@ -13,24 +13,19 @@
 
 #include "BinaryData.h"
 
-// Create mnemonic sentence from entropy and dictionary
-std::vector<std::string> create_mnemonic(const BinaryData& entropy,
-   const std::vector<std::string>& dictionary);
-
-// validate mnemonic words against particular dictionary
-bool validate_mnemonic(const std::vector<std::string> &words,
-   const std::vector<std::string>& dictionary);
-
-// validate mnemonic words against list of dictionaries
-bool validate_mnemonic(const std::vector<std::string> &words,
+// validate bip39 mnemonic words against list of dictionaries
+bool validateBip39Mnemonic(const std::string& sentence,
    const std::vector<std::vector<std::string>>& dictionaries);
 
-// pbkdf2 algorithm to get bip39 root seed without passphrase
-bool pkcs5_pbkdf2(const uint8_t* passphrase, size_t passphrase_length,
-   const uint8_t* salt, size_t salt_length, uint8_t* key, size_t key_length,
-   size_t iterations);
+// validate electrum mnemonic words against list of dictionaries
+bool validateElectrumMnemonic(const std::string& sentence);
 
-// return bip39 root seed which could be converted to bip32 root key
+// check for bip39 & electrum mnemonic compatibility
+bool validateMnemonic(const std::string& sentence,
+   const std::vector<std::vector<std::string>>& dictionaries);
+
+// return bip32 root seed which could be converted to bip32 root key
+// this is the same for bip39 protocol and for electrum seed generation system
 SecureBinaryData bip39GetSeedFromMnemonic(const std::string& sentence);
 
 #endif // __BS_BIP39_H_
