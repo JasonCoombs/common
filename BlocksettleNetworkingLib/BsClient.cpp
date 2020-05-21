@@ -110,7 +110,7 @@ void BsClient::sendUnsignedPayin(const std::string& settlementId, const bs::netw
 
    auto data = request.mutable_unsigned_payin();
    data->set_settlement_id(settlementId);
-   data->set_unsigned_payin(unsignedPayinData.unsignedPayin.toBinStr());
+   data->set_unsigned_payin(unsignedPayinData.unsignedPayin);
 
    for (const auto &preImageIt : unsignedPayinData.preimageData) {
       auto preImage = data->add_preimage_data();

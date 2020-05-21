@@ -51,7 +51,7 @@ struct XBTTradeData
    std::string ccyName;
 
    // TX from clients
-   BinaryData  unsignedPayin;
+   std::string unsignedPayin;
    BinaryData  signedPayin;
    BinaryData  signedPayout;
 
