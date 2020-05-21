@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <array>
 #include "BtcUtils.h"
+#include <iterator>
 
 namespace {
    constexpr size_t kMnemonicWordMult = 3;
