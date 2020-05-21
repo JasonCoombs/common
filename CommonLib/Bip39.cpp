@@ -53,8 +53,7 @@ namespace {
 
       size_t keyLength = key.getSize();
       BinaryWriter packer(keyLength);
-      for (size_t count = 1; keyLength > 0; count++)
-      {
+      for (size_t count = 1; keyLength > 0; count++) {
          asalt.append((count >> 24) & 0xff);
          asalt.append((count >> 16) & 0xff);
          asalt.append((count >> 8) & 0xff);
@@ -63,13 +62,13 @@ namespace {
             asalt.getPtr(), asalt.getSize(), digest1.getPtr());
          buffer = digest1;
 
-         for (size_t iteration = 1; iteration < iterations; iteration++)
-         {
+         for (size_t iteration = 1; iteration < iterations; iteration++) {
             BtcUtils::getHMAC512(passphrase.getPtr(), passphrase.getSize(), digest1.getPtr(), digest1.getSize(),
                digest2.getPtr());
             digest1 = digest2;
-            for (size_t index = 0; index < buffer.getSize(); index++)
+            for (size_t index = 0; index < buffer.getSize(); index++) {
                buffer[index] ^= digest1[index];
+            }
          }
 
          const size_t length = (keyLength < buffer.getSize() ? keyLength : buffer.getSize());
@@ -83,8 +82,9 @@ namespace {
 
    std::vector<std::string> createBip39Mnemonic(const BinaryData& entropy, const std::vector<std::string>& dictionary)
    {
-      if ((entropy.getSize() % kMnemonicSeedMult) != 0)
+      if ((entropy.getSize() % kMnemonicSeedMult) != 0) {
          return {};
+      }
 
       const size_t entropyBits = (entropy.getSize() * kByteBits);
       const size_t checkBits = (entropyBits / kEntropyBitDevisor);
@@ -100,18 +100,17 @@ namespace {
       size_t bit = 0;
       std::vector<std::string> words;
 
-      for (size_t word = 0; word < wordCount; word++)
-      {
+      for (size_t word = 0; word < wordCount; word++) {
          size_t position = 0;
-         for (size_t loop = 0; loop < kBitsPerMnemonicWord; loop++)
-         {
+         for (size_t loop = 0; loop < kBitsPerMnemonicWord; loop++) {
             bit = (word * kBitsPerMnemonicWord + loop);
             position <<= 1;
 
             const auto byte = bit / kByteBits;
 
-            if ((chunk[byte] & bip39_shift(bit)) > 0)
+            if ((chunk[byte] & bip39_shift(bit)) > 0) {
                position++;
+            }
          }
 
          assert(position < dictionary.size());
@@ -137,8 +136,7 @@ namespace {
 
       BinaryData chunk((totalBits + kByteBits - 1) / kByteBits);
       size_t globalBit = 0;
-      for (const auto& word : words)
-      {
+      for (const auto& word : words) {
          auto wordIter = std::find(dictionary.cbegin(), dictionary.cend(), word);
          if (wordIter == dictionary.cend()) {
             return false;
@@ -147,10 +145,8 @@ namespace {
          const auto position = std::distance(dictionary.cbegin(), wordIter);
          assert(position != -1);
 
-         for (size_t bit = 0; bit < kBitsPerMnemonicWord; bit++, globalBit++)
-         {
-            if (position & (1 << (kBitsPerMnemonicWord - bit - 1)))
-            {
+         for (size_t bit = 0; bit < kBitsPerMnemonicWord; bit++, globalBit++) {
+            if (position & (1 << (kBitsPerMnemonicWord - bit - 1))) {
                const auto byte = globalBit / kByteBits;
                chunk[byte] |= bip39_shift(globalBit);
             }
