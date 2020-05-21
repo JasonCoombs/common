@@ -46,7 +46,7 @@ std::vector<bs::core::wallet::TXSignRequest> bs::core::wallet::ParseOfflineTXFil
             if (!tx.ParseFromString(container.data())) {
                continue;
             }
-            txReq.prevStates.push_back(BinaryData::fromString(tx.transaction()));
+            txReq.serializedTx = BinaryData::fromString(tx.transaction());
             txReq.comment = tx.comment();
             txReq.allowBroadcasts = tx.allow_broadcasts();
          }
@@ -59,7 +59,6 @@ std::vector<bs::core::wallet::TXSignRequest> bs::core::wallet::ParseOfflineTXFil
    } catch (...) {
       return {};
    }
-
 }
 
 ErrorCode bs::core::wallet::ExportTxToFile(const bs::core::wallet::TXSignRequest &txSignReq, const QString &fileNamePath)

@@ -72,7 +72,7 @@ public:
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override;
 
    bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
-      , const SignTxCb &cb) override;
+      , const SignerStateCb &cb) override;
 
    bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) override;
 
@@ -172,6 +172,7 @@ protected:
    std::map<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbExtAddrsMap_;
    std::map<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbNewAddrsMap_;
    std::map<bs::signer::RequestId, SignTxCb> cbSettlementSignTxMap_;
+   std::map<bs::signer::RequestId, SignerStateCb>  cbSignerStateMap_;
    std::map<bs::signer::RequestId, std::function<void(const SecureBinaryData &)>>   cbSettlWalletMap_;
    std::map<bs::signer::RequestId, std::function<void(bool)>>                       cbSettlIdMap_;
    std::map<bs::signer::RequestId, std::function<void(bool, bs::Address)>>          cbPayinAddrMap_;

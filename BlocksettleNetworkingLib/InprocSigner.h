@@ -68,7 +68,7 @@ public:
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override { return 0; }
 
    bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
-      , const SignTxCb &cb) override;
+      , const SignerStateCb &cb) override;
 
    bs::signer::RequestId CancelSignTx(const BinaryData &tx) override { return 0; }
 

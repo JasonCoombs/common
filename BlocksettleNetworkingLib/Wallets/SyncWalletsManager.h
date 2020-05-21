@@ -160,7 +160,7 @@ namespace bs {
             , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients = {}
             , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
                , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
-            , const BinaryData prevPart = {}, bool useAllInputs = false
+            , const Codec_SignerState::SignerState &prevPart = {}, bool useAllInputs = false
             , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
          std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;

@@ -368,6 +368,7 @@ uint64_t wallet::TXSignRequest::inputAmount(const ContainsAddressCb &containsAdd
    uint64_t inputAmount = 0;
 
    if (!prevStates.empty() && containsAddressCb != nullptr) {
+      Codec_SignerState::SignerState state;
       bs::CheckRecipSigner signer(prevStates.front());
 
       for (auto spender : signer.spenders()) {
@@ -1015,7 +1016,7 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
    return signer.serializeSignedTx();
 }
 
-BinaryData Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
+Codec_SignerState::SignerState Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
 {
    auto lock = lockDecryptedContainer();
    bs::CheckRecipSigner signer{ getSigner(request) };
@@ -1098,7 +1099,7 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
    , const WalletMap &wallets, bool partial)
 {
    bs::CheckRecipSigner signer;
-   if (!txMultiReq.prevState.empty()) {
+   if (txMultiReq.prevState.IsInitialized()) {
       signer.deserializeState(txMultiReq.prevState);
 
       signer.setFlags(SCRIPT_VERIFY_SEGWIT);
@@ -1141,7 +1142,7 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       if (!signer.verifyPartial()) {
          throw std::logic_error("signer failed to verify");
       }
-      return signer.serializeState();
+      return BinaryData::fromString(signer.serializeState().SerializeAsString());
    }
    else {
       if (!signer.verify()) {
@@ -1150,7 +1151,6 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
       return signer.serializeSignedTx();
    }
 }
-
 
 BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMultiSignRequest &txMultiReq
    , const WalletMap &wallets, const InputSigs &inputSigs)
@@ -1251,7 +1251,8 @@ void wallet::TXSignRequest::DebugPrint(const std::string& prefix, const std::sha
    if (serializeAndPrint) {
       const auto &serialized = serializeState(resolver);
 
-      ss << "     Serialized: " << serialized.toHexStr() << '\n';
+      ss << "     Serialized: " << serialized.DebugString() << '\n';
+#if 0 // Can't be serialized to Tx anymore
       try {
          Tx tx{serialized};
          std::string payinHash = tx.getThisHash().toHexStr(true);
@@ -1262,8 +1263,8 @@ void wallet::TXSignRequest::DebugPrint(const std::string& prefix, const std::sha
       } catch (...) {
          ss << "   error: failed to serialize tx\n";
       }
+#endif   //0
    }
-
    logger->debug("{} :\n{}"
                   ,prefix , ss.str());
 }

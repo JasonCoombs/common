@@ -48,9 +48,9 @@ namespace bs {
    public:
       CheckRecipSigner(const std::shared_ptr<ArmoryConnection> &armory = nullptr)
          : Signer(), armory_(armory) {}
-      CheckRecipSigner(const BinaryData bd, const std::shared_ptr<ArmoryConnection> &armory = nullptr)
+      CheckRecipSigner(const Codec_SignerState::SignerState &state, const std::shared_ptr<ArmoryConnection> &armory = nullptr)
          : Signer(), armory_(armory) {
-         deserializeState(bd);
+         deserializeState(state);
       }
       CheckRecipSigner(Signer&& signer)
          : Signer(std::move(signer))

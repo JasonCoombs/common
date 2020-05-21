@@ -275,7 +275,8 @@ namespace bs {
             }  change;
             uint64_t    fee{ 0 };
             bool        RBF{ false };
-            std::vector<BinaryData>       prevStates;
+            std::vector<Codec_SignerState::SignerState>  prevStates;
+            BinaryData  serializedTx;
             bool        populateUTXOs{ false };
             std::string comment;
             // true for normal transactions, false for offline OTC
@@ -310,7 +311,7 @@ namespace bs {
                return *this;
             }
             bool isValid() const noexcept;
-            BinaryData serializeState(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
+            Codec_SignerState::SignerState serializeState(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
                return getSigner(resolver).serializeState();
             }
             BinaryData txId(const std::shared_ptr<ResolverFeed> &resolver=nullptr) const {
@@ -360,7 +361,7 @@ namespace bs {
 
             std::vector<UtxoData>  inputs;     // per-wallet UTXOs
             std::vector<std::shared_ptr<ScriptRecipient>>   recipients;
-            BinaryData  prevState;
+            Codec_SignerState::SignerState   prevState;
             bool RBF;
 
             bool isValid() const noexcept;
@@ -477,7 +478,7 @@ namespace bs {
 
          virtual BinaryData signTXRequest(const wallet::TXSignRequest &
             , bool keepDuplicatedRecipients = false);
-         virtual BinaryData signPartialTXRequest(const wallet::TXSignRequest &);
+         virtual Codec_SignerState::SignerState signPartialTXRequest(const wallet::TXSignRequest &);
 
          virtual BinaryData signTXRequestWithWitness(const wallet::TXSignRequest &
             , const InputSigs &);
@@ -508,9 +509,10 @@ namespace bs {
       };
 
       using WalletMap = std::unordered_map<std::string, std::shared_ptr<Wallet>>;   // key is wallet id
-      BinaryData SignMultiInputTX(const wallet::TXMultiSignRequest &, const WalletMap &, bool partial = false);
-      BinaryData SignMultiInputTXWithWitness(const wallet::TXMultiSignRequest &, const WalletMap &, const InputSigs &);
-
+      BinaryData SignMultiInputTX(const wallet::TXMultiSignRequest &
+         , const WalletMap &, bool partial = false);
+      BinaryData SignMultiInputTXWithWitness(const wallet::TXMultiSignRequest &
+         , const WalletMap &, const InputSigs &);
    }  //namespace core
 }  //namespace bs
 
