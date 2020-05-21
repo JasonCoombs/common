@@ -107,7 +107,7 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
             logger_->error("[{}] can't sign partial request for more than 1 wallet", __func__);
             return 0;
          }
-         signedTx = wallets.front()->signPartialTXRequest(txSignReq);
+         signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
       }
       QTimer::singleShot(1, [this, reqId, signedTx] {
          emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
@@ -165,7 +165,7 @@ bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core
 }
 
 bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet::TXSignRequest &txReq
-   , const SignTxCb &cb)
+   , const SignerStateCb &cb)
 {
    std::set<std::shared_ptr<bs::core::Wallet>> wallets;
    for (const auto &input : txReq.inputs) {
@@ -184,7 +184,7 @@ bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet
       txReq.resolveSpenders(wallet->getPublicResolver());
    }
    const auto &resolvedState = txReq.serializeState();
-   cb(resolvedState.empty() ? bs::error::ErrorCode::InternalError : bs::error::ErrorCode::NoError
+   cb(resolvedState.IsInitialized() ? bs::error::ErrorCode::NoError : bs::error::ErrorCode::InternalError
       , resolvedState);
    return reqId;
 }

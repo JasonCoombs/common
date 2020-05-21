@@ -196,14 +196,14 @@ bs::PayoutSignatureType bs::TradesVerification::whichSignature(const Tx &tx, uin
    }
 }
 
-std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUnsignedPayin(const BinaryData &unsignedPayin
+std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUnsignedPayin(
+   const Codec_SignerState::SignerState &unsignedPayin
    , const std::map<std::string, BinaryData>& preimageData
    , float feePerByte, const std::string &settlementAddress, uint64_t tradeAmount)
 {
-   if (unsignedPayin.empty()) {
+   if (!unsignedPayin.IsInitialized()) {
       return Result::error("no unsigned payin provided");
    }
-
 
    try {
       bs::CheckRecipSigner deserializedSigner(unsignedPayin);

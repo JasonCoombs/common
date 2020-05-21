@@ -19,6 +19,9 @@
 
 #include "TxClasses.h"
 
+namespace Codec_SignerState {
+   class SignerState;
+}
 class  BinaryData;
 
 namespace bs {
@@ -66,7 +69,7 @@ namespace bs {
          , const BinaryData &buyAuthKey, const BinaryData &sellAuthKey
          , std::string *errorMsg = nullptr, const BinaryData& payinHash = {});
 
-      static std::shared_ptr<Result> verifyUnsignedPayin(const BinaryData &unsignedPayin
+      static std::shared_ptr<Result> verifyUnsignedPayin(const Codec_SignerState::SignerState &unsignedPayin
          , const std::map<std::string, BinaryData>& preimageData
          , float feePerByte, const std::string &settlementAddress, uint64_t tradeAmount);
 

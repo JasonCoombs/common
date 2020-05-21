@@ -884,7 +884,7 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
    , float feePerByte
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::core::wallet::OutputSortOrder &outSortOrder
-   , const BinaryData prevPart)
+   , const Codec_SignerState::SignerState &prevPart)
 {
    std::map<UTXO, std::string> inputsCopy;
    for (const auto &input : inputs) {

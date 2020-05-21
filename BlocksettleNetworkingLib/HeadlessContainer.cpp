@@ -225,12 +225,14 @@ void HeadlessContainer::ProcessPubResolveResponse(unsigned int id, const std::st
       emit Error(id, "failed to parse");
       return;
    }
-   const auto itCb = cbSettlementSignTxMap_.find(id);
-   if (itCb != cbSettlementSignTxMap_.end()) {
+   const auto itCb = cbSignerStateMap_.find(id);
+   if (itCb != cbSignerStateMap_.end()) {
       if (itCb->second) {
-         itCb->second(static_cast<bs::error::ErrorCode>(response.errorcode()), BinaryData::fromString(response.signedtx()));
+         Codec_SignerState::SignerState state;
+         state.ParseFromString(response.signedtx());
+         itCb->second(static_cast<bs::error::ErrorCode>(response.errorcode()), state);
       }
-      cbSettlementSignTxMap_.erase(itCb);
+      cbSignerStateMap_.erase(itCb);
    }
    else {
       logger_->error("[HeadlessContainer::ProcessPubResolveResponse] failed to find reqId {}", id);
@@ -434,7 +436,7 @@ bs::signer::RequestId HeadlessContainer::signSettlementPartialTXRequest(
 }
 
 bs::signer::RequestId HeadlessContainer::resolvePublicSpenders(const bs::core::wallet::TXSignRequest &txReq
-   , const SignTxCb &cb)
+   , const SignerStateCb &cb)
 {
    const auto signTxRequest = bs::signer::coreTxRequestToPb(txReq);
    headless::RequestPacket packet;
@@ -442,7 +444,7 @@ bs::signer::RequestId HeadlessContainer::resolvePublicSpenders(const bs::core::w
    packet.set_data(signTxRequest.SerializeAsString());
 
    const auto reqId = Send(packet);
-   cbSettlementSignTxMap_[reqId] = cb;
+   cbSignerStateMap_[reqId] = cb;
    return reqId;
 }
 
