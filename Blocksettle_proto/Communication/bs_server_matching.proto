@@ -65,6 +65,92 @@ message XbtFailedNotification
    string error_msg = 2;
 }
 
+message CCVerifyQuoteRequest
+{
+   string quote_request_id = 1;
+   string cc = 2;
+   bool   requester_sells = 3;
+   uint32 qty = 4;
+   string requester_entity = 5;
+   bytes  coin_input = 6;
+   string receipt_address = 7;
+}
+
+message CCVerifyQuoteReply
+{
+   string quote_request_id = 1;
+   string quote_id = 2;
+   string cc = 3;
+   bool   requester_sells = 4;
+   uint32 qty = 5;
+   double price = 6;
+   string dealer_entity = 7;
+   bytes  coin_input = 8;
+   string receipt_address = 9;
+}
+
+message CCVerifyQuoteResponse
+{
+   string quote_request_id = 1;
+   string quote_id = 2;
+   string error_message = 3;
+}
+
+message CCQuoteAccepted
+{
+   string quote_request_id = 1;
+   string cl_order_id = 2;
+   string cc = 3;
+   bool   requester_sells = 4;
+   uint32 qty = 5;
+   double price = 6;
+   string requester_entity = 7;
+   string dealer_entity = 8;
+   bytes  coin_input = 9;
+}
+
+message CCQuoteAcceptedResponse
+{
+   string quote_request_id = 1;
+   string cl_order_id = 2;
+   string error_message = 3;
+}
+
+message CCTradeRequest
+{
+   string cl_order_id = 1;
+   string cc = 2;
+   bool   requester_sells = 3;
+   uint32 qty = 4;
+   double price = 5;
+   string requester_entity = 6;
+   string dealer_entity = 7;
+   bytes  requester_tx_data = 8;
+   string requester_receipt_address = 9;
+   bytes  dealer_tx_data = 10;
+   string dealer_receipt_address = 11;
+   string quote_id = 12;
+}
+
+message CCTradeResponse
+{
+   string cl_order_id = 1;
+   string error_message = 2;
+}
+
+message UserProperty
+{
+   string name = 1;
+   bool   enabled = 2;
+}
+
+message UserPropertiesSet
+{
+   string user_email = 1;
+   string email_hash = 2;
+   repeated UserProperty properties = 3;
+}
+
 message MatchingMessage
 {
    oneof data {
@@ -79,5 +165,13 @@ message MatchingMessage
       XbtCancelRequest           xbt_cancel_request = 9;
       XbtFailedNotification      xbt_failed_notification = 10;
       XbtResponseCommon          xbt_settled_notification = 11;
+      CCVerifyQuoteRequest       cc_quote_request = 20;
+      CCVerifyQuoteReply         cc_quote_reply = 21;
+      CCVerifyQuoteResponse      cc_quote_response = 22;
+      CCQuoteAccepted            cc_quote_accepted = 23;
+      CCQuoteAcceptedResponse    cc_quote_accepted_response = 24;
+      CCTradeRequest             cc_trade = 25;
+      CCTradeResponse            cc_trade_response = 26;
+      UserPropertiesSet          user_prop_set = 30;
    }
 }
