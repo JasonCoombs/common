@@ -194,7 +194,6 @@ bool validateBip39Mnemonic(const std::string& sentence,
    for (auto const &dictionary : dictionaries) {
       if (validateBip39Mnemonic(words, dictionary)) {
          return true;
-         break;
       }
    }
 
