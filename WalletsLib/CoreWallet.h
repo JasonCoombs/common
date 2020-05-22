@@ -304,6 +304,7 @@ namespace bs {
                prevStates = other.prevStates;
                populateUTXOs = other.populateUTXOs;
                comment = other.comment;
+               serializedTx = other.serializedTx;
                allowBroadcasts = other.allowBroadcasts;
                expiredTimestamp = other.expiredTimestamp;
                signer_.reset();
