@@ -1203,8 +1203,7 @@ enum SettlementTxType
    SettlementTxPayoutTimeout        = 3;
    SettlementTxCcMatchTimeout       = 4;
    SettlementTxCcBroadcastTimeout   = 5;
-   SettlementTxStopXBTMonitor       = 6;
-   SettlementTxCcHandshakeTimeout   = 7;
+   SettlementTxCcHandshakeTimeout   = 6;
 }
 
 
