@@ -95,6 +95,9 @@ struct XBTTradeData
    };
 
    TradeState tradeState = TradeState::StateUndefined;
+
+   bool payInBroadcastedByUser_ = false;
+   bool payOutBroadcastedByUser_ = false;
 };
 
 using XBTTradePtr = std::shared_ptr<XBTTradeData>;
