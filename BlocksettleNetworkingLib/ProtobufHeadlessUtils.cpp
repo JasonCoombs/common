@@ -31,7 +31,7 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    request.set_keepduplicatedrecipients(keepDuplicatedRecipients);
 
    if (txSignReq.populateUTXOs) {
-      request.set_populateutxos(true);
+      request.set_populate_utxos(true);
    }
 
    for (const auto &utxo : txSignReq.inputs) {
@@ -58,7 +58,7 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    }
 
    if (!txSignReq.prevStates.empty()) {
-      request.set_unsignedstate(txSignReq.serializeState().SerializeAsString());
+      request.set_unsigned_state(txSignReq.serializeState().SerializeAsString());
    }
 
    if (txSignReq.change.value) {
@@ -137,9 +137,9 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
    txSignReq.fee = request.fee();
    txSignReq.RBF = request.rbf();
 
-   if (!request.unsignedstate().empty()) {
+   if (!request.unsigned_state().empty()) {
       Codec_SignerState::SignerState state;
-      state.ParseFromString(request.unsignedstate());
+      state.ParseFromString(request.unsigned_state());
       txSignReq.prevStates.push_back(state);
       if (!value) {
          bs::CheckRecipSigner signer(state);
@@ -150,7 +150,7 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
       }
    }
 
-   txSignReq.populateUTXOs = request.populateutxos();
+   txSignReq.populateUTXOs = request.populate_utxos();
 
    for (unsigned i=0; i<request.supportingtxs_size(); i++)
    {
