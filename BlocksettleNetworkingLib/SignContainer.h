@@ -30,6 +30,9 @@
 namespace spdlog {
    class logger;
 }
+namespace Codec_SignerState {
+   class SignerState;
+}
 namespace bs {
    namespace sync {
       namespace hd {
@@ -85,7 +88,9 @@ public:
    virtual bool Connect() { return true; }
    virtual bool Disconnect() { return true; }
 
-   using SignTxCb = std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)>;
+   using SignTxCb = std::function<void(bs::error::ErrorCode result, const BinaryData &)>;
+   using SignerStateCb = std::function<void(bs::error::ErrorCode result
+      , const Codec_SignerState::SignerState &)>;
 
    // If wallet is offline serialize request and write to file with path TXSignRequest::offlineFilePath
    virtual bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
@@ -109,7 +114,7 @@ public:
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) = 0;
 
    virtual bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
-      , const SignTxCb &cb) = 0;
+      , const SignerStateCb &cb) = 0;
 
    virtual bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) = 0;
 

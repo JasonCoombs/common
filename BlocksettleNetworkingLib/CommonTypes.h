@@ -324,7 +324,7 @@ namespace bs {
       // for celer and OTC trades
       struct UnsignedPayinData
       {
-         BinaryData                          unsignedPayin;
+         std::string    unsignedPayin;
          std::map<bs::Address, BinaryData>   preimageData;
       };
 

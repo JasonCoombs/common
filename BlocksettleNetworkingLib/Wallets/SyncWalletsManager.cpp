@@ -1922,7 +1922,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    , float feePerByte, uint32_t topHeight
    , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
    , const bs::core::wallet::OutputSortOrder &outSortOrder
-   , const BinaryData prevPart, bool useAllInputs
+   , const Codec_SignerState::SignerState &prevPart, bool useAllInputs
    , const std::shared_ptr<spdlog::logger> &logger)
 {
    if (inputs.empty()) {
@@ -1939,7 +1939,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
    uint64_t prevPartFee = 0;
    bs::CheckRecipSigner prevStateSigner;
-   if (!prevPart.empty()) {
+   if (prevPart.IsInitialized()) {
       prevStateSigner.deserializeState(prevPart);
       if (feePerByte > 0) {
          prevPartFee = prevStateSigner.estimateFee(feePerByte);
@@ -2012,10 +2012,8 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    request.populateUTXOs = true;
    request.outSortOrder = outSortOrder;
    Signer signer;
-   if (!prevPart.empty()) {
-      for (const auto &spender : prevStateSigner.spenders()) {
-         signer.addSpender(spender);
-      }
+   for (const auto &spender : prevStateSigner.spenders()) {
+      signer.addSpender(spender);
    }
    signer.setFlags(SCRIPT_VERIFY_SEGWIT);
    request.fee = fee;

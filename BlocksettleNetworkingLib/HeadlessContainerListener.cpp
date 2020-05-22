@@ -458,7 +458,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          if (wallets.size() == 1) {
             const auto wallet = wallets.front();
             const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
-            const auto tx = partial ? wallet->signPartialTXRequest(txSignReq)
+            const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignReq).SerializeAsString())
                : wallet->signTXRequest(txSignReq, keepDuplicatedRecipients);
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
          }
@@ -736,11 +736,12 @@ bool HeadlessContainerListener::onResolvePubSpenders(const std::string &clientId
       txSignReq.resolveSpenders(wallet->getPublicResolver());
    }
    const auto &resolvedState = txSignReq.serializeState();
-   if (resolvedState.empty()) {
+   if (!resolvedState.IsInitialized()) {
       SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::InternalError);
       return false;
    }
-   SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::NoError, resolvedState);
+   SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::NoError
+      , BinaryData::fromString(resolvedState.SerializeAsString()));
    return true;
 }
 

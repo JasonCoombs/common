@@ -676,7 +676,7 @@ void CcTrackerServer::processParseTxCandidate(ClientData &client
       avPair->set_value(addrPair.second);
    }
    for (const auto &addrPair : result.xbtPerAddr_) {
-      auto avPair = d->add_cc_by_addr();
+      auto avPair = d->add_xbt_by_addr();
       avPair->set_address(addrPair.first.toBinStr());
       avPair->set_value(addrPair.second);
    }

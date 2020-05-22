@@ -199,7 +199,7 @@ namespace bs {
             , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients = {}
             , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
                , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
-            , const BinaryData prevPart = {});
+            , const Codec_SignerState::SignerState &prevPart = {});
 
          virtual bool deleteRemotely() { return false; } //stub
          virtual void merge(const std::shared_ptr<Wallet>) = 0;

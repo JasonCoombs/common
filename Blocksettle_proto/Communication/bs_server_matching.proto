@@ -107,6 +107,9 @@ message CCQuoteAccepted
    string requester_entity = 7;
    string dealer_entity = 8;
    bytes  coin_input = 9;
+   string requester_receipt_address = 10;
+   string dealer_receipt_address = 11;
+   string winning_quote_id = 12;
 }
 
 message CCQuoteAcceptedResponse

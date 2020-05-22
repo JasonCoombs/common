@@ -58,7 +58,7 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    }
 
    if (!txSignReq.prevStates.empty()) {
-      request.set_unsignedstate(txSignReq.serializeState().toBinStr());
+      request.set_unsignedstate(txSignReq.serializeState().SerializeAsString());
    }
 
    if (txSignReq.change.value) {
@@ -138,10 +138,11 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
    txSignReq.RBF = request.rbf();
 
    if (!request.unsignedstate().empty()) {
-      const auto prevState = BinaryData::fromString(request.unsignedstate());
-      txSignReq.prevStates.push_back(prevState);
+      Codec_SignerState::SignerState state;
+      state.ParseFromString(request.unsignedstate());
+      txSignReq.prevStates.push_back(state);
       if (!value) {
-         bs::CheckRecipSigner signer(prevState);
+         bs::CheckRecipSigner signer(state);
          value = signer.outputsTotalValue();
          if (txSignReq.change.value) {
             value -= txSignReq.change.value;
