@@ -612,7 +612,7 @@ std::vector<UTXO> TransactionData::inputs() const
 
 bool TransactionData::IsTransactionValid() const
 {
-   return wallet_ && selectedInputs_
+   return ((wallet_ && selectedInputs_) || summary_.fixedInputs)
       && summary_.usedTransactions != 0
       && (!qFuzzyIsNull(feePerByte_) || totalFee_ != 0 || summary_.totalFee != 0)
       && RecipientsReady();
