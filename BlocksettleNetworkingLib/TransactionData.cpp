@@ -250,14 +250,12 @@ bool TransactionData::UpdateTransactionData()
       : PaymentStruct(recipientsMap, totalFee, 0, 0);
    summary_.balanceToSpend = payment.spendVal_ / BTCNumericTypes::BalanceDivider;
 
-   logger_->debug("fixed inputs: {}, tx virt size: {}, used UTXOs: {}", summary_.fixedInputs, summary_.txVirtSize, usedUTXO_.size());
    if (summary_.fixedInputs) {
       if (!summary_.txVirtSize && !usedUTXO_.empty()) {
          transactions = usedUTXO_;
          bs::Address::decorateUTXOs(transactions);
          UtxoSelection selection(transactions);
          selection.computeSizeAndFee(payment);
-         logger_->debug("size={}, witness size = {}", selection.size_, selection.witnessSize_);
          summary_.txVirtSize = getVirtSize(selection);
          if (summary_.txVirtSize > kMaxTxStdWeight) {
             if (logger_) {
@@ -453,7 +451,6 @@ void TransactionData::setFixedInputs(const std::vector<UTXO> &utxos, size_t txVi
    summary_.usedTransactions = utxos.size();
    summary_.availableBalance = 0;
    summary_.txVirtSize = txVirtSize;
-   logger_->debug("{} fixed inputs set", utxos.size());
 
    for (const auto &utxo : utxos) {
       summary_.availableBalance += utxo.getValue() / BTCNumericTypes::BalanceDivider;
