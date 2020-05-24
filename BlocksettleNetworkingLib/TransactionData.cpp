@@ -53,6 +53,14 @@ bool TransactionData::setWallet(const std::shared_ptr<bs::sync::Wallet> &wallet
    if (!wallet) {
       return false;
    }
+   if (summary_.fixedInputs) {
+      wallet_ = wallet;
+      group_.reset();
+      if (cbInputsReset) {
+         cbInputsReset();
+      }
+      return true;
+   }
    if (wallet != wallet_) {
       wallet_ = wallet;
       group_ = nullptr;
@@ -91,6 +99,14 @@ bool TransactionData::setGroup(const std::shared_ptr<bs::sync::hd::Group> &group
 {
    if (!group) {
       return false;
+   }
+   if (summary_.fixedInputs) {
+      group_ = group;
+      wallet_.reset();
+      if (cbInputsReset) {
+         cbInputsReset();
+      }
+      return true;
    }
    std::vector<std::shared_ptr<bs::sync::Wallet>> wallets;
    BTCNumericTypes::balance_type spendableBalance = 0;
@@ -181,8 +197,10 @@ TransactionData::TransactionSummary TransactionData::GetTransactionSummary() con
 
 void TransactionData::InvalidateTransactionData()
 {
-   usedUTXO_.clear();
-   summary_ = TransactionSummary{};
+   if (!summary_.fixedInputs) {
+      usedUTXO_.clear();
+      summary_ = TransactionSummary{};
+   }
    maxAmount_ = 0;
 
    UpdateTransactionData();
@@ -198,14 +216,14 @@ bool TransactionData::UpdateTransactionData()
       return false;
    }
    uint64_t availableBalance = 0;
-
    std::vector<UTXO> transactions = decorateUTXOs();
-   for (const auto &tx : transactions) {
-      availableBalance += tx.getValue();
+   if (!summary_.fixedInputs) {
+      for (const auto &tx : transactions) {
+         availableBalance += tx.getValue();
+      }
+      summary_.availableBalance = availableBalance / BTCNumericTypes::BalanceDivider;
+      summary_.isAutoSelected = selectedInputs_->UseAutoSel();
    }
-
-   summary_.availableBalance = availableBalance / BTCNumericTypes::BalanceDivider;
-   summary_.isAutoSelected = selectedInputs_->UseAutoSel();
 
    bool maxAmount = true;
    std::map<unsigned, std::shared_ptr<ScriptRecipient>> recipientsMap;
@@ -232,7 +250,29 @@ bool TransactionData::UpdateTransactionData()
       : PaymentStruct(recipientsMap, totalFee, 0, 0);
    summary_.balanceToSpend = payment.spendVal_ / BTCNumericTypes::BalanceDivider;
 
-   if (payment.spendVal_ <= availableBalance) {
+   logger_->debug("fixed inputs: {}, tx virt size: {}, used UTXOs: {}", summary_.fixedInputs, summary_.txVirtSize, usedUTXO_.size());
+   if (summary_.fixedInputs) {
+      if (!summary_.txVirtSize && !usedUTXO_.empty()) {
+         transactions = usedUTXO_;
+         bs::Address::decorateUTXOs(transactions);
+         UtxoSelection selection(transactions);
+         selection.computeSizeAndFee(payment);
+         logger_->debug("size={}, witness size = {}", selection.size_, selection.witnessSize_);
+         summary_.txVirtSize = getVirtSize(selection);
+         if (summary_.txVirtSize > kMaxTxStdWeight) {
+            if (logger_) {
+               logger_->error("Bad virtual size value {} - set to 0", summary_.txVirtSize);
+            }
+            summary_.txVirtSize = 0;
+         }
+      }
+      summary_.totalFee = totalFee_;
+      if (summary_.txVirtSize) {
+         summary_.feePerByte = totalFee_ / summary_.txVirtSize;
+      }
+      summary_.hasChange = summary_.availableBalance > (summary_.balanceToSpend + totalFee_ / BTCNumericTypes::BalanceDivider);
+   }
+   else if (payment.spendVal_ <= availableBalance) {
       if (maxAmount) {
          const UtxoSelection selection = computeSizeAndFee(transactions, payment);
          summary_.txVirtSize = getVirtSize(selection);
@@ -284,11 +324,6 @@ bool TransactionData::UpdateTransactionData()
          summary_.feePerByte = selection.fee_byte_;
          summary_.hasChange = selection.hasChange_;
          summary_.selectedBalance = selection.value_ / BTCNumericTypes::BalanceDivider;
-
-         /*         if (!selection.hasChange_) {  // sometimes selection calculation is too intelligent - prevent change address removal
-                     summary_.totalFee = totalFee();
-                     summary_.feePerByte = feePerByte();
-                  }*/
       }
       summary_.usedTransactions = usedUTXO_.size();
    }
@@ -410,6 +445,22 @@ void TransactionData::setSelectedUtxo(const UtxoHashes& utxosHashes)
    }
 }
 
+void TransactionData::setFixedInputs(const std::vector<UTXO> &utxos, size_t txVirtSize)
+{
+   usedUTXO_ = utxos;
+   summary_.isAutoSelected = false;
+   summary_.fixedInputs = true;
+   summary_.usedTransactions = utxos.size();
+   summary_.availableBalance = 0;
+   summary_.txVirtSize = txVirtSize;
+   logger_->debug("{} fixed inputs set", utxos.size());
+
+   for (const auto &utxo : utxos) {
+      summary_.availableBalance += utxo.getValue() / BTCNumericTypes::BalanceDivider;
+   }
+   summary_.selectedBalance = summary_.availableBalance;
+}
+
 bool TransactionData::RecipientsReady() const
 {
    if (recipients_.empty()) {
@@ -439,39 +490,6 @@ std::vector<UTXO> TransactionData::decorateUTXOs() const
    }
 
    auto inputUTXOs = selectedInputs_->GetSelectedTransactions();
-
-#if 0 // since we don't have address entries and public keys now, we need to re-think this code
-   for (auto& utxo : inputUTXOs) {
-      // Prep the UTXOs for calculation.
-      auto aefa = wallet_->getAddressEntryForAddr(utxo.getRecipientScrAddr());
-      utxo.txinRedeemSizeBytes_ = 0;
-      utxo.isInputSW_ = false;
-
-      if (aefa != nullptr) {
-         while (true) {
-            utxo.txinRedeemSizeBytes_ += aefa->getInputSize();
-
-            // P2SH AddressEntry objects use nesting to determine the exact
-            // P2SH type. The initial P2SH-W2WPKH AddressEntry object (and any
-            // non-SegWit AddressEntry objects) won't have witness data. That's
-            // fine. Catch the error and keep going.
-            try {
-               utxo.witnessDataSizeBytes_ += aefa->getWitnessDataSize();
-               utxo.isInputSW_ = true;
-            }
-            catch (const std::runtime_error& re) {}
-
-            // Check for a predecessor, which P2SH-P2PWKH will have. This is how
-            // we learn if the original P2SH AddressEntry object uses SegWit.
-            auto addrNested = std::dynamic_pointer_cast<AddressEntry_Nested>(aefa);
-            if (addrNested == nullptr) {
-               break;
-            }
-            aefa = addrNested->getPredecessor();
-         } // while
-      } // if
-   } // for
-#endif //0
 
    bs::Address::decorateUTXOs(inputUTXOs);
    return inputUTXOs;
