@@ -411,6 +411,7 @@ message UserScoreUpdateEvent
       CCDoubleSpend                    = 28;
       UnexpectedDealerCCHalf           = 29;
       UnexpectedRequesterCCHalf        = 30;
+      UnexpectedCCCancel               = 31;
    };
 
    string               user_email     = 1;
