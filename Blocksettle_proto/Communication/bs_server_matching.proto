@@ -141,6 +141,13 @@ message CCTradeResponse
    string error_message = 2;
 }
 
+message CCCancelRequest
+{
+   string cl_order_id = 1;
+   string request_id = 2;
+   string requesting_user = 3;
+}
+
 message UserProperty
 {
    string name = 1;
@@ -175,6 +182,7 @@ message MatchingMessage
       CCQuoteAcceptedResponse    cc_quote_accepted_response = 24;
       CCTradeRequest             cc_trade = 25;
       CCTradeResponse            cc_trade_response = 26;
+      CCCancelRequest            cc_cancel = 27;
       UserPropertiesSet          user_prop_set = 30;
    }
 }
