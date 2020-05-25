@@ -108,6 +108,11 @@ WalletsManager::HDWalletPtr WalletsManager::loadWoWallet(NetworkType netType
          return nullptr;
       }
 
+      if (wallet->networkType() != netType) {
+         logger_->error("Can't load WO wallet with different net type (mainnet vs testnet)");
+         return nullptr;
+      }
+
       saveWallet(wallet);
       return wallet;
    } catch (const std::exception &e) {
