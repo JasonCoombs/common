@@ -1079,6 +1079,9 @@ message TradeDataXbtMessage
    repeated AddressPreimageData preimage_data = 26;
    bool   saved_in_history = 27;
    int32  trade_state = 28;
+   bool payin_broadcasted_by_user = 29;
+   bool payout_broadcasted_by_user = 30;
+   bool cash_reserved = 31;
 }
 
 message TradeInfoCcData
