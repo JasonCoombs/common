@@ -274,6 +274,7 @@ void SelectedTransactionInputs::SetTransactionSelection(size_t i, const bool isS
 
 bool SelectedTransactionInputs::SetUTXOSelection(const BinaryData &hash, uint32_t txOutIndex, const bool selected)
 {
+   resetSelection();
    for (size_t i = 0; i < GetTotalTransactionsCount(); i++) {
       const auto &utxo = GetTransaction(i);
       if ((utxo.getTxHash() == hash) && (txOutIndex == utxo.getTxOutIndex())) {

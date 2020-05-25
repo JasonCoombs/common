@@ -68,6 +68,7 @@ public:
 
       bool     hasChange{};
       bool     isAutoSelected{};
+      bool     fixedInputs{ false };
    };
 
    using onTransactionChanged = std::function<void()>;
@@ -137,7 +138,7 @@ public:
    using UtxoHashes = std::vector<std::pair<BinaryData, uint32_t>>;
    void setSelectedUtxo(const UtxoHashes& utxosHashes);
    void setSelectedUtxo(const std::vector<UTXO>& utxos);
-   
+   void setFixedInputs(const std::vector<UTXO> &, size_t txVirtSize = 0);
 
    void clear();
    std::vector<UTXO> inputs() const;
