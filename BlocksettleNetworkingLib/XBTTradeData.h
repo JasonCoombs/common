@@ -72,6 +72,7 @@ struct XBTTradeData
    //                         means that after first check on that settlement address
    //                         reservation should be released if history is empty.
    bool loadedFromReservation = false;
+   bool cashReserved = false;
 
    std::string lastStatus;
 
@@ -96,8 +97,8 @@ struct XBTTradeData
 
    TradeState tradeState = TradeState::StateUndefined;
 
-   bool payInBroadcastedByUser_ = false;
-   bool payOutBroadcastedByUser_ = false;
+   bool payInBroadcastedByUser = false;
+   bool payOutBroadcastedByUser = false;
 };
 
 using XBTTradePtr = std::shared_ptr<XBTTradeData>;
