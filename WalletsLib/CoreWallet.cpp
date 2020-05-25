@@ -221,6 +221,10 @@ void wallet::MetaData::readFromDB(const std::shared_ptr<DBIfaceTransaction> &tx)
 
 bool wallet::TXSignRequest::isValid() const noexcept
 {
+   // serializedTx will be set for signed offline tx
+   if (!serializedTx.empty()) {
+      return true;
+   }
    if (!prevStates.empty()) {
       return true;
    }
