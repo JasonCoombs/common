@@ -91,7 +91,6 @@ signals:
    void onWalletChanged();
 
 protected:
-   bool onAccountBalanceUpdatedEvent(const std::string& data);
    bool securityDef(const std::string &security, bs::network::SecurityDef &) const;
 
 private:
