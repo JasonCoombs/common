@@ -1082,6 +1082,7 @@ message TradeDataXbtMessage
    bool payin_broadcasted_by_user = 29;
    bool payout_broadcasted_by_user = 30;
    bool cash_reserved = 31;
+   uint64 next_timeout_timestamp = 32;
 }
 
 message TradeInfoCcData
@@ -1207,6 +1208,7 @@ enum SettlementTxType
    SettlementTxCcMatchTimeout       = 4;
    SettlementTxCcBroadcastTimeout   = 5;
    SettlementTxCcHandshakeTimeout   = 6;
+   SettlementTxDelayedCancel        = 7;
 }
 
 

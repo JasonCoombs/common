@@ -15,7 +15,6 @@
 #include "CoreWallet.h"
 #include "TradesVerification.h"
 #include "ValidityFlag.h"
-#include "XBTTradeData.h"
 
 #include <spdlog/spdlog.h>
 
