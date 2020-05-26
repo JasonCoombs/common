@@ -157,6 +157,8 @@ message OutPoints {
 message ArmorySpentnessRequest
 {
    repeated OutPoints outpoints = 1;
+   bool  allow_ZC = 2;
+   bytes tx_hash = 3;
 }
 
 message ArmorySpentnessResponse
