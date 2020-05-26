@@ -478,6 +478,9 @@ void BsClient::OnDataReceived(const std::string &data)
          case Response::kUpdateFeeRate:
             processUpdateFeeRate(response->update_fee_rate());
             return;
+         case Response::kUpdateBalance:
+            processBalanceUpdate(response->update_balance());
+            return;
 
          case Response::kGetEmailHash:
          case Response::kSubmitAuthAddress:
@@ -608,6 +611,17 @@ void BsClient::processUserStatusUpdated(const Response_UserStatusUpdated &respon
 void BsClient::processUpdateFeeRate(const Response_UpdateFeeRate &response)
 {
    emit feeRateReceived(response.fee_rate());
+}
+
+void BsClient::processBalanceUpdate(const Response_UpdateBalance &response)
+{
+   for (const auto &balance : response.balances()) {
+      emit balanceUpdated(balance.currency(), balance.balance());
+   }
+   if (!balanceLoaded_) {
+      balanceLoaded_ = true;
+      emit balanceLoaded();
+   }
 }
 
 BsClient::RequestId BsClient::newRequestId()

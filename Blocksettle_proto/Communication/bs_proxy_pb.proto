@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package Blocksettle.Communication.ProxyPb;
 
+import "bs_types.proto";
+
 // Messages sent from PB to proxy and back.
 // `Request` is sent from PB (proxy is a server here).
 
@@ -65,6 +67,12 @@ message Request
         float fee_rate = 1;
     }
 
+    message UpdateBalance
+    {
+        string email = 1;
+        repeated bs.types.Balance balances = 2;
+    }
+
     oneof data
     {
         // Messages
@@ -77,6 +85,7 @@ message Request
         UserStatusUpdated user_status_updated = 36;
         GenAddrUpdated gen_addr_updated = 37;
         UpdateFeeRate update_fee_rate = 38;
+        UpdateBalance update_balance = 39;
     }
 }
 

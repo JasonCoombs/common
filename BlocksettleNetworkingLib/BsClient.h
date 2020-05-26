@@ -43,6 +43,7 @@ namespace Blocksettle {
          class Response_GenAddrUpdated;
          class Response_UserStatusUpdated;
          class Response_UpdateFeeRate;
+         class Response_UpdateBalance;
       }
    }
 }
@@ -183,12 +184,11 @@ signals:
    void connectionFailed();
 
    void emailHashReceived(const std::string &email, const std::string &hash);
-
    void ccGenAddrUpdated(const BinaryData &ccGenAddrData);
-
    void accountStateChanged(bs::network::UserType userType, bool enabled);
-
    void feeRateReceived(float feeRate);
+   void balanceLoaded();
+   void balanceUpdated(const std::string &currency, double balance);
 
 private:
    using ProcessCb = std::function<void(const Blocksettle::Communication::ProxyTerminal::Response &response)>;
@@ -217,6 +217,7 @@ private:
    void processGenAddrUpdated(const Blocksettle::Communication::ProxyTerminal::Response_GenAddrUpdated &response);
    void processUserStatusUpdated(const Blocksettle::Communication::ProxyTerminal::Response_UserStatusUpdated &response);
    void processUpdateFeeRate(const Blocksettle::Communication::ProxyTerminal::Response_UpdateFeeRate &response);
+   void processBalanceUpdate(const Blocksettle::Communication::ProxyTerminal::Response_UpdateBalance &response);
 
    RequestId newRequestId();
 
@@ -229,6 +230,8 @@ private:
    std::map<RequestId, ActiveRequest> activeRequests_;
    RequestId lastRequestId_{};
    RequestId lastSignRequestId_{};
+
+   bool balanceLoaded_{};
 
 };
 

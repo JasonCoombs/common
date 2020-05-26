@@ -46,3 +46,9 @@ message ChatToken
    // bs::network::UserType as int
    int32 user_type = 3;
 }
+
+message Balance
+{
+    string currency = 1;
+    double balance = 2;
+}

@@ -4,6 +4,7 @@ package Blocksettle.Server;
 
 import "pb_cli.proto";
 import "trade_history.proto";
+import "bs_types.proto";
 
 message Empty
 {
@@ -1305,7 +1306,7 @@ message TerminalOtcTxMessage
 
 message TerminalUpdateBalanceMessage
 {
-   repeated BalanceData balances = 1;
+   repeated bs.types.Balance balances = 1;
 }
 
 message TerminalMessage

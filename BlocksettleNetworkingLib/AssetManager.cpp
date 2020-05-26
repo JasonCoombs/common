@@ -49,8 +49,6 @@ void AssetManager::init()
 
    connect(celerClient_.get(), &BaseCelerClient::OnConnectedToServer, this, &AssetManager::onCelerConnected);
    connect(celerClient_.get(), &BaseCelerClient::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
-
-   celerClient_->RegisterHandler(CelerAPI::SubLedgerSnapshotDownstreamEventType, [this](const std::string& data) { return onAccountBalanceUpdatedEvent(data); });
 }
 
 double AssetManager::getBalance(const std::string& currency, const std::shared_ptr<bs::sync::Wallet> &wallet) const
@@ -306,19 +304,6 @@ void AssetManager::onCelerConnected()
       if (accounts.size() == 1) {
          assignedAccount_ = *accounts.begin();
          logger_->debug("[AssetManager] assigned account: {}", assignedAccount_);
-
-         auto onLoaded = [this](const std::vector<CelerFindSubledgersForAccountSequence::currencyBalancePair>& currencyBalancePairs)
-         {
-            for (const auto& cbp : currencyBalancePairs) {
-               this->onAccountBalanceLoaded(cbp.first, cbp.second);
-            }
-
-            emit fxBalanceLoaded();
-         };
-
-         auto subledgerSeq = std::make_shared<CelerFindSubledgersForAccountSequence>(this->logger_, assignedAccount_, onLoaded);
-
-         this->celerClient_->ExecuteSequence(subledgerSeq);
       } else {
          this->logger_->error("[AssetManager::onCelerConnected] too many accounts ({})", accounts.size());
          for (const auto &account : accounts) {
@@ -348,18 +333,6 @@ void AssetManager::onCelerDisconnected()
    emit securitiesChanged();
    emit fxBalanceCleared();
    emit totalChanged();
-}
-
-bool AssetManager::onAccountBalanceUpdatedEvent(const std::string &data)
-{
-   com::celertech::piggybank::api::subledger::SubLedgerSnapshotDownstreamEvent snapshot;
-   if (!snapshot.ParseFromString(data)) {
-      logger_->error("[AssetManager::onAccountBalanceUpdatedEvent] faied to parse SubLedgerSnapshotDownstreamEvent");
-      return false;
-   }
-
-   onAccountBalanceLoaded(snapshot.currency(), snapshot.netposition());
-   return true;
 }
 
 void AssetManager::onAccountBalanceLoaded(const std::string& currency, double value)
