@@ -330,6 +330,11 @@ message CreateCcDefinition
    bool is_set = 2;
 }
 
+message CCRegistrationOnCeler
+{
+   string   cc_name        = 1;
+   bool     is_registered  = 2;
+}
 message StorageTradeHistMessage
 {
    oneof data {
@@ -359,6 +364,7 @@ message StorageTradeHistMessage
       Empty                                     last_eur_price_request  = 24;
       double                                    last_eur_price_response = 25;
       CreateCcDefinition                        create_cc_definition    = 26;
+      CCRegistrationOnCeler                     cc_celer_registration   = 27;
    }
 }
 
