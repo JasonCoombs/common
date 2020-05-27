@@ -897,6 +897,7 @@ enum CelerType
    CelerGetAccountsRequest       = 30;
    CelerNewAccountAck            = 31;
    CelerGetUserProperty          = 32;
+   CelerRegisterCCDefinition     = 33;
 }
 
 message CelerSavedTrade
@@ -977,16 +978,17 @@ message CelerMessage
 {
    CelerType type = 1;
    oneof data {
-      bytes saved_trade = 2;
-      CelerCreateUserRequest create_user = 4;
-      CelerSetUserPropertiesRequest  user_properties = 5;
-      CelerSetUserPropertiesResponse user_prop_response = 6;
-      CelerUpdateBalanceRequest user_balance = 7;
-      CelerResultResponse response = 9;
-      bytes opaque_data = 10;	// for Celer-encoded messages
-      CelerSecurityDefData security_def = 11;
-      CelerGetUserPropertyRequest  get_user_prop_request = 12;
-      CelerGetUserPropertyResponse get_user_prop_response = 13;
+      bytes                            saved_trade             = 2;
+      CelerCreateUserRequest           create_user             = 4;
+      CelerSetUserPropertiesRequest    user_properties         = 5;
+      CelerSetUserPropertiesResponse   user_prop_response      = 6;
+      CelerUpdateBalanceRequest        user_balance            = 7;
+      CelerResultResponse              response                = 9;
+      bytes                            opaque_data             = 10;	// for Celer-encoded messages
+      CelerSecurityDefData             security_def            = 11;
+      CelerGetUserPropertyRequest      get_user_prop_request   = 12;
+      CelerGetUserPropertyResponse     get_user_prop_response  = 13;
+      string                           cc_name                 = 14;
    }
    int64 sequence_num = 15;
 }
