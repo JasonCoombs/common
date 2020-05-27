@@ -167,9 +167,10 @@ bool AuthAddressManager::HasAuthAddr() const
    return (HaveAuthWallet() && (authWallet_->getUsedAddressCount() > 0));
 }
 
-void AuthAddressManager::SubmitForVerification(BsClient *bsClient, const bs::Address &address)
+void AuthAddressManager::SubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address)
 {
-   if (!bsClient) {
+   auto bsClientPtr = bsClient.lock();
+   if (!bsClientPtr) {
       return;
    }
 
@@ -185,7 +186,7 @@ void AuthAddressManager::SubmitForVerification(BsClient *bsClient, const bs::Add
       return;
    }
 
-   bsClient->submitAuthAddress(address, [this, address](const BsClient::AuthAddrSubmitResponse &response) {
+   bsClientPtr->submitAuthAddress(address, [this, address](const BsClient::AuthAddrSubmitResponse &response) {
       if (!response.success) {
          SPDLOG_LOGGER_ERROR(logger_, "auth address {} rejected, errorMsg: '{}'"
             , address.display(), response.errorMsg);
@@ -308,12 +309,12 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
    }
 }
 
-void AuthAddressManager::ConfirmSubmitForVerification(BsClient *bsClient, const bs::Address &address)
+void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address)
 {
    SPDLOG_LOGGER_DEBUG(logger_, "confirm submission of {}", address.display());
 
-   QPointer<BsClient> client = bsClient;
-   bsClient->signAuthAddress(address, [this, address, client] (const BsClient::SignResponse &response) {
+   auto bsClientPtr = bsClient.lock();
+   bsClientPtr->signAuthAddress(address, [this, address, bsClient] (const BsClient::SignResponse &response) {
       if (response.userCancelled) {
          SPDLOG_LOGGER_DEBUG(logger_, "signing auth address cancelled: {}", response.errorMsg);
          emit AuthAddressSubmitCancelled(QString::fromStdString(address.display()));
@@ -328,12 +329,13 @@ void AuthAddressManager::ConfirmSubmitForVerification(BsClient *bsClient, const 
 
       SPDLOG_LOGGER_DEBUG(logger_, "signing auth address succeed");
 
-      if (!client) {
+      auto bsClientPtr = bsClient.lock();
+      if (!bsClientPtr) {
          SPDLOG_LOGGER_ERROR(logger_, "disconnected from server");
          return;
       }
 
-      client->confirmAuthAddress(address, [this, address] (const BsClient::BasicResponse &response) {
+      bsClientPtr->confirmAuthAddress(address, [this, address] (const BsClient::BasicResponse &response) {
          if (!response.success) {
             SPDLOG_LOGGER_ERROR(logger_, "confirming auth address failed: {}", response.errorMsg);
             emit AuthConfirmSubmitError(QString::fromStdString(address.display()), QString::fromStdString(response.errorMsg));
