@@ -92,7 +92,7 @@ public:
 
    bool hasLocalFile() const;
 
-   void setBsClient(BsClient *bsClient);
+   void setBsClient(const std::weak_ptr<BsClient> &);
 
    void setCcAddressesSigned(const BinaryData &data);
 
@@ -118,7 +118,7 @@ private:
    std::shared_ptr<BaseCelerClient>       celerClient_;
 
    std::shared_ptr<CCPubResolver>   resolver_;
-   QPointer<BsClient> bsClient_;
+   std::weak_ptr<BsClient> bsClient_;
    QString ccFilePath_;
 };
 

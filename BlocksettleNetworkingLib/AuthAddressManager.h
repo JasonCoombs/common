@@ -102,8 +102,8 @@ public:
    bool hasSettlementLeaf(const bs::Address &) const;
    void createSettlementLeaf(const bs::Address &, const std::function<void()> &);
 
-   virtual void SubmitForVerification(BsClient *bsClient, const bs::Address &address);
-   virtual void ConfirmSubmitForVerification(BsClient *bsClient, const bs::Address &address);
+   virtual void SubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
+   virtual void ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
 
    virtual bool RevokeAddress(const bs::Address &address);
 

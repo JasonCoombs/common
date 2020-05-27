@@ -69,7 +69,7 @@ bool CCFileManager::hasLocalFile() const
    return QFile(ccFilePath_).exists();
 }
 
-void CCFileManager::setBsClient(BsClient *bsClient)
+void CCFileManager::setBsClient(const std::weak_ptr<BsClient> &bsClient)
 {
    bsClient_ = bsClient;
 }
@@ -99,8 +99,9 @@ bool CCFileManager::wasAddressSubmitted(const bs::Address &addr)
 
 void CCFileManager::cancelActiveSign()
 {
-   if (bsClient_) {
-      bsClient_->cancelActiveSign();
+   auto bsClient = bsClient_.lock();
+   if (bsClient) {
+      bsClient->cancelActiveSign();
    }
 }
 
@@ -144,12 +145,14 @@ void CCFileManager::ProcessGenAddressesResponse(const std::string& response, con
 
 bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, const std::string &ccProduct)
 {
+   auto bsClient = bsClient_.lock();
+
    if (!celerClient_) {
       logger_->error("[CCFileManager::SubmitAddressToPuB] not connected");
       return false;
    }
 
-   if (!bsClient_) {
+   if (!bsClient) {
       SPDLOG_LOGGER_ERROR(logger_, "not connected to BsProxy");
       return false;
    }
@@ -159,7 +162,9 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
       return false;
    }
 
-   bsClient_->submitCcAddress(address, seed, ccProduct, [this, address](const BsClient::BasicResponse &result) {
+   bsClient->submitCcAddress(address, seed, ccProduct, [this, address](const BsClient::BasicResponse &result) {
+      auto bsClient = bsClient_.lock();
+
       if (!result.success) {
          SPDLOG_LOGGER_ERROR(logger_, "submit CC address failed: '{}'", result.errorMsg);
          emit CCSubmitFailed(QString::fromStdString(address.display()), QString::fromStdString(result.errorMsg));
@@ -168,12 +173,14 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
 
       emit CCInitialSubmitted(QString::fromStdString(address.display()));
 
-      if (!bsClient_) {
+      if (!bsClient) {
          SPDLOG_LOGGER_ERROR(logger_, "disconnected from server");
          return;
       }
 
-      bsClient_->signCcAddress(address, [this, address](const BsClient::SignResponse &result) {
+      bsClient->signCcAddress(address, [this, address](const BsClient::SignResponse &result) {
+         auto bsClient = bsClient_.lock();
+
          if (result.userCancelled) {
             SPDLOG_LOGGER_DEBUG(logger_, "signing CC address cancelled: '{}'", result.errorMsg);
             emit CCSubmitFailed(QString::fromStdString(address.display()), tr("Cancelled"));
@@ -186,12 +193,12 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
             return;
          }
 
-         if (!bsClient_) {
+         if (!bsClient) {
             SPDLOG_LOGGER_ERROR(logger_, "disconnected from server");
             return;
          }
 
-         bsClient_->confirmCcAddress(address, [this, address](const BsClient::BasicResponse &result) {
+         bsClient->confirmCcAddress(address, [this, address](const BsClient::BasicResponse &result) {
             if (!result.success) {
                SPDLOG_LOGGER_ERROR(logger_, "confirming CC address failed: '{}'", result.errorMsg);
                emit CCSubmitFailed(QString::fromStdString(address.display()), QString::fromStdString(result.errorMsg));
