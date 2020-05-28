@@ -1242,6 +1242,9 @@ enum TerminalMessageType
    TerminalOtcCancel             = 14;
    TerminalOtcUpdate             = 15;
    TerminalUpdateBalance         = 16;
+   TerminalOTCcVerify            = 17;
+   TerminalOTCcAccept            = 18;
+   TerminalOTCcTrade             = 19;
 }
 
 message PreimageData {
@@ -1271,6 +1274,7 @@ message TerminalSignPayinRequest
 message TerminalOtcStartRequest
 {
    int32 request_id = 1;
+   bool  is_cc = 2;
 }
 
 message TerminalOtcStartResponse
@@ -1308,6 +1312,24 @@ message TerminalOtcTxMessage
    bytes  signed_tx = 2;
 }
 
+message TerminalOTCcVerifyRequest
+{
+   bool   is_sell = 1;
+   string settlement_id = 2;
+   string cc = 3;
+   bytes  cc_tx_half = 4;
+   string receipt_address = 5;
+   uint32 amount = 6;
+   uint64 price = 7;
+   string chat_id_user = 8;
+}
+
+message TerminalOTCcSignedTX
+{
+   string settlement_id = 1;
+   bytes  signed_tx = 2;
+}
+
 message TerminalUpdateBalanceMessage
 {
    repeated bs.types.Balance balances = 1;
@@ -1322,12 +1344,14 @@ message TerminalMessage
       TerminalUnsignedPayin unsigned_payin = 4;
       TerminalSignPayinRequest sign_payin_request = 5;
       TerminalSignedData signed_data = 6;
-      TerminalOtcStartRequest  otc_start = 10;
-      TerminalOtcStartResponse otc_response = 11;
-      TerminalOtcVerifyRequest otc_verify = 12;
-      TerminalOtcUpdateMessage otc_update = 13;
-      TerminalOtcTxMessage     otc_tx = 14;
+      TerminalOtcStartRequest   otc_start = 10;
+      TerminalOtcStartResponse  otc_response = 11;
+      TerminalOtcVerifyRequest  otc_verify = 12;
+      TerminalOtcUpdateMessage  otc_update = 13;
+      TerminalOtcTxMessage      otc_tx = 14;
       TerminalUpdateBalanceMessage update_balance_message = 15;
+      TerminalOTCcVerifyRequest otcc_verify = 16;
+      TerminalOTCcSignedTX      otcc_tx = 17;
    }
 }
 
