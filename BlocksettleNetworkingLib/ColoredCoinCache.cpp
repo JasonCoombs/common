@@ -164,7 +164,7 @@ std::shared_ptr<ColoredCoinZCSnapshot> deserializeColoredCoinZcSnapshot(const st
    auto snapshot = std::make_shared<ColoredCoinZCSnapshot>();
 
    result = deserializeUtxoSet(msg, snapshot->utxoSet_, snapshot->scrAddrCcSet_);
-   if (!result) {
+   if (!result || snapshot->utxoSet_.empty()) {
       return {};
    }
 

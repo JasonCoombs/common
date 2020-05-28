@@ -1648,8 +1648,7 @@ void ColoredCoinTrackerClient::parseCcCandidateTx(const Tx &tx
    , const CcTxCandidateCb &cb) const
 {
    auto ssPtr = ccSnapshots_->snapshot();
-   auto zcPtr = ccSnapshots_->zcSnapshot();
-   ccSnapshots_->parseCcCandidateTx(ssPtr, zcPtr, tx, cb);
+   ccSnapshots_->parseCcCandidateTx(ssPtr, nullptr, tx, cb);
 }
 
 ////
