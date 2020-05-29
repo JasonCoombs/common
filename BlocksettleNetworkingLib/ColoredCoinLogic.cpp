@@ -171,6 +171,11 @@ void ColoredCoinTracker::setZcSnapshotUpdatedCb(ColoredCoinTrackerInterface::Sna
    zcSnapshotUpdatedCb_ = std::move(cb);
 }
 
+void ColoredCoinTracker::setReadyCb(ColoredCoinTrackerInterface::SnapshotUpdatedCb cb)
+{
+   readyCb_ = std::move(cb);
+}
+
 ////
 const std::shared_ptr<BinaryData> ColoredCoinTracker::getScrAddrPtr(
    const std::map<BinaryData, OpPtrSet>& addrMap
@@ -1533,8 +1538,16 @@ bool ColoredCoinTracker::goOnline()
 
    //flag ready
    ready_.store(true, std::memory_order_relaxed);
+   if (readyCb_) {
+      readyCb_();
+   }
 
    return true;
+}
+
+bool ColoredCoinTracker::ready() const
+{
+   return ready_.load();
 }
 
 ////
@@ -1650,6 +1663,11 @@ void ColoredCoinTrackerClient::parseCcCandidateTx(const Tx &tx
    auto ssPtr = ccSnapshots_->snapshot();
    auto zcPtr = ccSnapshots_->zcSnapshot();
    ccSnapshots_->parseCcCandidateTx(ssPtr, zcPtr, tx, cb);
+}
+
+bool ColoredCoinTrackerClient::ready() const
+{
+   return ccSnapshots_->ready();
 }
 
 ////

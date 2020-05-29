@@ -47,6 +47,13 @@ namespace bs {
          virtual std::vector<std::string> securities() const = 0;
       };
 
+      enum class TxValidity : int
+      {
+         Unknown,
+         Valid,
+         Invalid,
+      };
+
       class Wallet;
 
       namespace wallet {
@@ -185,7 +192,7 @@ namespace bs {
          virtual BTCNumericTypes::balance_type getTxBalance(int64_t val) const { return val / BTCNumericTypes::BalanceDivider; }
          virtual QString displayTxValue(int64_t val) const;
          virtual QString displaySymbol() const { return QLatin1String("XBT"); }
-         virtual bool isTxValid(const BinaryData &) const { return true; }
+         virtual TxValidity isTxValid(const BinaryData &) const { return TxValidity::Valid; }
 
          // changeAddress must be set if there is change
          virtual core::wallet::TXSignRequest createTXRequest(const std::vector<UTXO> &

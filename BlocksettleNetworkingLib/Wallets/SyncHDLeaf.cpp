@@ -1171,12 +1171,19 @@ std::vector<uint64_t> hd::CCLeaf::getAddrBalance(const bs::Address &addr) const
       , tracker_->getConfirmedCcValueForAddresses({ addr.id() }) / lotSize_ };
 }
 
-bool hd::CCLeaf::isTxValid(const BinaryData &txHash) const
+TxValidity hd::CCLeaf::isTxValid(const BinaryData &txHash) const
 {
    if (!tracker_) {
-      return true;
+      return TxValidity::Unknown;
    }
-   return tracker_->isTxHashValidHistory(txHash);
+   if (tracker_->isTxHashValidHistory(txHash)) {
+      return TxValidity::Valid;
+   }
+   // Can't say for sure until tracker is ready, mark as unknown for now
+   if (!tracker_->ready()) {
+      return TxValidity::Unknown;
+   }
+   return TxValidity::Invalid;
 }
 
 BTCNumericTypes::balance_type hd::CCLeaf::getTxBalance(int64_t val) const

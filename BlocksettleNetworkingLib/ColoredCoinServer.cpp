@@ -127,6 +127,11 @@ public:
       zcSnapshotUpdatedCb_ = std::move(cb);
    }
 
+   void setReadyCb(SnapshotUpdatedCb cb) override
+   {
+      readyCb_ = std::move(cb);
+   }
+
    void parseCcCandidateTx(const std::shared_ptr<ColoredCoinSnapshot> &s
       , const std::shared_ptr<ColoredCoinZCSnapshot>&zcS, const Tx &tx
       , const CcTxCandidateCb &cb) const override
@@ -135,6 +140,11 @@ public:
       auto parent = parent_.lock();
       assert(parent);
       parent->parseCcCandidateTx(s, zcS, tx, id_);
+   }
+
+   bool ready() const override
+   {
+      return ready_.load();
    }
 
    void parseCcCandidateTxResult(const CcTxCandidate &result)
@@ -158,7 +168,9 @@ public:
 
    SnapshotUpdatedCb snapshotUpdatedCb_;
    SnapshotUpdatedCb zcSnapshotUpdatedCb_;
+   SnapshotUpdatedCb readyCb_;
    mutable CcTxCandidateCb parseCcTxCb_{ nullptr };
+   std::atomic_bool ready_{false};
 };
 
 class CcTrackerSrvImpl : public ColoredCoinTracker
@@ -464,6 +476,13 @@ void CcTrackerClient::processUpdateCcSnapshot(const bs::tracker_server::Response
    std::atomic_store_explicit(&tracker->snapshot_, snapshot, std::memory_order_release);
    if (tracker->snapshotUpdatedCb_) {
       tracker->snapshotUpdatedCb_();
+   }
+
+   if (!tracker->ready_.load()) {
+      tracker->ready_.store(true);
+      if (tracker->readyCb_) {
+         tracker->readyCb_();
+      }
    }
 }
 

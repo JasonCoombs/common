@@ -1703,6 +1703,9 @@ void WalletsManager::startTracker(const std::string &cc)
    trackerSnapshots->setZcSnapshotUpdatedCb([this, cc] {
       checkTrackerUpdate(cc);
    });
+   trackerSnapshots->setReadyCb([this, cc] {
+      emit ccTrackerReady(cc);
+   });
 
    const auto tracker = std::make_shared<ColoredCoinTrackerClient>(std::move(trackerSnapshots));
    trackers_[cc] = tracker;

@@ -251,11 +251,14 @@ public:
    using SnapshotUpdatedCb = std::function<void()>;
    virtual void setSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
    virtual void setZcSnapshotUpdatedCb(SnapshotUpdatedCb cb) = 0;
+   virtual void setReadyCb(SnapshotUpdatedCb cb) = 0;
 
    virtual void parseCcCandidateTx(
       const std::shared_ptr<ColoredCoinSnapshot>&,
       const std::shared_ptr<ColoredCoinZCSnapshot>&,
       const Tx&, const CcTxCandidateCb &) const = 0;
+
+   virtual bool ready() const = 0;
 };
 
 ////
@@ -289,6 +292,7 @@ private:
 
    SnapshotUpdatedCb snapshotUpdatedCb_;
    SnapshotUpdatedCb zcSnapshotUpdatedCb_;
+   SnapshotUpdatedCb readyCb_;
 
 protected:
    std::shared_ptr<AsyncClient::BtcWallet> walletObj_;
@@ -389,6 +393,7 @@ public:
 
    void setSnapshotUpdatedCb(SnapshotUpdatedCb cb) override;
    void setZcSnapshotUpdatedCb(SnapshotUpdatedCb cb) override;
+   void setReadyCb(SnapshotUpdatedCb cb) override;
 
    ////
    static uint64_t getCcOutputValue(
@@ -423,6 +428,8 @@ public:
 
    ////
    bool goOnline(void) override;
+
+   bool ready() const override;
 };
 
 class ColoredCoinTrackerClientIface
@@ -497,6 +504,8 @@ public:
       , bool withZc) const override;
 
    void parseCcCandidateTx(const Tx &, const CcTxCandidateCb &) const override;
+
+   bool ready() const;
 };
 
 class CCTrackerClientFactory
