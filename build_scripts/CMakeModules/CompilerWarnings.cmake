@@ -1,3 +1,13 @@
+#
+#
+# ***********************************************************************************
+# * Copyright (C) 2019 - 2020, BlockSettle AB
+# * Distributed under the GNU Affero General Public License (AGPL v3)
+# * See LICENSE or http://www.gnu.org/licenses/agpl.html
+# *
+# **********************************************************************************
+#
+#
 if(CMAKE_C_COMPILER_ID STREQUAL GNU OR CMAKE_C_COMPILER_ID STREQUAL Clang)
    if(CMAKE_BUILD_TYPE STREQUAL Debug)
       add_compile_options(-Wall -Wextra)
