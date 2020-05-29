@@ -193,6 +193,7 @@ namespace bs {
          void walletImportFinished(const std::string &walletId);
          void newTransactions(std::vector<bs::TXEntry>) const;
          void invalidatedZCs(const std::set<BinaryData> &ids) const;
+         void ccTrackerReady(const std::string &cc);
 
       public slots:
          void onCCSecurityInfo(QString ccProd, QString ccDesc, unsigned long nbSatoshis, QString genesisAddr);

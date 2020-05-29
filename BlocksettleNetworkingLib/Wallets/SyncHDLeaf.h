@@ -244,7 +244,7 @@ namespace bs {
             BTCNumericTypes::balance_type getTxBalance(int64_t) const override;
             QString displayTxValue(int64_t val) const override;
             QString displaySymbol() const override;
-            bool isTxValid(const BinaryData &) const override;
+            TxValidity isTxValid(const BinaryData &) const override;
 
             void setArmory(const std::shared_ptr<ArmoryConnection> &) override;
 
