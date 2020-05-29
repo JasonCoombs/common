@@ -1,3 +1,13 @@
+#
+#
+# ***********************************************************************************
+# * Copyright (C) 2018 - 2020, BlockSettle AB
+# * Distributed under the GNU Affero General Public License (AGPL v3)
+# * See LICENSE or http://www.gnu.org/licenses/agpl.html
+# *
+# **********************************************************************************
+#
+#
 function(use_gcc_toolchain)
     if(CMAKE_COMPILER_IS_GNUCXX)
         set(compiler ${CMAKE_CXX_COMPILER})
