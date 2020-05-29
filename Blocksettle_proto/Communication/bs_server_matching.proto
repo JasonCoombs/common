@@ -74,6 +74,7 @@ message CCVerifyQuoteRequest
    string requester_entity = 5;
    bytes  coin_input = 6;
    string receipt_address = 7;
+   bool   otc = 8;
 }
 
 message CCVerifyQuoteReply
@@ -87,6 +88,7 @@ message CCVerifyQuoteReply
    string dealer_entity = 7;
    bytes  coin_input = 8;
    string receipt_address = 9;
+   bool   otc = 10;
 }
 
 message CCVerifyQuoteResponse
