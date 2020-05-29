@@ -12,11 +12,13 @@ message Empty
 
 enum PrivBridgeType
 {
-   PrivBridgeUnknownType   = 0;
-   PrivBridgeStart         = 1;
-   PrivBridgeReconnect     = 2;
-   PrivBridgeCreateUser    = 3;
-   PrivBridgeArmoryDbReset = 4;
+   PrivBridgeUnknownType    = 0;
+   PrivBridgeStart          = 1;
+   PrivBridgeReconnect      = 2;
+   PrivBridgeSuspendTrading = 3;
+   PrivBridgeResumeTrading  = 4;
+   PrivBridgeCreateUser     = 5;
+   PrivBridgeArmoryDbReset  = 6;
 }
 
 message PrivBridgeCreateUserRequest
@@ -36,6 +38,7 @@ message PrivateBridgeMessage
    PrivBridgeType type = 1;
    oneof data {
       PrivBridgeCreateUserRequest create_user = 2;
+      string message = 3;
       PrivBridgeResponse response = 10;
    }
 }
