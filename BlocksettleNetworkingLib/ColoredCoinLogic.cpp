@@ -436,6 +436,8 @@ std::set<BinaryData> ColoredCoinTracker::processTxBatch(
    std::shared_ptr<ColoredCoinZCSnapshot> zcPtr = nullptr;
    std::map<BinaryData, std::set<unsigned>> spentnessToTrack;
 
+   uint32_t newProcessedHeight = UINT32_MAX;
+
    //process them
    auto txIter = txBatch.begin();
    while (txIter != txBatch.end()) {
@@ -512,8 +514,17 @@ std::set<BinaryData> ColoredCoinTracker::processTxBatch(
          }
       }
 
-      processedHeight_ = tx.getTxHeight();
+      // Temporary fix for BST-2734
+      // TODO: write unit test for BST-2734
+      // TODO: fix startup slowdown
+      newProcessedHeight = std::min(newProcessedHeight, tx.getTxHeight());
+      //processedHeight_ = tx.getTxHeight();
+
       ++txIter;
+   }
+
+   if (newProcessedHeight != UINT32_MAX) {
+      processedHeight_ = newProcessedHeight;
    }
 
    //check new utxo list
