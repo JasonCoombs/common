@@ -1,3 +1,13 @@
+#
+#
+# ***********************************************************************************
+# * Copyright (C) 2018 - 2020, BlockSettle AB
+# * Distributed under the GNU Affero General Public License (AGPL v3)
+# * See LICENSE or http://www.gnu.org/licenses/agpl.html
+# *
+# **********************************************************************************
+#
+#
 function(use_llvm_toolchain)
     if(CMAKE_C_COMPILER_ID STREQUAL Clang)
         set(compiler ${CMAKE_C_COMPILER})
