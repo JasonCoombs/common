@@ -150,7 +150,7 @@ public:
       QVariant defVal;
       mutable bool     read;
       mutable QVariant value;
-      const bool envSpecific;
+      bool envSpecific;
 
       explicit SettingDef(const QString &_path, const QVariant &_defVal=QVariant(), bool envSpecific = false)
          : path(_path), defVal(_defVal), read(false), envSpecific(envSpecific) {}
