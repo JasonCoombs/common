@@ -325,6 +325,9 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
       auto sellAuthKey = BinaryData::CreateFromHex(sellAuthKeyHex);
 
       Tx payoutTx(signedPayout);
+      if (!payoutTx.isInitialized())
+         throw std::runtime_error("TX not initialized");
+
       auto payoutTxHash = payoutTx.getThisHash();
 
       // check that there is 1 input and 1 ouput
@@ -406,6 +409,8 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
 
    try {
       Tx payinTx(signedPayin);
+      if (!payinTx.isInitialized())
+         throw std::runtime_error("TX not initialized");
 
       if (payinTx.getThisHash() != payinHash) {
          return Result::error(fmt::format("payin hash mismatch. Expected: {}. From signed payin: {}"
