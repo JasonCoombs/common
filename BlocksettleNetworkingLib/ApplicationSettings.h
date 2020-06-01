@@ -188,10 +188,6 @@ public:
 
    std::vector<bs::LogConfig> GetLogsConfig() const;
 
-   unsigned int GetWalletScanIndex(const std::string &id) const;
-   void SetWalletScanIndex(const std::string &id, unsigned int index);
-   std::vector<std::pair<std::string, unsigned int>> UnfinishedWalletsRescan();
-
    std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
 
    std::string pubBridgeHost() const;

@@ -67,8 +67,6 @@ static const QString armoryDBIPHelp = QLatin1String("ArmoryDB host ip");
 static const QString armoryDBPortName = QLatin1String("armorydb-port");
 static const QString armoryDBPortHelp = QLatin1String("ArmoryDB port");
 
-static const QString groupRescan = QLatin1String("rescan");
-
 static const QString testnetSubdir = QLatin1String("testnet3");
 static const QString regtestSubdir = QLatin1String("regtest");
 
@@ -587,40 +585,6 @@ QString ApplicationSettings::AppendToWritableDir(const QString &filename) const
 void ApplicationSettings::SaveSettings()
 {
    settings_.sync();
-}
-
-unsigned int ApplicationSettings::GetWalletScanIndex(const std::string &id) const
-{
-   FastLock lock(lock_);
-   return settings_.value(groupRescan + QString::fromStdString("/" + id), UINT32_MAX).toUInt();
-}
-
-void ApplicationSettings::SetWalletScanIndex(const std::string &id, unsigned int index)
-{
-   FastLock lock(lock_);
-   if (id.empty()) {
-      settings_.remove(groupRescan);
-   }
-   else {
-      if (index == UINT32_MAX) {
-         settings_.remove(groupRescan + QString::fromStdString("/" + id));
-      }
-      else {
-         settings_.setValue(groupRescan + QString::fromStdString("/" + id), index);
-      }
-   }
-}
-
-std::vector<std::pair<std::string, unsigned int>>  ApplicationSettings::UnfinishedWalletsRescan()
-{
-   std::vector<std::pair<std::string, unsigned int>> result;
-   FastLock lock(lock_);
-   settings_.beginGroup(groupRescan);
-   for (const auto &key : settings_.allKeys()) {
-      result.push_back({ key.toStdString(), settings_.value(key).toUInt() });
-   }
-   settings_.endGroup();
-   return result;
 }
 
 std::vector<bs::LogConfig> ApplicationSettings::GetLogsConfig() const
