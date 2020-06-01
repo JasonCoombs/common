@@ -644,7 +644,7 @@ void ClientDBLogic::checkRecipientPublicKey(const Chat::UniqieRecipientMap& uniq
             auto oldPublicKey = BinaryData::CreateFromHex(query.value(0).toString().toStdString());
             auto oldPublicKeyTimestamp = QDateTime::fromMSecsSinceEpoch(query.value(1).toULongLong());
 
-            if (recipientPtr->publicKey() != oldPublicKey || recipientPtr->publicKeyTime() != oldPublicKeyTimestamp)
+            if (recipientPtr->publicKey() != oldPublicKey)
             {
                const auto userPkPtr = std::make_shared<UserPublicKeyInfo>();
                userPkPtr->setUser_hash(QString::fromStdString(recipientPtr->userHash()));
