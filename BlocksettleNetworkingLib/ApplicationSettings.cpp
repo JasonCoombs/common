@@ -67,8 +67,6 @@ static const QString armoryDBIPHelp = QLatin1String("ArmoryDB host ip");
 static const QString armoryDBPortName = QLatin1String("armorydb-port");
 static const QString armoryDBPortHelp = QLatin1String("ArmoryDB port");
 
-static const QString groupRescan = QLatin1String("rescan");
-
 static const QString testnetSubdir = QLatin1String("testnet3");
 static const QString regtestSubdir = QLatin1String("regtest");
 
@@ -120,7 +118,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { armoryPathName,          SettingDef(QString(), armoryDBAppPathName) },
       { customPubBridgeHost,     SettingDef(QLatin1String("CustomPubBridgeHost"), QString()) },
       { customPubBridgePort,     SettingDef(QLatin1String("CustomPubBridgePort"), 9091) },
-      { pubBridgePubKey,         SettingDef(QLatin1String("PubBridgePubKey"), QString()) },
+      { pubBridgePubKey,         SettingDef(QLatin1String("PubBridgePubKey"), QString(), true) },
    #ifdef PRODUCTION_BUILD
       { envConfiguration,        SettingDef(QLatin1String("envConfiguration"), static_cast<int>(EnvConfiguration::Production)) },
    #else
@@ -132,7 +130,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { mdhsPort,                SettingDef(QString()) },
       { chatServerHost,          SettingDef(QString()) },
       { chatServerPort,          SettingDef(QString()) },
-      { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString()) },
+      { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString(), true) },
       { chatDbFile,              SettingDef(QString(), AppendToWritableDir(QLatin1String("chat2.db"))) },
       { celerUsername,           SettingDef(QLatin1String("MatchSystemUsername")) },
       { localSignerPort,         SettingDef(QLatin1String("SignerPort"), 23456) },
@@ -189,8 +187,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
          << QLatin1String("03c49668bc42777d2701c936e44ca2de8e834888d4842c6b4aaa2e8c99c7d1ba6d")       // mainnet Armory cluster key
          << QLatin1String("02219ecd0e6a6e560d53f9958678213bc51036496223405232fe54fb42dcea18b6")) },   // testnet Armory cluster key
       { twoWaySignerAuth,        SettingDef(QLatin1String("TwoWaySignerAuth"), true) },
-      { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString()) },
-      { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString()) },
+      { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString(), true) },
+      { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString(), true) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) }
@@ -200,6 +198,11 @@ ApplicationSettings::ApplicationSettings(const QString &appName
 QVariant ApplicationSettings::get(Setting set, bool getDefaultValue) const
 {
    FastLock lock(lock_);
+   return getNoLock(set, getDefaultValue);
+}
+
+QVariant ApplicationSettings::getNoLock(ApplicationSettings::Setting set, bool getDefaultValue) const
+{
    auto itSD = settingDefs_.find(set);
    if (itSD == settingDefs_.end()) {
       return QVariant();
@@ -222,7 +225,7 @@ QVariant ApplicationSettings::get(Setting set, bool getDefaultValue) const
    if (itSD->second.path.isEmpty()) {
       itSD->second.value = itSD->second.defVal;
    } else {
-      itSD->second.value = settings_.value(itSD->second.path, itSD->second.defVal);
+      itSD->second.value = settings_.value(getPath(itSD->second), itSD->second.defVal);
    }
 
    itSD->second.read = true;
@@ -260,7 +263,7 @@ void ApplicationSettings::set(Setting s, const QVariant &val, bool toFile)
          }
 
          if (toFile && !itSD->second.path.isEmpty()) {
-            settings_.setValue(itSD->second.path, val);
+            settings_.setValue(getPath(itSD->second), val);
          }
       }
    }
@@ -284,7 +287,7 @@ void ApplicationSettings::reset(Setting s, bool toFile)
       }
 
       if (toFile && !itSD->second.path.isEmpty()) {
-         settings_.setValue(itSD->second.path, itSD->second.value);
+         settings_.setValue(getPath(itSD->second), itSD->second.value);
       }
    }
 }
@@ -589,40 +592,6 @@ void ApplicationSettings::SaveSettings()
    settings_.sync();
 }
 
-unsigned int ApplicationSettings::GetWalletScanIndex(const std::string &id) const
-{
-   FastLock lock(lock_);
-   return settings_.value(groupRescan + QString::fromStdString("/" + id), UINT32_MAX).toUInt();
-}
-
-void ApplicationSettings::SetWalletScanIndex(const std::string &id, unsigned int index)
-{
-   FastLock lock(lock_);
-   if (id.empty()) {
-      settings_.remove(groupRescan);
-   }
-   else {
-      if (index == UINT32_MAX) {
-         settings_.remove(groupRescan + QString::fromStdString("/" + id));
-      }
-      else {
-         settings_.setValue(groupRescan + QString::fromStdString("/" + id), index);
-      }
-   }
-}
-
-std::vector<std::pair<std::string, unsigned int>>  ApplicationSettings::UnfinishedWalletsRescan()
-{
-   std::vector<std::pair<std::string, unsigned int>> result;
-   FastLock lock(lock_);
-   settings_.beginGroup(groupRescan);
-   for (const auto &key : settings_.allKeys()) {
-      result.push_back({ key.toStdString(), settings_.value(key).toUInt() });
-   }
-   settings_.endGroup();
-   return result;
-}
-
 std::vector<bs::LogConfig> ApplicationSettings::GetLogsConfig() const
 {
    std::vector<bs::LogConfig> result;
@@ -675,6 +644,16 @@ bs::LogLevel ApplicationSettings::parseLogLevel(QString level) const
       return bs::LogLevel::crit;
    }
    return bs::LogLevel::debug;
+}
+
+QString ApplicationSettings::getPath(const ApplicationSettings::SettingDef &s) const
+{
+   if (!s.envSpecific) {
+      return s.path;
+   }
+
+   auto env = static_cast<EnvConfiguration>(getNoLock(ApplicationSettings::envConfiguration).toInt());
+   return QStringLiteral("%1/%2").arg(QString::fromStdString(envName(env))).arg(s.path);
 }
 
 QString ApplicationSettings::ccFilePath() const
