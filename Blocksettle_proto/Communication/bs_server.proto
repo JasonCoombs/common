@@ -1226,7 +1226,6 @@ enum SettlementTxType
    SettlementTxSignedPayinTimeout   = 2;
    SettlementTxPayoutTimeout        = 3;
    SettlementTxCcMatchTimeout       = 4;
-   SettlementTxCcBroadcastTimeout   = 5;
    SettlementTxCcHandshakeTimeout   = 6;
    SettlementTxDelayedCancel        = 7;
 }
