@@ -150,9 +150,10 @@ public:
       QVariant defVal;
       mutable bool     read;
       mutable QVariant value;
+      const bool envSpecific;
 
-      SettingDef(const QString &_path, const QVariant &_defVal=QVariant())
-         : path(_path), defVal(_defVal), read(false) {}
+      explicit SettingDef(const QString &_path, const QVariant &_defVal=QVariant(), bool envSpecific = false)
+         : path(_path), defVal(_defVal), read(false), envSpecific(envSpecific) {}
    };
 
    QVariant get(Setting s, bool getDefaultValue = false) const;
@@ -209,6 +210,7 @@ signals:
    void settingChanged(int setting, QVariant value);
 
 private:
+   QVariant getNoLock(Setting s, bool getDefaultValue = false) const;
 
    void SetHomeDir(const QString& path);
    void SetBitcoinsDir(const QString& path);
@@ -217,6 +219,8 @@ private:
    QString AppendToWritableDir(const QString &filename) const;
    bs::LogConfig parseLogConfig(const QStringList &) const;
    bs::LogLevel parseLogLevel(QString) const;
+
+   QString getPath(const SettingDef &s) const;
 
 private:
    QSettings   settings_;
