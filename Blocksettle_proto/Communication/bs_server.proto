@@ -22,10 +22,13 @@ message Empty
 
 enum PrivBridgeType
 {
-   PrivBridgeUnknownType  = 0;
-   PrivBridgeStart        = 1;
-   PrivBridgeReconnect    = 2;
-   PrivBridgeCreateUser   = 3;
+   PrivBridgeUnknownType    = 0;
+   PrivBridgeStart          = 1;
+   PrivBridgeReconnect      = 2;
+   PrivBridgeSuspendTrading = 3;
+   PrivBridgeResumeTrading  = 4;
+   PrivBridgeCreateUser     = 5;
+   PrivBridgeArmoryDbReset  = 6;
 }
 
 message PrivBridgeCreateUserRequest
@@ -45,6 +48,7 @@ message PrivateBridgeMessage
    PrivBridgeType type = 1;
    oneof data {
       PrivBridgeCreateUserRequest create_user = 2;
+      string message = 3;
       PrivBridgeResponse response = 10;
    }
 }
@@ -67,6 +71,7 @@ enum ArmoryMessageType
    ArmoryGetSpentness      = 12;
    ArmoryGetTxByHash       = 13;
    ArmoryValidateAuthAddr  = 14;
+   ArmoryBroadcastTimeout  = 15;
    ArmoryGetOutpointsForAddrList = 16;
    ArmoryUpdateAuthAddrs   = 17;
    ArmoryUpdateCcAddrs     = 18;
@@ -111,7 +116,6 @@ enum ArmoryPushTxResult
    ArmoryPushTxInvalidated = 1;
    ArmoryPushTxMempoolConflict = 2;
    ArmoryPushTxMempoolFull = 3;
-   ArmoryPushTxBroadcastTimeout = 4;
    ArmoryPushTxOtherError = 5;
    ArmoryPushTxAlreadyInChain = 6;
    ArmoryPushTxAlreadyInMempool = 7;
@@ -280,6 +284,7 @@ message ArmoryMessage
       ArmoryPushXbtTXsRequest push_xbt_txs_request = 23;
       ArmoryGetOutputsForOPsRequest  outs_for_ops_request = 24;
       ArmoryGetOutputsForOPsResponse outs_for_ops_response = 25;
+      bytes timeout_id = 26;
    }
 }
 
@@ -1221,7 +1226,6 @@ enum SettlementTxType
    SettlementTxSignedPayinTimeout   = 2;
    SettlementTxPayoutTimeout        = 3;
    SettlementTxCcMatchTimeout       = 4;
-   SettlementTxCcBroadcastTimeout   = 5;
    SettlementTxCcHandshakeTimeout   = 6;
    SettlementTxDelayedCancel        = 7;
 }
