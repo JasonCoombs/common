@@ -1038,7 +1038,12 @@ std::vector<std::string> hd::CCLeaf::setUnconfirmedTarget()
    if (!btcWallet_) {
       return {};
    }
-   return { btcWallet_->setUnconfirmedTarget(kIntConfCount) };
+   try {
+      return { btcWallet_->setUnconfirmedTarget(kIntConfCount) };
+   }
+   catch (const LWS_Error &) {
+      return {};
+   }
 }
 
 std::map<BinaryData, std::set<unsigned>> hd::CCLeaf::getOutpointMapFromTracker(bool withZC) const
