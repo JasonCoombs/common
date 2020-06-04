@@ -225,9 +225,14 @@ void hd::Leaf::postOnline(bool force)
    if ((skipPostOnline_ || firstInit_) && !force) {
       return;
    }
+   if (!armory_ || (armory_->state() == ArmoryState::Offline)) {
+      logger_->error("[hd::Leaf::postOnline] Armory is offline");
+      return;
+   }
 
    unconfTgtRegIds_ = setUnconfirmedTarget();
    if (unconfTgtRegIds_.empty()) {
+      logger_->error("[hd::Leaf::postOnline] failed to set unconf target[s]");
       return;
    }
 
