@@ -227,12 +227,35 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                            return;
                         }
 
-                        if (!result.signRequest.isValid()) {
-                           cb(PayinResult::error("invalid pay-in transaction"));
-                           return;
+                        std::set<BinaryData> hashes;
+                        for (const auto& input : result.signRequest.inputs) {
+                           hashes.emplace(input.getTxHash());
                         }
 
-                        cb(std::move(result));
+                        auto supportingTxMapCb = [cb, result = std::move(result)]
+                              (const AsyncClient::TxBatchResult& txs, std::exception_ptr eptr) mutable
+                        {
+                           if (eptr) {
+                              cb(PayinResult::error(fmt::format("requesting supporting TXs failed")));
+                              return;
+                           }
+
+                           for (auto& txPair : txs) {
+                              result.signRequest.supportingTXs.emplace(txPair.first, txPair.second->serialize());
+                           }
+
+                           if (!result.signRequest.isValid()) {
+                              cb(PayinResult::error("invalid pay-in transaction"));
+                              return;
+                           }
+
+                           cb(std::move(result));
+                        };
+
+                        bool rc = args.armory->getTXsByHash(hashes, supportingTxMapCb, true);
+                        if (!rc) {
+                           cb(PayinResult::error(fmt::format("getTXsByHash failed")));
+                        }
                      };
 
                      if (p2shInputs.empty()) {
