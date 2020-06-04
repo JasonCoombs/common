@@ -20,7 +20,7 @@ class TrezorCommonSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self._version = 'master'
-        self._script_revision = '3'
+        self._script_revision = '4'
         self._package_name = 'trezor-common-' + self._version
         self._package_url = 'https://github.com/trezor/trezor-common/archive/master.zip'
 
