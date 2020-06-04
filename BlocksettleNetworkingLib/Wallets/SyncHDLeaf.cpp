@@ -205,14 +205,18 @@ void hd::Leaf::onRefresh(const std::vector<BinaryData> &ids, bool online)
 std::vector<std::string> hd::Leaf::setUnconfirmedTarget()
 {
    std::vector<std::string> regIDs;
-
-   if (btcWallet_) {
-      regIDs.push_back(btcWallet_->setUnconfirmedTarget(kExtConfCount));
+   try {
+      if (btcWallet_) {
+         regIDs.push_back(btcWallet_->setUnconfirmedTarget(kExtConfCount));
+      }
+      if (btcWalletInt_) {
+         regIDs.push_back(btcWalletInt_->setUnconfirmedTarget(kIntConfCount));
+      }
    }
-   if (btcWalletInt_) {
-      regIDs.push_back(btcWalletInt_->setUnconfirmedTarget(kIntConfCount));
+   catch (const LWS_Error &e) {
+      logger_->error("[hd::Leaf::setUnconfirmedTarget] LWS error: {}", e.what());
+      return {};
    }
-
    return regIDs;
 }
 
@@ -223,6 +227,9 @@ void hd::Leaf::postOnline(bool force)
    }
 
    unconfTgtRegIds_ = setUnconfirmedTarget();
+   if (unconfTgtRegIds_.empty()) {
+      return;
+   }
 
    const auto &cbTrackAddrChain = [this, handle = validityFlag_.handle()](bs::sync::SyncState st) mutable {
       ValidityGuard lock(handle);
