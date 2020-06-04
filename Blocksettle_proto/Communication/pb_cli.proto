@@ -289,3 +289,8 @@ message SetConfigResponse
    required bool     result         = 1;
    optional string   error_message  = 2;
 }
+
+message LoadUTXORequest
+{
+   required bool     load_all = 1;
+}
