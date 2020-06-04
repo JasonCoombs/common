@@ -98,8 +98,10 @@ bool ArmoryConnection::removeTarget(ArmoryCallbackTarget *act)
       done.set_value(true);
    });
 
-   bool result = doneFut.get();
-   return result;
+   if (doneFut.wait_for(std::chrono::seconds{ 3 }) == std::future_status::ready) {
+      return doneFut.get();
+   }
+   return false;
 }
 
 void ArmoryConnection::threadFunction()
