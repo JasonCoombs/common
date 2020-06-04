@@ -262,29 +262,30 @@ message ArmoryMessage
    ArmoryMessageType type = 1;
    oneof data {
       ArmoryStateBroadcast state = 2;
-      Blocksettle.Communication.pbcli.LoadUTXOResponse utxos = 3;
-      ArmoryNewBlockBroadcast new_block = 4;
-      ArmoryPushTxRequest  push_tx_request = 5;
-      ArmoryPushTxResponse push_tx_response = 6;
-      ArmoryFeeRequest  fee_request = 7;
-      ArmoryFeeResponse fee_response = 8;
-      ArmoryStartSettlementRequest  settlement_request = 9;
-      ArmoryStartSettlementResponse settlement_response = 10;
-      ArmoryStopSettlementRequest   settl_stop_request = 11;
-      ArmorySpentnessRequest  spentness_request = 12;
-      ArmorySpentnessResponse spentness_response = 13;
-      ArmoryGetTxRequest  tx_request = 14;
-      ArmoryGetTxResponse tx_response = 15;
-      ArmoryValidateAuthRequest  auth_request = 16;
-      ArmoryValidateAuthResponse auth_response = 17;
-      ArmoryGetOutpointsForAddrListRequest out_points_request = 19;
-      ArmoryGetOutpointsForAddrListResponse out_points_response = 20;
-      ArmoryUpdateAuthAddrsRequest update_auth_addrs = 21;
-      ArmoryUpdateCcAddrsRequest update_cc_addrs = 22;
-      ArmoryPushXbtTXsRequest push_xbt_txs_request = 23;
-      ArmoryGetOutputsForOPsRequest  outs_for_ops_request = 24;
-      ArmoryGetOutputsForOPsResponse outs_for_ops_response = 25;
-      bytes timeout_id = 26;
+      Blocksettle.Communication.pbcli.LoadUTXOResponse utxos         = 3;
+      ArmoryNewBlockBroadcast                new_block               = 4;
+      ArmoryPushTxRequest                    push_tx_request         = 5;
+      ArmoryPushTxResponse                   push_tx_response        = 6;
+      ArmoryFeeRequest                       fee_request             = 7;
+      ArmoryFeeResponse                      fee_response            = 8;
+      ArmoryStartSettlementRequest           settlement_request      = 9;
+      ArmoryStartSettlementResponse          settlement_response     = 10;
+      ArmoryStopSettlementRequest            settl_stop_request      = 11;
+      ArmorySpentnessRequest                 spentness_request       = 12;
+      ArmorySpentnessResponse                spentness_response      = 13;
+      ArmoryGetTxRequest                     tx_request              = 14;
+      ArmoryGetTxResponse                    tx_response             = 15;
+      ArmoryValidateAuthRequest              auth_request            = 16;
+      ArmoryValidateAuthResponse             auth_response           = 17;
+      ArmoryGetOutpointsForAddrListRequest   out_points_request      = 19;
+      ArmoryGetOutpointsForAddrListResponse  out_points_response     = 20;
+      ArmoryUpdateAuthAddrsRequest           update_auth_addrs       = 21;
+      ArmoryUpdateCcAddrsRequest             update_cc_addrs         = 22;
+      ArmoryPushXbtTXsRequest                push_xbt_txs_request    = 23;
+      ArmoryGetOutputsForOPsRequest          outs_for_ops_request    = 24;
+      ArmoryGetOutputsForOPsResponse         outs_for_ops_response   = 25;
+      bytes                                  timeout_id              = 26;
+      bool                                   get_all_utxo            = 27;
    }
 }
 
