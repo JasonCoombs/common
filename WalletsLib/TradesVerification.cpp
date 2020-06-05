@@ -230,22 +230,26 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
 
             //fail the check if the settlement isn't the first output of the PayIn tx.
             if (i != 0) {
-               return Result::error(fmt::format("unexpected settlement output id: {}. expected 0", i));
+               return Result::error(fmt::format("unexpected settlement output "
+                  "id: {}, expected 0", i));
             }
 
          } else {
+            if (value <= bs::Address::getNativeSegwitDustAmount()) {
+               return Result::error(fmt::format("output #{} is a dust ({})", i, value));
+            }
             optionalChangeAddr.setValue(addr);
          }
-
          totalOutputCount += 1;
       }
 
       if (settlementOutputsCount != 1) {
-         return Result::error(fmt::format("unexpected settlement outputs count: {}. expected 1", settlementOutputsCount));
+         return Result::error(fmt::format("unexpected settlement outputs count: {}"
+            ", expected 1", settlementOutputsCount));
       }
-
       if (settlementAmount != tradeAmount) {
-         return Result::error(fmt::format("unexpected settlement amount: {}. expected {}", settlementAmount, tradeAmount));
+         return Result::error(fmt::format("unexpected settlement amount: {}, "
+            "expected {}", settlementAmount, tradeAmount));
       }
 
       // check that fee is fine
