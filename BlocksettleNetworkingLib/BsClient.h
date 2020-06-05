@@ -232,7 +232,6 @@ private:
    RequestId lastSignRequestId_{};
 
    bool balanceLoaded_{};
-
 };
 
 #endif
