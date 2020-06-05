@@ -189,8 +189,23 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                   }
                   auto selectedInputs = selection.utxoVec_;
                   auto fee = selection.fee_;
+                  bool needChange = true;
 
-                  auto changeCb = [args, selectedInputs, fee, settlAddr, xbtWallet, recipient, cb](const bs::Address &changeAddr)
+                  uint64_t inputAmount = 0;
+                  for (const auto &utxo : selectedInputs) {
+                     inputAmount += utxo.getValue();
+                  }
+                  const int64_t changeAmount = inputAmount - args.amount.GetValue() - fee;
+                  if (changeAmount < 0) {
+                     throw std::runtime_error("negative change amount");
+                  }
+                  if (changeAmount <= bs::Address::getNativeSegwitDustAmount()) {
+                     needChange = false;
+                     fee += changeAmount;
+                  }
+
+                  auto changeCb = [args, selectedInputs, fee, settlAddr, xbtWallet, recipient, cb]
+                     (const bs::Address &changeAddr)
                   {
                      std::vector<UTXO> p2shInputs;
 
@@ -218,7 +233,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                            result.preimageData = preimages;
                            result.payinHash = result.signRequest.txId(resolver);
 
-                           if (result.signRequest.change.value != 0) {
+                           if (!changeAddr.empty()) {
                               xbtWallet->setAddressComment(changeAddr, bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
                            }
 
@@ -266,7 +281,12 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                      }
                   };
 
-                  xbtWallet->getNewIntAddress(changeCb);
+                  if (needChange) {
+                     xbtWallet->getNewIntAddress(changeCb);
+                  }
+                  else {
+                     changeCb({});
+                  }
                } catch (const std::exception &e) {
                   cb(PayinResult::error(fmt::format("unexpected exception: {}", e.what())));
                   return;
