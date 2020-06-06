@@ -1165,7 +1165,7 @@ void HeadlessContainer::ProcessWindowStatus(unsigned int id, const std::string &
       emit Error(id, "failed to parse");
       return;
    }
-   SPDLOG_LOGGER_DEBUG(logger_, "local signed visible: {}", message.visible());
+   SPDLOG_LOGGER_DEBUG(logger_, "local signer visible: {}", message.visible());
    isWindowVisible_ = message.visible();
    emit windowVisibilityChanged(isWindowVisible_);
 }
