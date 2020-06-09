@@ -44,7 +44,7 @@ bs::Address RecipientContainer::GetAddress() const
 
 bool RecipientContainer::SetAmount(const bs::XBTAmount &amount, bool isMax)
 {
-   if ((xbtAmount_ != amount) && (isMax_ == isMax)) {
+   if ((xbtAmount_ == amount) && (isMax_ == isMax)) {
       return false;
    }
    xbtAmount_ = amount;
