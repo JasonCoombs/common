@@ -39,8 +39,8 @@ public:
    bs::Address GetAddress() const;
    void ResetAddress();
 
-   bool SetAmount(double amount, bool isMax = false);
-   double GetAmount() const;
+   bool SetAmount(const bs::XBTAmount &, bool isMax = false);
+   bs::XBTAmount GetAmount() const;
    bool IsMaxAmount() const { return isMax_; }
 
    std::shared_ptr<ScriptRecipient> GetScriptRecipient() const;

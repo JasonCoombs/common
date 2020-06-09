@@ -201,7 +201,7 @@ void TransactionData::InvalidateTransactionData()
       usedUTXO_.clear();
       summary_ = TransactionSummary{};
    }
-   maxAmount_ = 0;
+   maxAmount_.SetValue(0);
 
    UpdateTransactionData();
 
@@ -337,27 +337,26 @@ bool TransactionData::UpdateTransactionData()
 }
 
 // Calculate the maximum fee for a given recipient.
-double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool force) const
+bs::XBTAmount TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool force) const
 {
    if (!coinSelection_) {
       if (logger_) {
          logger_->error("[TransactionData::CalculateMaxAmount] wallet is missing");
       }
-      return std::numeric_limits<double>::infinity();
+      return bs::XBTAmount{ UINT64_MAX };
    }
-   if ((maxAmount_ > 0) && !force) {
+   if ((maxAmount_.GetValue() != 0) && !force) {
       return maxAmount_;
    }
 
-   maxAmount_ = 0;
+   maxAmount_.SetValue(0);
 
    if ((feePerByte_ == 0) && totalFee_) {
-      const double availableBalance = GetTransactionSummary().availableBalance - \
-         GetTransactionSummary().balanceToSpend;
-      double totalFee = (totalFee_ < minTotalFee_) ? minTotalFee_ / BTCNumericTypes::BalanceDivider
-         : totalFee_ / BTCNumericTypes::BalanceDivider;
+      const int64_t availableBalance = (GetTransactionSummary().availableBalance - \
+         GetTransactionSummary().balanceToSpend) * BTCNumericTypes::BalanceDivider;
+      const uint64_t totalFee = (totalFee_ < minTotalFee_) ? minTotalFee_ : totalFee_;
       if (availableBalance > totalFee) {
-         maxAmount_ = availableBalance - totalFee;
+         maxAmount_.SetValue(availableBalance - totalFee);
       }
    }
    else {
@@ -367,7 +366,7 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
          if (logger_) {
             logger_->debug("[TransactionData::CalculateMaxAmount] empty input list");
          }
-         return 0;
+         return {};
       }
 
       std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
@@ -386,7 +385,7 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
          }
       }
       if (recipientsMap.empty()) {
-         return 0;
+         return {};
       }
 
       const PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
@@ -397,16 +396,16 @@ double TransactionData::CalculateMaxAmount(const bs::Address &recipient, bool fo
       // satoshis higher than is strictly required by Core but that's okay.
       // If truly required, the fee can be tweaked later.
       try {
-         double fee = coinSelection_->getFeeForMaxVal(payment.size_, feePerByte_
-            , transactions) / BTCNumericTypes::BalanceDivider;
-         if (fee < minTotalFee_ / BTCNumericTypes::BalanceDivider) {
-            fee = minTotalFee_ / BTCNumericTypes::BalanceDivider;
+         uint64_t fee = coinSelection_->getFeeForMaxVal(payment.size_, feePerByte_
+            , transactions);
+         if (fee < minTotalFee_) {
+            fee = minTotalFee_;
          }
 
-         const double availableBalance = GetTransactionSummary().availableBalance - \
-            GetTransactionSummary().balanceToSpend;
+         const int64_t availableBalance = (GetTransactionSummary().availableBalance - \
+            GetTransactionSummary().balanceToSpend) * BTCNumericTypes::BalanceDivider;
          if (availableBalance >= fee) {
-            maxAmount_ = availableBalance - fee;
+            maxAmount_.SetValue(availableBalance - fee);
          }
       } catch (const std::exception &e) {
          if (logger_) {
@@ -681,7 +680,8 @@ void TransactionData::ResetRecipientAddress(unsigned int recipientId)
    }
 }
 
-bool TransactionData::UpdateRecipient(unsigned int recipientId, double amount, const bs::Address &address)
+bool TransactionData::UpdateRecipient(unsigned int recipientId
+   , const bs::XBTAmount &amount, const bs::Address &address)
 {
    auto it = recipients_.find(recipientId);
    if (it == recipients_.end()) {
@@ -695,7 +695,8 @@ bool TransactionData::UpdateRecipient(unsigned int recipientId, double amount, c
    return result;
 }
 
-bool TransactionData::UpdateRecipientAmount(unsigned int recipientId, double amount, bool isMax)
+bool TransactionData::UpdateRecipientAmount(unsigned int recipientId
+   , const bs::XBTAmount &amount, bool isMax)
 {
    auto it = recipients_.find(recipientId);
    if (it == recipients_.end()) {
@@ -729,20 +730,20 @@ bs::Address TransactionData::GetRecipientAddress(unsigned int recipientId) const
    return itRecip->second->GetAddress();
 }
 
-BTCNumericTypes::balance_type TransactionData::GetRecipientAmount(unsigned int recipientId) const
+bs::XBTAmount TransactionData::GetRecipientAmount(unsigned int recipientId) const
 {
    const auto &itRecip = recipients_.find(recipientId);
    if (itRecip == recipients_.end()) {
-      return 0;
+      return {};
    }
    return itRecip->second->GetAmount();
 }
 
-BTCNumericTypes::balance_type TransactionData::GetTotalRecipientsAmount() const
+bs::XBTAmount TransactionData::GetTotalRecipientsAmount() const
 {
-   BTCNumericTypes::balance_type result = 0;
+   bs::XBTAmount result;
    for (const auto &recip : recipients_) {
-      result += recip.second->GetAmount();
+      result.SetValue(result.GetValue() + recip.second->GetAmount().GetValue());
    }
    return result;
 }
