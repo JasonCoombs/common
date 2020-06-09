@@ -21,6 +21,7 @@
 #include "EncryptionUtils.h"
 #include "JSON_codec.h"
 #include "ManualResetEvent.h"
+#include "ScopedFlag.h"
 #include "SocketIncludes.h"
 
 
@@ -241,7 +242,8 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       if (connThreadRunning_) {
          return;
       }
-      connThreadRunning_ = true;
+
+      ScopedFlag<decltype(connThreadRunning_)> f{connThreadRunning_};
       setState(ArmoryState::Connecting);
       stopServiceThreads();
 
@@ -271,19 +273,20 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       if (!bdv_) {
          logger_->error("[setupConnection (connectRoutine)] failed to "
             "create BDV");
+         setState(ArmoryState::Offline);
          return;
       }
 
       bdv_->setCheckServerKeyPromptLambda(cbBIP151);
       if (!bdv_->connectToRemote()) {
          logger_->error("[ArmoryConnection::setupConnection] BDV connection failed");
+         setState(ArmoryState::Offline);
          return;
       }
       logger_->debug("[ArmoryConnection::setupConnection] BDV connected");
 
       regThreadRunning_ = true;
       regThread_ = std::thread(registerRoutine);
-      connThreadRunning_ = false;
    };
    std::thread(connectRoutine).detach();
 }
