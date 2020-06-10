@@ -481,6 +481,9 @@ void BsClient::OnDataReceived(const std::string &data)
          case Response::kUpdateBalance:
             processBalanceUpdate(response->update_balance());
             return;
+         case Response::kTradingEnabled:
+            processTradingEnabledStatus(response->trading_enabled());
+            return;
 
          case Response::kGetEmailHash:
          case Response::kSubmitAuthAddress:
@@ -628,4 +631,9 @@ BsClient::RequestId BsClient::newRequestId()
 {
    lastRequestId_ += 1;
    return lastRequestId_;
+}
+
+void BsClient::processTradingEnabledStatus(bool tradingEnabled)
+{
+   emit tradingStatusChanged(tradingEnabled);
 }
