@@ -74,8 +74,7 @@ protected:
 
    virtual void onPeriodicCheck();
 
-   virtual bool QueueDataToSend(const std::string& clientId, const std::string& data
-      , const SendResultCb &cb, bool sendMore);
+   virtual bool QueueDataToSend(const std::string& clientId, const std::string& data, bool sendMore);
 
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<ZmqContext>      context_;
@@ -111,7 +110,6 @@ private:
    {
       std::string    clientId;
       std::string    data;
-      SendResultCb   cb;
       bool           sendMore;
    };
 

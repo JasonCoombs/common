@@ -16,7 +16,6 @@
 #include "ArmoryConnection.h"
 #include "Bip39.h"
 
-#define SAFE_NUM_CONFS        6
 #define ASSETMETA_PREFIX      0xAC
 
 #include <spdlog/spdlog.h>

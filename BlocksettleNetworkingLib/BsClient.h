@@ -27,8 +27,7 @@
 #include "ValidityFlag.h"
 #include "autheid_utils.h"
 
-class ZmqContext;
-class ZmqBIP15XDataConnection;
+class DataConnection;
 template<typename T> class FutureValue;
 
 namespace Blocksettle {
@@ -62,21 +61,6 @@ namespace bs {
       enum class UserType : int;
    }
 }
-
-struct BsClientParams
-{
-   using NewKeyCallback = std::function<void(const std::string &oldKey, const std::string &newKey
-      , const std::string& srvAddrPort, const std::shared_ptr<FutureValue<bool>> &prompt)>;
-
-   std::shared_ptr<ZmqContext> context;
-
-   std::string connectAddress{"127.0.0.1"};
-   int connectPort{10259};
-
-   std::string oldServerKey;
-
-   NewKeyCallback newServerKeyCallback;
-};
 
 struct BsClientLoginResult
 {
@@ -122,11 +106,11 @@ public:
 
    using RequestId = int64_t;
 
-   BsClient(const std::shared_ptr<spdlog::logger>& logger, const BsClientParams &params
+   BsClient(const std::shared_ptr<spdlog::logger>& logger
       , QObject *parent = nullptr);
    ~BsClient() override;
 
-   const BsClientParams &params() const { return params_; }
+   void setConnection(std::unique_ptr<DataConnection>);
 
    void startLogin(const std::string &email);
 
@@ -223,9 +207,7 @@ private:
 
    std::shared_ptr<spdlog::logger> logger_;
 
-   BsClientParams params_;
-
-   std::unique_ptr<ZmqBIP15XDataConnection> connection_;
+   std::unique_ptr<DataConnection> connection_;
 
    std::map<RequestId, ActiveRequest> activeRequests_;
    RequestId lastRequestId_{};

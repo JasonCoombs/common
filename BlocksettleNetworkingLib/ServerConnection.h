@@ -34,34 +34,9 @@ public:
 
    virtual std::string GetClientInfo(const std::string &clientId) const = 0;
 
-   using SendResultCb = std::function<void(const std::string &clientId, const std::string &data, bool)>;
-   virtual bool SendDataToClient(const std::string& clientId, const std::string& data
-      , const SendResultCb &cb = nullptr) = 0;
-   virtual bool SendDataToAllClients(const std::string&, const SendResultCb &cb = nullptr) { return false; }
+   virtual bool SendDataToClient(const std::string& clientId, const std::string& data) = 0;
+   virtual bool SendDataToAllClients(const std::string&) { return false; }
 
-   void callConnAcceptedCB(const std::string& clientID) {
-      if (cbConnAccepted_) {
-         cbConnAccepted_(clientID);
-      }
-   }
-   void callConnClosedCB(const std::string& clientID) {
-      if (cbConnClosed_) {
-         cbConnClosed_(clientID);
-      }
-   }
-
-protected:
-   void setConnAcceptedCB(
-      const std::function<void(const std::string&)> cbConnAccepted) {
-      cbConnAccepted_ = cbConnAccepted;
-   }
-   void setConnClosedCB(
-      const std::function<void(const std::string&)> cbConnClosed) {
-      cbConnClosed_ = cbConnClosed;
-   }
-
-   std::function<void(const std::string&)> cbConnAccepted_ = nullptr;
-   std::function<void(const std::string&)> cbConnClosed_ = nullptr;
 };
 
 #endif // __SERVER_CONNECTION_H__

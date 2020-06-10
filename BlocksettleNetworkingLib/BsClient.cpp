@@ -9,12 +9,14 @@
 
 */
 #include "BsClient.h"
-#include "FutureValue.h"
 
+#include <spdlog/spdlog.h>
 #include <QTimer>
 
+#include "FutureValue.h"
 #include "ProtobufUtils.h"
-#include "ZMQ_BIP15X_DataConnection.h"
+#include "WsDataConnection.h"
+
 #include "bs_proxy_terminal.pb.h"
 #include "bs_proxy_terminal_pb.pb.h"
 
@@ -37,26 +39,22 @@ namespace {
 }
 
 BsClient::BsClient(const std::shared_ptr<spdlog::logger> &logger
-   , const BsClientParams &params, QObject *parent)
+   , QObject *parent)
    : QObject(parent)
    , logger_(logger)
-   , params_(params)
 {
-   ZmqBIP15XDataConnectionParams zmqBipParams;
-   zmqBipParams.ephemeralPeers = true;
-   connection_ = std::make_unique<ZmqBIP15XDataConnection>(logger, zmqBipParams);
-
-   connection_->setCBs(params_.newServerKeyCallback);
-
-   // This should not ever fail
-   bool result = connection_->openConnection(params_.connectAddress, std::to_string(params_.connectPort), this);
-   assert(result);
 }
 
 BsClient::~BsClient()
 {
    // Stop receiving events from DataConnectionListener before BsClient is partially destroyed
    connection_.reset();
+}
+
+void BsClient::setConnection(std::unique_ptr<DataConnection> connection)
+{
+   assert(!connection_);
+   connection_ = std::move(connection);
 }
 
 void BsClient::startLogin(const std::string &email)
