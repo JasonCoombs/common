@@ -199,11 +199,12 @@ message Response
         Basic confirm_cc_address = 20;
 
         // Messages
-        Celer celer = 30;
-        ProxyPb proxy_pb = 31;
-        GenAddrUpdated gen_addr_updated = 32;
-        UserStatusUpdated user_status_updated = 33;
-        UpdateFeeRate update_fee_rate = 34;
-        UpdateBalance update_balance = 35;
+        Celer              celer                = 30;
+        ProxyPb            proxy_pb             = 31;
+        GenAddrUpdated     gen_addr_updated     = 32;
+        UserStatusUpdated  user_status_updated  = 33;
+        UpdateFeeRate      update_fee_rate      = 34;
+        UpdateBalance      update_balance       = 35;
+        bool               trading_enabled      = 36;
     }
 }
