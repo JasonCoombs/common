@@ -142,6 +142,8 @@ public:
       ccServerPubKey,
       HideLegacyWalletWarning,
       DetailedSettlementTxDialogByDefault,
+      AutoStartRFQScript,
+      CurrentRFQScript,
       _last
    };
 
