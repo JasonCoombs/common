@@ -191,7 +191,9 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString(), true) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
-      { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) }
+      { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
+      { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
+      { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) }
    };
 }
 
