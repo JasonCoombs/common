@@ -102,6 +102,9 @@ bool WsDataConnection::closeConnection()
 
 bool WsDataConnection::send(const std::string &data)
 {
+   if (!context_) {
+      return false;
+   }
    {  std::lock_guard<std::recursive_mutex> lock(mutex_);
       newPackets_.push(WsPacket(data));
    }
