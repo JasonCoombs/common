@@ -166,7 +166,7 @@ private:
    void listenFunction();
    void resetConnectionObjects();
    bool ConfigureDataSocket(const ZmqContext::sock_ptr& socket);
-   void sendCommand(InternalCommandCode command);
+   bool sendCommand(InternalCommandCode command);
    void sendPendingData();
    void sendDisconnectMsg();
 
