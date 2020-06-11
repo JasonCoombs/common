@@ -60,7 +60,7 @@ namespace bs {
          return (value_ > other);
       }
 
-      const XBTAmount &operator+(const XBTAmount &other) const
+      XBTAmount operator+(const XBTAmount &other) const
       {
          return XBTAmount(value_ + other.value_);
       }
