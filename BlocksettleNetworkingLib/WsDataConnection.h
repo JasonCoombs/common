@@ -30,6 +30,7 @@ struct WsDataConnectionParams
 {
    const void *caBundlePtr{};
    uint32_t caBundleSize{};
+   bool useSsl{true};
 };
 
 class WsDataConnection : public DataConnection

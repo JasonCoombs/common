@@ -65,7 +65,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    info.gid = -1;
    info.uid = -1;
    info.ws_ping_pong_interval = kPingPongInterval / std::chrono::seconds(1);
-   info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+   info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
 
    context_ = lws_create_context(&info);
@@ -120,7 +120,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
 {
    switch (reason) {
       case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: {
-         if (params_.caBundleSize == 0) {
+         if (!params_.useSsl || params_.caBundleSize == 0) {
             return 0;
          }
          auto sslCtx = static_cast<SSL_CTX*>(user);
@@ -225,7 +225,7 @@ void WsDataConnection::listenFunction()
    i.protocol = kProtocolNameWs;
    i.userdata = this;
 
-   i.ssl_connection = LCCSCF_USE_SSL;
+   i.ssl_connection = params_.useSsl ? LCCSCF_USE_SSL : 0;
 
    wsi_ = lws_client_connect_via_info(&i);
 
