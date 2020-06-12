@@ -19,8 +19,6 @@
 namespace bs {
    namespace network {
 
-      extern const size_t kLwsPrePaddingSize;
-
       class WsPacket
       {
       private:
@@ -30,24 +28,18 @@ namespace bs {
       public:
          explicit WsPacket(const std::string &data);
 
-         uint8_t *getPtr()
-         {
-            return data_.data() + kLwsPrePaddingSize;
-         }
+         uint8_t *getPtr();
 
-         size_t getSize() const
-         {
-            return data_.size() - kLwsPrePaddingSize;
-         }
+         size_t getSize() const;
       };
 
       extern const char *kProtocolNameWs;
 
-      const size_t kRxBufferSize = 16 * 1024;
-      const size_t kTxPacketSize = 16 * 1024;
-      const int kId = 0;
+      constexpr size_t kRxBufferSize = 16 * 1024;
+      constexpr size_t kTxPacketSize = 16 * 1024;
+      constexpr int kId = 0;
 
-      const auto kPingPongInterval = std::chrono::seconds(30);
+      constexpr auto kPingPongInterval = std::chrono::seconds(30);
 
    }
 }

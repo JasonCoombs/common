@@ -17,10 +17,24 @@ using namespace bs::network;
 
 const char *bs::network::kProtocolNameWs = "bs-ws-protocol";
 
-const size_t bs::network::kLwsPrePaddingSize = LWS_PRE;
+namespace {
+
+   constexpr size_t kLwsPrePaddingSize = LWS_PRE;
+
+}
 
 WsPacket::WsPacket(const std::string &data)
 {
-   data_.resize(LWS_PRE);
+   data_.resize(kLwsPrePaddingSize);
    data_.insert(data_.end(), data.begin(), data.end());
+}
+
+uint8_t *WsPacket::getPtr()
+{
+   return data_.data() + kLwsPrePaddingSize;
+}
+
+size_t WsPacket::getSize() const
+{
+   return data_.size() - kLwsPrePaddingSize;
 }
