@@ -371,7 +371,9 @@ bool ZmqBIP15XDataConnection::send(const string& data)
    // Notify listening thread that there is new data.
    // If this is called from listening thread pendingData_ will be processed right after callbacks.
    if (std::this_thread::get_id() != listenThread_.get_id()) {
-      sendCommand(InternalCommandCode::Send);
+      if (!sendCommand(InternalCommandCode::Send)) {
+         return false;
+      }
    }
 
    return true;
@@ -1191,11 +1193,15 @@ BinaryData ZmqBIP15XDataConnection::getOwnPubKey() const
 }
 
 
-void ZmqBIP15XDataConnection::sendCommand(ZmqBIP15XDataConnection::InternalCommandCode command)
+bool ZmqBIP15XDataConnection::sendCommand(ZmqBIP15XDataConnection::InternalCommandCode command)
 {
    FastLock locker(threadMasterSocketMutex_);
+   if (!threadMasterSocket_.get()) {
+      return false;
+   }
    int result = zmq_send(threadMasterSocket_.get(), &command, sizeof(command), 0);
    assert(result == int(sizeof(command)));
+   return true;
 }
 
 void ZmqBIP15XDataConnection::sendPendingData()

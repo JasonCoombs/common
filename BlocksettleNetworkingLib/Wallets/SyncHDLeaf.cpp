@@ -22,7 +22,8 @@
 #include <QLocale>
 #include <QMutexLocker>
 
-const uint32_t kExtConfCount = 6;
+// BST-2747: Require 1 conf for external addresses too
+const uint32_t kExtConfCount = 1;
 const uint32_t kIntConfCount = 1;
 
 using namespace bs::sync;

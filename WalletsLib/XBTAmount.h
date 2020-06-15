@@ -17,7 +17,7 @@ namespace bs {
 
 // class XBTAmount should be used to unify getting satochi amount from double BTC
 // across all codebase
-// basically it is stronly typed wrapper for uin64_t
+// basically it is strongly typed wrapper for uint64_t
    class XBTAmount
    {
    public:

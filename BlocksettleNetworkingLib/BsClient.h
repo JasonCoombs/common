@@ -190,6 +190,8 @@ signals:
    void balanceLoaded();
    void balanceUpdated(const std::string &currency, double balance);
 
+   void tradingStatusChanged(bool tradingEnabled);
+
 private:
    using ProcessCb = std::function<void(const Blocksettle::Communication::ProxyTerminal::Response &response)>;
    using TimeoutCb = std::function<void()>;
@@ -218,6 +220,7 @@ private:
    void processUserStatusUpdated(const Blocksettle::Communication::ProxyTerminal::Response_UserStatusUpdated &response);
    void processUpdateFeeRate(const Blocksettle::Communication::ProxyTerminal::Response_UpdateFeeRate &response);
    void processBalanceUpdate(const Blocksettle::Communication::ProxyTerminal::Response_UpdateBalance &response);
+   void processTradingEnabledStatus(bool tradingEnabled);
 
    RequestId newRequestId();
 

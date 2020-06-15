@@ -77,6 +77,7 @@ enum ArmoryMessageType
    ArmoryUpdateCcAddrs     = 18;
    ArmoryPushXbtTXs        = 19;
    ArmoryGetOutputsForOPs  = 20;
+   ArmorySettlementsStatus = 21;
 }
 
 enum ArmoryStateData
@@ -286,6 +287,7 @@ message ArmoryMessage
       ArmoryGetOutputsForOPsResponse         outs_for_ops_response   = 25;
       bytes                                  timeout_id              = 26;
       bool                                   get_all_utxo            = 27;
+      bool                                   settlements_suspended   = 28;
    }
 }
 
