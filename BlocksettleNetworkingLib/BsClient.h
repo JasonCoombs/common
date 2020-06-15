@@ -108,13 +108,6 @@ public:
    };
    using SignCb = std::function<void(SignResponse)>;
 
-   struct AuthAddrSubmitResponse : public BasicResponse
-   {
-      int validationAmountCents{};
-      bool confirmationRequired{};
-   };
-   using AuthAddrSubmitCb = std::function<void(AuthAddrSubmitResponse)>;
-
    struct DescCc
    {
       std::string ccProduct;
@@ -138,7 +131,6 @@ public:
    void logout();
    void celerSend(CelerAPI::CelerMessageType messageType, const std::string &data);
 
-   void submitAuthAddress(const bs::Address address, const AuthAddrSubmitCb &cb);
    void signAuthAddress(const bs::Address address, const SignCb &cb);
    void confirmAuthAddress(const bs::Address address, const BasicCb &cb);
 
