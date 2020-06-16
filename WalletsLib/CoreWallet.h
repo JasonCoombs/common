@@ -283,11 +283,12 @@ namespace bs {
             bool allowBroadcasts{false};
             // timestamp when settlement TX sign expires
             std::chrono::system_clock::time_point expiredTimestamp{};
+            BinaryData txHash;
 
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
             {
-               *this = std::move(other);
+               *this = other;
             }
 
             TXSignRequest &operator=(const TXSignRequest &other)
@@ -309,6 +310,7 @@ namespace bs {
                expiredTimestamp = other.expiredTimestamp;
                signer_.reset();
                signerCreated_ = false;
+               txHash = other.txHash;
                return *this;
             }
             bool isValid() const noexcept;

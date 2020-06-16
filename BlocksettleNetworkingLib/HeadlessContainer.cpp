@@ -468,6 +468,7 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    request->set_input(txSignReq.inputs[0].serialize().toBinStr());
    request->set_recipient(txSignReq.recipients[0]->getSerializedScript().toBinStr());
    request->set_fee(txSignReq.fee);
+   request->set_tx_hash(txSignReq.txHash.toBinStr());
 
    fillSettlementData(request->mutable_settlement_data(), sd);
    *(settlementRequest.mutable_passworddialogdata()) = dialogData.toProtobufMessage();

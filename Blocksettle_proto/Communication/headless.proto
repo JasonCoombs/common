@@ -124,6 +124,7 @@ message SignTxRequest
    repeated SupportingTransaction   supportingTxs = 20;
    bool                             allow_broadcasts = 21;
    uint64                           expired_timestamp_ms = 22;
+   bytes                            tx_hash = 23;
 }
 
 message SignTxReply
@@ -156,6 +157,7 @@ message SignPayoutTXRequest
    bytes    recipient = 2;
    uint64   fee = 3;
    SettlementData settlement_data = 4;
+   bytes tx_hash = 5;
 }
 
 
