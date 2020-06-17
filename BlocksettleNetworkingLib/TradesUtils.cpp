@@ -232,6 +232,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                               , recipients, false, changeAddr, fee, false);
                            result.preimageData = preimages;
                            result.payinHash = result.signRequest.txId(resolver);
+                           result.signRequest.txHash = result.payinHash;
 
                            if (!changeAddr.empty()) {
                               xbtWallet->setAddressComment(changeAddr, bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
@@ -416,6 +417,7 @@ void bs::tradeutils::createPayout(bs::tradeutils::PayoutArgs args
                result.settlementAddr = settlAddr;
                result.signRequest = createPayoutTXRequest(
                   payinUTXO, recvAddr, feePerByte, args.armory->topBlock());
+               result.signRequest.txHash = result.signRequest.txId();
                cb(std::move(result));
             };
 
