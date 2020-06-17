@@ -339,6 +339,19 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
+   bool isLegacy = false;
+   for (const auto& input : txSignReq.inputs) {
+      if (bs::Address::fromUTXO(input).getType() == AddressEntryType_P2PKH) {
+         isLegacy = true;
+         break;
+      }
+   }
+   if (!isLegacy && !partial && txSignReq.txHash.empty()) {
+      SPDLOG_LOGGER_ERROR(logger_, "expected tx hash must be set before sign");
+      SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxInvalidRequest);
+      return false;
+   }
+
    std::vector<std::shared_ptr<bs::core::hd::Leaf>> wallets;
    std::string rootWalletId;
    uint64_t amount = 0;
@@ -410,7 +423,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
    }
 
    const auto onPassword = [this, autoSign, wallets, txSignReq, rootWalletId, clientId, id = packet.id(), partial
-      , reqType, amount
+      , reqType, amount, isLegacy
       , keepDuplicatedRecipients = request.keepduplicatedrecipients()]
       (bs::error::ErrorCode result, const SecureBinaryData &pass)
    {
@@ -434,6 +447,22 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          if (rootWallet->isHardwareWallet()) {
             bs::core::WalletPasswordScoped lock(rootWallet, pass);
             auto signedTx = rootWallet->signTXRequestWithWallet(txSignReq);
+
+            if (!isLegacy) {
+               try {
+                  Tx t(signedTx);
+                  if (t.getThisHash() != txSignReq.txHash) {
+                     SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
+                        , t.getThisHash().toHexStr(true), txSignReq.txHash.toHexStr(true));
+                     throw std::logic_error("unexpected tx hash");
+                  }
+               } catch (const std::exception &e) {
+                  SPDLOG_LOGGER_ERROR(logger_, "signed tx verification failed for HW wallet: {}", e.what());
+                  SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
+                  return;
+               }
+            }
+
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, signedTx);
          }
          else {
@@ -460,6 +489,14 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
             const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignReq).SerializeAsString())
                : wallet->signTXRequest(txSignReq, keepDuplicatedRecipients);
+            if (!partial) {
+               Tx t(tx);
+               if (t.getThisHash() != txSignReq.txHash) {
+                  SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
+                     , t.getThisHash().toHexStr(true), txSignReq.txHash.toHexStr(true));
+                  throw std::logic_error("unexpected tx hash");
+               }
+            }
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
          }
          else {
@@ -492,6 +529,14 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             {
                const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
                tx = bs::core::SignMultiInputTX(multiReq, wallets, partial);
+               if (!partial) {
+                  Tx t(tx);
+                  if (t.getThisHash() != txSignReq.txHash) {
+                     SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
+                        , t.getThisHash().toHexStr(true), txSignReq.txHash.toHexStr(true));
+                     throw std::logic_error("unexpected tx hash");
+                  }
+               }
             }
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
          }
@@ -597,9 +642,16 @@ bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::strin
    txSignReq.recipients.push_back(recip);
 
    txSignReq.fee = request.signpayouttxrequest().fee();
+   txSignReq.txHash = BinaryData::fromString(request.signpayouttxrequest().tx_hash());
 
    if (!txSignReq.isValid()) {
       logger_->error("[HeadlessContainerListener] invalid SignTxRequest");
+      SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxInvalidRequest);
+      return false;
+   }
+
+   if (txSignReq.txHash.empty()) {
+      SPDLOG_LOGGER_ERROR(logger_, "expected tx hash must be set before sign");
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxInvalidRequest);
       return false;
    }
@@ -775,7 +827,7 @@ void HeadlessContainerListener::passwordReceived(const std::string &clientId, co
    , bs::error::ErrorCode result, const SecureBinaryData &password)
 {
    if (deferredPasswordRequests_.empty()) {
-      logger_->error("[HeadlessContainerListener::{}] failed to find password received callback {}", __func__);
+      logger_->error("[HeadlessContainerListener::{}] failed to find password received callback", __func__);
       return;
    }
    const PasswordReceivedCb &cb = std::move(deferredPasswordRequests_.front().callback);

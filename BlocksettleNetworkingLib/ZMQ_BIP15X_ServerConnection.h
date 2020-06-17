@@ -84,9 +84,8 @@ public:
    ZmqBIP15XServerConnection& operator= (ZmqBIP15XServerConnection&&) = delete;
 
    // Overridden functions from ServerConnection.
-   bool SendDataToClient(const std::string& clientId, const std::string& data
-      , const SendResultCb& cb = nullptr) override;
-   bool SendDataToAllClients(const std::string&, const SendResultCb &cb = nullptr) override;
+   bool SendDataToClient(const std::string& clientId, const std::string& data) override;
+   bool SendDataToAllClients(const std::string&) override;
 
    bool getClientIDCookie(BinaryData& cookieBuf);
    std::string getCookiePath() const { return bipIDCookiePath_; }
@@ -134,7 +133,6 @@ private:
    struct PendingMsg
    {
       BinaryData data;
-      SendResultCb cb;
    };
 
    using PendingMsgs = std::vector<PendingMsg>;

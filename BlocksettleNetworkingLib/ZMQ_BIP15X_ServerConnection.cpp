@@ -278,11 +278,11 @@ void ZmqBIP15XServerConnection::onPeriodicCheck()
 // OUTPUT: None
 // RETURN: True if success, false if failure.
 bool ZmqBIP15XServerConnection::SendDataToClient(const string& clientId
-   , const string& data, const SendResultCb& cb)
+   , const string& data)
 {
    {
       std::lock_guard<std::mutex> lock(pendingDataMutex_);
-      pendingData_[clientId].push_back({ BinaryData::fromString(data), cb });
+      pendingData_[clientId].push_back({ BinaryData::fromString(data) });
    }
 
    if (std::this_thread::get_id() != listenThreadId()) {
@@ -395,11 +395,11 @@ std::unique_ptr<ZmqBIP15XPeer> ZmqBIP15XServerConnection::getClientKey(const str
 //         A post-send callback. Optional. (const SendResultCb&)
 // OUTPUT: None
 // RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::SendDataToAllClients(const std::string& data, const SendResultCb &cb)
+bool ZmqBIP15XServerConnection::SendDataToAllClients(const std::string& data)
 {
    {
       std::lock_guard<std::mutex> lock(pendingDataMutex_);
-      pendingDataToAll_.push_back({ BinaryData::fromString(data), cb });
+      pendingDataToAll_.push_back({ BinaryData::fromString(data) });
    }
 
    if (std::this_thread::get_id() != listenThreadId()) {
@@ -919,19 +919,12 @@ void ZmqBIP15XServerConnection::sendData(const std::string &clientId, const Pend
    if (connection->encData_ && connection->encData_->getBIP150State() == BIP150State::SUCCESS) {
       auto packet = ZmqBipMsgBuilder(pendingMsg.data, ZMQ_MSGTYPE_SINGLEPACKET)
          .encryptIfNeeded(connPtr).build();
-      bool result = sendToDataSocket(clientId, packet);
-      if (pendingMsg.cb) {
-         pendingMsg.cb(clientId, packet.toBinStr(), result);
-      }
-
+      sendToDataSocket(clientId, packet);
       return;
    }
 
    // Send untouched data for straight transmission
-   bool result = sendToDataSocket(clientId, pendingMsg.data);
-   if (pendingMsg.cb) {
-      pendingMsg.cb(clientId, pendingMsg.data.toBinStr(), result);
-   }
+   sendToDataSocket(clientId, pendingMsg.data);
 }
 
 bool ZmqBIP15XServerConnection::sendToDataSocket(const string &clientId, const BinaryData &data)

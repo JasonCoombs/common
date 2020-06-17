@@ -406,11 +406,11 @@ std::string ZmqServerConnection::GetClientInfo(const std::string &clientId) cons
 }
 
 bool ZmqServerConnection::QueueDataToSend(const std::string& clientId, const std::string& data
-   , const SendResultCb &cb, bool sendMore)
+   , bool sendMore)
 {
    {
       FastLock locker{dataQueueLock_};
-      dataQueue_.emplace_back( DataToSend{clientId, data, cb, sendMore});
+      dataQueue_.emplace_back( DataToSend{clientId, data, sendMore});
    }
 
    return SendDataCommand();
@@ -434,9 +434,6 @@ void ZmqServerConnection::SendDataToDataSocket()
       if (result != dataPacket.clientId.size()) {
          logger_->error("[{}] {} failed to send client id {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()));
-         if (dataPacket.cb) {
-            dataPacket.cb(dataPacket.clientId, dataPacket.data, false);
-         }
          continue;
       }
 
@@ -444,14 +441,7 @@ void ZmqServerConnection::SendDataToDataSocket()
       if (result != dataPacket.data.size()) {
          logger_->error("[{}] {} failed to send data frame {} to {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()), dataPacket.clientId);
-         if (dataPacket.cb) {
-            dataPacket.cb(dataPacket.clientId, dataPacket.data, false);
-         }
          continue;
-      }
-
-      if (dataPacket.cb) {
-         dataPacket.cb(dataPacket.clientId, dataPacket.data, true);
       }
    }
 }

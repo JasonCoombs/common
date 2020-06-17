@@ -40,8 +40,8 @@ public:
    virtual void OnClientConnected(const std::string& clientId) = 0;
    virtual void OnClientDisconnected(const std::string& clientId) = 0;
 
-   virtual void OnPeerConnected(const std::string &) {}
-   virtual void OnPeerDisconnected(const std::string &) {}
+   virtual void OnPeerConnected(const std::string &ip) {}
+   virtual void OnPeerDisconnected(const std::string &ip) {}
 
    virtual void onClientError(const std::string &clientId, const std::string &error) {}
    virtual void onClientError(const std::string &clientId, ClientError errorCode, int socket) {}
