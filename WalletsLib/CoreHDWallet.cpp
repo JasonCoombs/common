@@ -380,7 +380,12 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
             inputSigs[sig.index()] = BinaryData::fromString(sig.data());
          }
 
-         signedTx = leaf->signTXRequestWithWitness(request, inputSigs);
+         try {
+            signedTx = leaf->signTXRequestWithWitness(request, inputSigs);
+         } catch (const std::exception &e) {
+            SPDLOG_LOGGER_ERROR(logger_, "preparing ledger tx failed: {}", e.what());
+            return {};
+         }
       }
    }
    else {
