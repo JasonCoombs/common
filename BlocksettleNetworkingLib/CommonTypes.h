@@ -98,7 +98,7 @@ namespace bs {
          std::string security;
          std::string product;
 
-         Asset::Type assetType;
+         Asset::Type assetType{Asset::Type::Undefined};
          Side::Type  side;
 
          double quantity;

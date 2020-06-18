@@ -84,13 +84,12 @@ public:
 
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);
-//   virtual BinaryData GetPublicKey(size_t index);
 
    AddressVerificationState GetState(const bs::Address &addr) const;
    void SetState(const bs::Address &addr, AddressVerificationState state);
 
    void setDefault(const bs::Address &addr);
-   const bs::Address &getDefault() const { return defaultAddr_; }
+   bs::Address getDefault() const;
    virtual size_t getDefaultIndex() const;
 
    virtual bool HaveAuthWallet() const;
@@ -187,7 +186,7 @@ protected:
    mutable std::atomic_flag                        statesLock_ = ATOMIC_FLAG_INIT;
 
    using HashMap = std::map<bs::Address, BinaryData>;
-   bs::Address                               defaultAddr_;
+   mutable bs::Address  defaultAddr_{};
 
    std::unordered_set<std::string>           bsAddressList_;
    std::shared_ptr<bs::sync::Wallet>         authWallet_;

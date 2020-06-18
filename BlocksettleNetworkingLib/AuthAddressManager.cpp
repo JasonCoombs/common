@@ -403,18 +403,6 @@ void AuthAddressManager::VerifyWalletAddressesFunction()
          logger_->debug("AuthAddressManager auth wallet is null");
       }
       updated = true;
-
-      auto defaultAuthAddrStr = settings_->get<QString>(ApplicationSettings::defaultAuthAddr);
-      if (!defaultAuthAddrStr.isEmpty()) {
-         defaultAddr_ = bs::Address::fromAddressString(defaultAuthAddrStr.toStdString());
-      }
-
-      if (defaultAddr_.empty()) {
-         logger_->debug("Default auth address not found");
-      }
-      else {
-         logger_->debug("Default auth address: {}", defaultAddr_.display());
-      }
    }
 
    std::vector<bs::Address> listCopy;
@@ -586,7 +574,28 @@ bool AuthAddressManager::BroadcastTransaction(const BinaryData& transactionData)
 void AuthAddressManager::setDefault(const bs::Address &addr)
 {
    defaultAddr_ = addr;
+   settings_->set(ApplicationSettings::defaultAuthAddr, QString::fromStdString(addr.display()));
    emit VerifiedAddressListUpdated();
+}
+
+bs::Address AuthAddressManager::getDefault() const
+{
+   if (defaultAddr_.empty()) {
+      const auto &defaultAuthAddrStr = settings_->get<std::string>(ApplicationSettings::defaultAuthAddr);
+      if (!defaultAuthAddrStr.empty()) {
+         defaultAddr_ = bs::Address::fromAddressString(defaultAuthAddrStr);
+      }
+      const auto &verifAddresses = GetVerifiedAddressList();
+      if (verifAddresses.empty()) {
+         defaultAddr_.clear();
+         return {};
+      }
+      const auto &it = std::find(verifAddresses.cbegin(), verifAddresses.cend(), defaultAddr_);
+      if (defaultAddr_.empty() || (it == verifAddresses.end())) {
+         defaultAddr_ = verifAddresses.at(0);
+      }
+   }
+   return defaultAddr_;
 }
 
 size_t AuthAddressManager::getDefaultIndex() const
