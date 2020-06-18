@@ -87,7 +87,6 @@ public:
 //   virtual BinaryData GetPublicKey(size_t index);
 
    AddressVerificationState GetState(const bs::Address &addr) const;
-   void SetState(const bs::Address &addr, AddressVerificationState state);
 
    void setDefault(const bs::Address &addr);
    const bs::Address &getDefault() const { return defaultAddr_; }
@@ -114,7 +113,6 @@ public:
 
    bool isAtLeastOneAwaitingVerification() const;
    bool isAllLoadded() const;
-   size_t FromVerifiedIndex(size_t index) const;
    const std::unordered_set<std::string> &GetBSAddresses() const;
 
    void setAuthAddressesSigned(const BinaryData &data);
@@ -172,6 +170,8 @@ private:
    void markAsSubmitted(const bs::Address &address);
 
    std::vector<bs::Address> GetVerifiedAddressList() const;
+
+   void SetState(const bs::Address &addr, AddressVerificationState state);
 
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
