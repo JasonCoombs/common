@@ -27,6 +27,12 @@ public:
       f_();
    }
 
+   std::function<void()> releaseCb() {
+      auto ret = std::move(f_);
+      f_ = []{};
+      return std::move(ret);
+   }
+
 private:
    std::function<void()> f_;
 
