@@ -1000,6 +1000,7 @@ void WalletsManager::createSettlementLeaf(const bs::Address &authAddr
             logger_->error("[WalletsManager::createSettlementLeaf] no settlement group");
             return;
          }
+         unsigned int nbSettlLeaves = 0;
          for (const auto &settlLeaf : group->getLeaves()) {
             if (getWalletById(settlLeaf->walletId()) != nullptr) {
                logger_->warn("[WalletsManager::createSettlementLeaf] leaf {} already exists", settlLeaf->walletId());
@@ -1007,6 +1008,10 @@ void WalletsManager::createSettlementLeaf(const bs::Address &authAddr
             }
             addWallet(settlLeaf, true);
             emit walletAdded(settlLeaf->walletId());
+            nbSettlLeaves++;
+         }
+         if (nbSettlLeaves) {
+            emit settlementLeavesLoaded(nbSettlLeaves);
          }
       });
       if (cb) {
