@@ -292,7 +292,7 @@ uint64_t bs::Address::getFeeForMaxVal(const std::vector<UTXO> &utxos, size_t txO
 std::string bs::Address::display() const
 {
    if (empty()) {
-      return "<empty>";
+      return {};
    }
    const auto fullAddress = prefixed();
    std::string result;
