@@ -31,7 +31,7 @@
 // important to note the packet number and parse out the decrypted fragments in
 // order. Otherwise, the fragments aren't special in terms of handling. That
 // said, to make things easier, it's best to run a map of them through
-// ZmqBIP15XMessageCodec, which can output single messages for fragmented and
+// BIP15XMessageCodec, which can output single messages for fragmented and
 // non-fragmented.
 
 namespace bs {
@@ -98,7 +98,7 @@ namespace bs {
             // Validate if packet is valid before use
             bool isValid() const { return type_ != MsgType::Undefined; }
 
-            // Packet's type (ZMQ_MSGTYPE_SINGLEPACKET, ZMQ_MSGTYPE_HEARTBEAT etc)
+            // Packet's type (SinglePacket, Heartbeat etc)
             MsgType getType() const { return type_; }
 
             // Packet's payload
