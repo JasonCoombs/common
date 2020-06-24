@@ -12,6 +12,7 @@
 
 #include "StringUtils.h"
 #include "ThreadName.h"
+#include "Transport.h"
 #include "WsConnection.h"
 
 #include <random>
@@ -28,20 +29,28 @@ namespace {
    {
       return WsServerConnection::callbackHelper(wsi, reason, in, len);
    }
-
    struct lws_protocols kProtocols[] = {
-      { kProtocolNameWs, callback, 0, kRxBufferSize, kId, nullptr, kTxPacketSize },
+   { kProtocolNameWs, callback, 0, kRxBufferSize, kId, nullptr, kTxPacketSize },
       { nullptr, nullptr, 0, 0, 0, nullptr, 0 },
    };
 
-   const std::string kAllClientsId = "<TO_ALL>";
-
 } // namespace
 
-WsServerConnection::WsServerConnection(const std::shared_ptr<spdlog::logger>& logger, WsServerConnectionParams params)
+WsServerConnection::WsServerConnection(const std::shared_ptr<spdlog::logger>& logger
+   , const std::shared_ptr<bs::network::TransportServer> &tr)
    : logger_(logger)
-   , params_(std::move(params))
+   , transport_(tr)
 {
+   transport_->setClientErrorCb(
+      [this](const std::string &id, const std::string &err) { listener_->onClientError(id, err); }
+      , [this](const std::string &clientId, ServerConnectionListener::ClientError errorCode
+         , int socket) { listener_->onClientError(clientId, errorCode, socket); });
+   transport_->setDataReceivedCb([this](const std::string &clientId, const std::string &data) {
+      listener_->OnDataFromClient(clientId, data); });
+   transport_->setSendDataCb([this](const std::string &clientId, const std::string &data) {
+      return sendData(clientId, data); });
+   transport_->setConnectedCb([this](const std::string &clientId) { listener_->OnClientConnected(clientId); }
+      , [this](const std::string &clientId) { listener_->OnClientDisconnected(clientId); });
 }
 
 WsServerConnection::~WsServerConnection()
@@ -89,6 +98,7 @@ void WsServerConnection::listenFunction()
 
    while (!stopped_.load()) {
       lws_service(context_, kPeriodicCheckTimeout / std::chrono::milliseconds(1));
+      transport_->periodicCheck();
    }
 }
 
@@ -123,18 +133,10 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             auto data = std::move(packets.front());
             packets.pop();
 
-            if (data.clientId == kAllClientsId) {
-               for (auto &item : clients_) {
-                  auto &client = item.second;
-                  client.packets.push(data.packet);
-                  lws_callback_on_writable(client.wsi);
-               }
-               continue;
-            }
-
             auto clientIt = clients_.find(data.clientId);
             if (clientIt == clients_.end()) {
-               SPDLOG_LOGGER_DEBUG(logger_, "send failed, client {} already disconnected", bs::toHex(data.clientId));
+               SPDLOG_LOGGER_DEBUG(logger_, "send failed, client {} already disconnected"
+                  , bs::toHex(data.clientId));
                continue;
             }
             auto &client = clientIt->second;
@@ -152,14 +154,12 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
 
          socketToClientIdMap_[wsi] = clientId;
          SPDLOG_LOGGER_DEBUG(logger_, "new client connected: {}", bs::toHex(clientId));
-         listener_->OnClientConnected(clientId);
          break;
       }
 
       case LWS_CALLBACK_CLOSED: {
          auto clientId = socketToClientIdMap_.at(wsi);
          SPDLOG_LOGGER_DEBUG(logger_, "client disconnected: {}", bs::toHex(clientId));
-         listener_->OnClientDisconnected(clientId);
          socketToClientIdMap_.erase(wsi);
          size_t count = clients_.erase(clientId);
          assert(count == 1);
@@ -178,7 +178,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             SPDLOG_LOGGER_ERROR(logger_, "unexpected fragment");
             return -1;
          }
-         listener_->OnDataFromClient(clientId, client.currFragment);
+         transport_->processIncomingData(client.currFragment, clientId, -1);
          client.currFragment.clear();
          break;
       }
@@ -233,8 +233,14 @@ std::string WsServerConnection::GetClientInfo(const std::string &clientId) const
 
 bool WsServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)
 {
-   WsServerDataToSend toSend{clientId, WsPacket(data)};
-   {  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   return transport_->sendData(clientId, data);
+}
+
+bool WsServerConnection::sendData(const std::string &clientId, const std::string &data)
+{
+   WsServerDataToSend toSend{ clientId, WsPacket(data) };
+   {
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
       packets_.push(std::move(toSend));
    }
    lws_cancel_service(context_);
@@ -242,8 +248,16 @@ bool WsServerConnection::SendDataToClient(const std::string &clientId, const std
 }
 
 bool WsServerConnection::SendDataToAllClients(const std::string &data)
-{
-   return SendDataToClient(kAllClientsId, data);
+{  // In encrypted environments data can't be broadcasted - it needs to be first
+   // encrypted by per-connection keys (which are different for each client).
+   // So we use multicast here.
+   size_t cntClients = clients_.size();
+   for (const auto &item : clients_) {
+      if (SendDataToClient(item.first, data)) {
+         cntClients--;
+      }
+   }
+   return (cntClients == 0);
 }
 
 int WsServerConnection::callbackHelper(lws *wsi, int reason, void *in, size_t len)

@@ -21,8 +21,7 @@
 
 #include "DataConnectionListener.h"
 #include "WalletSignerContainer.h"
-#include "ZMQ_BIP15X_DataConnection.h"
-#include "ZMQ_BIP15X_Helpers.h"
+#include "BIP15xHelpers.h"
 
 #include "headless.pb.h"
 
@@ -34,6 +33,9 @@ namespace bs {
    namespace hd {
       class Wallet;
    }
+   namespace network {
+      class TransportBIP15x;
+   }
 }
 
 class ConnectionManager;
@@ -41,7 +43,6 @@ class DataConnection;
 class HeadlessListener;
 class QProcess;
 class WalletsManager;
-class ZmqBIP15XDataConnection;
 
 class HeadlessContainer : public WalletSignerContainer
 {
@@ -197,7 +198,7 @@ public:
       , const bool ephemeralDataConnKeys = true
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
-      , const ZmqBipNewKeyCb& inNewKeyCB = nullptr);
+      , const bs::network::BIP15xNewKeyCb &inNewKeyCB = nullptr);
    ~RemoteSigner() noexcept override = default;
 
    bool Start() override;
@@ -205,7 +206,7 @@ public:
    bool Connect() override;
    bool Disconnect() override;
    bool isOffline() const override;
-   void updatePeerKeys(const ZmqBIP15XPeers &peers);
+   void updatePeerKeys(const bs::network::BIP15xPeers &);
 
 protected slots:
    void onAuthenticated();
@@ -221,14 +222,15 @@ private:
    void ScheduleRestart();
 
 protected:
-   const QString                              host_;
-   const QString                              port_;
-   const NetworkType                          netType_;
-   const bool                                 ephemeralDataConnKeys_;
-   const std::string                          ownKeyFileDir_;
-   const std::string                          ownKeyFileName_;
-   std::shared_ptr<ZmqBIP15XDataConnection>   connection_;
-   const ZmqBipNewKeyCb    cbNewKey_;
+   const QString                       host_;
+   const QString                       port_;
+   const NetworkType                   netType_;
+   const bool                          ephemeralDataConnKeys_;
+   const std::string                   ownKeyFileDir_;
+   const std::string                   ownKeyFileName_;
+   std::shared_ptr<DataConnection>     connection_;
+   std::shared_ptr<bs::network::TransportBIP15x>   bip15xTransport_;
+   const bs::network::BIP15xNewKeyCb   cbNewKey_{ nullptr };
 
 private:
    std::shared_ptr<ConnectionManager> connectionManager_;
@@ -248,7 +250,7 @@ public:
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
       , double asSpendLimit = 0
-      , const ZmqBipNewKeyCb& inNewKeyCB = nullptr);
+      , const bs::network::BIP15xNewKeyCb &inNewKeyCB = nullptr);
    ~LocalSigner() noexcept override;
 
    bool Start() override;

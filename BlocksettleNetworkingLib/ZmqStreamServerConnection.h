@@ -31,7 +31,8 @@ protected:
 
 public:
    ZmqStreamServerConnection(const std::shared_ptr<spdlog::logger>& logger
-      , const std::shared_ptr<ZmqContext>& context);
+      , const std::shared_ptr<ZmqContext>& context
+      , const std::shared_ptr<bs::network::TransportServer> &tr = nullptr);
    ~ZmqStreamServerConnection() noexcept override = default;
 
    ZmqStreamServerConnection(const ZmqStreamServerConnection&) = delete;
@@ -42,6 +43,7 @@ public:
 
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string& data) override;
+
 protected:
    ZmqContext::sock_ptr CreateDataSocket() override;
 
@@ -61,6 +63,7 @@ private:
    std::atomic_flag                 connectionsLockFlag_ = ATOMIC_FLAG_INIT;
 
    std::unordered_map<std::string, server_connection_ptr> activeConnections_;
+   std::string accumulBuf_;
 };
 
 #endif // __ZMQ_STREAM_SERVER_CONNECTION_H__

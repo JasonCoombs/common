@@ -8,20 +8,18 @@
 **********************************************************************************
 
 */
-#include "ZMQ_BIP15X_ServerConnection.h"
+#include "TransportBIP15xServer.h"
 
 #include "FastLock.h"
 #include "MessageHolder.h"
 #include "StringUtils.h"
 #include "SystemFileUtils.h"
-#include "ZMQ_BIP15X_Msg.h"
 
 #include <chrono>
 
-using namespace std;
+using namespace bs::network;
 
 namespace {
-
    // How often we should check heartbeats in one heartbeatInterval_.
    const int kHeartbeatsCheckCount = 5;
 
@@ -32,12 +30,12 @@ namespace {
 // INPUT:  None
 // OUTPUT: None
 // RETURN: None
-void ZmqBIP15XPerConnData::reset()
+void BIP15xPerConnData::reset()
 {
    encData_.reset();
    bip150HandshakeCompleted_ = false;
    bip151HandshakeCompleted_ = false;
-   outKeyTimePoint_ = chrono::steady_clock::now();
+   outKeyTimePoint_ = std::chrono::steady_clock::now();
 }
 
 // The constructor to use.
@@ -53,15 +51,13 @@ void ZmqBIP15XPerConnData::reset()
 //         A flag indicating if the connection will read a key cookie. (bool)
 //         The path to the key cookie to read or write. (const std::string)
 // OUTPUT: None
-ZmqBIP15XServerConnection::ZmqBIP15XServerConnection(
-   const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<ZmqContext>& context
+TransportBIP15xServer::TransportBIP15xServer(
+   const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback& cbTrustedClients
    , const bool& ephemeralPeers, const std::string& ownKeyFileDir
    , const std::string& ownKeyFileName, const bool& makeServerCookie
    , const bool& readClientCookie, const std::string& cookiePath)
-   : ZmqServerConnection(logger, context)
-   , cbTrustedClients_(cbTrustedClients)
+   :logger_(logger), cbTrustedClients_(cbTrustedClients)
    , useClientIDCookie_(readClientCookie)
    , makeServerIDCookie_(makeServerCookie)
    , bipIDCookiePath_(cookiePath)
@@ -98,6 +94,7 @@ ZmqBIP15XServerConnection::ZmqBIP15XServerConnection(
    if (makeServerIDCookie_) {
       genBIPIDCookie();
    }
+   lastHeartbeatsCheck_ = std::chrono::steady_clock::now();
 }
 
 // A specialized server connection constructor with limited options. Used only
@@ -111,15 +108,12 @@ ZmqBIP15XServerConnection::ZmqBIP15XServerConnection(
 //         A flag indicating if the connection will read a key cookie. (bool)
 //         The path to the key cookie to read or write. (const std::string)
 // OUTPUT: None
-ZmqBIP15XServerConnection::ZmqBIP15XServerConnection(
-   const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<ZmqContext>& context
+TransportBIP15xServer::TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback &cbTrustedClients
    , const std::string& ownKeyFileDir, const std::string& ownKeyFileName
    , const bool& makeServerCookie, const bool& readClientCookie
    , const std::string& cookiePath)
-   : ZmqServerConnection(logger, context)
-   , cbTrustedClients_(cbTrustedClients)
+   :logger_(logger), cbTrustedClients_(cbTrustedClients)
    , useClientIDCookie_(readClientCookie)
    , makeServerIDCookie_(makeServerCookie)
    , bipIDCookiePath_(cookiePath)
@@ -140,169 +134,52 @@ ZmqBIP15XServerConnection::ZmqBIP15XServerConnection(
    }
 
    if (!ownKeyFileDir.empty() && !ownKeyFileName.empty()) {
-      logger_->debug("[{}] creating/reading static key in {}/{}", __func__
+      logger_->debug("[TransportBIP15xServer] creating/reading static key in {}/{}"
          , ownKeyFileDir, ownKeyFileName);
       authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
          , [](const std::set<BinaryData> &) { return SecureBinaryData{}; });
    }
    else {
-      logger_->debug("[{}] creating ephemeral key", __func__);
+      logger_->debug("[TransportBIP15xServer] creating ephemeral key");
       authPeers_ = std::make_unique<AuthorizedPeers>();
    }
 
    if (makeServerIDCookie_) {
       genBIPIDCookie();
    }
+   lastHeartbeatsCheck_ = std::chrono::steady_clock::now();
 }
 
-ZmqBIP15XServerConnection::~ZmqBIP15XServerConnection() noexcept
+TransportBIP15xServer::~TransportBIP15xServer() noexcept
 {
    // TODO: Send disconnect messages to the clients
-
-   stopServer();
 
    // If it exists, delete the identity cookie.
    if (makeServerIDCookie_) {
       if (SystemFileUtils::fileExist(bipIDCookiePath_)) {
          if (!SystemFileUtils::rmFile(bipIDCookiePath_)) {
-            logger_->error("[{}] Unable to delete server identity cookie ({})."
-               , __func__, bipIDCookiePath_);
+            logger_->error("[~TransportBIP15xServer] unable to delete server "
+               "identity cookie {}", bipIDCookiePath_);
          }
       }
    }
 }
 
-// Create the data socket.
-//
-// INPUT:  None
-// OUTPUT: None
-// RETURN: The data socket. (ZmqContext::sock_ptr)
-ZmqContext::sock_ptr ZmqBIP15XServerConnection::CreateDataSocket()
+void TransportBIP15xServer::periodicCheck()
 {
-   return context_->CreateServerSocket();
-}
-
-// Get the incoming data.
-//
-// INPUT:  None
-// OUTPUT: None
-// RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::ReadFromDataSocket()
-{
-   // There must be at least two parts for the router ZMQ socket
-   MessageHolder clientId;
-   MessageHolder data;
-
-   // The client ID will be sent before the actual data.
-   int rc = zmq_msg_recv(&clientId, dataSocket_.get(), ZMQ_DONTWAIT);
-   if (rc < 0) {
-      logger_->error("[{}] {} failed to recv first message data: {}", __func__
-         , connectionName_, zmq_strerror(zmq_errno()));
-      return false;
-   }
-
-   // Now, we can grab the incoming data
-   rc = zmq_msg_recv(&data, dataSocket_.get(), ZMQ_DONTWAIT);
-   if (rc < 0) {
-      logger_->error("[{}] {} failed to recv second message data: {}", __func__
-         , connectionName_, zmq_strerror(zmq_errno()));
-      return false;
-   }
-
-   bool isValidRequest = data.IsLast();
-
-   if (!isValidRequest) {
-      // Read all messages from the same malfunctional client
-      do {
-         int rc = zmq_msg_recv(&data, dataSocket_.get(), ZMQ_DONTWAIT);
-         if (rc < 0) {
-            logger_->error("[{}] {} failed to recv more messages from malfunctional client: {}"
-               , __func__, connectionName_, zmq_strerror(zmq_errno()));
-            return false;
-         }
-      } while (!data.IsLast());
-
-      logger_->warn("[{}] {} malfunctional client detected", __func__, connectionName_);
-      notifyListenerOnClientError(clientId.ToString(), "multipart ZMQ messages is not supported");
-      // This is client's problem, server is good to proceed
-      return true;
-   }
-
-   int socket = zmq_msg_get(&data, ZMQ_SRCFD);
-
-   // Process the incoming data.
-   ProcessIncomingData(data.ToString(), clientId.ToString(), socket);
-   return true;
-}
-
-void ZmqBIP15XServerConnection::onPeriodicCheck()
-{
-   ZmqServerConnection::onPeriodicCheck();
-
-   PendingMsgsMap pendingMsgs;
-   PendingMsgs pendingMsgsToAll;
-   {
-      std::lock_guard<std::mutex> lock(pendingDataMutex_);
-      pendingMsgs = std::move(pendingData_);
-      pendingMsgsToAll = std::move(pendingDataToAll_);
-   }
-
-   for (const auto &clientItem : pendingMsgs) {
-      for (const PendingMsg &msg : clientItem.second) {
-         sendData(clientItem.first, msg);
-      }
-   }
-
-   if (!pendingMsgsToAll.empty()) {
-      for (const auto &clientItem : socketConnMap_) {
-         const auto &socketConn = clientItem.second;
-         if (socketConn->encData_->getBIP150State() == BIP150State::SUCCESS) {
-            for (const PendingMsg &msg : pendingMsgsToAll) {
-               sendData(clientItem.first, msg);
-            }
-         }
-      }
-   }
-
    checkHeartbeats();
 }
 
-// The send function for the data connection. Ideally, this should not be used
-// before the handshake is completed, but it is possible to use at any time.
-// Whether or not the raw data is used, it will be placed in a
-// ZmqBIP15XSerializedMessage object.
-//
-// INPUT:  The ZMQ client ID. (const string&)
-//         The data to send. (const string&)
-//         A post-send callback. Optional. (const SendResultCb&)
-// OUTPUT: None
-// RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::SendDataToClient(const string& clientId
-   , const string& data)
-{
-   {
-      std::lock_guard<std::mutex> lock(pendingDataMutex_);
-      pendingData_[clientId].push_back({ BinaryData::fromString(data) });
-   }
-
-   if (std::this_thread::get_id() != listenThreadId()) {
-      // Call onPeriodicCheck from listening thread
-      requestPeriodicCheck();
-   }
-
-   return true;
-}
-
-void ZmqBIP15XServerConnection::rekey(const std::string &clientId)
+void TransportBIP15xServer::rekey(const std::string &clientId)
 {
    auto connection = GetConnection(clientId);
    if (connection == nullptr) {
-      logger_->error("[ZmqBIP15XServerConnection::rekey] can't find connection for {}", BinaryData::fromString(clientId).toHexStr());
+      logger_->error("[TransportBIP15xServer::rekey] can't find connection for {}", BinaryData::fromString(clientId).toHexStr());
       return;
    }
 
    if (!connection->bip151HandshakeCompleted_) {
-      logger_->error("[ZmqBIP15XServerConnection::rekey] can't rekey {} without BIP151"
+      logger_->error("[TransportBIP15xServer::rekey] can't rekey {} without BIP151"
          " handshaked completed", BinaryData::fromString(clientId).toHexStr());
       return;
    }
@@ -311,36 +188,40 @@ void ZmqBIP15XServerConnection::rekey(const std::string &clientId)
    BinaryData rekeyData(BIP151PUBKEYSIZE);
    std::memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
-   auto packet = ZmqBipMsgBuilder(rekeyData, ZMQ_MSGTYPE_AEAD_REKEY)
+   auto packet = bip15x::MessageBuilder(rekeyData, bip15x::MsgType::AEAD_Rekey)
       .encryptIfNeeded(conn).build();
 
-   logger_->debug("[ZmqBIP15XServerConnection::rekey] rekeying session for {}"
-      , BinaryData::fromString(clientId).toHexStr());
+   logger_->debug("[TransportBIP15xServer::rekey] rekeying session for {} ({} {})"
+      , BinaryData::fromString(clientId).toHexStr(), rekeyData.toHexStr(), packet.toHexStr());
+
+   if (sendDataCb_) {
+      sendDataCb_(clientId, packet.toBinStr());
+   }
+
    connection->encData_->rekeyOuterSession();
    ++connection->outerRekeyCount_;
-
-   sendToDataSocket(clientId, packet);
 }
 
-void ZmqBIP15XServerConnection::setLocalHeartbeatInterval()
+void TransportBIP15xServer::setLocalHeartbeatInterval()
 {
    heartbeatInterval_ = getLocalHeartbeatInterval();
 }
 
 // static
-const chrono::milliseconds ZmqBIP15XServerConnection::getDefaultHeartbeatInterval()
+const std::chrono::milliseconds TransportBIP15xServer::getDefaultHeartbeatInterval()
 {
    return std::chrono::seconds(30);
 }
 
 // static
-const chrono::milliseconds ZmqBIP15XServerConnection::getLocalHeartbeatInterval()
+const std::chrono::milliseconds TransportBIP15xServer::getLocalHeartbeatInterval()
 {
-   return std::chrono::seconds(3);
+   return std::chrono::seconds(5);
 }
 
 // static
-BinaryData ZmqBIP15XServerConnection::getOwnPubKey(const string &ownKeyFileDir, const string &ownKeyFileName)
+BinaryData TransportBIP15xServer::getOwnPubKey(const std::string &ownKeyFileDir
+   , const std::string &ownKeyFileName)
 {
    try {
       AuthorizedPeers authPeers(ownKeyFileDir, ownKeyFileName, [](const std::set<BinaryData> &)
@@ -354,7 +235,7 @@ BinaryData ZmqBIP15XServerConnection::getOwnPubKey(const string &ownKeyFileDir, 
 }
 
 // static
-BinaryData ZmqBIP15XServerConnection::getOwnPubKey(const AuthorizedPeers &authPeers)
+BinaryData TransportBIP15xServer::getOwnPubKey(const AuthorizedPeers &authPeers)
 {
    try {
       const auto &pubKey = authPeers.getOwnPublicKey();
@@ -365,49 +246,24 @@ BinaryData ZmqBIP15XServerConnection::getOwnPubKey(const AuthorizedPeers &authPe
    }
 }
 
-void ZmqBIP15XServerConnection::forceTrustedClients(const ZmqBIP15XPeers &peers)
+void TransportBIP15xServer::forceTrustedClients(const BIP15xPeers &peers)
 {
    forcedTrustedClients_ = std::move(peers);
 }
 
-std::unique_ptr<ZmqBIP15XPeer> ZmqBIP15XServerConnection::getClientKey(const string &clientId) const
+std::unique_ptr<BIP15xPeer> TransportBIP15xServer::getClientKey(const std::string &clientId) const
 {
-   assert(std::this_thread::get_id() == listenThreadId());
-
    auto it = socketConnMap_.find(clientId);
    if (it == socketConnMap_.end() || !it->second->bip150HandshakeCompleted_ || !it->second->bip151HandshakeCompleted_) {
       return nullptr;
    }
 
-   const auto &pubKey = ZmqBIP15XUtils::convertCompressedKey(it->second->encData_->getChosenAuthPeerKey());
+   const auto &pubKey = bip15x::convertCompressedKey(it->second->encData_->getChosenAuthPeerKey());
    if (pubKey.empty()) {
       SPDLOG_LOGGER_ERROR(logger_, "ZmqBIP15XUtils::convertCompressedKey failed");
       return nullptr;
    }
-
-   return std::make_unique<ZmqBIP15XPeer>("", pubKey);
-}
-
-// A send function for the data connection that sends data to all clients,
-// somewhat like multicasting.
-//
-// INPUT:  The data to send. (const string&)
-//         A post-send callback. Optional. (const SendResultCb&)
-// OUTPUT: None
-// RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::SendDataToAllClients(const std::string& data)
-{
-   {
-      std::lock_guard<std::mutex> lock(pendingDataMutex_);
-      pendingDataToAll_.push_back({ BinaryData::fromString(data) });
-   }
-
-   if (std::this_thread::get_id() != listenThreadId()) {
-      // Call onPeriodicCheck from listening thread
-      requestPeriodicCheck();
-   }
-
-   return true;
+   return std::make_unique<BIP15xPeer>("", pubKey);
 }
 
 // The function that processes raw ZMQ connection data. It processes the BIP
@@ -416,87 +272,107 @@ bool ZmqBIP15XServerConnection::SendDataToAllClients(const std::string& data)
 // INPUT:  None
 // OUTPUT: None
 // RETURN: None
-void ZmqBIP15XServerConnection::ProcessIncomingData(const string& encData
-   , const string& clientID, int socket)
+void TransportBIP15xServer::processIncomingData(const std::string &encData
+   , const std::string &clientID, int socket)
 {
    const auto connData = setBIP151Connection(clientID);
 
    if (!connData) {
-      logger_->error("[ZmqBIP15XServerConnection::ProcessIncomingData] failed to find connection data for client {}"
+      logger_->error("[TransportBIP15xServer::processIncomingData] failed to find connection data for client {}"
          , BinaryData::fromString(clientID).toHexStr());
-      notifyListenerOnClientError(clientID, "missing connection data");
-      return;
-   }
-
-   auto payload = BinaryData::fromString(encData);
-
-   // Decrypt only if the BIP 151 handshake is complete.
-   if (connData->bip151HandshakeCompleted_) {
-      //decrypt packet
-      auto result = connData->encData_->decryptPacket(
-         payload.getPtr(), payload.getSize(),
-         payload.getPtr(), payload.getSize());
-
-      if (result != 0) {
-         logger_->error("[ZmqBIP15XServerConnection::{}] Packet decryption failed - Error {}"
-            , __func__, result);
-         notifyListenerOnClientError(clientID, "packet decryption failed");
-         return;
+      if (clientErrorCb_) {
+         clientErrorCb_(clientID, "missing connection data");
       }
-
-      payload.resize(payload.getSize() - POLY1305MACLEN);
+      return;
    }
 
-   // Deserialize packet.
-   ZmqBipMsg msg = ZmqBipMsg::parsePacket(payload);
-   if (!msg.isValid()) {
-      if (logger_) {
-         logger_->error("[ZmqBIP15XServerConnection::{}] Deserialization failed "
-            "(connection {})", __func__, connectionName_);
+   const auto &packets = bip15x::MessageBuilder::parsePackets(BinaryData::fromString(encData));
+   if (packets.empty()) {
+      logger_->error("[TransportBIP15xServer::processIncomingData] packet deser failed");
+      if (clientErrorCb_) {
+         clientErrorCb_(clientID, "deserialization failed");
       }
-      notifyListenerOnClientError(clientID, "deserialization failed");
       return;
    }
+   for (auto payload : packets) {
+      // Decrypt only if the BIP 151 handshake is complete.
+      if (connData->bip151HandshakeCompleted_) {
+         //decrypt packet
+         auto result = connData->encData_->decryptPacket(
+            payload.getPtr(), payload.getSize(),
+            payload.getPtr(), payload.getSize());
 
-   // If we're still handshaking, take the next step. (No fragments allowed.)
-   if (msg.getType() == ZMQ_MSGTYPE_HEARTBEAT) {
-      UpdateClientHeartbeatTimestamp(clientID);
-
-      auto packet = ZmqBipMsgBuilder(ZMQ_MSGTYPE_HEARTBEAT)
-         .encryptIfNeeded(connData->encData_.get()).build();
-      sendToDataSocket(clientID, packet);
-      return;
-   }
-
-   if (msg.getType() > ZMQ_MSGTYPE_AEAD_THRESHOLD) {
-      if (!processAEADHandshake(msg, clientID, socket)) {
-         if (logger_) {
-            logger_->error("[ZmqBIP15XServerConnection::{}] Handshake failed "
-               "(connection {})", __func__, connectionName_);
+         if (result != 0) {
+            logger_->error("[TransportBIP15xServer::processIncomingData] packet"
+               " {} [{} bytes] decryption failed: {}", payload.toHexStr(), payload.getSize(), result);
+            if (clientErrorCb_) {
+               clientErrorCb_(clientID, "packet decryption failed");
+            }
+            return;
          }
-         notifyListenerOnClientError(clientID, "handshake failed");
-         notifyListenerOnClientError(clientID, ServerConnectionListener::HandshakeFailed, socket);
+         payload.resize(payload.getSize() - POLY1305MACLEN);
+      }
+
+      // Deserialize packet.
+      const auto &msg = bip15x::Message::parse(payload);
+      if (!msg.isValid()) {
+         if (logger_) {
+            logger_->error("[TransportBIP15xServer::processIncomingData] deserialization failed");
+         }
+         if (clientErrorCb_) {
+            clientErrorCb_(clientID, "deserialization failed");
+         }
          return;
       }
 
-      return;
-   }
+      // If we're still handshaking, take the next step. (No fragments allowed.)
+      if (msg.getType() == bip15x::MsgType::Heartbeat) {
+         UpdateClientHeartbeatTimestamp(clientID);
 
-   // We can now safely obtain the full message.
-   BinaryDataRef outMsg = msg.getData();
-
-   // We shouldn't get here but just in case....
-   if (connData->encData_->getBIP150State() != BIP150State::SUCCESS) {
-      if (logger_) {
-         logger_->error("[ZmqBIP15XServerConnection::{}] Encryption handshake "
-            "is incomplete (connection {})", __func__, connectionName_);
+         const auto &packet = bip15x::MessageBuilder(bip15x::MsgType::Heartbeat)
+            .encryptIfNeeded(connData->encData_.get()).build();
+         if (sendDataCb_) {
+            sendDataCb_(clientID, packet.toBinStr());
+         }
+         return;
       }
-      notifyListenerOnClientError(clientID, "encryption handshake failure");
-      return;
-   }
 
-   // Pass the final data up the chain.
-   notifyListenerOnData(clientID, outMsg.toBinStr());
+      if (msg.getType() > bip15x::MsgType::AEAD_Threshold) {
+         if (!processAEADHandshake(msg, clientID)) {
+            if (logger_) {
+               logger_->error("[TransportBIP15xServer::processIncomingData] handshake failed");
+            }
+            if (clientErrorCb_) {
+               clientErrorCb_(clientID, "handshake failed");
+            }
+            if (clientSocketErrorCb_) {
+               clientSocketErrorCb_(clientID, ServerConnectionListener::HandshakeFailed, socket);
+            }
+            return;
+         }
+         continue;
+      }
+
+      // We can now safely obtain the full message.
+      const BinaryDataRef &outMsg = msg.getData();
+
+      // We shouldn't get here but just in case....
+      if (connData->encData_->getBIP150State() != BIP150State::SUCCESS) {
+         if (logger_) {
+            logger_->error("[TransportBIP15xServer::processIncomingData] encryption"
+               " handshake is incomplete");
+         }
+         if (clientErrorCb_) {
+            clientErrorCb_(clientID, "encryption handshake failure");
+         }
+         return;
+      }
+
+      // Pass the final data up the chain.
+      if (dataReceivedCb_) {
+         dataReceivedCb_(clientID, outMsg.toBinStr());
+      }
+   }
 }
 
 // The function processing the BIP 150/151 handshake packets.
@@ -505,36 +381,39 @@ void ZmqBIP15XServerConnection::ProcessIncomingData(const string& encData
 //         The client ID. (const string&)
 // OUTPUT: None
 // RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::processAEADHandshake(
-   const ZmqBipMsg& msgObj, const string& clientID, int socket)
+bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
+   , const std::string& clientID)
 {
    // Function used to actually send data to the client.
-   auto writeToClient = [this, clientID](uint8_t type, const BinaryDataRef& msg
-      , bool encrypt)->bool
+   auto writeToClient = [this, clientID]
+      (bip15x::MsgType type, const BinaryDataRef& msg, bool encrypt) -> bool
    {
       BIP151Connection* conn = nullptr;
       if (encrypt) {
          auto connection = GetConnection(clientID);
          if (connection == nullptr) {
-            logger_->error("[ZmqBIP15XServerConnection::processAEADHandshake::writeToClient] no connection for client {}"
-               , BinaryData::fromString(clientID).toHexStr());
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] no "
+               "connection for client {}", BinaryData::fromString(clientID).toHexStr());
             return false;
          }
          conn = connection->encData_.get();
       }
 
       // Construct the message and fire it down the pipe.
-      auto packet = ZmqBipMsgBuilder(msg, type).encryptIfNeeded(conn).build();
-      return SendDataToClient(clientID, packet.toBinStr());
+      const auto &packet = bip15x::MessageBuilder(msg, type).encryptIfNeeded(conn).build();
+      if (sendDataCb_) {
+         return sendDataCb_(clientID, packet.toBinStr());
+      }
+      return false;
    };
 
    // Handshake function. Code mostly copied from Armory.
-   auto processHandshake = [this, writeToClient, clientID, msgObj, socket]()->bool
+   auto processHandshake = [this, writeToClient, clientID, msgObj]()->bool
    {
       auto connection = GetConnection(clientID);
       if (connection == nullptr) {
-         logger_->error("[ZmqBIP15XServerConnection::processAEADHandshake::processHandshake] no connection for client {}"
-               , BinaryData::fromString(clientID).toHexStr());
+         logger_->error("[TransportBIP15xServer::processAEADHandshake] no connection"
+            " for client {}", BinaryData::fromString(clientID).toHexStr());
             return false;
       }
 
@@ -542,14 +421,16 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
       auto dataBdr = msgObj.getData();
       switch (msgObj.getType())
       {
-      case ZMQ_MSGTYPE_AEAD_SETUP:
+      case bip15x::MsgType::AEAD_Setup:
       {
          // If it's a local connection, get a cookie with the client's key.
          if (useClientIDCookie_) {
             // Read the cookie with the key to check.
             BinaryData cookieKey(static_cast<size_t>(BTC_ECKEY_COMPRESSED_LENGTH));
             if (!getClientIDCookie(cookieKey)) {
-               notifyListenerOnClientError(clientID, "missing client cookie");
+               if (clientErrorCb_) {
+                  clientErrorCb_(clientID, "missing client cookie");
+               }
                return false;
             }
 
@@ -561,56 +442,50 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
          }
 
          //send pubkey message
-         if (!writeToClient(ZMQ_MSGTYPE_AEAD_PRESENT_PUBKEY,
-            connection->encData_->getOwnPubKey(), false))
-         {
-            logger_->error("[processHandshake] ZMG_MSGTYPE_AEAD_SETUP: "
+         if (!writeToClient(bip15x::MsgType::AEAD_PresentPubkey,
+            connection->encData_->getOwnPubKey(), false)) {
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] AEAD_SETUP: "
                "Response 1 not sent");
          }
 
          //init bip151 handshake
          BinaryData encinitData(ENCINITMSGSIZE);
-         if (connection->encData_->getEncinitData(
-            encinitData.getPtr(), ENCINITMSGSIZE
-            , BIP151SymCiphers::CHACHA20POLY1305_OPENSSH) != 0)
-         {
+         if (connection->encData_->getEncinitData(encinitData.getPtr()
+            , ENCINITMSGSIZE, BIP151SymCiphers::CHACHA20POLY1305_OPENSSH) != 0) {
             //failed to init handshake, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AEAD_ENCINIT data not obtained");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AEAD_ENCINIT data not obtained");
             return false;
          }
 
-         if (!writeToClient(ZMQ_MSGTYPE_AEAD_ENCINIT, encinitData.getRef()
-            , false))
-         {
-            logger_->error("[processHandshake] ZMG_MSGTYPE_AEAD_SETUP: "
+         if (!writeToClient(bip15x::MsgType::AEAD_EncInit, encinitData.getRef(), false)) {
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] AEAD_SETUP: "
                "Response 2 not sent");
          }
-         break;
       }
+      break;
 
-      case ZMQ_MSGTYPE_AEAD_ENCACK:
+      case bip15x::MsgType::AEAD_EncAck:
       {
          //process client encack
          if (connection->encData_->processEncack(dataBdr.getPtr()
             , dataBdr.getSize(), true) != 0)
          {
             //failed to init handshake, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AEAD_ENCACK not processed");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AEAD_ENCACK not processed");
             return false;
          }
-
-         break;
       }
+      break;
 
-      case ZMQ_MSGTYPE_AEAD_REKEY:
+      case bip15x::MsgType::AEAD_Rekey:
       {
          // Rekey requests before auth are invalid
          if (connection->encData_->getBIP150State() != BIP150State::SUCCESS) {
             //can't rekey before auth, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - Not yet able to process a rekey");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - Not yet able to process a rekey");
             return false;
          }
 
@@ -619,65 +494,57 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
             , dataBdr.getSize(), false);
          if (rc != 0) {
             //failed to init handshake, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AEAD_ENCACK not processed");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AEAD_ENCACK not processed");
             return false;
          }
-
          connection->innerRekeyCount_++;
-         break;
       }
+      break;
 
-      case ZMQ_MSGTYPE_AEAD_ENCINIT:
+      case bip15x::MsgType::AEAD_EncInit:
       {
          //process client encinit
          if (connection->encData_->processEncinit(dataBdr.getPtr()
-            , dataBdr.getSize(), false) != 0)
-         {
+            , dataBdr.getSize(), false) != 0) {
             //failed to init handshake, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AEAD_ENCINIT processing failed");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AEAD_ENCINIT processing failed");
             return false;
          }
 
          //return encack
          BinaryData encackData(BIP151PUBKEYSIZE);
          if (connection->encData_->getEncackData(encackData.getPtr()
-            , BIP151PUBKEYSIZE) != 0)
-         {
-            //failed to init handshake, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_ENCACK data not obtained");
+            , BIP151PUBKEYSIZE) != 0) {
+            // failed to init handshake, kill connection
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_ENCACK data not obtained");
             return false;
          }
 
-         if (!writeToClient(ZMQ_MSGTYPE_AEAD_ENCACK, encackData.getRef()
-            , false))
-         {
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AEAD_ENCACK not sent");
+         if (!writeToClient(bip15x::MsgType::AEAD_EncAck, encackData.getRef(), false)) {
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AEAD_ENCACK not sent");
          }
-
          connection->bip151HandshakeCompleted_ = true;
          break;
       }
 
-      case ZMQ_MSGTYPE_AUTH_CHALLENGE:
+      case bip15x::MsgType::AuthChallenge:
       {
          bool goodChallenge = true;
          auto challengeResult =
             connection->encData_->processAuthchallenge(
             dataBdr.getPtr(), dataBdr.getSize(), true); //true: step #1 of 6
 
-         if (challengeResult == -1)
-         {
+         if (challengeResult == -1) {
             //auth fail, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_CHALLENGE processing failed");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_CHALLENGE processing failed");
             return false;
          }
-         else if (challengeResult == 1)
-         {
+         else if (challengeResult == 1) {
             goodChallenge = false;
          }
 
@@ -685,45 +552,38 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
          if (connection->encData_->getAuthreplyData(
             authreplyBuf.getPtr(), authreplyBuf.getSize()
             , true //true: step #2 of 6
-            , goodChallenge) == -1)
-         {
+            , goodChallenge) == -1) {
             //auth setup failure, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_REPLY data not obtained");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_REPLY data not obtained");
             return false;
          }
 
-         if (!writeToClient(ZMQ_MSGTYPE_AUTH_REPLY, authreplyBuf.getRef()
-            , true))
-         {
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_REPLY not sent");
+         if (!writeToClient(bip15x::MsgType::AuthReply, authreplyBuf.getRef(), true)) {
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_REPLY not sent");
             return false;
          }
-
-         break;
       }
+      break;
 
-      case ZMQ_MSGTYPE_AUTH_PROPOSE:
+      case bip15x::MsgType::AuthPropose:
       {
          bool goodPropose = true;
-         auto proposeResult =
-            connection->encData_->processAuthpropose(
+         auto proposeResult = connection->encData_->processAuthpropose(
             dataBdr.getPtr(), dataBdr.getSize());
 
          if (proposeResult == -1)
          {
             //auth setup failure, kill connection
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_PROPOSE processing failed");
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_PROPOSE processing failed");
             return false;
          }
-         else if (proposeResult == 1)
-         {
+         else if (proposeResult == 1) {
             goodPropose = false;
          }
-         else
-         {
+         else {
             //keep track of the propose check state
             connection->encData_->setGoodPropose();
          }
@@ -733,36 +593,31 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
             authchallengeBuf.getPtr(), authchallengeBuf.getSize()
             , "" //empty string, use chosen key from processing auth propose
             , false //false: step #4 of 6
-            , goodPropose) == -1)
-         {
+            , goodPropose) == -1) {
             //auth setup failure, kill connection
             logger_->error("[processHandshake] BIP 150/151 handshake process "
                "failed - AUTH_CHALLENGE data not obtained");
             return false;
          }
 
-         if (!writeToClient(ZMQ_MSGTYPE_AUTH_CHALLENGE
-            , authchallengeBuf.getRef(), true))
-         {
-            logger_->error("[processHandshake] BIP 150/151 handshake process "
-               "failed - AUTH_CHALLENGE not sent");
+         if (!writeToClient(bip15x::MsgType::AuthChallenge, authchallengeBuf.getRef(), true)) {
+            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+               " handshake process failed - AUTH_CHALLENGE not sent");
          }
 
          break;
       }
 
-      case ZMQ_MSGTYPE_AUTH_REPLY:
+      case bip15x::MsgType::AuthReply:
       {
-         if (connection->encData_->processAuthreply(dataBdr.getPtr()
-            , dataBdr.getSize(), false
-            , connection->encData_->getProposeFlag()) != 0)
-         {
+         if (connection->encData_->processAuthreply(dataBdr.getPtr(), dataBdr.getSize()
+            , false, connection->encData_->getProposeFlag()) != 0) {
             //invalid auth setup, kill connection
             return false;
          }
 
          if (!forcedTrustedClients_.empty()) {
-            const auto &chosenKey = ZmqBIP15XUtils::convertCompressedKey(connection->encData_->getChosenAuthPeerKey());
+            const auto &chosenKey = bip15x::convertCompressedKey(connection->encData_->getChosenAuthPeerKey());
             if (chosenKey.empty()) {
                SPDLOG_LOGGER_ERROR(logger_, "invalid choosed public key for forced trusted clients");
                return false;
@@ -775,7 +630,6 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
                   break;
                }
             }
-
             if (!isValid) {
                SPDLOG_LOGGER_ERROR(logger_, "drop connection from unknown client, unexpected public key: {}", chosenKey.toHexStr());
                return false;
@@ -785,18 +639,19 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
          //rekey after succesful BIP150 handshake
          connection->encData_->bip150HandshakeRekey();
          connection->bip150HandshakeCompleted_ = true;
-         notifyListenerOnNewConnection(clientID);
+         if (connCb_) {
+            connCb_(clientID);
+         }
 
-         logger_->info("[processHandshake] BIP 150 handshake with client "
-            "complete - connection with {} is ready and fully secured"
+         logger_->info("[TransportBIP15xServer::processAEADHandshake] BIP 150 handshake"
+            " with client complete - connection with {} is ready and fully secured"
             , BinaryData::fromString(clientID).toHexStr());
-
-         break;
       }
+      break;
 
-      case ZMQ_MSGTYPE_DISCONNECT:
-         logger_->debug("[processHandshake] disconnect request received from {}"
-            , BinaryData::fromString(clientID).toHexStr());
+      case bip15x::MsgType::Disconnect:
+         logger_->debug("[TransportBIP15xServer::processAEADHandshake] disconnect"
+            " request received from {}", BinaryData::fromString(clientID).toHexStr());
          closeClient(clientID);
          break;
 
@@ -809,12 +664,13 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
    };
 
    if (clientID.empty()) {
-      logger_->error("[{}] empty client ID", __func__);
+      logger_->error("[TransportBIP15xServer::processAEADHandshake] empty client ID");
       return false;
    }
    bool retVal = processHandshake();
    if (!retVal) {
-      logger_->error("[{}] BIP 150/151 handshake process failed.", __func__);
+      logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
+         " handshake process failed");
    }
    return retVal;
 }
@@ -825,8 +681,8 @@ bool ZmqBIP15XServerConnection::processAEADHandshake(
 // INPUT:  The client ID. (const string&)
 // OUTPUT: None
 // RETURN: new or existing connection
-std::shared_ptr<ZmqBIP15XPerConnData> ZmqBIP15XServerConnection::setBIP151Connection(
-   const string& clientID)
+std::shared_ptr<BIP15xPerConnData> TransportBIP15xServer::setBIP151Connection(
+   const std::string &clientID)
 {
    auto connection = GetConnection(clientID);
    if (connection) {
@@ -837,13 +693,13 @@ std::shared_ptr<ZmqBIP15XPerConnData> ZmqBIP15XServerConnection::setBIP151Connec
    auto trustedClients = cbTrustedClients_();
    {
       std::lock_guard<std::mutex> lock(authPeersMutex_);
-      ZmqBIP15XUtils::updatePeerKeys(authPeers_.get(), trustedClients);
+      bip15x::updatePeerKeys(authPeers_.get(), trustedClients);
    }
 
    auto lbds = getAuthPeerLambda();
-   connection = std::make_shared<ZmqBIP15XPerConnData>();
+   connection = std::make_shared<BIP15xPerConnData>();
    connection->encData_ = std::make_unique<BIP151Connection>(lbds);
-   connection->outKeyTimePoint_ = chrono::steady_clock::now();
+   connection->outKeyTimePoint_ = std::chrono::steady_clock::now();
 
    // XXX add connection
    AddConnection(clientID, connection);
@@ -853,39 +709,40 @@ std::shared_ptr<ZmqBIP15XPerConnData> ZmqBIP15XServerConnection::setBIP151Connec
    return connection;
 }
 
-bool ZmqBIP15XServerConnection::AddConnection(const std::string& clientId, const std::shared_ptr<ZmqBIP15XPerConnData>& connection)
+bool TransportBIP15xServer::AddConnection(const std::string &clientId
+   , const std::shared_ptr<BIP15xPerConnData> &connection)
 {
    auto it = socketConnMap_.find(clientId);
    if (it != socketConnMap_.end()) {
-      logger_->error("[ZmqBIP15XServerConnection::AddConnection] connection already saved for {}", BinaryData::fromString(clientId).toHexStr());
+      logger_->error("[ZmqBIP15XServerConnection::AddConnection] connection already"
+         " saved for {}", BinaryData::fromString(clientId).toHexStr());
       return false;
    }
-
    socketConnMap_.emplace(clientId, connection);
 
-   logger_->debug("[ZmqBIP15XServerConnection::AddConnection] adding new connection for client {}", BinaryData::fromString(clientId).toHexStr());
+   logger_->debug("[ZmqBIP15XServerConnection::AddConnection] adding new connection"
+      " for client {}", BinaryData::fromString(clientId).toHexStr());
    return true;
 }
 
-std::shared_ptr<ZmqBIP15XPerConnData> ZmqBIP15XServerConnection::GetConnection(const std::string& clientId)
+std::shared_ptr<BIP15xPerConnData> TransportBIP15xServer::GetConnection(const std::string &clientId)
 {
    auto it = socketConnMap_.find(clientId);
    if (it == socketConnMap_.end()) {
       return nullptr;
    }
-
    return it->second;
 }
 
-void ZmqBIP15XServerConnection::sendData(const std::string &clientId, const PendingMsg &pendingMsg)
+bool TransportBIP15xServer::sendData(const std::string &clientId, const std::string &data)
 {
    BIP151Connection* connPtr = nullptr;
 
    auto connection = GetConnection(clientId);
    if (connection == nullptr) {
-      logger_->error("[ZmqBIP15XServerConnection::SendDataToClient] missing client connection {}"
+      logger_->error("[TransportBIP15xServer::sendData] missing client connection {}"
          , BinaryData::fromString(clientId).toHexStr());
-      return;
+      return false;
    }
 
    if (connection->bip151HandshakeCompleted_) {
@@ -895,16 +752,16 @@ void ZmqBIP15XServerConnection::sendData(const std::string &clientId, const Pend
    // Check if we need to do a rekey before sending the data.
    if (connection->bip150HandshakeCompleted_) {
       bool needsRekey = false;
-      auto rightNow = chrono::steady_clock::now();
+      auto rightNow = std::chrono::steady_clock::now();
 
       // Rekey off # of bytes sent or length of time since last rekey.
-      if (connPtr->rekeyNeeded(pendingMsg.data.getSize())) {
+      if (connPtr->rekeyNeeded(data.size())) {
          needsRekey = true;
       }
       else {
-         auto time_sec = chrono::duration_cast<chrono::seconds>(
+         auto time_sec = std::chrono::duration_cast<std::chrono::seconds>(
             rightNow - connection->outKeyTimePoint_);
-         if (time_sec.count() >= ZMQ_AEAD_REKEY_INVERVAL_SECS) {
+         if (time_sec.count() >= bip15x::AEAD_REKEY_INTERVAL_SECS) {
             needsRekey = true;
          }
       }
@@ -917,36 +774,23 @@ void ZmqBIP15XServerConnection::sendData(const std::string &clientId, const Pend
 
    // Encrypt data here if the BIP 150 handshake is complete.
    if (connection->encData_ && connection->encData_->getBIP150State() == BIP150State::SUCCESS) {
-      auto packet = ZmqBipMsgBuilder(pendingMsg.data, ZMQ_MSGTYPE_SINGLEPACKET)
-         .encryptIfNeeded(connPtr).build();
-      sendToDataSocket(clientId, packet);
-      return;
+      const auto &packet = bip15x::MessageBuilder(BinaryData::fromString(data)
+         , bip15x::MsgType::SinglePacket).encryptIfNeeded(connPtr).build();
+      if (sendDataCb_) {
+         return sendDataCb_(clientId, packet.toBinStr());
+      }
    }
 
    // Send untouched data for straight transmission
-   sendToDataSocket(clientId, pendingMsg.data);
-}
-
-bool ZmqBIP15XServerConnection::sendToDataSocket(const string &clientId, const BinaryData &data)
-{
-   int result = zmq_send(dataSocket_.get(), clientId.data(), clientId.size(), ZMQ_SNDMORE);
-   if (result != int(clientId.size())) {
-      logger_->error("[{}] {} failed to send client id {}", __func__
-         , connectionName_, zmq_strerror(zmq_errno()));
-      return false;
+   if (sendDataCb_) {
+      return sendDataCb_(clientId, data);
    }
 
-   result = zmq_send(dataSocket_.get(), data.getPtr(), data.getSize(), 0);
-   if (result != int(data.getSize())) {
-      logger_->error("[{}] {} failed to send client id {}", __func__
-         , connectionName_, zmq_strerror(zmq_errno()));
-      return false;
-   }
-
-   return true;
+   logger_->error("[TransportBIP15xServer::sendData] no sender callback set");
+   return false;
 }
 
-void ZmqBIP15XServerConnection::checkHeartbeats()
+void TransportBIP15xServer::checkHeartbeats()
 {
    auto now = std::chrono::steady_clock::now();
    auto idlePeriod = now - lastHeartbeatsCheck_;
@@ -956,7 +800,8 @@ void ZmqBIP15XServerConnection::checkHeartbeats()
    lastHeartbeatsCheck_ = now;
 
    if (idlePeriod > heartbeatInterval_ * 2) {
-      logger_->debug("[ZmqBIP15XServerConnection:{}] hibernation detected, reset client's last timestamps", __func__);
+      logger_->debug("[TransportBIP15xServer::checkHeartbeats] hibernation detected,"
+         " reset client's last timestamps");
       lastHeartbeats_.clear();
       return;
    }
@@ -971,13 +816,13 @@ void ZmqBIP15XServerConnection::checkHeartbeats()
    }
 
    for (const auto &clientId : timedOutClients) {
-      logger_->debug("[ZmqBIP15XServerConnection] client {} timed out"
+      logger_->debug("[TransportBIP15xServer::checkHeartbeats] client {} timed out"
          , BinaryData::fromString(clientId).toHexStr());
       closeClient(clientId);
    }
 }
 
-void ZmqBIP15XServerConnection::closeClient(const string &clientId)
+void TransportBIP15xServer::closeClient(const std::string &clientId)
 {
    lastHeartbeats_.erase(clientId);
 
@@ -992,12 +837,12 @@ void ZmqBIP15XServerConnection::closeClient(const string &clientId)
 
    SPDLOG_LOGGER_DEBUG(logger_, "connection {} erased, wasConnected: {}", bs::toHex(clientId), wasConnected);
 
-   if (wasConnected) {
-      notifyListenerOnDisconnectedClient(clientId);
+   if (wasConnected && disconnCb_) {
+      disconnCb_(clientId);
    }
 }
 
-void ZmqBIP15XServerConnection::UpdateClientHeartbeatTimestamp(const std::string& clientId)
+void TransportBIP15xServer::UpdateClientHeartbeatTimestamp(const std::string& clientId)
 {
    auto currentTime = std::chrono::steady_clock::now();
 
@@ -1016,9 +861,9 @@ void ZmqBIP15XServerConnection::UpdateClientHeartbeatTimestamp(const std::string
 // INPUT:  None
 // OUTPUT: None
 // RETURN: AuthPeersLambdas object with required lambdas.
-AuthPeersLambdas ZmqBIP15XServerConnection::getAuthPeerLambda()
+AuthPeersLambdas TransportBIP15xServer::getAuthPeerLambda()
 {
-   auto getMap = [this](void)->const map<string, btc_pubkey>&
+   auto getMap = [this](void)->const std::map<std::string, bip15x::PubKey>&
    {
       std::lock_guard<std::mutex> lock(authPeersMutex_);
       return authPeers_->getPeerNameMap();
@@ -1030,7 +875,7 @@ AuthPeersLambdas ZmqBIP15XServerConnection::getAuthPeerLambda()
       return authPeers_->getPrivateKey(pubkey);
    };
 
-   auto getAuthSet = [this](void)->const set<SecureBinaryData>&
+   auto getAuthSet = [this](void)->const std::set<SecureBinaryData>&
    {
       std::lock_guard<std::mutex> lock(authPeersMutex_);
       return authPeers_->getPublicKeySet();
@@ -1044,43 +889,43 @@ AuthPeersLambdas ZmqBIP15XServerConnection::getAuthPeerLambda()
 // INPUT:  N/A
 // OUTPUT: N/A
 // RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::genBIPIDCookie()
+bool TransportBIP15xServer::genBIPIDCookie()
 {
    if (SystemFileUtils::fileExist(bipIDCookiePath_)) {
       if (!SystemFileUtils::rmFile(bipIDCookiePath_)) {
-         logger_->error("[{}] Unable to delete server identity cookie ({}). "
-            "Will not write a new cookie.", __func__, bipIDCookiePath_);
+         logger_->error("[TransportBIP15xServer::genBIPIDCookie] unable to delete"
+            " server identity cookie {} - will not write a new cookie.", bipIDCookiePath_);
          return false;
       }
    }
 
    // Ensure that we only write the compressed key.
-   ofstream cookieFile(bipIDCookiePath_, ios::out | ios::binary);
+   std::ofstream cookieFile(bipIDCookiePath_, std::ios::out | std::ios::binary);
    const BinaryData ourIDKey = getOwnPubKey();
    if (ourIDKey.getSize() != BTC_ECKEY_COMPRESSED_LENGTH) {
-      logger_->error("[{}] Server identity key ({}) is uncompressed. Will not "
-         "write the identity cookie.", __func__, bipIDCookiePath_);
+      logger_->error("[TransportBIP15xServer::genBIPIDCookie] server identity key {}"
+         " is uncompressed - will not write the identity cookie.", bipIDCookiePath_);
       return false;
    }
 
-   logger_->debug("[{}] Writing a new server identity cookie ({}).", __func__
-      ,  bipIDCookiePath_);
+   logger_->debug("[TransportBIP15xServer::genBIPIDCookie] Writing a new server"
+      " identity cookie {}",  bipIDCookiePath_);
    cookieFile.write(getOwnPubKey().getCharPtr(), BTC_ECKEY_COMPRESSED_LENGTH);
    cookieFile.close();
 
    return true;
 }
 
-void ZmqBIP15XServerConnection::addAuthPeer(const ZmqBIP15XPeer &peer)
+void TransportBIP15xServer::addAuthPeer(const BIP15xPeer &peer)
 {
    std::lock_guard<std::mutex> lock(authPeersMutex_);
-   ZmqBIP15XUtils::addAuthPeer(authPeers_.get(), peer);
+   bip15x::addAuthPeer(authPeers_.get(), peer);
 }
 
-void ZmqBIP15XServerConnection::updatePeerKeys(const ZmqBIP15XPeers &peers)
+void TransportBIP15xServer::updatePeerKeys(const BIP15xPeers &peers)
 {
    std::lock_guard<std::mutex> lock(authPeersMutex_);
-   ZmqBIP15XUtils::updatePeerKeys(authPeers_.get(), peers);
+   bip15x::updatePeerKeys(authPeers_.get(), peers);
 }
 
 // Get the client's identity public key. Intended for use with local clients.
@@ -1088,31 +933,30 @@ void ZmqBIP15XServerConnection::updatePeerKeys(const ZmqBIP15XPeers &peers)
 // INPUT:  The accompanying key IP:Port or name. (const string)
 // OUTPUT: The buffer that will hold the compressed ID key. (BinaryData)
 // RETURN: True if success, false if failure.
-bool ZmqBIP15XServerConnection::getClientIDCookie(BinaryData& cookieBuf)
+bool TransportBIP15xServer::getClientIDCookie(BinaryData& cookieBuf)
 {
    if (!useClientIDCookie_) {
-      logger_->error("[{}] Client identity cookie requested despite not being "
-         "available.", __func__);
+      logger_->error("[TransportBIP15xServer::getClientIDCookie] client identity"
+         " cookie requested despite not being available.");
       return false;
    }
 
    if (!SystemFileUtils::fileExist(bipIDCookiePath_)) {
-      logger_->error("[{}] Client identity cookie ({}) doesn't exist. Unable "
-         "to verify server identity.", __func__, bipIDCookiePath_);
+      logger_->error("[TransportBIP15xServer::getClientIDCookie] client identity"
+         " cookie {} doesn't exist - unable to verify server identity", bipIDCookiePath_);
       return false;
    }
 
    // Ensure that we only read a compressed key.
-   ifstream cookieFile(bipIDCookiePath_, ios::in | ios::binary);
+   std::ifstream cookieFile(bipIDCookiePath_, std::ios::in | std::ios::binary);
    cookieFile.read(cookieBuf.getCharPtr(), BIP151PUBKEYSIZE);
    cookieFile.close();
    if (!(CryptoECDSA().VerifyPublicKeyValid(cookieBuf))) {
-      logger_->error("[{}] Client identity key ({}) isn't a valid compressed "
-         "key. Unable to verify server identity.", __func__
+      logger_->error("[TransportBIP15xServer::getClientIDCookie] client identity"
+         " key {} isn't a valid compressed key - unable to verify server identity"
          , cookieBuf.toHexStr());
       return false;
    }
-
    return true;
 }
 
@@ -1121,7 +965,7 @@ bool ZmqBIP15XServerConnection::getClientIDCookie(BinaryData& cookieBuf)
 // INPUT:  N/A
 // OUTPUT: N/A
 // RETURN: A buffer with the compressed ECDSA ID pub key. (BinaryData)
-BinaryData ZmqBIP15XServerConnection::getOwnPubKey() const
+BinaryData TransportBIP15xServer::getOwnPubKey() const
 {
    std::lock_guard<std::mutex> lock(authPeersMutex_);
    const auto pubKey = authPeers_->getOwnPublicKey();

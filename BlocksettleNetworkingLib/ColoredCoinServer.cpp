@@ -10,14 +10,17 @@
 */
 
 #include "ColoredCoinServer.h"
-
+#include <spdlog/spdlog.h>
 #include "ColoredCoinCache.h"
 #include "ColoredCoinLogic.h"
+#include "DataConnection.h"
 #include "DispatchQueue.h"
 #include "FutureValue.h"
+#include "ServerConnection.h"
 #include "StringUtils.h"
-#include "ZMQ_BIP15X_DataConnection.h"
-#include "ZMQ_BIP15X_ServerConnection.h"
+#include "TransportBIP15x.h"
+#include "TransportBIP15xServer.h"
+#include "ZmqDataConnection.h"
 
 #include "tracker_server.pb.h"
 
@@ -289,7 +292,8 @@ std::unique_ptr<ColoredCoinTrackerInterface> CcTrackerClient::createClient(
    return std::move(client);
 }
 
-void CcTrackerClient::openConnection(const std::string &host, const std::string &port, ZmqBipNewKeyCb newKeyCb)
+void CcTrackerClient::openConnection(const std::string &host, const std::string &port
+   , const bs::network::BIP15xNewKeyCb &newKeyCb)
 {
    dispatchQueue_.dispatch([this, host, port, newKeyCb = std::move(newKeyCb)] {
       assert(state_ == State::Offline);
@@ -445,10 +449,15 @@ void CcTrackerClient::reconnect()
 {
    SPDLOG_LOGGER_DEBUG(logger_, "reconnect...");
    setState(State::Connecting);
-   ZmqBIP15XDataConnectionParams params;
+
+   bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   connection_ = std::make_unique<ZmqBIP15XDataConnection>(logger_, params);
-   connection_->setCBs(newKeyCb_);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15x>(logger_, params);
+   transport->setKeyCb(newKeyCb_);
+
+   auto conn =  std::make_unique<ZmqBinaryConnection>(logger_, transport);
+   conn->SetContext(std::make_shared<ZmqContext>(logger_));
+   connection_ = std::move(conn);
    connection_->openConnection(host_, port_, this);
 }
 
@@ -545,15 +554,17 @@ CcTrackerServer::~CcTrackerServer()
 }
 
 bool CcTrackerServer::startServer(const std::string &host, const std::string &port
-   , const std::shared_ptr<ZmqContext> &context
-   , const std::string &ownKeyFileDir, const std::string &ownKeyFileName)
+   , std::unique_ptr<ServerConnection> srvConn, const std::string &ownKeyFileDir
+   , const std::string &ownKeyFileName)
 {
-   auto cbTrustedClients = []() -> ZmqBIP15XPeers{
+   auto cbTrustedClients = []() -> bs::network::BIP15xPeers{
       return {};
    };
-   server_ = std::make_unique<ZmqBIP15XServerConnection>(logger_, context, cbTrustedClients, ownKeyFileDir, ownKeyFileName);
-   bool result = server_->BindConnection(host, port, this);
-   return result;
+   server_ = std::move(srvConn);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15xServer>(logger_
+      , cbTrustedClients, ownKeyFileDir, ownKeyFileName);
+   server_->setTransport(transport);
+   return server_->BindConnection(host, port, this);
 }
 
 void CcTrackerServer::OnDataFromClient(const std::string &clientId, const std::string &data)

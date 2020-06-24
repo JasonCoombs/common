@@ -10,12 +10,11 @@
 */
 #include "WsDataConnection.h"
 
+#include <libwebsockets.h>
+#include <spdlog/spdlog.h>
+#include "Transport.h"
 #include "WsConnection.h"
 
-#include <libwebsockets.h>
-#include <openssl/ssl.h>
-#include <openssl/pem.h>
-#include <spdlog/spdlog.h>
 
 using namespace bs::network;
 
@@ -35,11 +34,15 @@ namespace {
 
 } // namespace
 
+
 WsDataConnection::WsDataConnection(const std::shared_ptr<spdlog::logger> &logger
-   , WsDataConnectionParams params)
+   , const std::shared_ptr<bs::network::TransportClient> &tr)
    : logger_(logger)
-   , params_(std::move(params))
+   , transport_(tr)
 {
+   transport_->setSendCb([this](const std::string &d) { return sendRawData(d); });
+   transport_->setNotifyDataCb([this](const std::string &d) { notifyOnData(d);});
+   transport_->setSocketErrorCb([this](DataConnectionListener::DataConnectionError e) { reportFatalError(e); });
 }
 
 WsDataConnection::~WsDataConnection()
@@ -57,6 +60,8 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    port_ = std::stoi(port);
    stopped_ = false;
 
+   transport_->openConnection(host, port);
+
    struct lws_context_creation_info info;
    memset(&info, 0, sizeof(info));
 
@@ -65,7 +70,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    info.gid = -1;
    info.uid = -1;
    info.ws_ping_pong_interval = kPingPongInterval / std::chrono::seconds(1);
-   info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
+   info.options = /*params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT :*/ 0;
    info.user = this;
 
    context_ = lws_create_context(&info);
@@ -84,6 +89,7 @@ bool WsDataConnection::closeConnection()
    if (!listenThread_.joinable()) {
       return false;
    }
+   transport_->closeConnection();
 
    stopped_ = true;
    lws_cancel_service(context_);
@@ -102,10 +108,16 @@ bool WsDataConnection::closeConnection()
 
 bool WsDataConnection::send(const std::string &data)
 {
+   return transport_->sendData(data);
+}
+
+bool WsDataConnection::sendRawData(const std::string &data)
+{
    if (!context_) {
       return false;
    }
-   {  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   {
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
       newPackets_.push(WsPacket(data));
    }
    lws_cancel_service(context_);
@@ -123,9 +135,9 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
 {
    switch (reason) {
       case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: {
-         if (!params_.useSsl || params_.caBundleSize == 0) {
+//         if (!params_.useSsl || params_.caBundleSize == 0) {
             return 0;
-         }
+/*         }
          auto sslCtx = static_cast<SSL_CTX*>(user);
          auto store = SSL_CTX_get_cert_store(sslCtx);
          auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
@@ -139,11 +151,12 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
             X509_free(x);
          }
          BIO_free(bio);
-         break;
+         break;*/
       }
 
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
-         {  std::lock_guard<std::recursive_mutex> lock(mutex_);
+         {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
             while (!newPackets_.empty()) {
                allPackets_.push(std::move(newPackets_.front()));
                newPackets_.pop();
@@ -158,6 +171,19 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
       }
 
       case LWS_CALLBACK_CLIENT_RECEIVE: {
+         if (transport_->connectTimedOut()) {
+            if (transport_->handshakeTimedOut()) {
+               SPDLOG_LOGGER_ERROR(logger_, "BIP connection is timed out (bip151"
+                  " was completed, probably client credential is not valid)");
+               reportFatalError(DataConnectionListener::HandshakeFailed);
+            } else {
+               SPDLOG_LOGGER_ERROR(logger_, "BIP connection is timed out");
+               reportFatalError(DataConnectionListener::ConnectionTimeout);
+            }
+            break;
+         }
+         transport_->triggerHeartbeatCheck();
+
          auto ptr = static_cast<const char*>(in);
          currFragment_.insert(currFragment_.end(), ptr, ptr + len);
          if (lws_remaining_packet_payload(wsi) > 0) {
@@ -168,7 +194,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
             reportFatalError(DataConnectionListener::ProtocolViolation);
             return -1;
          }
-         listener_->OnDataReceived(currFragment_);
+         onRawDataReceived(currFragment_);
          currFragment_.clear();
          break;
       }
@@ -197,16 +223,21 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
       }
 
       case LWS_CALLBACK_CLIENT_ESTABLISHED: {
-         listener_->OnConnected();
+         active_ = true;
+         transport_->socketConnected();
+         transport_->startHandshake();
          break;
       }
 
       case LWS_CALLBACK_CLIENT_CLOSED: {
+         active_ = false;
          listener_->OnDisconnected();
+         transport_->socketDisconnected();
          break;
       }
 
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
+         active_ = false;
          listener_->OnError(DataConnectionListener::UndefinedSocketError);
          break;
       }
@@ -228,7 +259,7 @@ void WsDataConnection::listenFunction()
    i.protocol = kProtocolNameWs;
    i.userdata = this;
 
-   i.ssl_connection = params_.useSsl ? LCCSCF_USE_SSL : 0;
+   i.ssl_connection = /*params_.useSsl ? LCCSCF_USE_SSL :*/ 0;
 
    wsi_ = lws_client_connect_via_info(&i);
 
@@ -241,10 +272,17 @@ void WsDataConnection::listenFunction()
 
 void WsDataConnection::onRawDataReceived(const std::string &rawData)
 {
+   transport_->onRawDataReceived(rawData);
 }
 
 void WsDataConnection::reportFatalError(DataConnectionListener::DataConnectionError error)
 {
+   if (error == DataConnectionListener::NoError) {
+      listener_->OnConnected();
+      return;
+   }
+   logger_->debug("[{}] error: {}", __func__, (int)error);
+   transport_->sendDisconnect();
    stopped_ = true;
    lws_cancel_service(context_);
    wsi_ = nullptr;

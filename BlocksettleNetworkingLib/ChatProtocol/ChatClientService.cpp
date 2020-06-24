@@ -16,8 +16,6 @@ ChatClientService::ChatClientService(QObject* parent /*= nullptr*/)
    : ServiceThread<ChatClientLogic>(new ChatClientLogic, parent)
 {
    qRegisterMetaType<CelerClient::CelerUserType>();
-   qRegisterMetaType<Chat::LoggerPtr>();
-   qRegisterMetaType<ZmqBipNewKeyCb>();
    qRegisterMetaType<Chat::ChatSettings>();
 
    ////////// PROXY SIGNALS //////////
