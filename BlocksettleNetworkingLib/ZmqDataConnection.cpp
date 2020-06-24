@@ -282,7 +282,7 @@ void ZmqDataConnection::onError(DataConnectionListener::DataConnectionError erro
    assert(std::this_thread::get_id() == listenThread_.get_id());
 
    // Notify about error only once
-   if (!isConnected_) {
+   if (!isConnected_ && (errorCode != DataConnectionListener::ConnectionTimeout)) {
       return;
    }
 
