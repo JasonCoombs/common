@@ -69,7 +69,6 @@ namespace bs {
 
       struct BIP15xParams
       {
-
          // The directory containing the file with the non-ephemeral key
          std::string ownKeyFileDir;
 
@@ -85,34 +84,77 @@ namespace bs {
 
          BIP15xCookie cookie{ BIP15xCookie::NotUsed };
 
-         // Initialized to ZmqBIP15XServerConnection::getDefaultHeartbeatInterval() by default
-         std::chrono::milliseconds heartbeatInterval{};
-
          std::chrono::milliseconds connectionTimeout{ std::chrono::seconds(10) };
-
-         BIP15xParams();
-
-         void setLocalHeartbeatInterval();
       };
 
-      class TransportBIP15x : public TransportClient
+
+      class TransportBIP15x
       {
       public:
-         TransportBIP15x(const std::shared_ptr<spdlog::logger> &, const BIP15xParams &);
-         ~TransportBIP15x() noexcept override;
+         TransportBIP15x(const std::shared_ptr<spdlog::logger> &
+            , const std::string &cookiePath);
+         virtual ~TransportBIP15x() noexcept = default;
 
          TransportBIP15x(const TransportBIP15x&) = delete;
          TransportBIP15x& operator= (const TransportBIP15x&) = delete;
          TransportBIP15x(TransportBIP15x&&) = delete;
          TransportBIP15x& operator= (TransportBIP15x&&) = delete;
 
-         bool getServerIDCookie(BinaryData& cookieBuf);
-         std::string getCookiePath() const { return params_.cookiePath; }
-         void setKeyCb(const BIP15xNewKeyCb &);
          BinaryData getOwnPubKey() const;
-         bool genBIPIDCookie();
-         void addAuthPeer(const BIP15xPeer &peer);
-         void updatePeerKeys(const BIP15xPeers &peers);
+         void addAuthPeer(const BIP15xPeer &);
+         void updatePeerKeys(const BIP15xPeers &);
+
+         void setLocalHeartbeatInterval();
+         void setHeartbeatInterval(const std::chrono::milliseconds &hbi)
+         {
+            heartbeatInterval_ = hbi;
+         }
+
+         // There was some issues with static field initalization order so use static function here
+         static const std::chrono::milliseconds getDefaultHeartbeatInterval();
+         static const std::chrono::milliseconds getLocalHeartbeatInterval();
+
+         static BinaryData getOwnPubKey(const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
+         static BinaryData getOwnPubKey(const AuthorizedPeers &authPeers);
+
+      protected:
+         virtual bool getCookie(BinaryData &cookieBuf);
+         virtual bool createCookie();
+         bool addCookieToPeers(const std::string &id);
+         AuthPeersLambdas getAuthPeerLambda();
+
+         using WriteDataCb = std::function<bool(bip15x::MsgType, const BinaryData &
+            , bool encrypt)>;
+         bool processAEAD(const bip15x::Message &, const std::unique_ptr<BIP151Connection> &
+            , const WriteDataCb &, bool requesterSent);
+
+      protected:
+         std::shared_ptr<spdlog::logger>  logger_;
+         std::unique_ptr<AuthorizedPeers> authPeers_;
+         mutable std::mutex authPeersMutex_;
+         std::string cookiePath_;
+
+         std::chrono::milliseconds heartbeatInterval_;
+         std::chrono::steady_clock::time_point lastHeartbeatCheck_{};
+
+      private:
+         std::unique_ptr<std::ofstream>   cookieFile_;   //Need to keep opened for the whole object lifetime
+      };
+
+
+      class TransportBIP15xClient : public TransportBIP15x, public TransportClient
+      {
+      public:
+         TransportBIP15xClient(const std::shared_ptr<spdlog::logger> &, const BIP15xParams &);
+         ~TransportBIP15xClient() noexcept override;
+
+         TransportBIP15xClient(const TransportBIP15xClient&) = delete;
+         TransportBIP15xClient& operator= (const TransportBIP15xClient&) = delete;
+         TransportBIP15xClient(TransportBIP15xClient&&) = delete;
+         TransportBIP15xClient& operator= (TransportBIP15xClient&&) = delete;
+
+         void setKeyCb(const BIP15xNewKeyCb &);
+         bool getCookie(BinaryData &cookieBuf) override;
 
          std::string listenThreadName() const override { return "listenBIP15x"; }
 
@@ -158,10 +200,8 @@ namespace bs {
          // Is public only for tests
          void rekey();
 
-         static BinaryData getOwnPubKey(const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
-         static BinaryData getOwnPubKey(const AuthorizedPeers &authPeers);
-
       private:
+         bool createCookie() override;
          bool startBIP151Handshake();
 
          void triggerHeartbeatCheck() override;
@@ -169,18 +209,14 @@ namespace bs {
          void processIncomingData(const BinaryData &payload);
          bool processAEADHandshake(const bip15x::Message &);
          bool verifyNewIDKey(const BinaryDataRef &newKey, const std::string &srvId);
-         AuthPeersLambdas getAuthPeerLambda() const;
          void rekeyIfNeeded(size_t dataSize);
-         void sendPacket(const BinaryData &, bool encrypted = true);
+         bool sendPacket(const BinaryData &, bool encrypted = true);
 
       private:
-         std::shared_ptr<spdlog::logger>  logger_;
          const BIP15xParams   params_;
 
          std::shared_ptr<FutureValue<bool>> serverPubkeyProm_;
-         std::unique_ptr<AuthorizedPeers> authPeers_;
          std::string host_, port_;
-         mutable std::mutex authPeersMutex_;
          std::unique_ptr<BIP151Connection> bip151Connection_;
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
          uint32_t outerRekeyCount_ = 0;
@@ -195,7 +231,6 @@ namespace bs {
          bool                             isConnected_{};
          bool                             serverSendsHeartbeat_{};
          std::chrono::steady_clock::time_point connectionStarted_{};
-         std::chrono::steady_clock::time_point lastHeartbeatSend_{};
          std::chrono::steady_clock::time_point lastHeartbeatReply_{};
       };
 

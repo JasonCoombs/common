@@ -17,9 +17,9 @@
 #include <thread>
 #include <spdlog/spdlog.h>
 #include "AuthorizedPeers.h"
-#include "BIP150_151.h"
 #include "BIP15xHelpers.h"
 #include "BIP15xMessage.h"
+#include "TransportBIP15x.h"
 #include "EncryptionUtils.h"
 #include "Transport.h"
 
@@ -54,7 +54,7 @@ namespace bs {
 
       // The class establishing BIP 150/151 handshakes before encrypting/decrypting
       // the on-the-wire data using BIP 150/151. Used by the server in a connection.
-      class TransportBIP15xServer : public TransportServer
+      class TransportBIP15xServer : public TransportBIP15x, public TransportServer
       {
       public:
          using TrustedClientsCallback = std::function<BIP15xPeers()>;
@@ -85,23 +85,8 @@ namespace bs {
 
          void periodicCheck() override;
 
-         bool getClientIDCookie(BinaryData& cookieBuf);
-         std::string getCookiePath() const { return bipIDCookiePath_; }
-         BinaryData getOwnPubKey() const;
-         void addAuthPeer(const BIP15xPeer &);
-         void updatePeerKeys(const BIP15xPeers &);
-
          // Is public only for tests
          void rekey(const std::string &clientId);
-
-         void setLocalHeartbeatInterval();
-
-         // There was some issues with static field initalization order so use static function here
-         static const std::chrono::milliseconds getDefaultHeartbeatInterval();
-         static const std::chrono::milliseconds getLocalHeartbeatInterval();
-
-         static BinaryData getOwnPubKey(const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
-         static BinaryData getOwnPubKey(const AuthorizedPeers &authPeers);
 
          // If set only selected trusted clients will be able connect to the server.
          // This will work even if startupBIP150CTX was called with publicRequester set to true.
@@ -110,25 +95,24 @@ namespace bs {
          // If empty (default) trusted clients are not enforced.
          void forceTrustedClients(const BIP15xPeers &);
 
-         // Could be called only from IO thread callbacks.
+         // Could be called only from IO thread callbacks - used only in tests atm.
          // Returns null if clientId is not known or was not yet authenticated.
          std::unique_ptr<BIP15xPeer> getClientKey(const std::string &clientId) const;
 
-      protected:
+      private:
          std::shared_ptr<BIP15xPerConnData> setBIP151Connection(const std::string& clientID);
+
+         bool getCookie(BinaryData &cookieBuf) override;
 
          bool handshakeCompleted(const BIP15xPerConnData &cd) const
          {
             return (cd.bip150HandshakeCompleted_ && cd.bip151HandshakeCompleted_);
          }
 
-      private:
          void processIncomingData(const std::string &encData
             , const std::string &clientID, int socket) override;
          bool processAEADHandshake(const bip15x::Message &
             , const std::string &clientID);
-         AuthPeersLambdas getAuthPeerLambda();
-         bool genBIPIDCookie();
 
          void UpdateClientHeartbeatTimestamp(const std::string& clientId);
 
@@ -142,21 +126,13 @@ namespace bs {
          void closeClient(const std::string &clientId);
 
       private:
-         std::shared_ptr<spdlog::logger>  logger_;
-         std::unique_ptr<AuthorizedPeers> authPeers_;
-         mutable std::mutex authPeersMutex_;
-
          std::map<std::string, std::shared_ptr<BIP15xPerConnData>>   socketConnMap_;
 
          TrustedClientsCallback cbTrustedClients_;
          const bool useClientIDCookie_;
          const bool makeServerIDCookie_;
-         const std::string bipIDCookiePath_;
 
          std::unordered_map<std::string, std::chrono::steady_clock::time_point>  lastHeartbeats_;
-         std::chrono::steady_clock::time_point lastHeartbeatsCheck_{};
-
-         std::chrono::milliseconds heartbeatInterval_ = getDefaultHeartbeatInterval();
 
          BIP15xPeers forcedTrustedClients_;
       };

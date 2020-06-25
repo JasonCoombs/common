@@ -34,7 +34,7 @@ namespace bs {
       class Wallet;
    }
    namespace network {
-      class TransportBIP15x;
+      class TransportBIP15xClient;
    }
 }
 
@@ -229,7 +229,7 @@ protected:
    const std::string                   ownKeyFileDir_;
    const std::string                   ownKeyFileName_;
    std::shared_ptr<DataConnection>     connection_;
-   std::shared_ptr<bs::network::TransportBIP15x>   bip15xTransport_;
+   std::shared_ptr<bs::network::TransportBIP15xClient>   bip15xTransport_;
    const bs::network::BIP15xNewKeyCb   cbNewKey_{ nullptr };
 
 private:

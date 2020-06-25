@@ -21,7 +21,7 @@
 
 namespace bs {
    namespace network {
-      class TransportBIP15x;
+      class TransportBIP15xClient;
    }
 }
 class ArmoryServersProvider;
@@ -58,7 +58,8 @@ public:
    std::shared_ptr<DataConnection>     CreateGenoaClientConnection(
       bool monitored = false) const;
 
-   std::unique_ptr<DataConnection>  createZmqBIP15xDataConnection(const std::shared_ptr<bs::network::TransportBIP15x> &) const;
+   std::unique_ptr<DataConnection>  createZmqBIP15xDataConnection(
+      const std::shared_ptr<bs::network::TransportBIP15xClient> &) const;
    std::shared_ptr<DataConnection>  createZmqBIP15xDataConnection() const;
 
    std::shared_ptr<ServerConnection> createZmqBIP15xChatServerConnection(

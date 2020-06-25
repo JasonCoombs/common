@@ -128,7 +128,7 @@ void ChatClientLogic::LoginToServer(const BinaryData &token, const BinaryData &t
 
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   const auto &transport = std::make_shared<bs::network::TransportBIP15x>(loggerPtr_, params);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(loggerPtr_, params);
    transport->setKeyCb(cb);
    auto conn =  std::make_unique<ZmqBinaryConnection>(loggerPtr_, transport);
    conn->SetContext(std::make_shared<ZmqContext>(loggerPtr_));

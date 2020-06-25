@@ -1435,7 +1435,6 @@ void RemoteSigner::RecreateConnection()
    params.ephemeralPeers = ephemeralDataConnKeys_;
    params.ownKeyFileDir = ownKeyFileDir_;
    params.ownKeyFileName = ownKeyFileName_;
-   params.setLocalHeartbeatInterval();
 
    // Server's cookies are not available in remote mode
    if (opMode() == OpMode::Local || opMode() == OpMode::LocalInproc) {
@@ -1444,8 +1443,9 @@ void RemoteSigner::RecreateConnection()
    }
 
    try {
-      bip15xTransport_ = std::make_shared<bs::network::TransportBIP15x>(logger_, params);
+      bip15xTransport_ = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
       bip15xTransport_->setKeyCb(cbNewKey_);
+      bip15xTransport_->setLocalHeartbeatInterval();
       auto conn = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport_);
       conn->SetContext(connectionManager_->zmqContext());
       connection_ = std::move(conn);

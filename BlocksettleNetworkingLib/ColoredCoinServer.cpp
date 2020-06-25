@@ -452,7 +452,7 @@ void CcTrackerClient::reconnect()
 
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   const auto &transport = std::make_shared<bs::network::TransportBIP15x>(logger_, params);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    transport->setKeyCb(newKeyCb_);
 
    auto conn =  std::make_unique<ZmqBinaryConnection>(logger_, transport);

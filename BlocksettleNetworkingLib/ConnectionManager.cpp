@@ -129,7 +129,7 @@ std::shared_ptr<ServerConnection> ConnectionManager::createZmqBIP15xChatServerCo
 }
 
 std::unique_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection(
-   const std::shared_ptr<bs::network::TransportBIP15x> &transport) const
+   const std::shared_ptr<bs::network::TransportBIP15xClient> &transport) const
 {
    auto conn = std::make_unique<ZmqBinaryConnection>(logger_, transport);
    conn->SetContext(zmqContext_);
@@ -140,7 +140,7 @@ std::shared_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection
 {
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   const auto &transport = std::make_shared<bs::network::TransportBIP15x>(logger_, params);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    auto conn = std::make_shared<ZmqBinaryConnection>(logger_, transport);
    conn->SetContext(zmqContext_);
    return conn;

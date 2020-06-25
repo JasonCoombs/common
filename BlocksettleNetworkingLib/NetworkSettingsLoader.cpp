@@ -37,7 +37,7 @@ void NetworkSettingsLoader::loadSettings()
 
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15x>(logger_, params);
+   const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    bip15xTransport->setKeyCb(cbApprove_);
    auto connection = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport);
    connection->SetContext(std::make_shared<ZmqContext>(logger_));
