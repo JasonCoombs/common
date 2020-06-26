@@ -23,18 +23,20 @@
 namespace spdlog {
    class logger;
 }
-
+namespace bs{
+   namespace network {
+      class TransportServer;
+   }
+}
 struct lws_context;
 struct lws;
 
-struct WsServerConnectionParams
-{
-};
 
 class WsServerConnection : public ServerConnection
 {
 public:
-   WsServerConnection(const std::shared_ptr<spdlog::logger>& logger, WsServerConnectionParams params);
+   WsServerConnection(const std::shared_ptr<spdlog::logger> &
+      , const std::shared_ptr<bs::network::TransportServer> &);
    ~WsServerConnection() override;
 
    WsServerConnection(const WsServerConnection&) = delete;
@@ -53,6 +55,19 @@ public:
    static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
 
 private:
+   std::thread::id listenThreadId() const;
+
+   void listenFunction();
+
+   void stopServer();
+
+   int callback(struct lws *wsi, int reason, void *in, size_t len);
+
+   std::string nextClientId();
+
+   bool sendData(const std::string& clientId, const std::string& data);
+
+private:
    struct WsServerDataToSend
    {
       std::string clientId;
@@ -67,18 +82,8 @@ private:
       std::string currFragment;
    };
 
-   std::thread::id listenThreadId() const;
-
-   void listenFunction();
-
-   void stopServer();
-
-   int callback(struct lws *wsi, int reason, void *in, size_t len);
-
-   std::string nextClientId();
-
    std::shared_ptr<spdlog::logger>  logger_;
-   const WsServerConnectionParams params_;
+   std::shared_ptr<bs::network::TransportServer>   transport_;
 
    std::thread listenThread_;
    ServerConnectionListener *listener_{};
@@ -92,7 +97,6 @@ private:
    std::map<std::string, WsServerClientData> clients_;
    std::map<lws*, std::string> socketToClientIdMap_;
    uint64_t nextClientId_{};
-
 };
 
 #endif // WS_SERVER_CONNECTION_H

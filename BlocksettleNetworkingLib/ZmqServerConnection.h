@@ -20,16 +20,21 @@
 #include <unordered_map>
 #include <vector>
 
-namespace spdlog
-{
+namespace bs {
+   namespace network {
+      class TransportServer;
+   }
+}
+namespace spdlog {
    class logger;
 }
 
 class ZmqServerConnection : public ServerConnection
 {
 public:
-   ZmqServerConnection(const std::shared_ptr<spdlog::logger>& logger
-      , const std::shared_ptr<ZmqContext>& context);
+   ZmqServerConnection(const std::shared_ptr<spdlog::logger> &
+      , const std::shared_ptr<ZmqContext> &
+      , const std::shared_ptr<bs::network::TransportServer> &tr = nullptr);
 
    ~ZmqServerConnection() noexcept override;
 
@@ -43,6 +48,8 @@ public:
       , ServerConnectionListener* listener) override;
 
    std::string GetClientInfo(const std::string &clientId) const override;
+
+   void setTransport(const std::shared_ptr<bs::network::TransportServer> &) override;
 
    bool SetZMQTransport(ZMQTransport transport);
 
@@ -65,7 +72,8 @@ protected:
    void notifyListenerOnNewConnection(const std::string& clientId);
    void notifyListenerOnDisconnectedClient(const std::string& clientId);
    void notifyListenerOnClientError(const std::string& clientId, const std::string &error);
-   void notifyListenerOnClientError(const std::string& clientId, ServerConnectionListener::ClientError errorCode, int socket);
+   void notifyListenerOnClientSocketError(const std::string& clientId
+      , ServerConnectionListener::ClientError errorCode, int socket);
 
    virtual ZmqContext::sock_ptr CreateDataSocket() = 0;
    virtual bool ConfigDataSocket(const ZmqContext::sock_ptr& dataSocket);
@@ -76,9 +84,23 @@ protected:
 
    virtual bool QueueDataToSend(const std::string& clientId, const std::string& data, bool sendMore);
 
+protected:
+   void stopServer();
+
+   void requestPeriodicCheck();
+   std::thread::id listenThreadId() const;
+
+private:
+   // run in thread
+   void listenFunction();
+
+   bool SendDataCommand();
+   void SendDataToDataSocket();
+
+protected:
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<ZmqContext>      context_;
-
+   std::shared_ptr<bs::network::TransportServer>   transport_;
    std::string                      connectionName_;
 
    // should be accessed only from overloaded ReadFromDataSocket.
@@ -86,15 +108,9 @@ protected:
    ZmqContext::sock_ptr             monSocket_;
 
    std::unordered_map<std::string, std::string> clientInfo_; // ClientID & related string
+   size_t   bufSizeLimit_{ 8192 };
 
-   void stopServer();
-
-   void requestPeriodicCheck();
-   std::thread::id listenThreadId() const;
 private:
-   // run in thread
-   void listenFunction();
-
    enum SocketIndex {
       ControlSocketIndex = 0,
       DataSocketIndex,
@@ -113,9 +129,6 @@ private:
       bool           sendMore;
    };
 
-   bool SendDataCommand();
-   void SendDataToDataSocket();
-
    std::thread                      listenThread_;
    std::atomic_flag                 controlSocketLockFlag_ = ATOMIC_FLAG_INIT;
    ZmqContext::sock_ptr             threadMasterSocket_;
@@ -131,7 +144,6 @@ private:
    int sendTimeoutInMs_{ 5000 };
    std::vector<std::string> fromAddresses_;
    std::string threadName_;
-
 };
 
 #endif // __ZEROMQ_SERVER_CONNECTION_H__

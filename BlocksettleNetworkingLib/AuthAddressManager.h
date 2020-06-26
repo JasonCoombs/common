@@ -27,7 +27,6 @@
 #include "BSErrorCodeStrings.h"
 #include "CommonTypes.h"
 #include "WalletEncryption.h"
-#include "ZMQ_BIP15X_Helpers.h"
 
 #include "bs_communication.pb.h"
 

@@ -14,6 +14,7 @@
 #include "FastLock.h"
 #include "MessageHolder.h"
 #include "ThreadName.h"
+#include "Transport.h"
 
 #include <spdlog/spdlog.h>
 #include <zmq.h>
@@ -25,11 +26,10 @@ namespace
 
 } // namespace
 
-ZmqServerConnection::ZmqServerConnection(
-   const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<ZmqContext>& context)
-   : logger_(logger)
-   , context_(context)
+ZmqServerConnection::ZmqServerConnection(const std::shared_ptr<spdlog::logger> &logger
+   , const std::shared_ptr<ZmqContext> &context
+   , const std::shared_ptr<bs::network::TransportServer> &tr)
+   : logger_(logger), context_(context)
    , dataSocket_(ZmqContext::CreateNullSocket())
    , monSocket_(ZmqContext::CreateNullSocket())
    , threadMasterSocket_(ZmqContext::CreateNullSocket())
@@ -38,6 +38,10 @@ ZmqServerConnection::ZmqServerConnection(
 {
    assert(logger_ != nullptr);
    assert(context_ != nullptr);
+
+   if (tr) {
+      setTransport(tr);
+   }
 }
 
 ZmqServerConnection::~ZmqServerConnection() noexcept
@@ -51,6 +55,21 @@ ZmqServerConnection::~ZmqServerConnection() noexcept
       // This is not normally needed but good to have to prevent crash in case stopServer fails
       listenThread_.join();
    }
+}
+
+void ZmqServerConnection::setTransport(const std::shared_ptr<bs::network::TransportServer> &tr)
+{
+   transport_ = tr;
+   transport_->setClientErrorCb(
+      [this](const std::string &id, const std::string &err) { notifyListenerOnClientError(id, err); }
+      , [this](const std::string &clientId, ServerConnectionListener::ClientError errorCode
+         , int socket) { notifyListenerOnClientSocketError(clientId, errorCode, socket); });
+   transport_->setDataReceivedCb([this](const std::string &clientId, const std::string &data) {
+      notifyListenerOnData(clientId, data); });
+   transport_->setSendDataCb([this](const std::string &clientId, const std::string &data) {
+      return QueueDataToSend(clientId, data, false); });
+   transport_->setConnectedCb([this](const std::string &clientId) { notifyListenerOnNewConnection(clientId); }
+      , [this](const std::string &clientId) { notifyListenerOnDisconnectedClient(clientId); });
 }
 
 bool ZmqServerConnection::isActive() const
@@ -82,6 +101,19 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       logger_->error("[{}] failed to create data socket socket {}", __func__
          , tempConnectionName);
       return false;
+   }
+
+   int bufSz = 0;
+   size_t bufSzSize = sizeof(bufSz);
+   if (zmq_getsockopt(tempDataSocket.get(), ZMQ_RCVBUF, &bufSz, &bufSzSize) != 0) {
+      if (logger_) {
+         logger_->error("[{}] failed to get RCVBUF size {}", __func__
+            , tempConnectionName);
+      }
+      return false;
+   }
+   if (bufSz > 0) {
+      bufSizeLimit_ = bufSz;
    }
 
    if (!ConfigDataSocket(tempDataSocket)) {
@@ -313,7 +345,7 @@ void ZmqServerConnection::stopServer()
       return;
    }
 
-   logger_->debug("[{}] stopping {}", __func__, connectionName_);
+//   logger_->debug("[{}] stopping {}", __func__, connectionName_);
 
    int command = ZmqServerConnection::CommandStop;
    int result = 0;
@@ -372,6 +404,7 @@ void ZmqServerConnection::notifyListenerOnNewConnection(const std::string& clien
    if (listener_) {
       listener_->OnClientConnected(clientId);
    }
+   clientInfo_[clientId] = {};
 }
 
 void ZmqServerConnection::notifyListenerOnDisconnectedClient(const std::string& clientId)
@@ -389,7 +422,8 @@ void ZmqServerConnection::notifyListenerOnClientError(const std::string& clientI
    }
 }
 
-void ZmqServerConnection::notifyListenerOnClientError(const std::string &clientId, ServerConnectionListener::ClientError errorCode, int socket)
+void ZmqServerConnection::notifyListenerOnClientSocketError(const std::string &clientId
+   , ServerConnectionListener::ClientError errorCode, int socket)
 {
    if (listener_) {
       listener_->onClientError(clientId, errorCode, socket);
@@ -418,26 +452,30 @@ bool ZmqServerConnection::QueueDataToSend(const std::string& clientId, const std
 
 void ZmqServerConnection::onPeriodicCheck()
 {
+   if (transport_) {
+      transport_->periodicCheck();
+   }
 }
 
 void ZmqServerConnection::SendDataToDataSocket()
 {
-   std::deque<DataToSend> pendingData;
-
+   decltype(dataQueue_) pendingData;
    {
       FastLock locker{dataQueueLock_};
       pendingData.swap(dataQueue_);
    }
 
    for (const auto &dataPacket : pendingData) {
-      int result = zmq_send(dataSocket_.get(), dataPacket.clientId.c_str(), dataPacket.clientId.size(), ZMQ_SNDMORE);
+      int result = zmq_send(dataSocket_.get(), dataPacket.clientId.c_str()
+         , dataPacket.clientId.size(), ZMQ_SNDMORE);
       if (result != dataPacket.clientId.size()) {
          logger_->error("[{}] {} failed to send client id {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()));
          continue;
       }
 
-      result = zmq_send(dataSocket_.get(), dataPacket.data.data(), dataPacket.data.size(), (dataPacket.sendMore ? ZMQ_SNDMORE : 0));
+      result = zmq_send(dataSocket_.get(), dataPacket.data.data(), dataPacket.data.size()
+         , (dataPacket.sendMore ? ZMQ_SNDMORE : 0));
       if (result != dataPacket.data.size()) {
          logger_->error("[{}] {} failed to send data frame {} to {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()), dataPacket.clientId);
