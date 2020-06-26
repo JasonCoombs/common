@@ -119,7 +119,10 @@ namespace bs {
 
       protected:
          virtual bool getCookie(BinaryData &cookieBuf);
-         virtual bool createCookie();
+         virtual bool createCookie();  // Cookie file is held opened for writing
+                                       // for the whole object lifetime
+         bool rmCookieFile();
+
          bool addCookieToPeers(const std::string &id);
          AuthPeersLambdas getAuthPeerLambda();
 
@@ -127,6 +130,9 @@ namespace bs {
             , bool encrypt)>;
          bool processAEAD(const bip15x::Message &, const std::unique_ptr<BIP151Connection> &
             , const WriteDataCb &, bool requesterSent);
+
+         bool fail();
+         bool isValid() const { return isValid_; }
 
       protected:
          std::shared_ptr<spdlog::logger>  logger_;
@@ -138,6 +144,7 @@ namespace bs {
          std::chrono::steady_clock::time_point lastHeartbeatCheck_{};
 
       private:
+         bool isValid_{ true };
          std::unique_ptr<std::ofstream>   cookieFile_;   //Need to keep opened for the whole object lifetime
       };
 

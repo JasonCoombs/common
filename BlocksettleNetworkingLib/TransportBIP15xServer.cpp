@@ -147,12 +147,7 @@ TransportBIP15xServer::~TransportBIP15xServer() noexcept
 
    // If it exists, delete the identity cookie.
    if (makeServerIDCookie_) {
-      if (SystemFileUtils::fileExist(cookiePath_)) {
-         if (!SystemFileUtils::rmFile(cookiePath_)) {
-            logger_->error("[~TransportBIP15xServer] unable to delete server "
-               "identity cookie {}", cookiePath_);
-         }
-      }
+      rmCookieFile();
    }
 }
 
@@ -172,6 +167,7 @@ void TransportBIP15xServer::rekey(const std::string &clientId)
    if (!connection->bip151HandshakeCompleted_) {
       logger_->error("[TransportBIP15xServer::rekey] can't rekey {} without BIP151"
          " handshaked completed", BinaryData::fromString(clientId).toHexStr());
+      connection->isValid = false;
       return;
    }
 
@@ -222,18 +218,18 @@ std::unique_ptr<BIP15xPeer> TransportBIP15xServer::getClientKey(const std::strin
 void TransportBIP15xServer::processIncomingData(const std::string &encData
    , const std::string &clientID, int socket)
 {
-   const auto connData = setBIP151Connection(clientID);
-
-   if (!connData) {
-      logger_->error("[TransportBIP15xServer::processIncomingData] failed to find connection data for client {}"
-         , BinaryData::fromString(clientID).toHexStr());
+   const auto &connData = setBIP151Connection(clientID);
+   if (!connData || !connData->isValid) {
+      logger_->error("[TransportBIP15xServer::processIncomingData] disconnected/invalid"
+         " client {} connection sent {} bytes", encData.size(), bs::toHex(clientID), encData.size());
       if (clientErrorCb_) {
          clientErrorCb_(clientID, "missing connection data");
       }
       return;
    }
 
-   const auto &packets = bip15x::MessageBuilder::parsePackets(BinaryData::fromString(encData));
+   const auto &packets = bip15x::MessageBuilder::parsePackets(BinaryData::fromString(
+      accumulBuf_.empty() ? encData : accumulBuf_ + encData));
    if (packets.empty()) {
       logger_->error("[TransportBIP15xServer::processIncomingData] packet deser failed");
       if (clientErrorCb_) {
@@ -241,6 +237,12 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
       }
       return;
    }
+   if (packets.at(0).empty()) {  // special condition to accumulate more data
+      accumulBuf_.append(encData);
+      return;
+   }
+   accumulBuf_.clear();
+
    for (auto payload : packets) {
       // Decrypt only if the BIP 151 handshake is complete.
       if (connData->bip151HandshakeCompleted_) {
@@ -255,6 +257,7 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
             if (clientErrorCb_) {
                clientErrorCb_(clientID, "packet decryption failed");
             }
+            connData->isValid = false;
             return;
          }
          payload.resize(payload.getSize() - POLY1305MACLEN);
@@ -395,6 +398,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
             //failed to init handshake, kill connection
             logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
                " handshake process failed - AEAD_ENCINIT data not obtained");
+            connection->isValid = false;
             return false;
          }
 
@@ -421,6 +425,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
             const auto &chosenKey = bip15x::convertCompressedKey(connection->encData_->getChosenAuthPeerKey());
             if (chosenKey.empty()) {
                SPDLOG_LOGGER_ERROR(logger_, "invalid choosed public key for forced trusted clients");
+               connection->isValid = false;
                return false;
             }
 
@@ -433,6 +438,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
             }
             if (!isValid) {
                SPDLOG_LOGGER_ERROR(logger_, "drop connection from unknown client, unexpected public key: {}", chosenKey.toHexStr());
+               connection->isValid = false;
                return false;
             }
          }
@@ -462,6 +468,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
    else {
       logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
          " handshake process failed");
+      connection->isValid = false;
       return false;
    }
 }
@@ -530,9 +537,9 @@ bool TransportBIP15xServer::sendData(const std::string &clientId, const std::str
    BIP151Connection* connPtr = nullptr;
 
    auto connection = GetConnection(clientId);
-   if (connection == nullptr) {
-      logger_->error("[TransportBIP15xServer::sendData] missing client connection {}"
-         , BinaryData::fromString(clientId).toHexStr());
+   if (!connection || !connection->isValid) {
+      logger_->error("[TransportBIP15xServer::sendData] can't send {} bytes to "
+         "disconnected/invalid connection {}", bs::toHex(clientId));
       return false;
    }
 

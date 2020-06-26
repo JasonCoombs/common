@@ -19,6 +19,7 @@
 #include <zmq.h>
 #include <spdlog/spdlog.h>
 
+
 ZmqDataConnection::ZmqDataConnection(const std::shared_ptr<spdlog::logger>& logger
    , const std::shared_ptr<bs::network::TransportClient> &tr, bool useMonitor)
    : logger_(logger)

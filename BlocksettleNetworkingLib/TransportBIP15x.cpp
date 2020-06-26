@@ -183,6 +183,21 @@ bool TransportBIP15x::createCookie()
    return true;
 }
 
+bool TransportBIP15x::rmCookieFile()
+{
+//      const string absCookiePath =
+//         SystemFilePaths::appDataLocation() + "/" + bipIDCookieName_;
+   cookieFile_.reset();
+   if (SystemFileUtils::fileExist(cookiePath_)) {
+      if (!SystemFileUtils::rmFile(cookiePath_)) {
+         logger_->error("[TransportBIP15x::rmCookieFile] unable to delete "
+            "identity cookie {}", cookiePath_);
+         return false;
+      }
+   }
+   return true;
+}
+
 bool TransportBIP15x::addCookieToPeers(const std::string &id)
 {
    BinaryData cookieKey(static_cast<size_t>(BTC_ECKEY_COMPRESSED_LENGTH));
@@ -226,6 +241,12 @@ AuthPeersLambdas TransportBIP15x::getAuthPeerLambda()
    return AuthPeersLambdas(getMap, getPrivKey, getAuthSet);
 }
 
+bool TransportBIP15x::fail()
+{
+   isValid_ = false;
+   return false;
+};
+
 bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
    , const std::unique_ptr<BIP151Connection> &bip151Conn, const WriteDataCb &writeCb
    , bool requesterSent/*true for server*/)
@@ -238,7 +259,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          , false) != 0) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AEAD_ENCINIT not processed");
-         return false;
+         return fail();
       }
 
       //valid encinit, send client side encack
@@ -247,7 +268,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          , BIP151PUBKEYSIZE) != 0) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AEAD_ENCACK data not obtained");
-         return false;
+         return fail();
       }
       writeCb(bip15x::MsgType::AEAD_EncAck, encackPayload, false);
    }
@@ -258,7 +279,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          , true) != 0) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AEAD_ENCACK not processed");
-         return false;
+         return fail();
       }
       break;
 
@@ -267,7 +288,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
       if (bip151Conn->getBIP150State() != BIP150State::SUCCESS) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - Not ready to rekey");
-         return false;
+         return fail();
       }
 
       // If connection is already setup, we only accept rekey enack messages.
@@ -275,7 +296,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          , false) != 0) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AEAD_REKEY not processed");
-         return false;
+         return fail();
       }
       break;
 
@@ -284,7 +305,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          , !requesterSent, bip151Conn->getProposeFlag()) != 0) { //false: haven't seen an auth challenge yet
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AUTH_REPLY not processed");
-         return false;
+         return fail();
       }
       break;
 
@@ -297,7 +318,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
       if (challengeResult == -1) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AUTH_CHALLENGE not processed");
-         return false;
+         return fail();
       } else if (challengeResult == 1) {
          goodChallenge = false;
       }
@@ -309,12 +330,12 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
       if (validReply != 0) {  // auth setup failure, kill connection
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 "
             "handshake process failed - AUTH_REPLY data not obtained");
-         return false;
+         return fail();
       }
       if (!writeCb(bip15x::MsgType::AuthReply, authreplyBuf, true)) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151"
             " handshake process failed - AUTH_REPLY not sent");
-         return false;
+         return fail();
       }
    }
    break;
@@ -327,7 +348,7 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
       if (proposeResult == -1) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151"
             " handshake process failed - AUTH_PROPOSE processing failed");
-         return false;
+         return fail();
       } else if (proposeResult == 1) {
          goodPropose = false;
       } else {
@@ -343,12 +364,12 @@ bool TransportBIP15x::processAEAD(const bip15x::Message &inMsg
          //auth setup failure, kill connection
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151 handshake process "
             "failed - AUTH_CHALLENGE data not obtained");
-         return false;
+         return fail();
       }
       if (!writeCb(bip15x::MsgType::AuthChallenge, authchallengeBuf.getRef(), true)) {
          logger_->error("[TransportBIP15x::processAEADHandshake] BIP 150/151"
             " handshake process failed - AUTH_CHALLENGE not sent");
-         return false;
+         return fail();
       }
    }
    break;
@@ -395,21 +416,14 @@ TransportBIP15xClient::TransportBIP15xClient(const std::shared_ptr<spdlog::logge
 
 TransportBIP15xClient::~TransportBIP15xClient() noexcept
 {
-   // If it exists, delete the identity cookie.
-   if (params_.cookie == BIP15xCookie::MakeClient) {
-//      const string absCookiePath =
-//         SystemFilePaths::appDataLocation() + "/" + bipIDCookieName_;
-      if (SystemFileUtils::fileExist(params_.cookiePath)) {
-         if (!SystemFileUtils::rmFile(params_.cookiePath)) {
-            logger_->error("[~TransportBIP15xClient] Unable to delete client identity"
-               " cookie {}", params_.cookiePath);
-         }
-      }
-   }
-
    // Need to close connection before socket connection is partially destroyed!
    // Otherwise it might crash in ProcessIncomingData a bit later
    closeConnection();
+
+   // If it exists, delete the identity cookie.
+   if (params_.cookie == BIP15xCookie::MakeClient) {
+      rmCookieFile();
+   }
 }
 
 // A function that handles any required rekeys before data is sent.
@@ -475,13 +489,16 @@ bool TransportBIP15xClient::sendPacket(const BinaryData &packet, bool encrypted)
       logger_->error("[TransportBIP15xClient::sendPacket] send callback not set");
       return false;
    }
+   if (!isValid()) {
+      logger_->error("[TransportBIP15xClient::sendPacket] sending packet in invalid state");
+   }
    if (encrypted && (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
       if ((bip151Connection_->getBIP150State() != BIP150State::CHALLENGE1) &&
          (bip151Connection_->getBIP150State() != BIP150State::PROPOSE) &&
          (bip151Connection_->getBIP150State() != BIP150State::REPLY2)) {
          logger_->error("[TransportBIP15xClient::sendPacket] attempt to send encrypted packet"
             " before encryption turned on ({})", (int)bip151Connection_->getBIP150State());
-         return false;
+         return fail();
       }
    }
 
@@ -499,6 +516,7 @@ void TransportBIP15xClient::rekey()
    if (!bip150HandshakeCompleted_) {
       logger_->error("[TransportBIP15xClient::rekey] Can't rekey before BIP150 "
          "handshake is complete", __func__);
+      fail();
       return;
    }
 
@@ -576,9 +594,9 @@ bool TransportBIP15xClient::startBIP151Handshake()
 // RETURN: None
 void TransportBIP15xClient::onRawDataReceived(const std::string &rawData)
 {
-   if (!bip151Connection_) {
+   if (!bip151Connection_ || !isValid()) {
       logger_->error("[TransportBIP15xClient::onRawDataReceived] received {} bytes of"
-         " data in disconnected state", rawData.size());
+         " data in disconnected/invalid state", rawData.size());
       return;
    }
 
@@ -616,6 +634,7 @@ void TransportBIP15xClient::onRawDataReceived(const std::string &rawData)
             if (socketErrorCb_) {
                socketErrorCb_(DataConnectionListener::ProtocolViolation);
             }
+            fail();
             return;
          }
          payload.resize(payload.getSize() - POLY1305MACLEN);
@@ -770,7 +789,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
             , ENCINITMSGSIZE, BIP151SymCiphers::CHACHA20POLY1305_OPENSSH) != 0) {
             logger_->error("[TransportBIP15xClient::processAEADHandshake] BIP 150/151 "
                "handshake process failed - AEAD_ENCINIT data not obtained");
-            return false;
+            return fail();
          }
          writeData(bip15x::MsgType::AEAD_EncInit, encinitPayload, false);
       }
@@ -788,7 +807,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
             } else {
                logger_->error("[TransportBIP15xClient::processAEADHandshake] BIP 150/151"
                   " handshake process failed - AEAD_ENCACK - Server public key not verified");
-               return false;
+               return fail();
             }
          }
 
@@ -800,7 +819,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
             , false) != 0) { //false: have not processed an auth propose yet
             logger_->error("[TransportBIP15xClient::processAEADHandshake] BIP 150/151 "
                "handshake process failed - AUTH_CHALLENGE data not obtained");
-            return false;
+            return fail();
          }
          writeData(bip15x::MsgType::AuthChallenge, authchallengeBuf, true);
          bip151HandshakeCompleted_ = true;
@@ -820,7 +839,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
             authproposeBuf.getSize()) != 0) {
             logger_->error("[TransportBIP15xClient::processAEADHandshake] BIP 150/151 "
                "handshake process failed - AUTH_PROPOSE data not obtained");
-            return false;
+            return fail();
          }
          writeData(bip15x::MsgType::AuthPropose, authproposeBuf, true);
       }

@@ -50,6 +50,7 @@ namespace bs {
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
          uint32_t outerRekeyCount_ = 0;
          uint32_t innerRekeyCount_ = 0;
+         bool     isValid{ true };
       };
 
       // The class establishing BIP 150/151 handshakes before encrypting/decrypting
@@ -127,6 +128,7 @@ namespace bs {
 
       private:
          std::map<std::string, std::shared_ptr<BIP15xPerConnData>>   socketConnMap_;
+         std::string accumulBuf_;
 
          TrustedClientsCallback cbTrustedClients_;
          const bool useClientIDCookie_;

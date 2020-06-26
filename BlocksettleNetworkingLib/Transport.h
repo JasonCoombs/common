@@ -11,10 +11,12 @@
 #ifndef __TRANSPORT_H__
 #define __TRANSPORT_H__
 
+#include <functional>
 #include <string>
 #include "BinaryData.h"
 #include "DataConnectionListener.h"
 #include "ServerConnectionListener.h"
+
 
 namespace bs {
    namespace network {
