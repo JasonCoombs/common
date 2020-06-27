@@ -43,6 +43,7 @@ namespace bs {
       class Wallet;
       class WalletsManager;
    }
+   struct TradeSettings;
 }
 class AddressVerificator;
 class ApplicationSettings;
@@ -80,7 +81,10 @@ public:
    void init(const std::shared_ptr<ApplicationSettings> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<SignContainer> &);
-   void setCelerClient(const std::shared_ptr<BaseCelerClient> &);
+   void initLogin(const std::shared_ptr<BaseCelerClient> &,
+      const std::shared_ptr<bs::TradeSettings> &);
+
+   const std::shared_ptr<bs::TradeSettings>& tradeSettings() const;
 
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);
@@ -195,6 +199,7 @@ protected:
 
    std::shared_ptr<SignContainer>      signingContainer_;
    std::unordered_set<unsigned int>    signIdsRevoke_;
+   std::shared_ptr<bs::TradeSettings>  tradeSettings_{nullptr};
 
 };
 
