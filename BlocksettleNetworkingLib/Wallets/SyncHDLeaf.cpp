@@ -18,7 +18,7 @@
 #include "WalletUtils.h"
 
 #include <unordered_map>
-
+#include <spdlog/spdlog.h>
 #include <QLocale>
 #include <QMutexLocker>
 
