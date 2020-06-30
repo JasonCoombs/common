@@ -14,7 +14,8 @@
 
 #include <spdlog/spdlog.h>
 
-ActiveStreamClient::ActiveStreamClient(const std::shared_ptr<spdlog::logger>& logger)
+ActiveStreamClient::ActiveStreamClient(const std::shared_ptr<spdlog::logger> &logger
+   , const std::shared_ptr<bs::network::TransportClient> &) // unused atm
    : logger_(logger)
 {}
 
