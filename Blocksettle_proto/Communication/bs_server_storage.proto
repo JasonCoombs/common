@@ -81,16 +81,77 @@ message AuthAddressInfo
    int32    address_state  = 3;
 }
 
+message SubmittedAddressQuery
+{
+   string user_name  = 1;
+}
+
+message SubmittedAddressResponse
+{
+   string            user_name   = 1;
+   repeated string   address     = 2;
+}
+
+message LoadActiveAddressRequest
+{
+   // empty
+}
+
+message ActiveAddressListResponse
+{
+   message ActiveAddressInfo
+   {
+      string   user_name         = 1;
+      string   address           = 2;
+      int32    address_state     = 3;
+      int64    settlement_count  = 4;
+   }
+
+   repeated ActiveAddressInfo active_address = 1;
+}
+
+message UpdateXbtSettlementCountRequest
+{
+   string settlement_id          = 1;
+   string requester_auth_address = 2;
+   string dealer_auth_address    = 3;
+}
+
+message UpdateXbtSettlementCountResponse
+{
+   bool  processed         = 1;
+   bool  counters_updated  = 2;
+
+   string   requester_auth_address     = 3;
+   int64    requester_settlement_count = 4;
+
+   string   dealer_auth_address        = 5;
+   int64    dealer_settlement_count    = 6;
+}
+
 message StorageAddressMessage
 {
    oneof data
    {
       AuthAddress       submit_auth_address  = 1;
       AuthAddress       fund_auth_address    = 2;
-      string            auth_address         = 3;
+      AuthAddress       revoke_auth_address  = 3;
+      string            auth_address         = 4;
 
-      AuthAddressInfo   address_info         = 4;
-      bool              put_result           = 5;
+      AuthAddressInfo   address_info         = 5;
+      bool              put_result           = 6;
+
+      SubmittedAddressQuery      get_submitted_auth_list    = 7;
+      SubmittedAddressResponse   submitted_address_list     = 8;
+
+      SubmittedAddressQuery      get_submitted_auth_count   = 9;
+      int64                      submitted_address_count    = 10;
+
+      LoadActiveAddressRequest   get_active_address_list    = 11;
+      ActiveAddressListResponse  active_address_list        = 12;
+
+      UpdateXbtSettlementCountRequest  update_settlement_count          = 13;
+      UpdateXbtSettlementCountResponse update_settlement_count_result   = 14;
    }
 }
 
@@ -390,6 +451,9 @@ message UserScoreUpdateEvent
       UnexpectedDealerCCHalf           = 29;
       UnexpectedRequesterCCHalf        = 30;
       UnexpectedCCCancel               = 31;
+
+      // Auth address submit events
+      StolenAuthAddressSubmitted       = 32;
    };
 
    string               user_email     = 1;
