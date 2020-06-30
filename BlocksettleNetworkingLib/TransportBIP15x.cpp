@@ -179,6 +179,7 @@ bool TransportBIP15x::createCookie()
    logger_->debug("[TransportBIP15x::genBIPIDCookie] writing a new identity "
       "cookie {}", cookiePath_);
    cookieFile_->write(getOwnPubKey().getCharPtr(), BTC_ECKEY_COMPRESSED_LENGTH);
+   cookieFile_->flush();
 
    return true;
 }
