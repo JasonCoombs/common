@@ -23,7 +23,6 @@
 
 #include "SignerDefs.h"
 #include "SignerUiDefs.h"
-#include "ZMQ_BIP15X_DataConnection.h"
 
 #include "PasswordDialogData.h"
 

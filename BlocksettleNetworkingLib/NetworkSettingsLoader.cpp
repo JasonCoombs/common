@@ -11,12 +11,14 @@
 #include "NetworkSettingsLoader.h"
 
 #include "RequestReplyCommand.h"
-#include "ZMQ_BIP15X_DataConnection.h"
+#include "TransportBIP15x.h"
+#include "ZmqDataConnection.h"
 #include "bs_communication.pb.h"
+
 
 NetworkSettingsLoader::NetworkSettingsLoader(const std::shared_ptr<spdlog::logger> &logger
    , const std::string &pubHost, const std::string &pubPort
-   , const ZmqBipNewKeyCb &cbApprove, QObject *parent)
+   , const bs::network::BIP15xNewKeyCb &cbApprove, QObject *parent)
    : QObject (parent)
    , logger_(logger)
    , cbApprove_(cbApprove)
@@ -33,10 +35,12 @@ void NetworkSettingsLoader::loadSettings()
       return;
    }
 
-   ZmqBIP15XDataConnectionParams params;
+   bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   auto connection = std::make_shared<ZmqBIP15XDataConnection>(logger_, params);
-   connection->setCBs(cbApprove_);
+   const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
+   bip15xTransport->setKeyCb(cbApprove_);
+   auto connection = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport);
+   connection->SetContext(std::make_shared<ZmqContext>(logger_));
 
    Blocksettle::Communication::RequestPacket reqPkt;
    reqPkt.set_requesttype(Blocksettle::Communication::GetNetworkSettingsType);

@@ -23,20 +23,26 @@
 namespace spdlog {
    class logger;
 }
+namespace bs {
+   namespace network {
+      class TransportClient;
+   }
+}
 
 struct lws_context;
 
-struct WsDataConnectionParams
+/*struct WsDataConnectionParams
 {
    const void *caBundlePtr{};
    uint32_t caBundleSize{};
    bool useSsl{true};
-};
+};*/
 
 class WsDataConnection : public DataConnection
 {
 public:
-   WsDataConnection(const std::shared_ptr<spdlog::logger>& logger, WsDataConnectionParams params);
+   WsDataConnection(const std::shared_ptr<spdlog::logger> &
+      , const std::shared_ptr<bs::network::TransportClient> &);
    ~WsDataConnection() override;
 
    WsDataConnection(const WsDataConnection&) = delete;
@@ -49,6 +55,7 @@ public:
    bool closeConnection() override;
 
    bool send(const std::string& data) override;
+   bool isActive() const override { return active_; }
 
    static int callbackHelper(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
@@ -57,18 +64,20 @@ private:
 
    void listenFunction();
 
+   bool sendRawData(const std::string &);
    void onRawDataReceived(const std::string& rawData) override;
 
    void reportFatalError(DataConnectionListener::DataConnectionError error);
 
    std::shared_ptr<spdlog::logger> logger_;
-   const WsDataConnectionParams params_;
-   DataConnectionListener *listener_{};
+//   const WsDataConnectionParams params_;
+   std::shared_ptr<bs::network::TransportClient>   transport_;
 
    lws_context *context_{};
    std::string host_;
    int port_{};
    std::atomic_bool stopped_{};
+   bool  active_{ false };
 
    std::thread listenThread_;
 

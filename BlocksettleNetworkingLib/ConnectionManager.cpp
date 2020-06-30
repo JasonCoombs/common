@@ -18,8 +18,8 @@
 #include "SubscriberConnection.h"
 #include "ZmqContext.h"
 #include "ZmqDataConnection.h"
-#include "ZMQ_BIP15X_DataConnection.h"
-#include "ZMQ_BIP15X_ServerConnection.h"
+#include "TransportBIP15x.h"
+#include "TransportBIP15xServer.h"
 
 #include <QNetworkAccessManager>
 
@@ -38,7 +38,7 @@ ConnectionManager::ConnectionManager(const std::shared_ptr<spdlog::logger>& logg
 }
 
 ConnectionManager::ConnectionManager(const std::shared_ptr<spdlog::logger>& logger
-   , const ZmqBIP15XPeers &zmqTrustedTerminals)
+   , const bs::network::BIP15xPeers &zmqTrustedTerminals)
    : logger_(logger), zmqTrustedTerminals_(zmqTrustedTerminals)
 {
    // init network
@@ -101,7 +101,7 @@ std::shared_ptr<ServerConnection> ConnectionManager::CreateCelerAPIServerConnect
 
 std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection() const
 {
-   auto connection = std::make_shared< CelerClientConnection<ZmqDataConnection> >(logger_);
+   auto connection = std::make_shared<CelerClientConnection<ZmqDataConnection> >(logger_);
    connection->SetContext(zmqContext_);
 
    return connection;
@@ -109,35 +109,41 @@ std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection()
 
 std::shared_ptr<DataConnection> ConnectionManager::CreateGenoaClientConnection(bool monitored) const
 {
-   auto connection = std::make_shared< GenoaConnection<ZmqDataConnection> >(logger_, monitored);
+   auto connection = std::make_shared<GenoaConnection<ZmqDataConnection> >(logger_, monitored);
    connection->SetContext(zmqContext_);
 
    return connection;
 }
 
-std::shared_ptr<ZmqBIP15XServerConnection> ConnectionManager::CreateZMQBIP15XChatServerConnection(
+std::shared_ptr<ServerConnection> ConnectionManager::createZmqBIP15xChatServerConnection(
    bool ephemeral, const std::string& ownKeyFileDir, const std::string& ownKeyFileName) const
 {
    auto cbTrustedClients = [this]() {
       return zmqTrustedTerminals_;
    };
+   const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15xServer>(
+      logger_, cbTrustedClients, ephemeral, ownKeyFileDir, ownKeyFileName, false);
 
-   return std::make_shared<ZmqBIP15XServerConnection>(logger_, zmqContext_
-      , cbTrustedClients, ephemeral
-      , ownKeyFileDir, ownKeyFileName, false);
+   return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_
+      , bip15xTransport);
 }
 
-ZmqBIP15XDataConnectionPtr ConnectionManager::CreateZMQBIP15XDataConnection(const ZmqBIP15XDataConnectionParams &params) const
+std::unique_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection(
+   const std::shared_ptr<bs::network::TransportBIP15xClient> &transport) const
 {
-   auto connection = std::make_shared<ZmqBIP15XDataConnection>(logger_, params);
-   return connection;
+   auto conn = std::make_unique<ZmqBinaryConnection>(logger_, transport);
+   conn->SetContext(zmqContext_);
+   return conn;
 }
 
-ZmqBIP15XDataConnectionPtr ConnectionManager::CreateZMQBIP15XDataConnection() const
+std::shared_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection() const
 {
-   ZmqBIP15XDataConnectionParams params;
+   bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
-   return CreateZMQBIP15XDataConnection(params);
+   const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
+   auto conn = std::make_shared<ZmqBinaryConnection>(logger_, transport);
+   conn->SetContext(zmqContext_);
+   return conn;
 }
 
 std::shared_ptr<ServerConnection> ConnectionManager::CreatePubBridgeServerConnection() const

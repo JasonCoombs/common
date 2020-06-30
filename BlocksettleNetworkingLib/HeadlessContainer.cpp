@@ -12,11 +12,12 @@
 
 #include "BSErrorCodeStrings.h"
 #include "ConnectionManager.h"
+#include "DataConnection.h"
 #include "ProtobufHeadlessUtils.h"
+#include "SystemFileUtils.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
-#include "SystemFileUtils.h"
-#include "ZMQ_BIP15X_DataConnection.h"
+#include "ZmqDataConnection.h"
 
 #include <QCoreApplication>
 #include <QDataStream>
@@ -1315,7 +1316,7 @@ RemoteSigner::RemoteSigner(const std::shared_ptr<spdlog::logger> &logger
    , const bool ephemeralDataConnKeys
    , const std::string& ownKeyFileDir
    , const std::string& ownKeyFileName
-   , const ZmqBipNewKeyCb& inNewKeyCB)
+   , const bs::network::BIP15xNewKeyCb &inNewKeyCB)
    : HeadlessContainer(logger, opMode)
    , host_(host), port_(port), netType_(netType)
    , ephemeralDataConnKeys_(ephemeralDataConnKeys)
@@ -1323,8 +1324,7 @@ RemoteSigner::RemoteSigner(const std::shared_ptr<spdlog::logger> &logger
    , ownKeyFileName_(ownKeyFileName)
    , cbNewKey_{inNewKeyCB}
    , connectionManager_{connectionManager}
-{
-}
+{}
 
 // Establish the remote connection to the signer.
 bool RemoteSigner::Start()
@@ -1339,7 +1339,10 @@ bool RemoteSigner::Start()
    }
 
    if (opMode() == OpMode::RemoteInproc) {
-      connection_->SetZMQTransport(ZMQTransport::InprocTransport);
+      const auto zmqConn = std::dynamic_pointer_cast<ZmqDataConnection>(connection_);
+      if (zmqConn) {
+         zmqConn->SetZMQTransport(ZMQTransport::InprocTransport);
+      }
    }
 
    {
@@ -1428,21 +1431,24 @@ void RemoteSigner::RecreateConnection()
 {
    logger_->info("[RemoteSigner::RecreateConnection] Restart connection...");
 
-   ZmqBIP15XDataConnectionParams params;
+   bs::network::BIP15xParams params;
    params.ephemeralPeers = ephemeralDataConnKeys_;
    params.ownKeyFileDir = ownKeyFileDir_;
    params.ownKeyFileName = ownKeyFileName_;
-   params.setLocalHeartbeatInterval();
 
    // Server's cookies are not available in remote mode
    if (opMode() == OpMode::Local || opMode() == OpMode::LocalInproc) {
-      params.cookie = BIP15XCookie::ReadServer;
+      params.cookie = bs::network::BIP15xCookie::ReadServer;
       params.cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
    }
 
    try {
-      connection_ = connectionManager_->CreateZMQBIP15XDataConnection(params);
-      connection_->setCBs(cbNewKey_);
+      bip15xTransport_ = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
+      bip15xTransport_->setKeyCb(cbNewKey_);
+      bip15xTransport_->setLocalHeartbeatInterval();
+      auto conn = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport_);
+      conn->SetContext(connectionManager_->zmqContext());
+      connection_ = std::move(conn);
 
       headlessConnFinished_ = false;
    }
@@ -1475,13 +1481,12 @@ bool RemoteSigner::isOffline() const
    return (listener_ == nullptr);
 }
 
-void RemoteSigner::updatePeerKeys(const ZmqBIP15XPeers &peers)
+void RemoteSigner::updatePeerKeys(const bs::network::BIP15xPeers &peers)
 {
    if (!connection_) {
       RecreateConnection();
    }
-
-   connection_->updatePeerKeys(peers);
+   bip15xTransport_->updatePeerKeys(peers);
 }
 
 void RemoteSigner::onConnected()
@@ -1643,7 +1648,7 @@ LocalSigner::LocalSigner(const std::shared_ptr<spdlog::logger> &logger
    , const std::string& ownKeyFileDir
    , const std::string& ownKeyFileName
    , double asSpendLimit
-   , const ZmqBipNewKeyCb& inNewKeyCB)
+   , const bs::network::BIP15xNewKeyCb &inNewKeyCB)
    : RemoteSigner(logger, QLatin1String("127.0.0.1"), port, netType
       , connectionManager, OpMode::Local, true
       , ownKeyFileDir, ownKeyFileName, inNewKeyCB)
@@ -1687,7 +1692,7 @@ QStringList LocalSigner::args() const
          << QString::number(asSpendLimit_, 'f', 8);
    }
    result << QLatin1String("--terminal_id_key")
-      << QString::fromStdString(connection_->getOwnPubKey().toHexStr());
+      << QString::fromStdString(bip15xTransport_->getOwnPubKey().toHexStr());
 
    return result;
 }

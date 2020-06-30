@@ -14,9 +14,13 @@
 #include <string>
 #include <memory>
 
-namespace spdlog
-{
+namespace spdlog {
    class logger;
+}
+namespace bs {
+   namespace network {
+      class TransportClient;
+   }
 }
 
 class ZmqStreamServerConnection;
@@ -24,7 +28,8 @@ class ZmqStreamServerConnection;
 class ActiveStreamClient
 {
 public:
-   ActiveStreamClient(const std::shared_ptr<spdlog::logger>& logger);
+   ActiveStreamClient(const std::shared_ptr<spdlog::logger> &
+      , const std::shared_ptr<bs::network::TransportClient> &t = nullptr);
    virtual ~ActiveStreamClient() noexcept = default;
 
    ActiveStreamClient(const ActiveStreamClient&) = delete;
@@ -42,6 +47,7 @@ public:
 
 protected:
    bool sendRawData(const std::string& data);
+   bool sendData(const std::string &data) { return send(data); }
    void notifyOnData(const std::string& data);
 
 protected:

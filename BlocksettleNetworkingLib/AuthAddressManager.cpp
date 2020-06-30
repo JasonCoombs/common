@@ -24,7 +24,6 @@
 #include "SignContainer.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
-#include "ZMQ_BIP15X_DataConnection.h"
 
 using namespace Blocksettle::Communication;
 
