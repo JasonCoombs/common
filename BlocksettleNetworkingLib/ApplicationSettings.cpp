@@ -193,7 +193,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
       { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
-      { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) }
+      { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) },
+      { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) }
    };
 }
 
