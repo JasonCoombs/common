@@ -473,7 +473,7 @@ long TransportBIP15xClient::pollTimeoutMS() const
 
 bool TransportBIP15xClient::sendData(const std::string &data)
 {
-   if (bip151Connection_->getBIP150State() != BIP150State::SUCCESS) {
+   if (!bip151Connection_ || (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
       return false;
    }
 
