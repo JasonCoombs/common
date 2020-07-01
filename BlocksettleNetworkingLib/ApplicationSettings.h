@@ -145,6 +145,8 @@ public:
       AutoStartRFQScript,
       CurrentRFQScript,
       ShowInfoWidget,
+      AutoQouting,
+      AutoSigning,
       _last
    };
 
