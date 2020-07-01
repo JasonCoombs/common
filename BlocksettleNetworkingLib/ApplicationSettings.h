@@ -144,6 +144,7 @@ public:
       DetailedSettlementTxDialogByDefault,
       AutoStartRFQScript,
       CurrentRFQScript,
+      ShowInfoWidget,
       _last
    };
 
