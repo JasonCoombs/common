@@ -194,7 +194,9 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
       { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
       { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) },
-      { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) }
+      { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) },
+      { AutoQouting,             SettingDef(QLatin1String("AutoQuoting"), false) },
+      { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) }
    };
 }
 
