@@ -57,9 +57,16 @@ void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSet
    ArmoryCallbackTarget::init(armory_.get());
 }
 
-void AuthAddressManager::setCelerClient(const std::shared_ptr<BaseCelerClient>& celerClient)
+void AuthAddressManager::initLogin(const std::shared_ptr<BaseCelerClient> &celerClient
+   , const std::shared_ptr<bs::TradeSettings> &tradeSettings)
 {
    celerClient_ = celerClient;
+   tradeSettings_ = tradeSettings;
+}
+
+const std::shared_ptr<bs::TradeSettings>& AuthAddressManager::tradeSettings() const
+{
+   return tradeSettings_;
 }
 
 void AuthAddressManager::SetAuthWallet()
@@ -551,7 +558,11 @@ bs::Address AuthAddressManager::getDefault() const
       if (!defaultAuthAddrStr.empty()) {
          defaultAddr_ = bs::Address::fromAddressString(defaultAuthAddrStr);
       }
-      const auto &verifAddresses = GetVerifiedAddressList();
+      auto verifAddresses = GetVerifiedAddressList();
+      if (verifAddresses.empty()) {
+         verifAddresses = GetSubmittedAddressList();
+      }
+
       if (verifAddresses.empty()) {
          defaultAddr_.clear();
          return {};
@@ -583,7 +594,7 @@ size_t AuthAddressManager::getDefaultIndex() const
    return 0;
 }
 
-std::vector<bs::Address> AuthAddressManager::GetSubmittedAddressList() const
+std::vector<bs::Address> AuthAddressManager::GetSubmittedAddressList(bool includeVerified /* = true */) const
 {
    std::vector<bs::Address> list;
    {
@@ -596,7 +607,7 @@ std::vector<bs::Address> AuthAddressManager::GetSubmittedAddressList() const
          if (   addressState == AddressVerificationState::Submitted
              || addressState == AddressVerificationState::PendingVerification
              || addressState == AddressVerificationState::VerificationSubmitted
-             || addressState == AddressVerificationState::Verified)
+             || (includeVerified && addressState == AddressVerificationState::Verified))
          {
             list.emplace_back(address);
          }
