@@ -194,7 +194,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
       { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
       { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) },
-      { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) }
+      { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) },
+      { LoginApiKey,             SettingDef(QLatin1String("LoginApiKey")) },
    };
 }
 
