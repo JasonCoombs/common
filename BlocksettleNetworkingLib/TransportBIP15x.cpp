@@ -473,7 +473,7 @@ long TransportBIP15xClient::pollTimeoutMS() const
 
 bool TransportBIP15xClient::sendData(const std::string &data)
 {
-   if (bip151Connection_->getBIP150State() != BIP150State::SUCCESS) {
+   if (!bip151Connection_ || (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
       return false;
    }
 
@@ -503,7 +503,7 @@ bool TransportBIP15xClient::sendPacket(const BinaryData &packet, bool encrypted)
       }
    }
 
-   if (encrypted) {
+   if (encrypted && !rekeying_) {
       rekeyIfNeeded(packet.getSize());
    }
 
@@ -524,11 +524,13 @@ void TransportBIP15xClient::rekey()
    BinaryData rekeyData(BIP151PUBKEYSIZE);
    memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
+   rekeying_ = true;
    auto packet = bip15x::MessageBuilder(rekeyData.getRef()
       , bip15x::MsgType::AEAD_Rekey).encryptIfNeeded(bip151Connection_.get()).build();
    sendPacket(packet);
    bip151Connection_->rekeyOuterSession();
    ++outerRekeyCount_;
+   rekeying_ = false;
 }
 
 // A function that is used to trigger heartbeats. Required because ZMQ is unable
