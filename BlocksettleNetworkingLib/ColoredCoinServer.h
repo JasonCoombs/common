@@ -109,13 +109,10 @@ private:
 class CcTrackerServer : public ServerConnectionListener
 {
 public:
-   CcTrackerServer(const std::shared_ptr<spdlog::logger> &logger, const std::shared_ptr<ArmoryConnection> &armory);
+   CcTrackerServer(const std::shared_ptr<spdlog::logger> &logger
+      , const std::shared_ptr<ArmoryConnection> &armory, const std::shared_ptr<ServerConnection> &server);
 
    ~CcTrackerServer() override;
-
-   bool startServer(const std::string &host, const std::string &port
-      , std::unique_ptr<ServerConnection>, const std::string &ownKeyFileDir
-      , const std::string &ownKeyFileName);
 
    void OnDataFromClient(const std::string& clientId, const std::string& data) override;
 
@@ -139,7 +136,7 @@ private:
    std::shared_ptr<spdlog::logger> logger_;
    std::shared_ptr<ArmoryConnection> armory_;
 
-   std::unique_ptr<ServerConnection> server_;
+   std::shared_ptr<ServerConnection> server_{};
 
    std::map<std::string, ClientData> connectedClients_;
 

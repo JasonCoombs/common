@@ -10,7 +10,9 @@
 */
 
 #include "ColoredCoinServer.h"
+
 #include <spdlog/spdlog.h>
+
 #include "ColoredCoinCache.h"
 #include "ColoredCoinLogic.h"
 #include "DataConnection.h"
@@ -20,7 +22,7 @@
 #include "StringUtils.h"
 #include "TransportBIP15x.h"
 #include "TransportBIP15xServer.h"
-#include "ZmqDataConnection.h"
+#include "WsDataConnection.h"
 
 #include "tracker_server.pb.h"
 
@@ -455,10 +457,9 @@ void CcTrackerClient::reconnect()
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    transport->setKeyCb(newKeyCb_);
 
-   auto conn =  std::make_unique<ZmqBinaryConnection>(logger_, transport);
-   conn->SetContext(std::make_shared<ZmqContext>(logger_));
-   connection_ = std::move(conn);
-   connection_->openConnection(host_, port_, this);
+   connection_ = std::make_unique<WsDataConnection>(logger_, transport);
+   bool result = connection_->openConnection(host_, port_, this);
+   assert(result);
 }
 
 void CcTrackerClient::parseCcCandidateTx(const std::shared_ptr<ColoredCoinSnapshot> &s
@@ -536,9 +537,10 @@ void CcTrackerClient::processParseCcCandidateTx(const bs::tracker_server::Respon
 
 
 CcTrackerServer::CcTrackerServer(const std::shared_ptr<spdlog::logger> &logger
-   , const std::shared_ptr<ArmoryConnection> &armory)
+   , const std::shared_ptr<ArmoryConnection> &armory, const std::shared_ptr<ServerConnection> &server)
    : logger_(logger)
    , armory_(armory)
+   , server_(server)
 {
    dispatchThread_ = std::thread([this]{
       while (!dispatchQueue_.done()) {
@@ -551,20 +553,6 @@ CcTrackerServer::~CcTrackerServer()
 {
    dispatchQueue_.quit();
    dispatchThread_.join();
-}
-
-bool CcTrackerServer::startServer(const std::string &host, const std::string &port
-   , std::unique_ptr<ServerConnection> srvConn, const std::string &ownKeyFileDir
-   , const std::string &ownKeyFileName)
-{
-   auto cbTrustedClients = []() -> bs::network::BIP15xPeers{
-      return {};
-   };
-   server_ = std::move(srvConn);
-   const auto &transport = std::make_shared<bs::network::TransportBIP15xServer>(logger_
-      , cbTrustedClients, ownKeyFileDir, ownKeyFileName);
-   server_->setTransport(transport);
-   return server_->BindConnection(host, port, this);
 }
 
 void CcTrackerServer::OnDataFromClient(const std::string &clientId, const std::string &data)

@@ -230,6 +230,7 @@ namespace bs {
          uint32_t innerRekeyCount_ = 0;
          bool bip150HandshakeCompleted_ = false;
          bool bip151HandshakeCompleted_ = false;
+         bool rekeying_ = false;
          std::string accumulBuf_;
 
          BIP15xNewKeyCb cbNewKey_;

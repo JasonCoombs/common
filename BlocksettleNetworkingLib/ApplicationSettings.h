@@ -146,6 +146,8 @@ public:
       CurrentRFQScript,
       ShowInfoWidget,
       LoginApiKey,
+      AutoQouting,
+      AutoSigning,
       _last
    };
 
