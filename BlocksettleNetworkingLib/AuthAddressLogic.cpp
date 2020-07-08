@@ -264,7 +264,7 @@ void ValidationAddressManager::setCustomACT(const
 
 void ValidationAddressManager::prepareCallbacks()
 {
-   //use default ACT is none is set
+   //use default ACT if none is set
    if (actPtr_) {
       return;
    }
@@ -387,7 +387,7 @@ bool AuthAddressValidator::goOnline()
       }
 
       if (aopPtr == nullptr || aopPtr->isZc()) {
-         throw std::runtime_error(
+         throw AuthLogicException(
             "validation address has no valid first outpoint");
       }
 
@@ -439,7 +439,7 @@ unsigned AuthAddressValidator::update()
          *updateValidationAddrStruct = *maStruct;
       } else {
          //can't be missing a validation address
-         throw std::runtime_error("missing validation address");
+         throw AuthLogicException("missing validation address");
       }
 
       //populate new outpoints
@@ -508,7 +508,7 @@ bool AuthAddressValidator::isValid(const BinaryData& addr) const
    }
    auto firstOutpoint = maStructPtr->getFirsOutpoint();
    if (firstOutpoint == nullptr) {
-      throw std::runtime_error("uninitialized first output");
+      throw AuthLogicException("uninitialized first output");
    }
    if (!firstOutpoint->isValid()) {
       return false;
@@ -598,16 +598,9 @@ BinaryData AuthAddressValidator::fundUserAddress(
    const bs::Address& addr,
    std::shared_ptr<ResolverFeed> feedPtr,
    const bs::Address& validationAddr) const
-{  /*
-   To vet a user address, send it coins from a validation address.
-            const auto vettingUtxos = filterVettingUtxos(validationAddr, utxos);
-            if (vettingUtxos.empty()) {
-               throw AuthLogicException("no vetting UTXOs found");
-            }
-   */
-
+{
    if (!lambdas_) {
-      throw AuthLogicException("no lambdas set");
+      throw std::runtime_error("no lambdas set");
    }
    const auto &opBatch = lambdas_->getOutpointsForAddresses({ addr });
    if (!opBatch.outpoints_.empty()) {
@@ -621,7 +614,7 @@ BinaryData AuthAddressValidator::fundUserAddress(
    const auto &utxos = lambdas_->getSpendableTxOuts();
    const auto utxo = getVettingUtxo(validationAddr, utxos);
    if (!utxo.isInitialized()) {
-      throw AuthLogicException("vetting UTXO is uninited");
+      throw AuthLogicException("missing vetting UTXO");
    }
 
    return fundUserAddress(addr, feedPtr, utxo);
@@ -712,7 +705,7 @@ BinaryData AuthAddressValidator::vetUserAddress(const bs::Address& addr
    , std::shared_ptr<ResolverFeed> feedPtr, const bs::Address& validationAddr) const
 {
    if (!lambdas_) {
-      throw AuthLogicException("no lambdas set");
+      throw std::runtime_error("no lambdas set");
    }
    const auto signedTx = fundUserAddress(addr, feedPtr, validationAddr);
 
@@ -730,7 +723,7 @@ BinaryData AuthAddressValidator::revokeValidationAddress(
    To revoke a validation address, spend its first UTXO.
    */
    if (!lambdas_) {
-      throw AuthLogicException("no lambdas set");
+      throw std::runtime_error("no lambdas set");
    }
 
    //find the MA
@@ -791,7 +784,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
    its own validation address.
    */
    if (!lambdas_) {
-      throw AuthLogicException("no lambdas set");
+      throw std::runtime_error("no lambdas set");
    }
 
    //1: find validation address vetting this address
@@ -879,7 +872,7 @@ bool AuthAddressValidator::hasZCOutputs(const bs::Address& addr) const
 {
    auto iter = validationAddresses_.find(addr.prefixed());
    if (iter == validationAddresses_.end()) {
-      throw std::runtime_error("unknown validation address");
+      throw AuthLogicException("unknown validation address");
    }
    for (auto& outpointSet : iter->second->outpoints_) {
       for (auto& outpoint : outpointSet.second) {
@@ -909,7 +902,7 @@ const BinaryData& AuthAddressValidator::findValidationAddressForTxHash(
       }
       return maPair.first;
    }
-   throw std::runtime_error("no validation address spends to that hash");
+   throw AuthLogicException("no validation address spends to that hash");
 }
 
 unsigned int AuthAddressValidator::topBlock() const
@@ -1058,26 +1051,6 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    */
 
    //grab UTXOs for address
-   auto promPtr = std::make_shared<std::promise<UTXO>>();
-   auto fut = promPtr->get_future();
-   auto utxosLbd = [&outpoint, promPtr]
-   (const std::vector<UTXO> utxos)->void
-   {
-      try {
-         if (utxos.empty()) {
-            throw std::runtime_error("no UTXOs found");
-         }
-         /*
-         Throw if we can't find the outpoint to revoke within the
-         address' utxos, as this indicates our auth state is
-         corrupt.
-         */
-         throw std::runtime_error("could not find utxo to revoke");
-      } catch (const std::exception_ptr &e) {
-         promPtr->set_exception(e);
-      }
-   };
-
    const auto &utxos = aav.getUTXOsFor(addr, true);
    UTXO revokeUtxo;
    for (auto& utxo : utxos) {
@@ -1086,6 +1059,10 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
          revokeUtxo = utxo;
          break;
       }
+   }
+
+   if (!revokeUtxo.isInitialized()) {
+      throw AuthAddressLogic("missing validation utxo to revoke user address with");
    }
 
    //we're sending the coins back to the relevant validation address
