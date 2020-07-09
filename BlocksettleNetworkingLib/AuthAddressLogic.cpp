@@ -495,12 +495,12 @@ unsigned AuthAddressValidator::update()
 }
 
 ////
-bool AuthAddressValidator::isValid(const bs::Address& addr) const
+bool AuthAddressValidator::isValidMasterAddress(const bs::Address& addr) const
 {
-   return isValid(addr.prefixed());
+   return isValidMasterAddress(addr.prefixed());
 }
 
-bool AuthAddressValidator::isValid(const BinaryData& addr) const
+bool AuthAddressValidator::isValidMasterAddress(const BinaryData& addr) const
 {
    auto maStructPtr = getValidationAddress(addr);
    if (maStructPtr == nullptr) {
@@ -537,7 +537,7 @@ UTXO AuthAddressValidator::getVettingUtxo(const bs::Address &validationAddr
          continue;
       }
       //is validation address valid?
-      if (!isValid(scrAddr)) {
+      if (!isValidMasterAddress(scrAddr)) {
          continue;
       }
       //The first utxo of a validation address isn't eligible to vet
@@ -574,7 +574,7 @@ std::vector<UTXO> AuthAddressValidator::filterVettingUtxos(
          continue;
       }
       //is validation address valid?
-      if (!isValid(scrAddr)) {
+      if (!isValidMasterAddress(scrAddr)) {
          continue;
       }
       //The first utxo of a validation address isn't eligible to vet
@@ -788,15 +788,12 @@ BinaryData AuthAddressValidator::revokeUserAddress(
    }
 
    //1: find validation address vetting this address
-   size_t foo;
-   auto paths = AuthAddressLogic::getValidPaths(*this, addr, foo);
-   if (paths.size() != 1) {
-      throw AuthLogicException("invalid user auth address");
-   }
-   auto& validationAddr = findValidationAddressForTxHash(paths[0].txHash_);
-   if (validationAddr.empty()) {
-      throw AuthLogicException("invalidated validation address");
-   }
+   auto paths = AuthAddressLogic::getAddrPathsStatus(*this, addr);
+   const auto& validatoinOutpoint = paths.getValidationOutpoint();
+
+   //this will throw if the validation address can't be found
+   auto& validationAddr = 
+      findValidationAddressForTxHash(validatoinOutpoint.txHash_);
    auto validationAddrPtr = getValidationAddress(validationAddr);
 
    std::unique_lock<std::mutex> lock(vettingMutex_);
@@ -931,25 +928,34 @@ void AuthAddressValidator::pushZC(const BinaryData &tx) const
 
 
 ///////////////////////////////////////////////////////////////////////////////
-std::vector<OutpointData> AuthAddressLogic::getValidPaths(
-   const AuthAddressValidator &aav, const bs::Address &addr, size_t &nbPaths)
+AuthAddressLogic::AddrPathsStatus AuthAddressLogic::getAddrPathsStatus(
+   const AuthAddressValidator &aav, const bs::Address &addr)
 {
-   std::vector<OutpointData> validPaths;
-   nbPaths = 0;
+   /*
+   This code can be sped up for revoked/invalidated addresses by returning at 
+   the first fail condition. It returns the full path status at the moment.
+   */
+
+   AuthAddressLogic::AddrPathsStatus paths;
 
    //get txout history for address
    const auto &opMap = aav.getOutpointsFor(addr).outpoints_;
-   if (opMap.size() != 1) {
-      //sanity check on the address history
-      throw AuthLogicException(
-         "unexpected result from getOutpointsForAddresses");
+   if (opMap.size() == 0) {
+      //no data for this address
+      paths.pathCount_ = 0;
+      return paths;
+   }
+   else if (opMap.size() != 1) {
+      //this is an error state, don't initialize the path
+      return paths;
    }
 
    auto& opVec = opMap.begin()->second;
-   nbPaths = opVec.size();
+   paths.pathCount_ = opVec.size();
 
    //check all spent outputs vs ValidationAddressManager
-   for (auto& outpoint : opVec) {
+   for (unsigned i=0; i<opVec.size(); i++) {
+      auto& outpoint = opVec[i];
       try {
          /*
          Does this txHash spend from a validation address output? It will
@@ -962,9 +968,9 @@ std::vector<OutpointData> AuthAddressLogic::getValidPaths(
          If relevant validation address is invalid, this address is invalid,
          regardless of any other path states.
          */
-         if (!aav.isValid(validationAddr)) {
-            throw AuthLogicException(
-               "Address is vetted by invalid validation address");
+         if (!aav.isValidMasterAddress(validationAddr)) {
+            paths.invalidPaths_.push_back(i);
+            continue;
          }
 
          /*
@@ -972,20 +978,22 @@ std::vector<OutpointData> AuthAddressLogic::getValidPaths(
          address.
          */
          if (outpoint.isSpent_) {
-            throw AuthLogicException(
-               "Address has been revoked");
+            paths.revokedPaths_.push_back(i);
+            continue;
          }
 
-         validPaths.push_back(outpoint);
+         paths.validPaths_.emplace(i, std::move(outpoint));
       }
-      catch (const std::exception &) {
+      catch (const AuthLogicException &) {
          continue;
       }
    }
-   return validPaths;
+   return paths;
 }
 
-bool AuthAddressLogic::isValid(const AuthAddressValidator &aav, const bs::Address &addr)
+////////////////////////////////////////////////////////////////////////////////
+bool AuthAddressLogic::isValid(
+   const AuthAddressValidator &aav, const bs::Address &addr)
 {
    return (getAuthAddrState(aav, addr) == AddressVerificationState::Verified);
 }
@@ -1005,45 +1013,66 @@ AddressVerificationState AuthAddressLogic::getAuthAddrState(
    }
 
    try {
-      size_t nbPaths = 0;
-      auto&& validPaths = getValidPaths(aav, addr, nbPaths);
+      auto&& pathState = getAddrPathsStatus(aav, addr);
+      if (!pathState.isInitialized()) {
+         throw std::runtime_error("uninitialized path state, "
+            "this happens on corrupt data from db");
+      }
 
-      //is there only 1 valid path?
-      if (validPaths.empty()) {
-         return (nbPaths > 0) ? AddressVerificationState::Revoked
-            : AddressVerificationState::NotSubmitted;
-      }
-      else if (validPaths.size() > 1) {
-         return AddressVerificationState::Revoked;
-      }
-      auto& outpoint = validPaths[0];
+      try {
+         //grab the outpoint for the validation path
+         const auto& outpoint = pathState.getValidationOutpoint();
 
-      //does this path have enough confirmations?
-      auto opHeight = outpoint.txHeight_;
-      if (currentTop >= opHeight &&
-         (1 + currentTop - opHeight) >= VALIDATION_CONF_COUNT) {
-         return AddressVerificationState::Verified;
+         //does it have enough confirmations?
+         auto opHeight = outpoint.txHeight_;
+         if (currentTop >= opHeight &&
+            (1 + currentTop - opHeight) >= VALIDATION_CONF_COUNT) {
+            return AddressVerificationState::Verified;
+         }
+         return AddressVerificationState::Verifying;
       }
-      return AddressVerificationState::PendingVerification;
+      catch (const AuthLogicException&) {
+         //failed to grab the validation output, this address is invalid
+
+         if (pathState.pathCount_ == 0) {
+            //address has no history
+            return AddressVerificationState::Virgin;
+         }
+
+         if (!pathState.invalidPaths_.empty()) {
+            //has a validation output from a revoked validation address
+            return AddressVerificationState::Invalidated_Implicit;
+         }
+
+         if (pathState.validPaths_.size() > 1) {
+            //has multiple validation outputs (we explicitly revoked this)
+            return AddressVerificationState::Invalidated_Explicit;
+         }
+
+         if (!pathState.revokedPaths_.empty()) {
+            //validation output was spent by user
+            return AddressVerificationState::Revoked;
+         }
+
+         //address has history and no validation outputs
+         return AddressVerificationState::Tainted;
+      }
    }
    catch (const AuthLogicException &) { }
 
-   return AddressVerificationState::NotSubmitted;
+   //logic error in getAddrPathsStatus, cannot proceed 
+   return AddressVerificationState::VerificationFailed;
 }
 
-////
+////////////////////////////////////////////////////////////////////////////////
 std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    const AuthAddressValidator &aav, const bs::Address &addr)
 {
    //get valid paths for address
-   size_t foo;
-   auto&& validPaths = getValidPaths(aav, addr, foo);
+   auto addrState = getAddrPathsStatus(aav, addr);
 
    //is there only 1 valid path?
-   if (validPaths.size() != 1) {
-      throw AuthLogicException("address has no valid paths");
-   }
-   auto& outpoint = validPaths[0];
+   const auto& outpoint = addrState.getValidationOutpoint();
 
    /*
    We do not check auth output maturation when revoking.
@@ -1062,7 +1091,7 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    }
 
    if (!revokeUtxo.isInitialized()) {
-      throw AuthAddressLogic("missing validation utxo to revoke user address with");
+      throw AuthLogicException("missing validation utxo to revoke user address with");
    }
 
    //we're sending the coins back to the relevant validation address
@@ -1071,6 +1100,7 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    return { addrObj, revokeUtxo };
 }
 
+////
 BinaryData AuthAddressLogic::revoke(const AuthAddressValidator &aav,
    const bs::Address &addr, const std::shared_ptr<ResolverFeed> &feedPtr)
 {
@@ -1084,6 +1114,7 @@ BinaryData AuthAddressLogic::revoke(const AuthAddressValidator &aav,
    return txObj.getThisHash();
 }
 
+////
 BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const std::shared_ptr<ResolverFeed> &feedPtr
    , const bs::Address &, const UTXO &revokeUtxo)
@@ -1093,36 +1124,50 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &
    signer.setFeed(feedPtr);
    signer.addSpender(std::make_shared<ScriptSpender>(revokeUtxo));
 
-   const std::string opReturnMsg = "BlockSettle Terminal revoke";
+   //don't waste space, OP_RETURNs are useless to the chain
+   const std::string opReturnMsg = "BSTrevoke";
    signer.addRecipient(std::make_shared<Recipient_OPRETURN>(BinaryData::fromString(opReturnMsg)));
 
    signer.sign();
    return signer.serializeSignedTx();
 }
 
-std::vector<UTXO> AuthAddressValidator::filterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
+////////////////////////////////////////////////////////////////////////////////
+bool AuthAddressLogic::AddrPathsStatus::isInitialized() const
 {
-   std::vector<UTXO> result;
+   return pathCount_ != UINT32_MAX;
+}
 
-   for (const auto& utxo : authInputs) try {
-      const auto authAddr = utxo.getRecipientScrAddr();
-      auto maStructPtr = getValidationAddress(authAddr);
-      if (maStructPtr == nullptr) {
-         continue;
+////
+bool AuthAddressLogic::AddrPathsStatus::isValid() const
+{
+   //if there are no invalid or revoked paths
+   if (invalidPaths_.empty() && revokedPaths_.empty()) {
+      
+      //and we have exactly 1 valid path
+      if (validPaths_.size() != 1) {
+         return false;
       }
 
-      if (!isValid(authAddr)) {
-         continue;
+      //and it is the first output on the address
+      auto pathIter = validPaths_.find(0);
+      if (pathIter != validPaths_.end()) {
+         return true;
       }
-
-      if (maStructPtr->isFirstOutpoint(utxo.getTxHash(), utxo.getTxOutIndex())) {
-         continue;
-      }
-
-      result.emplace_back(utxo);
-   } catch (...) {
-      continue;
    }
 
-   return result;
+   return false;
+}
+
+////
+const OutpointData& AuthAddressLogic::AddrPathsStatus::getValidationOutpoint() const
+{
+   if (!isValid())
+      throw AuthLogicException("addr isn't valid");
+
+   auto iter = validPaths_.find(0);
+   if (iter == validPaths_.end())
+      throw AuthLogicException("validation logic inconsistency");
+
+   return iter->second;
 }
