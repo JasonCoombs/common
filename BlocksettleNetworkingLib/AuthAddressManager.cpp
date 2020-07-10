@@ -99,10 +99,10 @@ bool AuthAddressManager::setup()
       if (GetState(address) != state) {
          logger_->info("Address verification on chain {} for {}", to_string(state), address.display());
 
-         if (state == AddressVerificationState::NotSubmitted) {
+         if (state == AddressVerificationState::VerificationFailed) {
             const auto &submittedAddresses = celerClient_->GetSubmittedAuthAddressSet();
             if (submittedAddresses.find(address.display()) != submittedAddresses.end()) {
-               SetState(address, AddressVerificationState::Submitted);
+               SetState(address, AddressVerificationState::VerificationFailed);
             } else {
                SetState(address, state);
             }
@@ -219,7 +219,7 @@ void AuthAddressManager::onTXSigned(unsigned int id, BinaryData signedTX, bs::er
 bool AuthAddressManager::RevokeAddress(const bs::Address &address)
 {
    const auto state = GetState(address);
-   if ((state != AddressVerificationState::PendingVerification) && (state != AddressVerificationState::Verified)) {
+   if ((state != AddressVerificationState::Verifying) && (state != AddressVerificationState::Verified)) {
       logger_->warn("[AuthAddressManager::RevokeAddress] attempting to revoke from incorrect state {}", (int)state);
       emit Error(tr("incorrect state"));
       return false;
@@ -442,7 +442,7 @@ void AuthAddressManager::onWalletChanged(const std::string &walletId)
 
 void AuthAddressManager::AddAddress(const bs::Address &addr)
 {
-   SetState(addr, AddressVerificationState::InProgress);
+   SetState(addr, AddressVerificationState::VerificationFailed);
    FastLock locker(lockList_);
    addresses_.emplace_back(addr);
 }
@@ -511,7 +511,7 @@ AddressVerificationState AuthAddressManager::GetState(const bs::Address &addr) c
    FastLock lock(statesLock_);
    const auto itState = states_.find(addr);
    if (itState == states_.end()) {
-      return AddressVerificationState::InProgress;
+      return AddressVerificationState::VerificationFailed;
    }
    return itState->second;
 }
@@ -519,7 +519,7 @@ AddressVerificationState AuthAddressManager::GetState(const bs::Address &addr) c
 void AuthAddressManager::SetState(const bs::Address &addr, AddressVerificationState state)
 {
    const auto prevState = GetState(addr);
-   if ((prevState == AddressVerificationState::Submitted) && (state == AddressVerificationState::NotSubmitted)) {
+   if (prevState == AddressVerificationState::Verifying) {
       return;
    }
 
@@ -528,11 +528,13 @@ void AuthAddressManager::SetState(const bs::Address &addr, AddressVerificationSt
       states_[addr] = state;
    }
 
-   if ((state == AddressVerificationState::Verified) && (prevState == AddressVerificationState::PendingVerification)) {
+   if ((state == AddressVerificationState::Verified) && (prevState == AddressVerificationState::Verifying)) {
       emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), tr("Verified"));
    }
-   else if (((state == AddressVerificationState::Revoked) || (state == AddressVerificationState::RevokedByBS))
-      && (prevState == AddressVerificationState::Verified)) {
+   else if ((state == AddressVerificationState::Revoked) || 
+            (state == AddressVerificationState::Invalidated_Explicit) ||
+            (state == AddressVerificationState::Invalidated_Implicit) &&
+            (prevState == AddressVerificationState::Verified)) {
       emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), tr("Revoked"));
    }
 
@@ -604,9 +606,7 @@ std::vector<bs::Address> AuthAddressManager::GetSubmittedAddressList(bool includ
       for (const auto& address : addresses_) {
          const auto addressState = GetState(address);
 
-         if (   addressState == AddressVerificationState::Submitted
-             || addressState == AddressVerificationState::PendingVerification
-             || addressState == AddressVerificationState::VerificationSubmitted
+         if (   addressState == AddressVerificationState::Verifying
              || (includeVerified && addressState == AddressVerificationState::Verified))
          {
             list.emplace_back(address);
@@ -636,9 +636,8 @@ bool AuthAddressManager::isAtLeastOneAwaitingVerification() const
       FastLock locker(lockList_);
       for (const auto &address : addresses_) {
          auto addrState = GetState(address);
-         if (addrState == AddressVerificationState::Submitted
-            || addrState == AddressVerificationState::PendingVerification
-            || addrState == AddressVerificationState::VerificationSubmitted) {
+         if (addrState == AddressVerificationState::Verifying
+            || addrState == AddressVerificationState::Verified) {
             return true;
          }
       }
@@ -652,7 +651,7 @@ bool AuthAddressManager::isAllLoadded() const
       FastLock locker(lockList_);
       for (const auto &address : addresses_) {
          auto addrState = GetState(address);
-         if (addrState == AddressVerificationState::InProgress) {
+         if (addrState == AddressVerificationState::VerificationFailed) {
             return false;
          }
       }
@@ -687,7 +686,7 @@ void AuthAddressManager::onStateChanged(ArmoryState)
 void AuthAddressManager::markAsSubmitted(const bs::Address &address)
 {
    SubmitToCeler(address);
-   SetState(address, AddressVerificationState::Submitted);
+   SetState(address, AddressVerificationState::VerificationFailed);
    emit AddressListUpdated();
    emit AuthAddressSubmitSuccess(QString::fromStdString(address.display()));
 }

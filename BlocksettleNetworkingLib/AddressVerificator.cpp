@@ -169,7 +169,7 @@ AddressVerificator::ExecutionCommand AddressVerificator::CreateAddressValidation
    auto state = std::make_shared<AddressVerificationData>();
 
    state->address = address;
-   state->currentState = AddressVerificationState::InProgress;
+   state->currentState = AddressVerificationState::VerificationFailed;
 
    return CreateAddressValidationCommand(state);
 }
@@ -226,5 +226,5 @@ std::pair<bs::Address, UTXO> AddressVerificator::getRevokeData(const bs::Address
 
 std::vector<UTXO> AddressVerificator::FilterAuthFundingUTXO(const std::vector<UTXO>& authInputs)
 {
-   return validationMgr_->filterAuthFundingUTXO(authInputs);
+   return validationMgr_->filterVettingUtxos({}, authInputs);
 }

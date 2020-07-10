@@ -161,6 +161,11 @@ protected:
 ////
 struct ValidationAddressStruct
 {
+   /*
+   Validation and master addresses are 2 names for the same thing. 
+   Master/Validation addresses are used to validate user addreses.
+   */
+
    //<tx hash, <txoutid, outpoint>>
    std::map<BinaryData,
       std::map<unsigned, std::shared_ptr<AuthOutpoint>>> outpoints_;
@@ -264,7 +269,7 @@ public:
    void pushRefreshID(const std::vector<BinaryData> &);
 
    //validation address logic
-   bool isValid(const bs::Address&) const;
+   bool isValidMasterAddress(const bs::Address&) const;
 
    bool hasSpendableOutputs(const bs::Address&) const;
    bool hasZCOutputs(const bs::Address&) const;
@@ -286,7 +291,8 @@ public:
    BinaryData revokeUserAddress(
       const bs::Address&, std::shared_ptr<ResolverFeed>);
 
-   std::vector<UTXO> filterAuthFundingUTXO(const std::vector<UTXO> &);
+   std::vector<UTXO> filterVettingUtxos(const bs::Address &validationAddr
+      , const std::vector<UTXO> &) const;
 
    unsigned int topBlock() const;
    OutpointBatch getOutpointsFor(const bs::Address &) const;
@@ -305,8 +311,6 @@ private:
 
    UTXO getVettingUtxo(const bs::Address &validationAddr
       , const std::vector<UTXO> &, size_t nbOutputs = 1) const;
-   std::vector<UTXO> filterVettingUtxos(const bs::Address &validationAddr
-      , const std::vector<UTXO> &) const;
 
    void waitOnRefresh(const std::string&);
 
@@ -353,11 +357,26 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 namespace AuthAddressLogic
 {
+   struct AddrPathsStatus
+   {
+      /*
+      Paths are signified by the order of outputs on the address
+      */
+      unsigned pathCount_ = UINT32_MAX;
+      std::map<unsigned, OutpointData> validPaths_;
+      std::vector<unsigned> invalidPaths_;
+      std::vector<unsigned> revokedPaths_;
+
+      bool isInitialized(void) const;
+      bool isValid(void) const;
+      const OutpointData& getValidationOutpoint(void) const;
+   };
+
    AddressVerificationState getAuthAddrState(const AuthAddressValidator &
       , const bs::Address &);
    bool isValid(const AuthAddressValidator &, const bs::Address &);
-   std::vector<OutpointData> getValidPaths(const AuthAddressValidator &
-      , const bs::Address &, size_t &nbPaths);
+   AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
+      , const bs::Address &);
    BinaryData revoke(const AuthAddressValidator &, const bs::Address &
       , const std::shared_ptr<ResolverFeed> &);
    std::pair<bs::Address, UTXO> getRevokeData(const AuthAddressValidator &
