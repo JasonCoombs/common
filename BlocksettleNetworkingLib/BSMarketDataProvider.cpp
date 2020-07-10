@@ -11,16 +11,21 @@
 #include "BSMarketDataProvider.h"
 
 #include "ConnectionManager.h"
+#include "CurrencyPair.h"
 #include "SubscriberConnection.h"
 
 #include <spdlog/spdlog.h>
 
 #include <vector>
 
+static const std::string kUsdCcyName = "USD";
+
 BSMarketDataProvider::BSMarketDataProvider(const std::shared_ptr<ConnectionManager> &connectionManager
-      , const std::shared_ptr<spdlog::logger> &logger, MDCallbackTarget *callbacks)
+      , const std::shared_ptr<spdlog::logger> &logger, MDCallbackTarget *callbacks
+      , bool acceptUsdPairs)
  : MarketDataProvider(logger, callbacks)
  , connectionManager_{connectionManager}
+ , acceptUsdPairs_{acceptUsdPairs}
 {}
 
 bool BSMarketDataProvider::StartMDConnection()
@@ -157,11 +162,27 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
 
    for (int i=0; i < snapshot.fx_products_size(); ++i) {
       const auto& productInfo = snapshot.fx_products(i);
+
+      if (!acceptUsdPairs_) {
+         CurrencyPair cp{productInfo.product_name()};
+         if (cp.NumCurrency() == kUsdCcyName || cp.DenomCurrency() == kUsdCcyName) {
+            continue;
+         }
+      }
+
       OnProductSnapshot(bs::network::Asset::Type::SpotFX, productInfo, timestamp);
    }
 
    for (int i=0; i < snapshot.xbt_products_size(); ++i) {
       const auto& productInfo = snapshot.xbt_products(i);
+
+      if (!acceptUsdPairs_) {
+         CurrencyPair cp{productInfo.product_name()};
+         if (cp.DenomCurrency() == kUsdCcyName) {
+            continue;
+         }
+      }
+
       OnProductSnapshot(bs::network::Asset::Type::SpotXBT, productInfo, timestamp);
    }
 
@@ -193,11 +214,27 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
 
    for (int i=0; i < update.fx_products_size(); ++i) {
       const auto& productInfo = update.fx_products(i);
+
+      if (!acceptUsdPairs_) {
+         CurrencyPair cp{productInfo.product_name()};
+         if (cp.NumCurrency() == kUsdCcyName || cp.DenomCurrency() == kUsdCcyName) {
+            continue;
+         }
+      }
+
       OnProductUpdate(bs::network::Asset::Type::SpotFX, productInfo, timestamp);
    }
 
    for (int i=0; i < update.xbt_products_size(); ++i) {
       const auto& productInfo = update.xbt_products(i);
+
+      if (!acceptUsdPairs_) {
+         CurrencyPair cp{productInfo.product_name()};
+         if (cp.DenomCurrency() == kUsdCcyName) {
+            continue;
+         }
+      }
+
       OnProductUpdate(bs::network::Asset::Type::SpotXBT, productInfo, timestamp);
    }
 
