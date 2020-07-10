@@ -329,6 +329,7 @@ private:
 
    std::atomic_bool  ready_{ false };
    mutable std::mutex vettingMutex_;
+   std::mutex updateMutex_;
 };
 
 ////

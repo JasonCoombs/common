@@ -311,6 +311,14 @@ AuthAddressValidator::getValidationAddress(const bs::Address &addr) const
 ////
 void AuthAddressValidator::addValidationAddress(const bs::Address &addr)
 {
+   /*
+   goOnline should be called from the same thread that populates the 
+   list of validation address.
+   */
+   if (ready_.load(std::memory_order_relaxed)) {
+      throw std::runtime_error("cannot modify validation address list "
+                              "after going online");
+   }
    validationAddresses_[addr] = std::make_shared<ValidationAddressStruct>();
 }
 
@@ -321,7 +329,7 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
    This process is therefor equivalent to registering the validation addresses,
    waiting for the notification and grabbing all txouts for each address.
 
-   Again, for the sake of simplicity, this method blocks untill the setup
+   Again, for the sake of simplicity, this method blocks until the setup
    is complete.
 
    You cannot change the validation address list post setup. You need to 
@@ -391,6 +399,8 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
 ////
 unsigned AuthAddressValidator::update()
 {
+   std::unique_lock<std::mutex> lock(updateMutex_);
+
    if (!lambdas_) {
       return 0;
    }
@@ -847,7 +857,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
 ////
 bool AuthAddressValidator::hasSpendableOutputs(const bs::Address& addr) const
 {
-   auto& maStruct = getValidationAddress(addr);
+   const auto& maStruct = getValidationAddress(addr);
 
    for (auto& outpointSet : maStruct->outpoints_) {
       for (auto& outpoint : outpointSet.second) {
