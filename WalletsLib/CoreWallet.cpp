@@ -22,6 +22,7 @@
 
 #include <sstream>
 
+using namespace ArmorySigner;
 using namespace bs::core;
 
 std::shared_ptr<wallet::AssetEntryMeta> wallet::AssetEntryMeta::deserialize(int, BinaryDataRef value)
@@ -261,7 +262,7 @@ Signer wallet::TXSignRequest::getSigner(const std::shared_ptr<ResolverFeed> &res
             if (resolver) {
                spender = std::make_shared<ScriptSpender>(utxo, resolver);
             } else if (populateUTXOs) {
-               spender = std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue());
+               spender = std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex());
             } else {
                spender = std::make_shared<ScriptSpender>(utxo);
             }
@@ -795,9 +796,9 @@ wallet::Seed wallet::Seed::fromXpriv(const SecureBinaryData& xpriv, NetworkType 
    //check network
 
    //check base
-   if (seed.node_.getDepth() > 0 || seed.node_.getFingerPrint() != 0)
+   if (seed.node_.getDepth() > 0 || seed.node_.getParentFingerprint() != 0) {
       throw WalletException("xpriv is not for wallet root");
-
+   }
    return seed;
 }
 
@@ -1079,7 +1080,7 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
 #endif //NDEBUG
 
    signer.setFeed(getPublicResolver());
-   signer.resolveSpenders();
+   signer.resolvePublicData();
 
    for (unsigned int i = 0; i < request.inputs.size(); ++i) {
       const auto &itSig = inputSigs.find(i);
@@ -1178,7 +1179,7 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
       spender->setFeed(wallet->getPublicResolver());
       spenders[i] = spender;
       signer.addSpender(spender);
-      signer.resolveSpenders();
+      signer.resolvePublicData();
    }
 
    for (const auto &recipient : txMultiReq.recipients) {

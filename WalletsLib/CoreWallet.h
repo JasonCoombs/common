@@ -321,7 +321,7 @@ namespace bs {
                return getSigner(resolver).getTxId();
             }
             void resolveSpenders(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const {
-               getSigner(resolver).resolveSpenders();
+               getSigner(resolver).resolvePublicData();
             }
             size_t estimateTxVirtSize() const;
 
@@ -347,7 +347,7 @@ namespace bs {
             void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ResolverFeed> &resolver=nullptr);
 
          private:
-            Signer getSigner(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const;
+            ArmorySigner::Signer getSigner(const std::shared_ptr<ResolverFeed> &resolver = nullptr) const;
 
          private:
             mutable bs::CheckRecipSigner  signer_;
@@ -496,7 +496,7 @@ namespace bs {
          //find the path for a set of prefixed scrAddr
          virtual std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) = 0;
 
-         Signer getSigner(const wallet::TXSignRequest &,
+         ArmorySigner::Signer getSigner(const wallet::TXSignRequest &,
             bool keepDuplicatedRecipients = false);
 
       protected:

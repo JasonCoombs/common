@@ -43,7 +43,7 @@ namespace bs {
    };
 
 
-   class CheckRecipSigner : public Signer
+   class CheckRecipSigner : public ArmorySigner::Signer
    {
    public:
       CheckRecipSigner(const std::shared_ptr<ArmoryConnection> &armory = nullptr)
@@ -64,7 +64,7 @@ namespace bs {
       uint64_t estimateFee(float &feePerByte, uint64_t fixedFee = 0) const;
       uint64_t outputsTotalValue() const;
       uint64_t inputsTotalValue() const;
-      std::vector<std::shared_ptr<ScriptSpender>> spenders() const { return spenders_; }
+      std::vector<std::shared_ptr<ArmorySigner::ScriptSpender>> spenders() const { return spenders_; }
       std::vector<std::shared_ptr<ScriptRecipient>> recipients() const { return recipients_; }
       bool isRBF() const;
 

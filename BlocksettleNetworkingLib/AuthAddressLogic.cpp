@@ -588,11 +588,11 @@ BinaryData ValidationAddressManager::fundUserAddress(
    const UTXO &vettingUtxo) const
 {
    //#3: create vetting tx
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
+   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
    signer.addSpender(spenderPtr);
 
    //vetting output
@@ -625,7 +625,7 @@ BinaryData ValidationAddressManager::fundUserAddresses(
    , std::shared_ptr<ResolverFeed> feedPtr
    , const std::vector<UTXO> &vettingUtxos, int64_t totalFee) const
 {
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //vetting outputs
@@ -636,7 +636,7 @@ BinaryData ValidationAddressManager::fundUserAddresses(
    int64_t changeVal = 0;
    //spenders
    for (const auto &vettingUtxo : vettingUtxos) {
-      auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
+      auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
       signer.addSpender(spenderPtr);
 
       const auto scrAddr = vettingUtxo.getRecipientScrAddr();
@@ -722,11 +722,11 @@ BinaryData ValidationAddressManager::revokeValidationAddress(
    auto&& firstUtxo = fut.get();
 
    //spend it
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ScriptSpender>(firstUtxo);
+   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(firstUtxo);
    signer.addSpender(spenderPtr);
 
    //revocation output, no need for change
@@ -803,11 +803,11 @@ BinaryData ValidationAddressManager::revokeUserAddress(
    auto&& utxo = fut.get();
 
    //3: spend to the user address
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ScriptSpender>(utxo);
+   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(utxo);
    signer.addSpender(spenderPtr);
 
    //revocation output
@@ -1075,9 +1075,9 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const bs::Address &, const UTXO &revokeUtxo)
 {
    //User side revoke: burn the validation UTXO as an OP_RETURN
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
-   signer.addSpender(std::make_shared<ScriptSpender>(revokeUtxo));
+   signer.addSpender(std::make_shared<ArmorySigner::ScriptSpender>(revokeUtxo));
 
    const std::string opReturnMsg = "BlockSettle Terminal revoke";
    signer.addRecipient(std::make_shared<Recipient_OPRETURN>(BinaryData::fromString(opReturnMsg)));

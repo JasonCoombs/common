@@ -305,7 +305,7 @@ void hd::Group::initLeaf(
    // We assume the passphrase prompt lambda is already set.
    auto lock = walletPtr_->lockDecryptedContainer();
 
-   auto accID = walletPtr_->createBIP32Account(nullptr, pathInt, accTypePtr);
+   auto accID = walletPtr_->createCustomBIP32Account(nullptr, pathInt, accTypePtr);
    leaf->setPath(path);
    leaf->init(walletPtr_, accID);
 }
@@ -319,13 +319,10 @@ void bs::core::hd::Group::initLeafXpub(const std::string& xpub, std::shared_ptr<
    auto pubkeyCopy = newPubNode.getPublicKey();
    auto chaincodeCopy = newPubNode.getChaincode();
 
-   auto pubRootAsset = std::make_shared<AssetEntry_BIP32Root>(
-      -1, BinaryData(),
-      pubkeyCopy,
-      nullptr,
-      chaincodeCopy,
-      newPubNode.getDepth(), newPubNode.getLeafID(), newPubNode.getFingerPrint()
-      );
+   auto pubRootAsset = std::make_shared<AssetEntry_BIP32Root>(-1, BinaryData()
+      , pubkeyCopy, nullptr, chaincodeCopy, newPubNode.getDepth()
+      , newPubNode.getLeafID(), newPubNode.getThisFingerprint()
+      , path.toVector());
 
    auto accTypePtr = std::make_shared<AccountType_BIP32_Custom>(); //empty ctor
 
@@ -341,11 +338,7 @@ void bs::core::hd::Group::initLeafXpub(const std::string& xpub, std::shared_ptr<
    // We assume the passphrase prompt lambda is already set.
    auto lock = walletPtr_->lockDecryptedContainer();
 
-   auto accID = walletPtr_->createBIP32Account(
-      pubRootAsset,
-      {},
-      accTypePtr
-   );
+   auto accID = walletPtr_->createCustomBIP32Account(pubRootAsset, {}, accTypePtr);
 
    leaf->setPath(path);
    leaf->init(walletPtr_, accID);
@@ -474,7 +467,7 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    //Lock the underlying armory wallet to allow accounts to derive their root from
    //the wallet's. We assume the passphrase prompt lambda is already set.
    auto lock = walletPtr_->lockDecryptedContainer();
-   auto accID = walletPtr_->createBIP32Account(nullptr, pathInt, accTypePtr);
+   auto accID = walletPtr_->createCustomBIP32Account(nullptr, pathInt, accTypePtr);
    
    authLeafPtr->setPath(path);
    authLeafPtr->init(walletPtr_, accID);

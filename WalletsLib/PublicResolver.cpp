@@ -51,3 +51,13 @@ const SecureBinaryData& bs::PublicResolver::getPrivKeyForPubkey(const BinaryData
 {
    throw std::runtime_error("not supported");
 }
+
+void bs::PublicResolver::setBip32PathForPubkey(const BinaryData&, const std::vector<uint32_t>&)
+{
+   throw std::runtime_error("not supported");
+}
+
+std::vector<uint32_t> bs::PublicResolver::resolveBip32PathForPubkey(const BinaryData&)
+{
+   throw std::runtime_error("not supported");
+}

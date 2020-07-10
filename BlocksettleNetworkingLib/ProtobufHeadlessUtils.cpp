@@ -110,7 +110,7 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
    uint64_t outputVal = 0;
    for (int i = 0; i < request.recipients_size(); i++) {
       auto serialized = BinaryData::fromString(request.recipients(i));
-      const auto recip = ScriptRecipient::deserialize(serialized);
+      const auto recip = ScriptRecipient::fromScript(serialized);
       txSignReq.recipients.push_back(recip);
       outputVal += recip->getValue();
    }

@@ -638,7 +638,7 @@ bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::strin
    }
 
    auto serialized = BinaryData::fromString(request.signpayouttxrequest().recipient());
-   const auto recip = ScriptRecipient::deserialize(serialized);
+   const auto recip = ScriptRecipient::fromScript(serialized);
    txSignReq.recipients.push_back(recip);
 
    txSignReq.fee = request.signpayouttxrequest().fee();

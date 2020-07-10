@@ -25,6 +25,7 @@
 
 #include <spdlog/spdlog.h>
 
+using namespace ArmorySigner;
 using namespace bs::sync;
 using namespace bs::signer;
 
@@ -2028,7 +2029,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
    uint64_t inputAmount = 0;
    for (const auto &utxo : utxos) {
-      signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex(), utxo.getValue()));
+      signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex()));
       request.inputs.push_back(utxo);
       inputAmount += utxo.getValue();
    }
