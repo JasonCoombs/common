@@ -132,11 +132,14 @@ void AddressVerificator::startAddressVerification()
 
    AddCommandToQueue([this] {
       try {
-         if (!validationMgr_->goOnline()) {
+         if (!validationMgr_->goOnline([this](bool result) {
+            if (result) {
+               refreshUserAddresses();
+            }
+         })) {
             SPDLOG_LOGGER_ERROR(logger_, "goOnline failed");
             return;
          }
-         refreshUserAddresses();
       }
       catch (const std::exception &e) {
          logger_->error("[AddressVerificator::startAddressVerification] failure: {}", e.what());
