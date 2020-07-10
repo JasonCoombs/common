@@ -78,6 +78,7 @@ enum ArmoryMessageType
    ArmoryPushXbtTXs        = 19;
    ArmoryGetOutputsForOPs  = 20;
    ArmorySettlementsStatus = 21;
+   ArmoryGetSpendableUTXOs = 22;
 }
 
 enum ArmoryStateData
@@ -228,12 +229,19 @@ message ArmoryUpdateCcAddrsRequest
 message ArmoryGetOutpointsForAddrListRequest
 {
    repeated string addresses = 1;
+   uint32 height = 2;
+   uint32 zc_index = 3;
 }
 
 message ArmoryGetOutpointsForAddrListResponse
 {
-   // Add other fields if needed here (isSpent_, value_, heightCutoff_ etc)
-   repeated OutPointData outpoints = 1;
+   message OutPoint {
+      bytes id = 1;
+      repeated OutPointData outpoints = 2;
+   }
+   repeated OutPoint outpoints = 1;
+   uint32 height_cutoff = 2;
+   uint32 zc_index_cutoff = 3;   
 }
 
 message ArmoryGetOutputsForOPsRequest
@@ -247,6 +255,18 @@ message ArmoryGetOutputsForOPsResponse
 {
    repeated bytes utxos = 1;
    string settlement_id = 2;
+}
+
+message ArmoryGetSpendableUTXOsRequest
+{
+   string wallet_id = 1;
+   string address = 2;
+   bool   with_ZC = 3;
+}
+
+message ArmoryGetSpendableUTXOsResponse
+{
+   repeated bytes utxos = 1;
 }
 
 message ArmoryMessage
@@ -278,6 +298,8 @@ message ArmoryMessage
       bytes                                  timeout_id              = 26;
       bool                                   get_all_utxo            = 27;
       bool                                   settlements_suspended   = 28;
+      ArmoryGetSpendableUTXOsRequest         spendable_utxos_request = 29;
+      ArmoryGetSpendableUTXOsResponse        spendable_utxos_response= 30;
    }
 }
 
@@ -1103,6 +1125,11 @@ message OutPointData
 {
    bytes  hash = 1;
    uint32 index = 2;
+   uint32 tx_height = 3;
+   uint32 tx_index = 4;
+   uint64 value = 5;
+   bool   spent = 6;
+   bytes  spender_hash = 7;
 }
 
 message TradeDataCcMessage

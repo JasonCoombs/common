@@ -119,10 +119,7 @@ void ValidationAddressACT::stop()
 void AuthValidatorCallbacks::setTarget(AuthAddressValidator *target)
 {
    //don't overwrite existing target
-   if (onUpdate)
-      return;
-
-   if (!target) {
+   if (!target || onUpdate) {
       return;
    }
    onUpdate = [target] {target->update(); };
@@ -148,9 +145,14 @@ struct VAMLambdas : public AuthValidatorCallbacks
       return (connPtr && walletObj_);
    }
 
-   std::string registerAddresses(const std::vector<BinaryData> &addrVec) override
+   std::string registerAddresses(const std::vector<bs::Address> &addrVec) override
    {
-      return walletObj_->registerAddresses(addrVec, false);
+      std::vector<BinaryData> pfxAddrs;
+      pfxAddrs.reserve(addrVec.size());
+      for (const auto &addr : addrVec) {
+         pfxAddrs.push_back(addr.prefixed());
+      }
+      return walletObj_->registerAddresses(pfxAddrs, false);
    }
 
    unsigned int topBlock() const override
@@ -163,67 +165,59 @@ struct VAMLambdas : public AuthValidatorCallbacks
       connPtr->pushZC(tx);
    }
 
-   OutpointBatch getOutpointsForAddresses(const std::vector<BinaryData> &addrs
-      , unsigned int topBlock = 0, unsigned int zcIndex = 0) const override
+   void getOutpointsForAddresses(const std::vector<bs::Address> &addrs
+      , const OutpointsCb &cb, unsigned int topBlock = 0
+      , unsigned int zcIndex = 0) override
    {
-      //keep track of txout changes in validation addresses since last seen block
-      auto promPtr = std::make_shared<std::promise<OutpointBatch>>();
-      auto futPtr = promPtr->get_future();
-      const auto &opLbd = [this, promPtr](const OutpointBatch &batch)
+      const auto &opLbd = [this, cb](const OutpointBatch &batch)
       {
-         promPtr->set_value(batch);
+         if (cb) {
+            cb(batch);
+         }
       };
-      //grab all txouts
-      connPtr->getOutpointsFor(addrs, opLbd, topBlock, zcIndex);
-      checkFutureWait(futPtr);
-      return futPtr.get();
+      std::vector<BinaryData> addrsPrefixed;
+      addrsPrefixed.reserve(addrs.size());
+      for (const auto &addr : addrs) {
+         addrsPrefixed.push_back(addr.prefixed());
+      }
+      connPtr->getOutpointsFor(addrsPrefixed, opLbd, topBlock, zcIndex);
    }
 
-   std::vector<UTXO> getSpendableTxOuts() const override
+   void getSpendableTxOuts(const UTXOsCb &cb) override
    {
       if (!connPtr || (connPtr->state() != ArmoryState::Ready)) {
-         return {};
+         if (cb) {
+            cb({});
+         }
+         return;
       }
-      auto promPtr = std::make_shared<std::promise<std::vector<UTXO>>>();
-      auto fut = promPtr->get_future();
-
-      const auto &spendableCb = [this, promPtr]
+      const auto &spendableCb = [this, cb]
          (ReturnMessage<std::vector<UTXO>> utxoVec)->void
       {
          try {
             const auto& utxos = utxoVec.get();
-            if (utxos.empty()) {
-               throw AuthLogicException("no utxos available");
+            if (cb) {
+               cb(utxos);
             }
-            promPtr->set_value(utxos);
          } catch (const std::exception &e) {
-            promPtr->set_value({});
+            if (cb) {
+               cb({});
+            }
          }
       };
       walletObj_->getSpendableTxOutListForValue(UINT64_MAX, spendableCb);
-      checkFutureWait(fut);
-      return fut.get();
    }
 
-   std::vector<UTXO> getUTXOsForAddress(const BinaryData &addr, bool withZC) const override
+   void getUTXOsForAddress(const bs::Address &addr, const UTXOsCb &cb
+      , bool withZC) override
    {
-      auto promPtr = std::make_shared<std::promise<std::vector<UTXO>>>();
-      auto fut = promPtr->get_future();
-      auto utxoLbd = [this, promPtr](
-         const std::vector<UTXO> &utxos)->void
+      auto utxoLbd = [this, cb](const std::vector<UTXO> &utxos)
       {
-         try {
-            if (utxos.empty()) {
-               throw AuthLogicException("no UTXOs");
-            }
-            promPtr->set_value(utxos);
-         } catch (const std::exception &) {
-            promPtr->set_exception(std::current_exception());
+         if (cb) {
+            cb(utxos);
          }
       };
-      connPtr->getUTXOsForAddress(addr, utxoLbd, withZC);
-      checkFutureWait(fut);
-      return fut.get();
+      connPtr->getUTXOsForAddress(addr.prefixed(), utxoLbd, withZC);
    }
 
    std::shared_ptr<ArmoryConnection> connPtr;
@@ -301,22 +295,8 @@ void AuthAddressValidator::waitOnRefresh(const std::string& id)
 }
 
 ////
-std::shared_ptr<ValidationAddressStruct> 
-AuthAddressValidator::getValidationAddress(const BinaryData& addr)
-{
-   auto iter = validationAddresses_.find(addr);
-   if (iter == validationAddresses_.end()) {
-      return nullptr;
-   }
-   //acquire to make sure we see update thread changes
-   auto ptrCopy = std::atomic_load_explicit(
-      &iter->second, std::memory_order_acquire);
-   return ptrCopy;
-}
-
-////
-const std::shared_ptr<ValidationAddressStruct>
-AuthAddressValidator::getValidationAddress(const BinaryData& addr) const
+std::shared_ptr<ValidationAddressStruct>
+AuthAddressValidator::getValidationAddress(const bs::Address &addr) const
 {
    auto iter = validationAddresses_.find(addr);
    if (iter == validationAddresses_.end()) {
@@ -331,12 +311,11 @@ AuthAddressValidator::getValidationAddress(const BinaryData& addr) const
 ////
 void AuthAddressValidator::addValidationAddress(const bs::Address &addr)
 {
-   validationAddresses_.insert({ addr.prefixed()
-      , std::make_shared<ValidationAddressStruct>() });
+   validationAddresses_[addr] = std::make_shared<ValidationAddressStruct>();
 }
 
 ////
-bool AuthAddressValidator::goOnline()
+bool AuthAddressValidator::goOnline(const ResultCb &cb)
 {  /*
    For the sake of simplicity, this assumes the BDV is already online.
    This process is therefor equivalent to registering the validation addresses,
@@ -361,42 +340,51 @@ bool AuthAddressValidator::goOnline()
    lambdas_->setTarget(this);
 
    //register validation addresses
-   std::vector<BinaryData> addrVec;
-
+   std::vector<bs::Address> addrVec;
    for (auto& addrPair : validationAddresses_) {
       addrVec.push_back(addrPair.first);
    }
-   auto &&regID = lambdas_->registerAddresses(addrVec);
-   waitOnRefresh(regID);
+   const auto &regID = lambdas_->registerAddresses(addrVec);
 
-   update();
+   std::thread([this, regID, cb] {
+      waitOnRefresh(regID);
 
-   //find & set first outpoints
-   for (auto& maPair : validationAddresses_) {
-      const auto& maStruct = *maPair.second.get();
+      update();
 
-      std::shared_ptr<AuthOutpoint> aopPtr;
-      BinaryDataRef txHash;
-      for (auto& hashPair : maStruct.outpoints_) {
-         for (auto& opPair : hashPair.second) {
-            if (*opPair.second < aopPtr) {
-               aopPtr = opPair.second;
-               txHash = hashPair.first.getRef();
+      //find & set first outpoints
+      for (auto& maPair : validationAddresses_) {
+         const auto& maStruct = *maPair.second.get();
+
+         std::shared_ptr<AuthOutpoint> aopPtr;
+         BinaryDataRef txHash;
+         for (auto& hashPair : maStruct.outpoints_) {
+            for (auto& opPair : hashPair.second) {
+               if (*opPair.second < aopPtr) {
+                  aopPtr = opPair.second;
+                  txHash = hashPair.first.getRef();
+               }
             }
          }
+
+         if (aopPtr == nullptr || aopPtr->isZc()) {
+            if (cb) {
+               cb(false);
+            }
+            throw AuthLogicException(
+               "validation address has no valid first outpoint");
+         }
+
+         maPair.second->firstOutpointHash_ = txHash;
+         maPair.second->firstOutpointIndex_ = aopPtr->txOutIndex();
       }
 
-      if (aopPtr == nullptr || aopPtr->isZc()) {
-         throw AuthLogicException(
-            "validation address has no valid first outpoint");
+      //set ready & return outpoint count
+      ready_.store(true, std::memory_order_relaxed);
+
+      if (cb) {
+         cb(true);
       }
-
-      maPair.second->firstOutpointHash_ = txHash;
-      maPair.second->firstOutpointIndex_ = aopPtr->txOutIndex();
-   }
-
-   //set ready & return outpoint count
-   ready_.store(true, std::memory_order_relaxed);
+   }).detach();
    return true;
 }
 
@@ -406,11 +394,11 @@ unsigned AuthAddressValidator::update()
    if (!lambdas_) {
       return 0;
    }
-   std::vector<BinaryData> addrVec;
+   std::vector<bs::Address> addrVec;
    for (auto& addrPair : validationAddresses_) {
       addrVec.push_back(addrPair.first);
    }
-   const auto &batch = lambdas_->getOutpointsForAddresses(addrVec, topBlock_, zcIndex_);
+   const auto &batch = getOutpointsForAddresses(addrVec, topBlock_, zcIndex_);
 
    unsigned opCount = 0;
    for (auto& outpointPair : batch.outpoints_) {
@@ -424,7 +412,7 @@ unsigned AuthAddressValidator::update()
       auto updateValidationAddrStruct = std::make_shared<ValidationAddressStruct>();
 
       //get existing address struct
-      auto maIter = validationAddresses_.find(outpointPair.first);
+      auto maIter = validationAddresses_.find(bs::Address::fromPrefixed(outpointPair.first));
       if (maIter != validationAddresses_.end()) {
          /*
          Copy the existing struct over to the new one.
@@ -494,13 +482,25 @@ unsigned AuthAddressValidator::update()
    return opCount;
 }
 
-////
-bool AuthAddressValidator::isValid(const bs::Address& addr) const
-{
-   return isValid(addr.prefixed());
+void AuthAddressValidator::update(const ResultCb &cb)
+{  // Async update to allow processing of messages while waiting for them at the same time
+   std::thread([this, cb] {
+      try {
+         update();
+         if (cb) {
+            cb(true);
+         }
+      }
+      catch (const AuthLogicException &) {
+         if (cb) {
+            cb(false);
+         }
+      }
+   }).detach();
 }
 
-bool AuthAddressValidator::isValid(const BinaryData& addr) const
+////
+bool AuthAddressValidator::isValid(const bs::Address& addr) const
 {
    auto maStructPtr = getValidationAddress(addr);
    if (maStructPtr == nullptr) {
@@ -526,18 +526,18 @@ UTXO AuthAddressValidator::getVettingUtxo(const bs::Address &validationAddr
    const uint64_t amountThreshold = nbOutputs * kAuthValueThreshold + 1000;
    for (const auto& utxo : utxos) {
       //find the validation address for this utxo
-      auto scrAddr = utxo.getRecipientScrAddr();
+      const auto &addr = bs::Address::fromUTXO(utxo);
 
       //filter by desired validation address if one was provided
-      if (!validationAddr.empty() && (scrAddr != validationAddr.prefixed())) {
+      if (!validationAddr.empty() && (addr != validationAddr)) {
          continue;
       }
-      auto maStructPtr = getValidationAddress(scrAddr);
+      auto maStructPtr = getValidationAddress(addr);
       if (maStructPtr == nullptr) {
          continue;
       }
       //is validation address valid?
-      if (!isValid(scrAddr)) {
+      if (!isValid(addr)) {
          continue;
       }
       //The first utxo of a validation address isn't eligible to vet
@@ -563,18 +563,18 @@ std::vector<UTXO> AuthAddressValidator::filterVettingUtxos(
    const uint64_t amountThreshold = kAuthValueThreshold + 1000;
    for (const auto& utxo : utxos) {
       //find the validation address for this utxo
-      auto scrAddr = utxo.getRecipientScrAddr();
+      const auto &addr = bs::Address::fromUTXO(utxo);
 
       //filter by desired validation address if one was provided
-      if (!validationAddr.empty() && (scrAddr != validationAddr.prefixed())) {
+      if (!validationAddr.empty() && (addr != validationAddr)) {
          continue;
       }
-      auto maStructPtr = getValidationAddress(scrAddr);
+      auto maStructPtr = getValidationAddress(addr);
       if (maStructPtr == nullptr) {
          continue;
       }
       //is validation address valid?
-      if (!isValid(scrAddr)) {
+      if (!isValid(addr)) {
          continue;
       }
       //The first utxo of a validation address isn't eligible to vet
@@ -602,7 +602,7 @@ BinaryData AuthAddressValidator::fundUserAddress(
    if (!lambdas_) {
       throw std::runtime_error("no lambdas set");
    }
-   const auto &opBatch = lambdas_->getOutpointsForAddresses({ addr });
+   const auto &opBatch = getOutpointsForAddresses({ addr });
    if (!opBatch.outpoints_.empty()) {
       throw AuthLogicException("can only vet virgin user addresses");
    }
@@ -611,7 +611,7 @@ BinaryData AuthAddressValidator::fundUserAddress(
 
    //#2: grab a utxo from a validation address
 
-   const auto &utxos = lambdas_->getSpendableTxOuts();
+   const auto &utxos = getSpendableTxOuts();
    const auto utxo = getVettingUtxo(validationAddr, utxos);
    if (!utxo.isInitialized()) {
       throw AuthLogicException("missing vetting UTXO");
@@ -638,8 +638,8 @@ BinaryData AuthAddressValidator::fundUserAddress(
    //vetting output
    signer.addRecipient(addr.getRecipient(bs::XBTAmount{ kAuthValueThreshold }));
 
-   const auto scrAddr = vettingUtxo.getRecipientScrAddr();
-   const auto addrIter = validationAddresses_.find(scrAddr);
+   const auto &vettingAddr = bs::Address::fromUTXO(vettingUtxo);
+   const auto addrIter = validationAddresses_.find(vettingAddr);
    if (addrIter == validationAddresses_.end()) {
       throw AuthLogicException("input addr not found in validation addresses");
    }
@@ -679,8 +679,8 @@ BinaryData AuthAddressValidator::fundUserAddresses(
       auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
       signer.addSpender(spenderPtr);
 
-      const auto scrAddr = vettingUtxo.getRecipientScrAddr();
-      const auto addrIter = validationAddresses_.find(scrAddr);
+      const auto &addr = bs::Address::fromUTXO(vettingUtxo);
+      const auto &addrIter = validationAddresses_.find(addr);
       if (addrIter == validationAddresses_.end()) {
          throw AuthLogicException("input addr not found in validation addresses");
       }
@@ -734,7 +734,7 @@ BinaryData AuthAddressValidator::revokeValidationAddress(
    std::unique_lock<std::mutex> lock(vettingMutex_);
 
    //grab UTXOs
-   const auto &utxos = lambdas_->getSpendableTxOuts();
+   const auto &utxos = getSpendableTxOuts();
    if (utxos.size() == 0) {
       throw AuthLogicException("no utxo to revoke");
    }
@@ -802,7 +802,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
    std::unique_lock<std::mutex> lock(vettingMutex_);
 
    //2: get utxo from the validation address
-   const auto &utxos = lambdas_->getUTXOsForAddress(validationAddr);
+   const auto &utxos = getUTXOsForAddress(validationAddr);
    UTXO addrUtxo;
    for (const auto &utxo : utxos) {
       //cannot use the validation address first utxo
@@ -870,7 +870,7 @@ bool AuthAddressValidator::hasSpendableOutputs(const bs::Address& addr) const
 ////
 bool AuthAddressValidator::hasZCOutputs(const bs::Address& addr) const
 {
-   auto iter = validationAddresses_.find(addr.prefixed());
+   auto iter = validationAddresses_.find(addr);
    if (iter == validationAddresses_.end()) {
       throw AuthLogicException("unknown validation address");
    }
@@ -885,14 +885,14 @@ bool AuthAddressValidator::hasZCOutputs(const bs::Address& addr) const
 }
 
 ////
-const BinaryData& AuthAddressValidator::findValidationAddressForUTXO(
+const bs::Address &AuthAddressValidator::findValidationAddressForUTXO(
    const UTXO& utxo) const
 {
    return findValidationAddressForTxHash(utxo.getTxHash());
 }
 
 ////
-const BinaryData& AuthAddressValidator::findValidationAddressForTxHash(
+const bs::Address &AuthAddressValidator::findValidationAddressForTxHash(
    const BinaryData& txHash) const
 {
    for (auto& maPair : validationAddresses_) {
@@ -912,14 +912,13 @@ unsigned int AuthAddressValidator::topBlock() const
 
 OutpointBatch AuthAddressValidator::getOutpointsFor(const bs::Address &addr) const
 {
-   return lambdas_ ? lambdas_->getOutpointsForAddresses({ addr }) : OutpointBatch{};
+   return getOutpointsForAddresses({ addr });
 }
 
 std::vector<UTXO> AuthAddressValidator::getUTXOsFor(const bs::Address &addr
    , bool withZC) const
 {
-   return lambdas_ ? lambdas_->getUTXOsForAddress(addr.prefixed(), withZC)
-      : std::vector<UTXO>{};
+   return getUTXOsForAddress(addr, withZC);
 }
 
 void AuthAddressValidator::pushZC(const BinaryData &tx) const
@@ -1062,7 +1061,7 @@ std::pair<bs::Address, UTXO> AuthAddressLogic::getRevokeData(
    }
 
    if (!revokeUtxo.isInitialized()) {
-      throw AuthAddressLogic("missing validation utxo to revoke user address with");
+      throw AuthLogicException("missing validation utxo to revoke user address with");
    }
 
    //we're sending the coins back to the relevant validation address
@@ -1105,7 +1104,7 @@ std::vector<UTXO> AuthAddressValidator::filterAuthFundingUTXO(const std::vector<
    std::vector<UTXO> result;
 
    for (const auto& utxo : authInputs) try {
-      const auto authAddr = utxo.getRecipientScrAddr();
+      const auto &authAddr = bs::Address::fromUTXO(utxo);
       auto maStructPtr = getValidationAddress(authAddr);
       if (maStructPtr == nullptr) {
          continue;
@@ -1125,4 +1124,68 @@ std::vector<UTXO> AuthAddressValidator::filterAuthFundingUTXO(const std::vector<
    }
 
    return result;
+}
+
+OutpointBatch AuthAddressValidator::getOutpointsForAddresses(const std::vector<bs::Address> &addrs
+   , unsigned int topBlock, unsigned int zcIndex) const
+{
+   if (!lambdas_) {
+      return {};
+   }
+   //keep track of txout changes in validation addresses since last seen block
+   auto promPtr = std::make_shared<std::promise<OutpointBatch>>();
+   auto futPtr = promPtr->get_future();
+   const auto &opLbd = [this, promPtr](const OutpointBatch &batch)
+   {
+      promPtr->set_value(batch);
+   };
+   //grab all txouts
+   lambdas_->getOutpointsForAddresses(addrs, opLbd, topBlock, zcIndex);
+   checkFutureWait(futPtr);
+   return futPtr.get();
+}
+
+std::vector<UTXO> AuthAddressValidator::getSpendableTxOuts() const
+{
+   if (!lambdas_) {
+      throw std::runtime_error("no lambdas set");
+   }
+   auto promPtr = std::make_shared<std::promise<std::vector<UTXO>>>();
+   auto fut = promPtr->get_future();
+
+   const auto &spendableCb = [this, promPtr]
+      (const std::vector<UTXO> &utxos)->void
+   {
+      promPtr->set_value(utxos);
+   };
+   lambdas_->getSpendableTxOuts(spendableCb);
+   checkFutureWait(fut);
+
+   const auto &utxos = fut.get();
+   if (utxos.empty()) {
+      throw AuthLogicException("no utxos available");
+   }
+   return utxos;
+}
+
+std::vector<UTXO> AuthAddressValidator::getUTXOsForAddress(const bs::Address &addr
+   , bool withZC) const
+{
+   if (!lambdas_) {
+      return {};
+   }
+   auto promPtr = std::make_shared<std::promise<std::vector<UTXO>>>();
+   auto fut = promPtr->get_future();
+   auto utxoLbd = [this, promPtr] (const std::vector<UTXO> &utxos)
+   {
+      promPtr->set_value(utxos);
+   };
+   lambdas_->getUTXOsForAddress(addr, utxoLbd, withZC);
+   checkFutureWait(fut);
+
+   const auto &utxos = fut.get();
+   if (utxos.empty()) {
+      throw AuthLogicException("no UTXOs");
+   }
+   return utxos;
 }

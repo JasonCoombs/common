@@ -208,11 +208,16 @@ struct AuthValidatorCallbacks
 
    virtual unsigned int topBlock() const = 0;
    virtual void pushZC(const BinaryData &) = 0;
-   virtual std::string registerAddresses(const std::vector<BinaryData> &) = 0;
-   virtual OutpointBatch getOutpointsForAddresses(const std::vector<BinaryData> &addrs
-      , unsigned int topBlock = 0, unsigned int zcIndex = 0) const = 0;
-   virtual std::vector<UTXO> getSpendableTxOuts() const = 0;
-   virtual std::vector<UTXO> getUTXOsForAddress(const BinaryData &, bool withZC = false) const = 0;
+   virtual std::string registerAddresses(const std::vector<bs::Address> &) = 0;
+
+   using OutpointsCb = std::function<void(OutpointBatch)>;
+   virtual void getOutpointsForAddresses(const std::vector<bs::Address> &
+      , const OutpointsCb &, unsigned int topBlock = 0, unsigned int zcIndex = 0) = 0;
+
+   using UTXOsCb = std::function<void(const std::vector<UTXO> &)>;
+   virtual void getSpendableTxOuts(const UTXOsCb &) = 0;
+   virtual void getUTXOsForAddress(const bs::Address &, const UTXOsCb &
+      , bool withZC = false) = 0;
 
    using OnUpdate = std::function<void()>;
    OnUpdate onUpdate{ nullptr };
@@ -247,8 +252,11 @@ public:
    These methods return the amount of outpoints received. It
    allows for coverage of the db data flow.
    */
-   bool goOnline(void);
+   using ResultCb = std::function<void(bool)>;
+   bool goOnline(const ResultCb &);
+
    unsigned update(void);
+   void update(const ResultCb &);
 
    bool isReady() const { return ready_; }
 
@@ -257,13 +265,12 @@ public:
 
    //validation address logic
    bool isValid(const bs::Address&) const;
-   bool isValid(const BinaryData&) const;
 
    bool hasSpendableOutputs(const bs::Address&) const;
    bool hasZCOutputs(const bs::Address&) const;
 
-   const BinaryData& findValidationAddressForUTXO(const UTXO&) const;
-   const BinaryData& findValidationAddressForTxHash(const BinaryData&) const;
+   const bs::Address &findValidationAddressForUTXO(const UTXO&) const;
+   const bs::Address &findValidationAddressForTxHash(const BinaryData&) const;
 
    //tx generating methods
    BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ResolverFeed>,
@@ -294,22 +301,25 @@ protected:
 
 private:
    std::shared_ptr<ValidationAddressStruct>
-      getValidationAddress(const BinaryData&);
+      getValidationAddress(const bs::Address &) const;
 
    UTXO getVettingUtxo(const bs::Address &validationAddr
       , const std::vector<UTXO> &, size_t nbOutputs = 1) const;
    std::vector<UTXO> filterVettingUtxos(const bs::Address &validationAddr
       , const std::vector<UTXO> &) const;
 
-   const std::shared_ptr<ValidationAddressStruct>
-      getValidationAddress(const BinaryData&) const;
-
    void waitOnRefresh(const std::string&);
+
+   OutpointBatch getOutpointsForAddresses(const std::vector<bs::Address> &
+      , unsigned int topBlock = 0, unsigned int zcIndex = 0) const;
+   std::vector<UTXO> getSpendableTxOuts() const;
+   std::vector<UTXO> getUTXOsForAddress(const bs::Address &
+      , bool withZC = false) const;
 
 private:
    ArmoryThreading::BlockingQueue<BinaryData> refreshQueue_;
 
-   std::map<BinaryData, std::shared_ptr<ValidationAddressStruct>> validationAddresses_;
+   std::map<bs::Address, std::shared_ptr<ValidationAddressStruct>>   validationAddresses_;
    unsigned topBlock_ = 0;
    unsigned zcIndex_ = 0;
 
