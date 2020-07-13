@@ -895,7 +895,7 @@ SecureBinaryData hd::Wallet::getDecryptedRootXpriv(void) const
    
    BIP32_Node node;
    node.initFromPrivateKey(
-      rootBip32->getDepth(), rootBip32->getLeafID(), rootBip32->getThisFingerprint(),
+      rootBip32->getDepth(), rootBip32->getLeafID(), rootBip32->getParentFingerprint(),
       decryptedRootPrivKey, rootBip32->getChaincode());
    return node.getBase58();
 }

@@ -321,7 +321,7 @@ void bs::core::hd::Group::initLeafXpub(const std::string& xpub, std::shared_ptr<
 
    auto pubRootAsset = std::make_shared<AssetEntry_BIP32Root>(-1, BinaryData()
       , pubkeyCopy, nullptr, chaincodeCopy, newPubNode.getDepth()
-      , newPubNode.getLeafID(), newPubNode.getThisFingerprint()
+      , newPubNode.getLeafID(), newPubNode.getParentFingerprint()
       , path.toVector());
 
    auto accTypePtr = std::make_shared<AccountType_BIP32_Custom>(); //empty ctor
