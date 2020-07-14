@@ -50,7 +50,7 @@ public:
    bool send(const std::string& data) override
    {
       std::string message = data + marker;
-      return _S::sendData(message);
+      return _S::sendRawData(message);
    }
 
 protected:
