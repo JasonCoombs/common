@@ -195,6 +195,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
       { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) },
       { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) },
+      { LoginApiKey,             SettingDef(QLatin1String("LoginApiKey")) },
       { AutoQouting,             SettingDef(QLatin1String("AutoQuoting"), false) },
       { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) }
    };

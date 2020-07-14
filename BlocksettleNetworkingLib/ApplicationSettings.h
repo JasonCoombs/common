@@ -145,6 +145,7 @@ public:
       AutoStartRFQScript,
       CurrentRFQScript,
       ShowInfoWidget,
+      LoginApiKey,
       AutoQouting,
       AutoSigning,
       _last
