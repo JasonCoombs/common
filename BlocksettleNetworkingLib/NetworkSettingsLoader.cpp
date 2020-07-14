@@ -12,7 +12,8 @@
 
 #include "RequestReplyCommand.h"
 #include "TransportBIP15x.h"
-#include "ZmqDataConnection.h"
+#include "Bip15xDataConnection.h"
+#include "WsDataConnection.h"
 #include "bs_communication.pb.h"
 
 
@@ -39,8 +40,8 @@ void NetworkSettingsLoader::loadSettings()
    params.ephemeralPeers = true;
    const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    bip15xTransport->setKeyCb(cbApprove_);
-   auto connection = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport);
-   connection->SetContext(std::make_shared<ZmqContext>(logger_));
+   auto wsConn = std::make_unique<WsDataConnection>(logger_, WsDataConnectionParams{});
+   auto connection = std::make_shared<Bip15xDataConnection>(logger_, std::move(wsConn), bip15xTransport);
 
    Blocksettle::Communication::RequestPacket reqPkt;
    reqPkt.set_requesttype(Blocksettle::Communication::GetNetworkSettingsType);

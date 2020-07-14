@@ -58,14 +58,6 @@ public:
    std::shared_ptr<DataConnection>     CreateGenoaClientConnection(
       bool monitored = false) const;
 
-   std::unique_ptr<DataConnection>  createZmqBIP15xDataConnection(
-      const std::shared_ptr<bs::network::TransportBIP15xClient> &) const;
-   std::shared_ptr<DataConnection>  createZmqBIP15xDataConnection() const;
-
-   std::shared_ptr<ServerConnection> createZmqBIP15xChatServerConnection(
-      bool ephemeral = false, const std::string& ownKeyFileDir = ""
-      , const std::string& ownKeyFileName = "") const;
-
    std::shared_ptr<ServerConnection>   CreatePubBridgeServerConnection() const;
 
    std::shared_ptr<ServerConnection>   CreateMDRestServerConnection() const;

@@ -23,7 +23,7 @@ class WebsocketsSettings(Configurator):
         self._version = '4.0.15'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
-        self._script_revision = '8'
+        self._script_revision = '9'
 
     def get_package_name(self):
         return self._package_name + '-' + self._version
@@ -93,6 +93,9 @@ class WebsocketsSettings(Configurator):
             env_vars['LDFLAGS'] = "crypt32.Lib"
         if self._project_settings.on_osx():
             env_vars['LDFLAGS'] = "-L" + self.openssl.get_install_dir() + "/lib"
+
+        # Workaround for data race: https://github.com/warmcat/libwebsockets/issues/1836
+        env_vars['CFLAGS'] = "-Dmalloc_usable_size="
 
         result = subprocess.call(command, env=env_vars)
         return result == 0

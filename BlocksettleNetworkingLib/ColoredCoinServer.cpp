@@ -457,7 +457,8 @@ void CcTrackerClient::reconnect()
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    transport->setKeyCb(newKeyCb_);
 
-   connection_ = std::make_unique<WsDataConnection>(logger_, transport);
+   WsDataConnectionParams wsParams;
+   connection_ = std::make_unique<WsDataConnection>(logger_, wsParams);
    bool result = connection_->openConnection(host_, port_, this);
    assert(result);
 }
@@ -584,7 +585,7 @@ void CcTrackerServer::OnDataFromClient(const std::string &clientId, const std::s
    });
 }
 
-void CcTrackerServer::OnClientConnected(const std::string &clientId)
+void CcTrackerServer::OnClientConnected(const std::string &clientId, const Details &details)
 {
    SPDLOG_LOGGER_INFO(logger_, "new client connected: {}", bs::toHex(clientId));
    dispatchQueue_.dispatch([this, clientId] {

@@ -157,9 +157,16 @@ enum ControlPasswordStatus
 
 ////////////////////////////////////////////////////////////////////////////////
 
-message PeerEvent
+message ClientConnected
 {
-   string ip_address = 1;
+   bytes client_id = 1;
+   string ip_address = 2;
+   string public_key = 3;
+}
+
+message ClientDisconnected
+{
+   bytes client_id = 1;
 }
 
 message SignTxEvent

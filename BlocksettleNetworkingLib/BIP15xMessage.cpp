@@ -12,26 +12,13 @@
 
 using namespace bs::network::bip15x;
 
-static const uint8_t kPacketPrefix = 0x42;
-
-
 void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, MsgType type)
 {
-   //is this payload carrying a msgid?
-   const bool insertMsgId = (type == MsgType::SinglePacket);
-
    BinaryWriter writer;
-   writer.put_uint32_t(0); // Placeholder for required BIP150 field - don't touch
-
+   // Store packet length, will be used in chacha20poly1305_get_length later
+   writer.put_uint32_t(0);
    writer.put_uint8_t(static_cast<uint8_t>(type));
-
-   if (insertMsgId) {
-      // we don't use msg ID for now but keep it for possible feature usage
-      writer.put_uint32_t(0);
-   }
-   if (dataSize) {
-      writer.put_BinaryData(data, dataSize);
-   }
+   writer.put_BinaryData(data, dataSize);
    packet_ = writer.getData();
    uint32_t packetSize = uint32_t(packet_.getSize() - sizeof(uint32_t));
    std::memcpy(packet_.getPtr(), &packetSize, sizeof(packetSize));
@@ -84,34 +71,7 @@ MessageBuilder &MessageBuilder::encryptIfNeeded(BIP151Connection *conn)
 
 BinaryData MessageBuilder::build() const
 {
-   BinaryWriter writer;
-   writer.put_uint8_t(kPacketPrefix);
-   writer.put_var_int(packet_.getSize());
-   writer.put_BinaryData(packet_);
-   return writer.getData();
-}
-
-std::vector<BinaryData> MessageBuilder::parsePackets(const BinaryDataRef &packet)
-{
-   try {
-      std::vector<BinaryData> result;
-      BinaryRefReader reader(packet);
-
-      while (reader.getSizeRemaining() > 0) {
-         const uint8_t prefix = reader.get_uint8_t();
-         if (prefix != kPacketPrefix) {
-            return {};
-         }
-         const int len = reader.get_var_int();
-         if (len > reader.getSizeRemaining()) {
-            return { {} }; // Special return type, means "wait for more data"
-         }
-         result.push_back(reader.get_BinaryData(len));
-      }
-      return result;
-   } catch (const std::exception &) {
-      return {};
-   }
+   return packet_;
 }
 
 Message Message::parse(const BinaryDataRef &packet)
@@ -122,15 +82,10 @@ Message Message::parse(const BinaryDataRef &packet)
       if (packetLen != reader.getSizeRemaining()) {
          return {};
       }
-
       const auto type = static_cast<MsgType>(reader.get_uint8_t());
       switch (type)
       {
       case MsgType::SinglePacket:
-         // skip not used message ID
-         reader.get_uint32_t();
-         break;
-
       case MsgType::AEAD_Setup:
       case MsgType::AEAD_PresentPubkey:
       case MsgType::AEAD_EncInit:
@@ -139,8 +94,6 @@ Message Message::parse(const BinaryDataRef &packet)
       case MsgType::AuthChallenge:
       case MsgType::AuthReply:
       case MsgType::AuthPropose:
-      case MsgType::Heartbeat:
-      case MsgType::Disconnect:
          break;
 
       default:
@@ -149,7 +102,7 @@ Message Message::parse(const BinaryDataRef &packet)
 
       Message result;
       result.type_ = type;
-      result.data_ = reader.get_BinaryDataRef(reader.getSizeRemaining());
+      result.data_ = reader.get_BinaryDataRef(static_cast<uint32_t>(reader.getSizeRemaining()));
       return result;
    } catch (...) {
       return {};

@@ -45,9 +45,9 @@ public:
       listener_->OnDataFromClient(getRouterClientId(index_, clientId), data);
    }
 
-   void OnClientConnected(const std::string& clientId) override
+   void OnClientConnected(const std::string& clientId, const Details &details) override
    {
-      listener_->OnClientConnected(getRouterClientId(index_, clientId));
+      listener_->OnClientConnected(getRouterClientId(index_, clientId), details);
    }
 
    void OnClientDisconnected(const std::string& clientId) override
@@ -55,24 +55,9 @@ public:
       listener_->OnClientDisconnected(getRouterClientId(index_, clientId));
    }
 
-   void OnPeerConnected(const std::string &ip) override
+   void onClientError(const std::string &clientId, ClientError error, const Details &details) override
    {
-      listener_->OnPeerConnected(ip);
-   }
-
-   void OnPeerDisconnected(const std::string &ip) override
-   {
-      listener_->OnPeerDisconnected(ip);
-   }
-
-   void onClientError(const std::string &clientId, const std::string &error) override
-   {
-      listener_->onClientError(getRouterClientId(index_, clientId), error);
-   }
-
-   void onClientError(const std::string &clientId, ClientError errorCode, int socket) override
-   {
-      listener_->onClientError(getRouterClientId(index_, clientId), errorCode, socket);
+      listener_->onClientError(getRouterClientId(index_, clientId), error, details);
    }
 
    ServerConnectionListener *listener_{};
@@ -104,11 +89,6 @@ bool RouterServerConnection::BindConnection(const std::string& host , const std:
       index += 1;
    }
    return result;
-}
-
-std::string RouterServerConnection::GetClientInfo(const std::string &clientId) const
-{
-   return {};
 }
 
 bool RouterServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)

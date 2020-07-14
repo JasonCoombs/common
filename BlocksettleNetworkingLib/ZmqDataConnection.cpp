@@ -12,32 +12,22 @@
 
 #include "FastLock.h"
 #include "MessageHolder.h"
-#include "ThreadName.h"
-#include "Transport.h"
 #include "ZmqHelperFunctions.h"
 
 #include <zmq.h>
 #include <spdlog/spdlog.h>
 
-
-ZmqDataConnection::ZmqDataConnection(const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<bs::network::TransportClient> &tr, bool useMonitor)
+ZmqDataConnection::ZmqDataConnection(const std::shared_ptr<spdlog::logger>& logger, bool useMonitor)
    : logger_(logger)
-   , transport_(tr)
    , useMonitor_(useMonitor)
    , dataSocket_(ZmqContext::CreateNullSocket())
    , monSocket_(ZmqContext::CreateNullSocket())
    , threadMasterSocket_(ZmqContext::CreateNullSocket())
    , threadSlaveSocket_(ZmqContext::CreateNullSocket())
+   , isConnected_(false)
 {
    assert(logger_);
    continueExecution_ = std::make_shared<bool>(false);
-
-   if (transport_) {
-      transport_->setSendCb([this](const std::string &d) { return sendRawData(d); });
-      transport_->setNotifyDataCb([this](const std::string &d) { notifyOnData(d); });
-      transport_->setSocketErrorCb([this](DataConnectionListener::DataConnectionError e) { onError(e); });
-   }
 }
 
 ZmqDataConnection::~ZmqDataConnection() noexcept
@@ -70,10 +60,6 @@ bool ZmqDataConnection::openConnection(const std::string& host
 {
    assert(context_ != nullptr);
    assert(listener != nullptr);
-
-   if (transport_) {
-      transport_->openConnection(host, port);
-   }
 
    if (isActive()) {
       if (logger_) {
@@ -188,20 +174,6 @@ bool ZmqDataConnection::openConnection(const std::string& host
       return false;
    }
 
-   int bufSz = 0;
-   size_t bufSzSize = sizeof(bufSz);
-   result = zmq_getsockopt(tempDataSocket.get(), ZMQ_RCVBUF, &bufSz, &bufSzSize);
-   if (result != 0) {
-      if (logger_) {
-         logger_->error("[{}] failed to get RCVBUF size {}", __func__
-            , tempConnectionName);
-      }
-      return false;
-   }
-   if (bufSz > 0) {
-      bufSizeLimit_ = bufSz;
-   }
-
    // get socket id
    result = zmq_getsockopt(tempDataSocket.get(), ZMQ_IDENTITY, buf, &buf_size);
    if (result != 0) {
@@ -273,77 +245,8 @@ bool ZmqDataConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
    return true;
 }
 
-void ZmqDataConnection::onError(DataConnectionListener::DataConnectionError errorCode)
-{
-   if (transport_ && (errorCode == DataConnectionListener::NoError)) {  // connection signal from transport
-      onConnected();
-      return;
-   }
-
-   assert(std::this_thread::get_id() == listenThread_.get_id());
-
-   // Notify about error only once
-   if (!isConnected_ && (errorCode != DataConnectionListener::ConnectionTimeout)) {
-      return;
-   }
-
-/*   if (errorCode == DataConnectionListener::SerializationFailed) {
-      if (logger_) {
-         logger_->warn("[ZmqDataConnection::onError] deser error - non fatal, "
-            "just skip corrupted data");
-      }
-      return;
-   }*/
-
-   if (isConnected_) {
-      onDisconnected();
-   }
-
-   if (logger_) {
-      logger_->error("[ZmqDataConnection::onError] error {}", (int)errorCode);
-   }
-   isConnected_ = false;
-   notifyOnError(errorCode);
-}
-
-void ZmqDataConnection::onConnected()
-{
-   assert(std::this_thread::get_id() == listenThread_.get_id());
-   assert(!isConnected_);
-
-   isConnected_ = true;
-   if (transport_) {
-      transport_->socketConnected();
-   }
-   notifyOnConnected();
-}
-
-void ZmqDataConnection::onDisconnected()
-{
-   assert(std::this_thread::get_id() == listenThread_.get_id());
-   assert(isConnected_);
-   isConnected_ = false;
-   if (transport_) {
-      transport_->socketDisconnected();
-   }
-   notifyOnDisconnected();
-}
-
-bool ZmqDataConnection::sendData(const std::string &data)
-{
-   if (transport_) {
-      return transport_->sendData(data);
-   }
-   else {
-      return sendRawData(data);
-   }
-}
-
 void ZmqDataConnection::listenFunction()
 {
-   if (transport_) {
-      bs::setCurrentThreadName(transport_->listenThreadName());
-   }
    zmq_pollitem_t  poll_items[3];
    memset(&poll_items, 0, sizeof(poll_items));
 
@@ -361,34 +264,15 @@ void ZmqDataConnection::listenFunction()
    int result;
 
    auto executionFlag = continueExecution_;
-   if (transport_) {
-      transport_->startConnection();
-   }
-   bool transportConnected = false;
 
    while (*executionFlag) {
-      result = zmq_poll(poll_items, monSocket_ ? 3 : 2
-         , transport_ ? transport_->pollTimeoutMS() : -1);
+      result = zmq_poll(poll_items, monSocket_ ? 3 : 2, -1);
       if (result == -1) {
          if (logger_) {
             logger_->error("[{}] poll failed for {} : {}", __func__
                , connectionName_, zmq_strerror(zmq_errno()));
          }
          break;
-      }
-
-      if (transport_) {
-         if (transport_->connectTimedOut()) {
-            if (transport_->handshakeTimedOut()) {
-               SPDLOG_LOGGER_ERROR(logger_, "ZMQ handshake is timed out");
-               onError(DataConnectionListener::HandshakeFailed);
-            } else {
-               SPDLOG_LOGGER_ERROR(logger_, "ZMQ transport connection is timed out");
-               onError(DataConnectionListener::ConnectionTimeout);
-            }
-            break;
-         }
-         transport_->triggerHeartbeatCheck();
       }
 
       if (poll_items[ZmqDataConnection::ControlSocketIndex].revents & ZMQ_POLLIN) {
@@ -432,9 +316,6 @@ void ZmqDataConnection::listenFunction()
             }
          }
          else if (command_code == ZmqDataConnection::CommandStop) {
-            if (transport_) {
-               transport_->sendDisconnect();
-            }
             break;
          } else {
             if (logger_) {
@@ -462,22 +343,16 @@ void ZmqDataConnection::listenFunction()
          // NOTE: for ZMQ based connections this event might better suited than ZMQ_EVENT_CONNECTED
          // but they always came in pairs
          //case ZMQ_EVENT_HANDSHAKE_SUCCEEDED:
-            if (transport_) {
-               if (!transportConnected) {
-                  transport_->startHandshake();
-                  transportConnected = true;
-               }
-            }
-            else {
-               if (!isConnected_) {
-                  onConnected();
-               }
+            if (!isConnected_) {
+               notifyOnConnected();
+               isConnected_ = true;
             }
             break;
 
          case ZMQ_EVENT_DISCONNECTED:
             if (isConnected_) {
-               onDisconnected();
+               notifyOnDisconnected();
+               isConnected_ = false;
             }
             break;
          default:
@@ -488,9 +363,6 @@ void ZmqDataConnection::listenFunction()
 
    if (*executionFlag) {
       zmq_socket_monitor(dataSocket_.get(), nullptr, ZMQ_EVENT_ALL);
-   }
-   if (isConnected_) {
-      onDisconnected();
    }
 }
 
@@ -511,45 +383,20 @@ bool ZmqDataConnection::recvData()
       return false;
    }
 
-   {
-      int result = zmq_msg_recv(&data, dataSocket_.get(), ZMQ_DONTWAIT);
-      if (result == -1) {
-         if (logger_) {
-            logger_->error("[{}] {} failed to recv data frame from stream: {}"
-               , __func__, connectionName_, zmq_strerror(zmq_errno()));
-         }
-         return false;
+   result = zmq_msg_recv(&data, dataSocket_.get(), ZMQ_DONTWAIT);
+   if (result == -1) {
+      if (logger_) {
+         logger_->error("[{}] {} failed to recv data frame from stream: {}"
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
       }
+      return false;
    }
 
-   if (transport_) {
-      if (data.GetSize() == 0) {
-         // nothing to do - connection is handled by monitoring socket
-      }
-      else {
-         if (data.GetSize() == bufSizeLimit_) {    // Send buffer split, which is undetected by data.IsLast()
-            accumulBuf_.append(data.ToString());
-            return true;
-         }
-         else {
-            if (accumulBuf_.empty()) {
-               transport_->onRawDataReceived(data.ToString());
-            }
-            else {
-               accumulBuf_.append(data.ToString());
-               transport_->onRawDataReceived(accumulBuf_);
-               accumulBuf_.clear();
-            }
-         }
-      }
-   }
-   else {
-      if (data.GetSize() == 0) {
-         //we are either connected or disconncted
-         zeroFrameReceived();
-      } else {
-         onRawDataReceived(data.ToString());
-      }
+   if (data.GetSize() == 0) {
+      //we are either connected or disconncted
+      zeroFrameReceived();
+   } else {
+      onRawDataReceived(data.ToString());
    }
 
    return true;
@@ -561,12 +408,14 @@ void ZmqDataConnection::zeroFrameReceived()
       if (logger_) {
          SPDLOG_LOGGER_TRACE(logger_, "{} received 0 frame. Disconnected.", connectionName_);
       }
-      onDisconnected();
+      isConnected_ = false;
+      notifyOnDisconnected();
    } else {
       if (logger_) {
          SPDLOG_LOGGER_TRACE(logger_, "{} received 0 frame. Connected.", connectionName_);
       }
-      onConnected();
+      isConnected_ = true;
+      notifyOnConnected();
    }
 }
 
@@ -574,10 +423,6 @@ bool ZmqDataConnection::closeConnection()
 {
    if (!isActive()) {
       return true;
-   }
-
-   if (transport_) {
-      transport_->closeConnection();
    }
 
    if (std::this_thread::get_id() == listenThread_.get_id()) {
@@ -607,7 +452,7 @@ bool ZmqDataConnection::sendRawData(const std::string& rawData)
 {
    if (!isActive()) {
       if (logger_) {
-         logger_->error("[ZmqDataConnection::sendRawData] could not send - not active");
+         logger_->error("[{}] could not send. not connected", __func__);
       }
       return false;
    }
@@ -622,8 +467,8 @@ bool ZmqDataConnection::sendRawData(const std::string& rawData)
    int result = zmq_send(threadMasterSocket_.get(), static_cast<void*>(&command), sizeof(command), 0);
    if (result == -1) {
       if (logger_) {
-         logger_->error("[ZmqDataConnection::sendRawData] failed to send command"
-            " for {} : {}", connectionName_, zmq_strerror(zmq_errno()));
+         logger_->error("[{}] failed to send command for {} : {}", __func__
+            , connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }

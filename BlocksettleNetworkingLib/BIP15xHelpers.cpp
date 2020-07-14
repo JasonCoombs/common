@@ -64,7 +64,7 @@ bool bip15x::isValidPubKey(const BinaryData &pubKey)
 bool bip15x::addAuthPeer(AuthorizedPeers *authPeers, const BIP15xPeer &peer)
 {
    authPeers->eraseName(peer.name());
-   authPeers->addPeer(peer.pubKey(), peer.name());
+   authPeers->addPeer(peer.pubKey(), std::vector<std::string>{peer.name()});
    return true;
 }
 

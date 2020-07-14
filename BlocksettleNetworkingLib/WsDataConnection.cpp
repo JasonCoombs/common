@@ -10,17 +10,21 @@
 */
 #include "WsDataConnection.h"
 
-#include <libwebsockets.h>
-#include <spdlog/spdlog.h>
-#include "Transport.h"
 #include "WsConnection.h"
 
+#include <libwebsockets.h>
+#include <openssl/ssl.h>
+#include <openssl/pem.h>
+#include <spdlog/spdlog.h>
 
 using namespace bs::network;
 
 namespace {
 
-   const auto kPeriodicCheckTimeout = std::chrono::seconds(120);
+   const uint32_t kDelaysTable[] = { 10, 100, 200, 500, 3000, 10000 };
+   const uint16_t kDelaysTableSize = sizeof(kDelaysTable) / sizeof(kDelaysTable[0]);
+   // lws will use default value of 30% for jitter
+   const lws_retry_bo kRetryTable = { kDelaysTable, kDelaysTableSize, 0, 0, 0, 0 };
 
    int callback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
    {
@@ -34,15 +38,19 @@ namespace {
 
 } // namespace
 
+struct WsTimerStruct : lws_sorted_usec_list_t
+{
+   WsDataConnection *owner_;
+};
 
 WsDataConnection::WsDataConnection(const std::shared_ptr<spdlog::logger> &logger
-   , const std::shared_ptr<bs::network::TransportClient> &tr)
+   , WsDataConnectionParams params)
    : logger_(logger)
-   , transport_(tr)
+   , params_(std::move(params))
+   , reconnectTimer_(new WsTimerStruct)
 {
-   transport_->setSendCb([this](const std::string &d) { return sendRawData(d); });
-   transport_->setNotifyDataCb([this](const std::string &d) { notifyOnData(d);});
-   transport_->setSocketErrorCb([this](DataConnectionListener::DataConnectionError e) { reportFatalError(e); });
+   std::memset(reconnectTimer_.get(), 0, sizeof(*reconnectTimer_));
+   reconnectTimer_->owner_ = this;
 }
 
 WsDataConnection::~WsDataConnection()
@@ -58,9 +66,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    listener_ = listener;
    host_ = host;
    port_ = std::stoi(port);
-   stopped_ = false;
-
-   transport_->openConnection(host, port);
+   shuttingDown_ = false;
 
    struct lws_context_creation_info info;
    memset(&info, 0, sizeof(info));
@@ -70,7 +76,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    info.gid = -1;
    info.uid = -1;
    info.ws_ping_pong_interval = kPingPongInterval / std::chrono::seconds(1);
-   info.options = /*params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT :*/ 0;
+   info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
 
    context_ = lws_create_context(&info);
@@ -89,39 +95,48 @@ bool WsDataConnection::closeConnection()
    if (!listenThread_.joinable()) {
       return false;
    }
-   transport_->closeConnection();
 
-   stopped_ = true;
+   shuttingDown_ = true;
    lws_cancel_service(context_);
 
    listenThread_.join();
 
    lws_context_destroy(context_);
+
    context_ = nullptr;
    listener_ = nullptr;
    newPackets_ = {};
    allPackets_ = {};
    currFragment_ = {};
+   state_ = {};
+   sentCounter_ = {};
+   sentAckCounter_ = {};
+   queuedCounter_ = {};
+   recvCounter_ = {};
+   recvAckCounter_ = {};
+   cookie_ = {};
+   std::memset(reconnectTimer_.get(), 0, sizeof(*reconnectTimer_));
+   reconnectTimer_->owner_ = this;
+   retryCounter_ = {};
 
    return true;
 }
 
 bool WsDataConnection::send(const std::string &data)
 {
-   return transport_->sendData(data);
-}
-
-bool WsDataConnection::sendRawData(const std::string &data)
-{
    if (!context_) {
       return false;
    }
-   {
-      std::lock_guard<std::recursive_mutex> lock(mutex_);
-      newPackets_.push(WsPacket(data));
+   {  std::lock_guard<std::mutex> lock(mutex_);
+      newPackets_.push(WsPacket::data(data));
    }
    lws_cancel_service(context_);
    return true;
+}
+
+bool WsDataConnection::isActive() const
+{
+   return context_ != nullptr;
 }
 
 int WsDataConnection::callbackHelper(lws *wsi, int reason, void *user, void *in, size_t len)
@@ -135,9 +150,9 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
 {
    switch (reason) {
       case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: {
-//         if (!params_.useSsl || params_.caBundleSize == 0) {
+         if (!params_.useSsl || params_.caBundleSize == 0) {
             return 0;
-/*         }
+         }
          auto sslCtx = static_cast<SSL_CTX*>(user);
          auto store = SSL_CTX_get_cert_store(sslCtx);
          auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
@@ -151,103 +166,271 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
             X509_free(x);
          }
          BIO_free(bio);
-         break;*/
+         break;
       }
 
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
-         {
-            std::lock_guard<std::recursive_mutex> lock(mutex_);
+         {  std::lock_guard<std::mutex> lock(mutex_);
             while (!newPackets_.empty()) {
-               allPackets_.push(std::move(newPackets_.front()));
+               allPackets_.insert(std::make_pair(queuedCounter_, std::move(newPackets_.front())));
                newPackets_.pop();
+               queuedCounter_ += 1;
             }
          }
          if (!allPackets_.empty()) {
-            if (wsi_) {
+            if (state_ == State::Connected) {
+               assert(wsi_);
                lws_callback_on_writable(wsi_);
             }
+         }
+
+         if (shuttingDown_.load()) {
+            if (state_ == State::Connected) {
+               assert(wsi_);
+               state_ = State::Closing;
+               lws_callback_on_writable(wsi_);
+            } else {
+               state_ = State::Closed;
+            }
+            return 0;
          }
          break;
       }
 
       case LWS_CALLBACK_CLIENT_RECEIVE: {
-         if (transport_->connectTimedOut()) {
-            if (transport_->handshakeTimedOut()) {
-               SPDLOG_LOGGER_ERROR(logger_, "BIP connection is timed out (bip151"
-                  " was completed, probably client credential is not valid)");
-               reportFatalError(DataConnectionListener::HandshakeFailed);
-            } else {
-               SPDLOG_LOGGER_ERROR(logger_, "BIP connection is timed out");
-               reportFatalError(DataConnectionListener::ConnectionTimeout);
-            }
-            break;
+         if (wsi != wsi_) {
+            return -1;
          }
-         transport_->triggerHeartbeatCheck();
 
          auto ptr = static_cast<const char*>(in);
          currFragment_.insert(currFragment_.end(), ptr, ptr + len);
+         if (currFragment_.size() > params_.maximumPacketSize) {
+            SPDLOG_LOGGER_ERROR(logger_, "maximum packet size reached");
+            return -1;
+         }
          if (lws_remaining_packet_payload(wsi) > 0) {
             return 0;
          }
          if (!lws_is_final_fragment(wsi)) {
             SPDLOG_LOGGER_ERROR(logger_, "unexpected fragment");
-            reportFatalError(DataConnectionListener::ProtocolViolation);
+            processError();
             return -1;
          }
-         onRawDataReceived(currFragment_);
+
+         auto packet = WsPacket::parsePacket(currFragment_, logger_);
          currFragment_.clear();
+
+         switch (state_) {
+            case State::Connecting:
+            case State::Reconnecting: {
+               SPDLOG_LOGGER_CRITICAL(logger_, "unexpected message");
+               assert(false);
+               return -1;
+            }
+            case State::WaitingNewResponse: {
+               if (packet.type != WsPacket::Type::ResponseNew || packet.payload.empty()) {
+                  SPDLOG_LOGGER_ERROR(logger_, "invalid response");
+                  processError();
+                  return -1;
+               }
+               SPDLOG_LOGGER_DEBUG(logger_, "connected");
+               cookie_ = packet.payload;
+               state_ = State::Connected;
+               listener_->OnConnected();
+               requestWriteIfNeeded();
+               break;
+            }
+            case State::WaitingResumedResponse: {
+               if (packet.type == WsPacket::Type::ResponseUnknown) {
+                  SPDLOG_LOGGER_ERROR(logger_, "server responds that connection is not known or invalid");
+                  processFatalError();
+                  return -1;
+               }
+               if (packet.type != WsPacket::Type::ResponseResumed) {
+                  SPDLOG_LOGGER_ERROR(logger_, "invalid response");
+                  processError();
+                  return -1;
+               }
+               if (!processSentAck(packet.recvCounter)) {
+                  SPDLOG_LOGGER_DEBUG(logger_, "connection resuming failed");
+                  return -1;
+               }
+               SPDLOG_LOGGER_DEBUG(logger_, "connection resumed succesfully");
+               state_ = State::Connected;
+               retryCounter_ = 0;
+               requestWriteIfNeeded();
+               break;
+            }
+            case State::Closing:
+            case State::Connected: {
+               switch (packet.type) {
+                  case WsPacket::Type::Ack: {
+                     if (!processSentAck(packet.recvCounter)) {
+                        return -1;
+                     }
+                     break;
+                  }
+                  case WsPacket::Type::Data: {
+                     listener_->OnDataReceived(packet.payload);
+                     recvCounter_ += 1;
+                     break;
+                  }
+                  case WsPacket::Type::Close: {
+                     SPDLOG_LOGGER_DEBUG(logger_, "server disconnected gracefully");
+                     listener_->OnDisconnected();
+                     state_ = State::Closed;
+                     return -1;
+                  }
+                  default: {
+                     SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
+                     processError();
+                     return -1;
+                  }
+               }
+               requestWriteIfNeeded();
+               break;
+            }
+            case State::Closed: {
+               return -1;
+            }
+         }
+
          break;
       }
 
       case LWS_CALLBACK_CLIENT_WRITEABLE: {
-         if (allPackets_.empty()) {
-            return 0;
-         }
-         auto packet = std::move(allPackets_.front());
-         allPackets_.pop();
-         int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
-         if (rc == -1) {
-            SPDLOG_LOGGER_ERROR(logger_, "write failed");
-            reportFatalError(DataConnectionListener::UndefinedSocketError);
+         if (wsi != wsi_) {
             return -1;
          }
-         if (rc != static_cast<int>(packet.getSize())) {
-             SPDLOG_LOGGER_ERROR(logger_, "write truncated");
-             reportFatalError(DataConnectionListener::UndefinedSocketError);
-             return -1;
-         }
-         if (!allPackets_.empty()) {
-            lws_callback_on_writable(wsi);
+
+         switch (state_) {
+            case State::Reconnecting: {
+               auto packet = WsPacket::requestResumed(cookie_, recvCounter_);
+               int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+               if (rc == -1) {
+                  SPDLOG_LOGGER_ERROR(logger_, "write failed");
+                  processError();
+                  return -1;
+               }
+               state_ = State::WaitingResumedResponse;
+               break;
+            }
+            case State::Connecting: {
+               auto packet = WsPacket::requestNew();
+               int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+               if (rc == -1) {
+                  SPDLOG_LOGGER_ERROR(logger_, "write failed");
+                  processError();
+                  return -1;
+               }
+               state_ = State::WaitingNewResponse;
+               break;
+            }
+            case State::WaitingResumedResponse:
+            case State::WaitingNewResponse: {
+               // Nothing to do
+               break;
+            }
+            case State::Connected:
+            case State::Closing: {
+               if (recvCounter_ != recvAckCounter_) {
+                  auto packet = WsPacket::ack(recvCounter_);
+                  int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+                  if (rc != static_cast<int>(packet.getSize())) {
+                      SPDLOG_LOGGER_ERROR(logger_, "write failed");
+                      processError();
+                      return -1;
+                  }
+                  recvAckCounter_ = recvCounter_;
+               } else if (sentCounter_ != queuedCounter_) {
+                  auto &packet = allPackets_.at(sentCounter_);
+                  int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+                  if (rc == -1) {
+                     SPDLOG_LOGGER_ERROR(logger_, "write failed");
+                     processError();
+                     return -1;
+                  }
+                  if (rc != static_cast<int>(packet.getSize())) {
+                      SPDLOG_LOGGER_ERROR(logger_, "write truncated");
+                      processError();
+                      return -1;
+                  }
+                  sentCounter_ += 1;
+               } else if (state_ == State::Closing) {
+                  auto packet = WsPacket::close();
+                  int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+                  if (rc != static_cast<int>(packet.getSize())) {
+                      SPDLOG_LOGGER_ERROR(logger_, "write failed");
+                      processError();
+                      return -1;
+                  }
+                  listener_->OnDisconnected();
+                  state_ = State::Closed;
+                  return -1;
+               }
+               requestWriteIfNeeded();
+               break;
+            }
+            case State::Closed: {
+               // Nothing to do
+               break;
+            }
          }
          break;
       }
 
       case LWS_CALLBACK_CLIENT_ESTABLISHED: {
-         active_ = true;
-         transport_->socketConnected();
-         transport_->startHandshake();
+         lws_callback_on_writable(wsi);
          break;
       }
 
       case LWS_CALLBACK_CLIENT_CLOSED: {
-         active_ = false;
-         listener_->OnDisconnected();
-         transport_->socketDisconnected();
-         break;
+         if (wsi == wsi_) {
+            processError();
+         }
+         return -1;
       }
 
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
-         active_ = false;
-         listener_->OnError(DataConnectionListener::UndefinedSocketError);
-         break;
+         if (wsi == wsi_) {
+            processError();
+         }
+         return -1;
       }
    }
 
    return 0;
 }
 
+void WsDataConnection::reconnectCallback(lws_sorted_usec_list *list)
+{
+   auto data = static_cast<WsTimerStruct*>(list);
+   data->owner_->reconnect();
+}
+
 void WsDataConnection::listenFunction()
 {
+   reconnect();
+
+   while (state_ != State::Closed) {
+      lws_service(context_, 0);
+   }
+
+   wsi_ = nullptr;
+}
+
+void WsDataConnection::scheduleReconnect()
+{
+   auto nextDelayMs = lws_retry_get_delay_ms(context_, &kRetryTable, &retryCounter_, nullptr);
+   SPDLOG_LOGGER_DEBUG(logger_, "schedule reconnect in {} ms, retry counter: {}", nextDelayMs, retryCounter_);
+   lws_sul_schedule(context_, 0, reconnectTimer_.get(), reconnectCallback, static_cast<lws_usec_t>(nextDelayMs) * 1000);
+}
+
+void WsDataConnection::reconnect()
+{
+   SPDLOG_LOGGER_DEBUG(logger_, "try connect");
+   assert(wsi_ == nullptr);
+
    struct lws_client_connect_info i;
    memset(&i, 0, sizeof(i));
    i.address = host_.c_str();
@@ -258,33 +441,109 @@ void WsDataConnection::listenFunction()
    i.context = context_;
    i.protocol = kProtocolNameWs;
    i.userdata = this;
-
-   i.ssl_connection = /*params_.useSsl ? LCCSCF_USE_SSL :*/ 0;
+   i.ssl_connection = params_.useSsl ? LCCSCF_USE_SSL : 0;
 
    wsi_ = lws_client_connect_via_info(&i);
+}
 
-   while (!stopped_.load()) {
-      lws_service(context_, kPeriodicCheckTimeout / std::chrono::milliseconds(1));
-   }
-
+void WsDataConnection::processError()
+{
    wsi_ = nullptr;
-}
 
-void WsDataConnection::onRawDataReceived(const std::string &rawData)
-{
-   transport_->onRawDataReceived(rawData);
-}
-
-void WsDataConnection::reportFatalError(DataConnectionListener::DataConnectionError error)
-{
-   if (error == DataConnectionListener::NoError) {
-      listener_->OnConnected();
+   if (retryCounter_ >= kDelaysTableSize) {
+      SPDLOG_LOGGER_ERROR(logger_, "too many reconnect retries failed");
+      processFatalError();
       return;
    }
-   logger_->debug("[{}] error: {}", __func__, (int)error);
-   transport_->sendDisconnect();
-   stopped_ = true;
-   lws_cancel_service(context_);
+
+   switch (state_) {
+      case State::WaitingNewResponse:
+      case State::Connecting: {
+         state_ = State::Connecting;
+         scheduleReconnect();
+         break;
+      }
+
+      case State::Reconnecting:
+      case State::Connected:
+      case State::WaitingResumedResponse: {
+         state_ = State::Reconnecting;
+         scheduleReconnect();
+         break;
+      }
+      case State::Closing:
+      case State::Closed: {
+         state_ = State::Closed;
+         break;
+      }
+   }
+}
+
+void WsDataConnection::processFatalError()
+{
+   switch (state_) {
+      case State::Connecting:
+      case State::WaitingNewResponse: {
+         listener_->OnError(DataConnectionListener::UndefinedSocketError);
+         break;
+      }
+
+      case State::Reconnecting:
+      case State::Connected:
+      case State::WaitingResumedResponse: {
+         listener_->OnDisconnected();
+         listener_->OnError(DataConnectionListener::UndefinedSocketError);
+         break;
+      }
+
+      case State::Closing:
+      case State::Closed: {
+         break;
+      }
+   }
+
+   state_ = State::Closed;
    wsi_ = nullptr;
-   listener_->OnError(error);
+}
+
+bool WsDataConnection::writeNeeded() const
+{
+   switch (state_) {
+      case State::Closing:
+         return true;
+      case State::Connected:
+         return sentCounter_ != queuedCounter_ || recvCounter_ != recvAckCounter_;
+      case State::Connecting:
+      case State::Reconnecting:
+      case State::WaitingNewResponse:
+      case State::WaitingResumedResponse:
+      case State::Closed:
+         return false;
+   }
+   assert(false);
+   return false;
+}
+
+void WsDataConnection::requestWriteIfNeeded()
+{
+   if (writeNeeded() && wsi_ != nullptr) {
+      lws_callback_on_writable(wsi_);
+   }
+}
+
+bool WsDataConnection::processSentAck(uint64_t sentAckCounter)
+{
+   if (sentAckCounter < sentAckCounter_ || sentAckCounter > sentCounter_) {
+      SPDLOG_LOGGER_ERROR(logger_, "invalid ack value from server");
+      processFatalError();
+      return false;
+   }
+
+   while (sentAckCounter_ < sentAckCounter) {
+      size_t count = allPackets_.erase(sentAckCounter_);
+      assert(count == 1);
+      sentAckCounter_ += 1;
+   }
+
+   return true;
 }

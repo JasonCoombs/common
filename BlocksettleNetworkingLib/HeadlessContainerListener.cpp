@@ -79,7 +79,7 @@ bool HeadlessContainerListener::sendData(const std::string &data, const std::str
    bool sentOk = false;
    if (clientId.empty()) {
       for (const auto &clientId : connectedClients_) {
-         if (connection_->SendDataToClient(clientId, data)) {
+         if (connection_->SendDataToClient(clientId.first, data)) {
             sentOk = true;
          }
       }
@@ -95,13 +95,16 @@ void HeadlessContainerListener::SetLimits(const bs::signer::Limits &limits)
    limits_ = limits;
 }
 
-void HeadlessContainerListener::OnClientConnected(const std::string &clientId)
+void HeadlessContainerListener::OnClientConnected(const std::string &clientId, const Details &details)
 {
    logger_->debug("[HeadlessContainerListener] client {} connected", bs::toHex(clientId));
 
-   queue_->dispatch([this, clientId] {
-      connectedClients_.insert(clientId);
+   queue_->dispatch([this, clientId, details] {
+      connectedClients_.insert(std::make_pair(clientId, details));
       sendUpdateStatuses(clientId);
+      if (callbacks_) {
+         callbacks_->clientConn(clientId, details);
+      }
    });
 }
 
@@ -111,7 +114,6 @@ void HeadlessContainerListener::OnClientDisconnected(const std::string &clientId
 
    queue_->dispatch([this, clientId] {
       connectedClients_.erase(clientId);
-
       if (callbacks_) {
          callbacks_->clientDisconn(clientId);
       }
@@ -131,36 +133,14 @@ void HeadlessContainerListener::OnDataFromClient(const std::string &clientId, co
    });
 }
 
-void HeadlessContainerListener::OnPeerConnected(const std::string &ip)
+void HeadlessContainerListener::onClientError(const std::string &clientId, ServerConnectionListener::ClientError errorCode, const Details &details)
 {
-   logger_->debug("[{}] IP {} connected", __func__, ip);
-   queue_->dispatch([this, ip] {
-      if (callbacks_) {
-         callbacks_->peerConn(ip);
-      }
-   });
-}
-
-void HeadlessContainerListener::OnPeerDisconnected(const std::string &ip)
-{
-   logger_->debug("[{}] IP {} disconnected", __func__, ip);
-   queue_->dispatch([this, ip] {
-      if (callbacks_) {
-         callbacks_->peerDisconn(ip);
-      }
-   });
-}
-
-void HeadlessContainerListener::onClientError(const std::string &clientId, ServerConnectionListener::ClientError errorCode, int socket)
-{
-
    switch (errorCode) {
       case ServerConnectionListener::HandshakeFailed: {
-         // Not 100% correct because socket's FD might be already closed or even reused, but should be good enough
-         std::string peerAddress = bs::network::peerAddressString(socket);
-         queue_->dispatch([this, peerAddress] {
+         queue_->dispatch([this, details] {
             if (callbacks_) {
-               callbacks_->terminalHandshakeFailed(peerAddress);
+               auto ipAddrIt = details.find(Detail::IpAddr);
+               callbacks_->terminalHandshakeFailed(ipAddrIt != details.end() ? ipAddrIt->second : "Unknown");
             }
          });
          break;
@@ -177,7 +157,6 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
       return false;
    }
 
-   connection_->GetClientInfo(clientId);
    switch (packet.type()) {
    case headless::AuthenticationRequestType:
       return AuthResponse(clientId, packet);

@@ -12,13 +12,11 @@
 
 #include "ActiveStreamClient.h"
 #include "GenoaConnection.h"
-#include "Transport.h"
 
 
 GenoaStreamServerConnection::GenoaStreamServerConnection(const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<ZmqContext>& context
-   , const std::shared_ptr<bs::network::TransportServer> &t)
-   : ZmqStreamServerConnection(logger, context, t)
+   , const std::shared_ptr<ZmqContext>& context)
+   : ZmqStreamServerConnection(logger, context)
 {}
 
 ZmqStreamServerConnection::server_connection_ptr GenoaStreamServerConnection::CreateActiveConnection()

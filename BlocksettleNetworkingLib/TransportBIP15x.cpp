@@ -24,43 +24,13 @@
 
 using namespace bs::network;
 
-namespace
-{
-   const int HEARTBEAT_PACKET_SIZE = 23;
-
-   const int ControlSocketIndex = 0;
-   const int StreamSocketIndex = 1;
-   const int MonitorSocketIndex = 2;
-
-} // namespace
-
 
 TransportBIP15x::TransportBIP15x(const std::shared_ptr<spdlog::logger> &logger
    , const std::string &cookiePath)
    : logger_(logger), cookiePath_(cookiePath)
-   , heartbeatInterval_(getDefaultHeartbeatInterval())
 {
    assert(logger_);
    authPeers_ = std::make_unique<AuthorizedPeers>();
-
-   lastHeartbeatCheck_ = std::chrono::steady_clock::now();
-}
-
-// static
-const std::chrono::milliseconds TransportBIP15x::getDefaultHeartbeatInterval()
-{
-   return std::chrono::seconds(30);
-}
-
-// static
-const std::chrono::milliseconds TransportBIP15x::getLocalHeartbeatInterval()
-{
-   return std::chrono::seconds(5);
-}
-
-void TransportBIP15x::setLocalHeartbeatInterval()
-{
-   heartbeatInterval_ = getLocalHeartbeatInterval();
 }
 
 // static
@@ -97,7 +67,6 @@ BinaryData TransportBIP15x::getOwnPubKey(const AuthorizedPeers &authPeers)
 BinaryData TransportBIP15x::getOwnPubKey() const
 {
    std::lock_guard<std::mutex> lock(authPeersMutex_);
-   const auto pubKey = authPeers_->getOwnPublicKey();
    return getOwnPubKey(*authPeers_);
 }
 
@@ -459,23 +428,13 @@ void TransportBIP15xClient::rekeyIfNeeded(size_t dataSize)
    }
 }
 
-void TransportBIP15xClient::startConnection()
-{
-   connectionStarted_ = std::chrono::steady_clock::now();;
-}
-
-long TransportBIP15xClient::pollTimeoutMS() const
-{
-   const long toMS = isConnected_ ? (heartbeatInterval_ / std::chrono::milliseconds(1) / 5)
-      : (params_.connectionTimeout / std::chrono::milliseconds(1) / 10);
-   return std::max((long)1, toMS);
-}
-
 bool TransportBIP15xClient::sendData(const std::string &data)
 {
    if (!bip151Connection_ || (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
       return false;
    }
+
+   rekeyIfNeeded(data.size());
 
    auto packet = bip15x::MessageBuilder(BinaryData::fromString(data)
       , bip15x::MsgType::SinglePacket).encryptIfNeeded(bip151Connection_.get()).build();
@@ -503,10 +462,6 @@ bool TransportBIP15xClient::sendPacket(const BinaryData &packet, bool encrypted)
       }
    }
 
-   if (encrypted && !rekeying_) {
-      rekeyIfNeeded(packet.getSize());
-   }
-
    return sendCb_(packet.toBinStr());
 }
 
@@ -524,57 +479,15 @@ void TransportBIP15xClient::rekey()
    BinaryData rekeyData(BIP151PUBKEYSIZE);
    memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
-   rekeying_ = true;
-   auto packet = bip15x::MessageBuilder(rekeyData.getRef()
+   auto packet = bip15x::MessageBuilder(rekeyData
       , bip15x::MsgType::AEAD_Rekey).encryptIfNeeded(bip151Connection_.get()).build();
+   logger_->debug("[TransportBIP15xClient::rekey] rekeying session ({} {})"
+      , rekeyData.toHexStr(), packet.toHexStr());
    sendPacket(packet);
    bip151Connection_->rekeyOuterSession();
    ++outerRekeyCount_;
-   rekeying_ = false;
 }
 
-// A function that is used to trigger heartbeats. Required because ZMQ is unable
-// to tell, via a data socket connection, when a client has disconnected.
-//
-// INPUT:  N/A
-// OUTPUT: N/A
-// RETURN: N/A
-void TransportBIP15xClient::triggerHeartbeatCheck()
-{
-   if (!bip151HandshakeCompleted_) {
-      return;
-   }
-
-   const auto now = std::chrono::steady_clock::now();
-   const auto idlePeriod = now - lastHeartbeatCheck_;
-   if (idlePeriod < heartbeatInterval_) {
-      return;
-   }
-   lastHeartbeatCheck_ = now;
-
-   // If a rekey is needed, rekey before encrypting. Estimate the size of the
-   // final packet first in order to get the # of bytes transmitted.
-   rekeyIfNeeded(HEARTBEAT_PACKET_SIZE);
-
-   auto packet = bip15x::MessageBuilder(bip15x::MsgType::Heartbeat)
-      .encryptIfNeeded(bip151Connection_.get()).build();
-
-   // An error message is already logged elsewhere if the send fails.
-   // sendPacket already sets the timestamp.
-   sendPacket(packet);
-
-   if (idlePeriod > heartbeatInterval_ * 2) {
-      logger_->debug("[TransportBIP15xClient:triggerHeartbeatCheck] hibernation"
-         " detected, reset server's last timestamp");
-      lastHeartbeatReply_ = now;
-      return;
-   }
-
-   auto lastHeartbeatDiff = now - lastHeartbeatReply_;
-   if (socketErrorCb_ && (lastHeartbeatDiff > heartbeatInterval_ * 2)) {
-      socketErrorCb_(DataConnectionListener::HeartbeatWaitFailed);
-   }
-}
 
 // Kick off the BIP 151 handshake. This is the first function to call once the
 // unencrypted connection is established.
@@ -603,52 +516,37 @@ void TransportBIP15xClient::onRawDataReceived(const std::string &rawData)
       return;
    }
 
-   const auto &packets = bip15x::MessageBuilder::parsePackets(
-      BinaryData::fromString(accumulBuf_.empty() ? rawData : accumulBuf_ + rawData));
-   if (packets.empty()) {
-      logger_->error("[TransportBIP15xClient::processIncomingData] packet deser failed"
-         " for {} [{}]", bs::toHex(rawData), rawData.size());
-      if (socketErrorCb_) {
-         socketErrorCb_(DataConnectionListener::SerializationFailed);
-      }
+   auto payload = BinaryData::fromString(rawData);
+   if (!bip151Connection_) {
+      logger_->error("[TransportBIP15xClient::onRawDataReceived] received {}-sized"
+         " packet in disconnected state", payload.getSize());
       return;
    }
-   if (packets.at(0).empty()) {  // special condition to accumulate more data
-      accumulBuf_.append(rawData);
-      return;
-   }
-   accumulBuf_.clear();
+   // Perform decryption if we're ready.
+   if (bip151Connection_->connectionComplete()) {
+      auto result = bip151Connection_->decryptPacket(
+         payload.getPtr(), payload.getSize(),
+         payload.getPtr(), payload.getSize());
 
-   for (auto payload : packets) {
-      if (!bip151Connection_) {
-         logger_->error("[TransportBIP15xClient::onRawDataReceived] received {}-sized"
-            " packet in disconnected state", payload.getSize());
+      if (result != 0) {
+         logger_->error("[TransportBIP15xClient::onRawDataReceived] Packet [{} bytes]"
+            " decryption failed - error {}", payload.getSize(), result);
+         if (socketErrorCb_) {
+            socketErrorCb_(DataConnectionListener::ProtocolViolation);
+         }
+         fail();
          return;
       }
-      // Perform decryption if we're ready.
-      if (bip151Connection_->connectionComplete()) {
-         auto result = bip151Connection_->decryptPacket(
-            payload.getPtr(), payload.getSize(),
-            payload.getPtr(), payload.getSize());
-
-         if (result != 0) {
-            logger_->error("[TransportBIP15xClient::onRawDataReceived] Packet [{} bytes]"
-               " decryption failed - error {}", payload.getSize(), result);
-            if (socketErrorCb_) {
-               socketErrorCb_(DataConnectionListener::ProtocolViolation);
-            }
-            fail();
-            return;
-         }
-         payload.resize(payload.getSize() - POLY1305MACLEN);
-      }
-      processIncomingData(payload);
+      payload.resize(payload.getSize() - POLY1305MACLEN);
    }
+   processIncomingData(payload);
 }
 
 void TransportBIP15xClient::openConnection(const std::string &host
    , const std::string &port)
 {
+   closeConnection();
+
    host_ = host;
    port_ = port;
 
@@ -656,20 +554,15 @@ void TransportBIP15xClient::openConnection(const std::string &host
    // similar but data connections will only connect to one machine at a time.
    auto lbds = getAuthPeerLambda();
    bip151Connection_ = std::make_unique<BIP151Connection>(lbds);
-
-   isConnected_ = false;
-   serverSendsHeartbeat_ = false;
 }
 
 void TransportBIP15xClient::closeConnection()
 {
-   // Do not call from callbacks!
    // If a future obj is still waiting, satisfy it to prevent lockup. This
    // shouldn't happen here but it's an emergency fallback.
    if (serverPubkeyProm_) {
       serverPubkeyProm_->setValue(false);
    }
-   sendDisconnect();
 
    SPDLOG_LOGGER_DEBUG(logger_, "[TransportBIP15xClient::closeConnection]");
 
@@ -692,12 +585,6 @@ void TransportBIP15xClient::processIncomingData(const BinaryData &payload)
       if (socketErrorCb_) {
          socketErrorCb_(DataConnectionListener::SerializationFailed);
       }
-      return;
-   }
-
-   if (msg.getType() == bip15x::MsgType::Heartbeat) {
-      lastHeartbeatReply_ = std::chrono::steady_clock::now();
-      serverSendsHeartbeat_ = true;
       return;
    }
 
@@ -856,8 +743,6 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
 
          auto now = std::chrono::steady_clock::now();
          outKeyTimePoint_ = now;
-         lastHeartbeatReply_ = now;
-         lastHeartbeatCheck_ = now;
 
          logger_->debug("[TransportBIP15xClient::processAEADHandshake] BIP 150 handshake"
             " with server complete - connection to {} is ready and fully secured", srvId);
@@ -971,17 +856,4 @@ bool TransportBIP15xClient::getCookie(BinaryData &cookieBuf)
       return false;
    }
    return TransportBIP15x::getCookie(cookieBuf);
-}
-
-void TransportBIP15xClient::sendDisconnect()
-{
-   if (!bip151Connection_ || (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
-      return;
-   }
-   logger_->debug("[TransportBIP15xClient::sendDisconnect]");
-
-   auto packet = bip15x::MessageBuilder(bip15x::MsgType::Disconnect)
-      .encryptIfNeeded(bip151Connection_.get()).build();
-   // An error message is already logged elsewhere if the send fails.
-   sendPacket(packet);
 }

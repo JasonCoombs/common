@@ -17,12 +17,6 @@
 #include <memory>
 #include <string>
 
-namespace bs {
-   namespace network {
-      class TransportServer;
-   }
-}
-
 class ServerConnection
 {
 public:
@@ -38,12 +32,8 @@ public:
    virtual bool BindConnection(const std::string& host, const std::string& port
       , ServerConnectionListener* listener) = 0;
 
-   virtual std::string GetClientInfo(const std::string &clientId) const = 0;
-
    virtual bool SendDataToClient(const std::string& clientId, const std::string& data) = 0;
    virtual bool SendDataToAllClients(const std::string&) { return false; }
-
-   virtual void setTransport(const std::shared_ptr<bs::network::TransportServer> &) {}
 };
 
 #endif // __SERVER_CONNECTION_H__
