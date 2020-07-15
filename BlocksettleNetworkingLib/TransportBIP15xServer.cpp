@@ -217,9 +217,6 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
    assert(connData);
    if (!connData->isValid) {
       return;
-      logger_->debug("[TransportBIP15xServer::processIncomingData] disconnected/invalid"
-         " client {} connection sent {} bytes", bs::toHex(clientID), encData.size(), encData.size());
-      return;
    }
 
    auto payload = BinaryData::fromString(encData);

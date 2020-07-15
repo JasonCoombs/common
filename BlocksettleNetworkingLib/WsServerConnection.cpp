@@ -109,7 +109,8 @@ void WsServerConnection::stopServer()
    }
 
    DataToSend toSend{kAllClientsId, WsPacket::close()};
-   {  std::lock_guard<std::mutex> lock(mutex_);
+   {
+      std::lock_guard<std::mutex> lock(mutex_);
       packets_.push(std::move(toSend));
    }
    shuttingDown_ = true;
@@ -129,7 +130,8 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
    switch (reason) {
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
          std::queue<DataToSend> packets;
-         {  std::lock_guard<std::mutex> lock(mutex_);
+         {
+            std::lock_guard<std::mutex> lock(mutex_);
             std::swap(packets, packets_);
          }
          while (!packets.empty()) {
@@ -417,7 +419,8 @@ bool WsServerConnection::done() const
    if (!shuttingDown_) {
       return false;
    }
-   {  std::lock_guard<std::mutex> lock(mutex_);
+   {
+      std::lock_guard<std::mutex> lock(mutex_);
       if (!packets_.empty()) {
          return false;
       }
@@ -484,7 +487,8 @@ void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsS
 bool WsServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)
 {
    DataToSend toSend{clientId, WsPacket::data(data)};
-   {  std::lock_guard<std::mutex> lock(mutex_);
+   {
+      std::lock_guard<std::mutex> lock(mutex_);
       packets_.push(std::move(toSend));
    }
    lws_cancel_service(context_);

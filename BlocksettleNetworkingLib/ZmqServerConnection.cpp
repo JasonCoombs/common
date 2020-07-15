@@ -371,7 +371,7 @@ void ZmqServerConnection::onPeriodicCheck()
 
 void ZmqServerConnection::SendDataToDataSocket()
 {
-   std::deque<DataToSend> pendingData;
+   decltype(dataQueue_) pendingData;
 
    {
       FastLock locker{dataQueueLock_};
