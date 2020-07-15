@@ -127,7 +127,8 @@ bool WsDataConnection::send(const std::string &data)
    if (!context_) {
       return false;
    }
-   {  std::lock_guard<std::mutex> lock(mutex_);
+   {
+      std::lock_guard<std::mutex> lock(mutex_);
       newPackets_.push(WsPacket::data(data));
    }
    lws_cancel_service(context_);
@@ -170,7 +171,8 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
       }
 
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
-         {  std::lock_guard<std::mutex> lock(mutex_);
+         {
+            std::lock_guard<std::mutex> lock(mutex_);
             while (!newPackets_.empty()) {
                allPackets_.insert(std::make_pair(queuedCounter_, std::move(newPackets_.front())));
                newPackets_.pop();

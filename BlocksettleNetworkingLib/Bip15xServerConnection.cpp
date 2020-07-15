@@ -75,7 +75,8 @@ Bip15xServerConnection::Bip15xServerConnection(const std::shared_ptr<spdlog::log
    });
 
    transport_->setConnectedCb([this](const std::string &clientId, const ServerConnectionListener::Details &details) {
-      {  std::lock_guard<std::mutex> lock(mutex_);
+      {
+         std::lock_guard<std::mutex> lock(mutex_);
          clients_.insert(clientId);
       }
       listener_->OnClientConnected(clientId, details);
