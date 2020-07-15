@@ -378,7 +378,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                connection.clientId = clientId;
                ServerConnectionListener::Details details;
                details[ServerConnectionListener::Detail::IpAddr] = connection.ipAddr;
-               SPDLOG_LOGGER_DEBUG(logger_, "new session started for client {}", clientId);
+               SPDLOG_LOGGER_DEBUG(logger_, "new session started for client {}", bs::toHex(clientId));
                listener_->OnClientConnected(clientId, details);
                lws_callback_on_writable(wsi);
                return 0;

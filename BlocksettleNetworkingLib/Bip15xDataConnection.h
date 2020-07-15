@@ -32,7 +32,7 @@ class Bip15xDataConnection : public DataConnection
 public:
    Bip15xDataConnection(const std::shared_ptr<spdlog::logger> &
       , std::unique_ptr<DataConnection> conn
-      , std::shared_ptr<bs::network::TransportClient>);
+      , const std::shared_ptr<bs::network::TransportClient> &);
    ~Bip15xDataConnection() override;
 
    Bip15xDataConnection(const Bip15xDataConnection&) = delete;

@@ -46,11 +46,12 @@ public:
 
 Bip15xDataConnection::Bip15xDataConnection(const std::shared_ptr<spdlog::logger> &logger
    , std::unique_ptr<DataConnection> conn
-   , std::shared_ptr<bs::network::TransportClient> tr)
+   , const std::shared_ptr<bs::network::TransportClient> &tr)
    : logger_(logger)
-   , transport_(std::move(tr))
+   , transport_(tr)
    , conn_(std::move(conn))
 {
+   assert(conn_);
    transport_->setSendCb([this](const std::string &d) {
       return conn_->send(d);
    });
@@ -87,7 +88,7 @@ bool Bip15xDataConnection::openConnection(const std::string &host, const std::st
 bool Bip15xDataConnection::closeConnection()
 {
    bool result = conn_->closeConnection();
-   transport_.reset();
+   transport_->closeConnection();
    return result;
 }
 
