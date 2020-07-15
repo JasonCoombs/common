@@ -95,7 +95,7 @@ class WebsocketsSettings(Configurator):
             env_vars['LDFLAGS'] = "-L" + self.openssl.get_install_dir() + "/lib"
 
         # Workaround for data race: https://github.com/warmcat/libwebsockets/issues/1836
-        env_vars['CFLAGS'] = "-Dmalloc_usable_size="
+        #env_vars['CFLAGS'] = "-Dmalloc_usable_size="
 
         result = subprocess.call(command, env=env_vars)
         return result == 0
