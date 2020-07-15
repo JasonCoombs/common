@@ -19,12 +19,6 @@
 
 using namespace bs::network;
 
-namespace {
-   // How often we should check heartbeats in one heartbeatInterval_.
-   const int kHeartbeatsCheckCount = 5;
-
-} // namespace
-
 // A call resetting the encryption-related data for individual connections.
 //
 // INPUT:  None
@@ -252,7 +246,6 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
    if (msg.getType() > bip15x::MsgType::AEAD_Threshold) {
       if (!processAEADHandshake(msg, clientID)) {
          reportFatalError(connData);
-         return;
       }
       return;
    }
