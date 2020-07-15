@@ -31,7 +31,6 @@ ZmqServerConnection::ZmqServerConnection(
    : logger_(logger)
    , context_(context)
    , dataSocket_(ZmqContext::CreateNullSocket())
-   , monSocket_(ZmqContext::CreateNullSocket())
    , threadMasterSocket_(ZmqContext::CreateNullSocket())
    , threadSlaveSocket_(ZmqContext::CreateNullSocket())
    , threadName_("ZmqSrv")
@@ -90,31 +89,6 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       return false;
    }
 
-   ZmqContext::sock_ptr tempMonSocket = context_->CreateMonitorSocket();
-   if (tempMonSocket == nullptr) {
-      logger_->error("[{}] failed to open monitor socket {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
-   int lingerPeriod = 0;
-   int result = zmq_setsockopt(tempMonSocket.get(), ZMQ_LINGER, &lingerPeriod, sizeof(lingerPeriod));
-   if (result != 0) {
-      logger_->error("[{}] failed to config monitor socket on {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
-   monitorConnectionName_ = "inproc://monitor-" + tempConnectionName;
-
-   result = zmq_socket_monitor(tempDataSocket.get(), monitorConnectionName_.c_str(),
-      ZMQ_EVENT_ALL);
-   if (result != 0) {
-      logger_->error("[{}] failed to create monitor {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
    for (const std::string &fromAddress : fromAddresses_) {
       // ZMQ_TCP_ACCEPT_FILTER is deprecated in favor of ZAP API.
       // But let's use it for now because our future ZMQ usage is not yet clear.
@@ -125,13 +99,6 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       }
    }
 
-   result = zmq_connect(tempMonSocket.get(), monitorConnectionName_.c_str());
-   if (result != 0) {
-      logger_->error("[{}] failed to connect to monitor {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
    // connect socket to server ( connection state will be changed in listen thread )
    std::string endpoint = ZmqContext::CreateConnectionEndpoint(zmqTransport_, host, port);
    if (endpoint.empty()) {
@@ -139,7 +106,7 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       return false;
    }
 
-   result = zmq_bind(tempDataSocket.get(), endpoint.c_str());
+   bool result = zmq_bind(tempDataSocket.get(), endpoint.c_str());
    if (result != 0) {
       logger_->error("[{}] failed to bind socket to {} : {}", __func__
          , endpoint, zmq_strerror(zmq_errno()));
@@ -180,7 +147,6 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
    // ok, move temp data to members
    connectionName_ = std::move(tempConnectionName);
    dataSocket_ = std::move(tempDataSocket);
-   monSocket_ = std::move(tempMonSocket);
    threadMasterSocket_ = std::move(tempThreadMasterSocket);
    threadSlaveSocket_ = std::move(tempThreadSlaveSocket);
 
@@ -198,7 +164,7 @@ void ZmqServerConnection::listenFunction()
 {
    bs::setCurrentThreadName(threadName_);
 
-   zmq_pollitem_t  poll_items[3];
+   zmq_pollitem_t  poll_items[2];
 
    poll_items[ZmqServerConnection::ControlSocketIndex].socket = threadSlaveSocket_.get();
    poll_items[ZmqServerConnection::ControlSocketIndex].events = ZMQ_POLLIN;
@@ -206,16 +172,13 @@ void ZmqServerConnection::listenFunction()
    poll_items[ZmqServerConnection::DataSocketIndex].socket = dataSocket_.get();
    poll_items[ZmqServerConnection::DataSocketIndex].events = ZMQ_POLLIN;
 
-   poll_items[ZmqServerConnection::MonitorSocketIndex].socket = monSocket_.get();
-   poll_items[ZmqServerConnection::MonitorSocketIndex].events = ZMQ_POLLIN;
-
    logger_->debug("[{}] poll thread started for {}", __func__, connectionName_);
 
    int errorCount = 0;
 
    while (true) {
       int periodMs = std::chrono::duration_cast<std::chrono::milliseconds>(kHearthbeatCheckPeriod).count();
-      int result = zmq_poll(poll_items, 3, periodMs);
+      int result = zmq_poll(poll_items, sizeof(poll_items) / sizeof(poll_items[0]), periodMs);
 
       if (result == -1) {
          errorCount++;
@@ -266,7 +229,6 @@ void ZmqServerConnection::listenFunction()
 
    zmq_socket_monitor(dataSocket_.get(), nullptr, ZMQ_EVENT_ALL);
    dataSocket_ = context_->CreateNullSocket();
-   monSocket_ = context_->CreateNullSocket();
 
    logger_->debug("[{}] poll thread stopped for {}", __func__, connectionName_);
 }
