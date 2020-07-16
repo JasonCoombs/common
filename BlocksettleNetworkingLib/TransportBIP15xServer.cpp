@@ -147,6 +147,9 @@ TransportBIP15xServer::~TransportBIP15xServer() noexcept
 
 void TransportBIP15xServer::rekey(const std::string &clientId)
 {
+   //XXX : rekey disabled
+   return;
+
    auto connection = GetConnection(clientId);
    if (connection == nullptr) {
       logger_->error("[TransportBIP15xServer::rekey] can't find connection for {}", BinaryData::fromString(clientId).toHexStr());

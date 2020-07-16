@@ -578,3 +578,8 @@ bs::Address bs::Address::fromMultisigScript(const BinaryData& data, AddressEntry
 
    return bs::Address(hash, aet);
 }
+
+bs::Address bs::Address::fromPrefixed(const BinaryData &prefixed)
+{
+   return bs::Address(prefixed);
+}
