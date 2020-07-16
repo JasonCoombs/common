@@ -512,6 +512,7 @@ bool TransportBIP15xClient::sendPacket(const BinaryData &packet, bool encrypted)
 
 void TransportBIP15xClient::rekey()
 {
+   return;
    logger_->debug("[TransportBIP15xClient::rekey] rekeying");
 
    if (!bip150HandshakeCompleted_) {

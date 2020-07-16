@@ -158,6 +158,7 @@ void TransportBIP15xServer::periodicCheck()
 
 void TransportBIP15xServer::rekey(const std::string &clientId)
 {
+   return;
    auto connection = GetConnection(clientId);
    if (connection == nullptr) {
       logger_->error("[TransportBIP15xServer::rekey] can't find connection for {}", BinaryData::fromString(clientId).toHexStr());
