@@ -124,8 +124,10 @@ message FundedAddressQuery
 
 message FundedAddressCounts
 {
-   uint32   active   = 1;
-   uint32   all_time = 2;
+   uint32   active         = 1;
+   uint32   all_time       = 2;
+
+   bool     data_loaded    = 3;
 }
 
 message StorageAddressMessage
