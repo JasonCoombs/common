@@ -187,7 +187,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
          }
 
          if (shuttingDown_.load()) {
-            if (state_ == State::Connected) {
+            if (state_ == State::Connected || state_ == State::Closing) {
                assert(wsi_);
                state_ = State::Closing;
                lws_callback_on_writable(wsi_);

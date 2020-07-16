@@ -79,6 +79,7 @@ bool WsServerConnection::BindConnection(const std::string& host , const std::str
    info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 | LWS_SERVER_OPTION_DISABLE_IPV6;
    info.user = this;
 
+   // Context creation will return nullptr if port binding failed
    context_ = lws_create_context(&info);
    if (context_ == nullptr) {
       SPDLOG_LOGGER_ERROR(logger_, "context create failed");
