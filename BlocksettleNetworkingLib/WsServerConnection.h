@@ -134,6 +134,7 @@ private:
    uint64_t nextClientId_{};
    std::map<uint64_t, std::unique_ptr<WsServerTimer>> timers_;
    uint64_t nextTimerId_{};
+   bool shuttingDownReceived_{};
 
 };
 

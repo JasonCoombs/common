@@ -108,6 +108,7 @@ private:
    std::string cookie_;
    std::unique_ptr<WsTimerStruct> reconnectTimer_;
    uint16_t retryCounter_{};
+   bool shuttingDownReceived_{};
 
 };
 

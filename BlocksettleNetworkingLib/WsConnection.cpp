@@ -113,12 +113,6 @@ WsRawPacket WsPacket::data(const std::string &payload)
          .build();
 }
 
-WsRawPacket WsPacket::close()
-{
-   return WsRawPacketBuilder(Type::Close)
-         .build();
-}
-
 WsRawPacket WsPacket::ack(uint64_t recvCounter)
 {
    return WsRawPacketBuilder(Type::Ack)

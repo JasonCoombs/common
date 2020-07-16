@@ -68,7 +68,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    port_ = std::stoi(port);
    shuttingDown_ = false;
 
-   struct lws_context_creation_info info;
+   lws_context_creation_info info;
    memset(&info, 0, sizeof(info));
 
    info.port = CONTEXT_PORT_NO_LISTEN;
@@ -118,6 +118,7 @@ bool WsDataConnection::closeConnection()
    std::memset(reconnectTimer_.get(), 0, sizeof(*reconnectTimer_));
    reconnectTimer_->owner_ = this;
    retryCounter_ = {};
+   shuttingDownReceived_ = {};
 
    return true;
 }
@@ -185,16 +186,29 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                lws_callback_on_writable(wsi_);
             }
          }
-
-         if (shuttingDown_.load()) {
-            if (state_ == State::Connected || state_ == State::Closing) {
-               assert(wsi_);
-               state_ = State::Closing;
-               lws_callback_on_writable(wsi_);
-            } else {
-               state_ = State::Closed;
+         if (shuttingDown_.load() && !shuttingDownReceived_
+             && ((sentCounter_ == queuedCounter_) || (state_ != State::Connected))) {
+            switch (state_) {
+               case State::Connected:
+                  state_ = State::Closing;
+                  break;
+               case State::Reconnecting:
+               case State::WaitingResumedResponse:
+               case State::Connecting:
+               case State::WaitingNewResponse:
+               case State::Closed:
+                  state_ = State::Closed;
+                  break;
+               case State::Closing:
+                  assert(false);
+                  break;
             }
-            return 0;
+            if (wsi_ != nullptr) {
+               lws_close_reason(wsi_, LWS_CLOSE_STATUS_NORMAL, nullptr, 0);
+               lws_set_timeout(wsi_, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+            }
+            shuttingDownReceived_ = true;
+            break;
          }
          break;
       }
@@ -277,12 +291,6 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                      recvCounter_ += 1;
                      break;
                   }
-                  case WsPacket::Type::Close: {
-                     SPDLOG_LOGGER_DEBUG(logger_, "server disconnected gracefully");
-                     listener_->OnDisconnected();
-                     state_ = State::Closed;
-                     return -1;
-                  }
                   default: {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
                      processError();
@@ -333,8 +341,8 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                // Nothing to do
                break;
             }
-            case State::Connected:
-            case State::Closing: {
+            case State::Closing:
+            case State::Connected: {
                if (recvCounter_ != recvAckCounter_) {
                   auto packet = WsPacket::ack(recvCounter_);
                   int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
@@ -358,17 +366,6 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                       return -1;
                   }
                   sentCounter_ += 1;
-               } else if (state_ == State::Closing) {
-                  auto packet = WsPacket::close();
-                  int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
-                  if (rc != static_cast<int>(packet.getSize())) {
-                      SPDLOG_LOGGER_ERROR(logger_, "write failed");
-                      processError();
-                      return -1;
-                  }
-                  listener_->OnDisconnected();
-                  state_ = State::Closed;
-                  return -1;
                }
                requestWriteIfNeeded();
                break;
@@ -396,6 +393,30 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
          if (wsi == wsi_) {
             processError();
+         }
+         return -1;
+      }
+
+      case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE: {
+         uint16_t code;
+         std::memcpy(&code, in, sizeof(code));
+         code = htons(code);
+         SPDLOG_LOGGER_DEBUG(logger_, "closing frame received with status code {}", code);
+         if (code == LWS_CLOSE_STATUS_NORMAL) {
+            switch (state_) {
+               case State::Connected:
+               case State::WaitingResumedResponse:
+               case State::Reconnecting:
+               case State::Closing:
+                  listener_->OnDisconnected();
+                  break;
+               case State::Connecting:
+               case State::WaitingNewResponse:
+               case State::Closed:
+                  listener_->OnError(DataConnectionListener::UndefinedSocketError);
+                  break;
+            }
+            state_ = State::Closed;
          }
          return -1;
       }
@@ -473,9 +494,12 @@ void WsDataConnection::processError()
          scheduleReconnect();
          break;
       }
-      case State::Closing:
-      case State::Closed: {
+      case State::Closing: {
+         listener_->OnDisconnected();
          state_ = State::Closed;
+         break;
+      }
+      case State::Closed: {
          break;
       }
    }
@@ -485,23 +509,23 @@ void WsDataConnection::processFatalError()
 {
    switch (state_) {
       case State::Connecting:
-      case State::WaitingNewResponse: {
+      case State::WaitingNewResponse:
          listener_->OnError(DataConnectionListener::UndefinedSocketError);
          break;
-      }
+
+      case State::Closing:
+         listener_->OnDisconnected();
+         break;
 
       case State::Reconnecting:
       case State::Connected:
-      case State::WaitingResumedResponse: {
+      case State::WaitingResumedResponse:
          listener_->OnDisconnected();
          listener_->OnError(DataConnectionListener::UndefinedSocketError);
          break;
-      }
 
-      case State::Closing:
-      case State::Closed: {
+      case State::Closed:
          break;
-      }
    }
 
    state_ = State::Closed;
@@ -511,8 +535,6 @@ void WsDataConnection::processFatalError()
 bool WsDataConnection::writeNeeded() const
 {
    switch (state_) {
-      case State::Closing:
-         return true;
       case State::Connected:
          return sentCounter_ != queuedCounter_ || recvCounter_ != recvAckCounter_;
       case State::Connecting:
@@ -520,6 +542,7 @@ bool WsDataConnection::writeNeeded() const
       case State::WaitingNewResponse:
       case State::WaitingResumedResponse:
       case State::Closed:
+      case State::Closing:
          return false;
    }
    assert(false);
@@ -530,6 +553,9 @@ void WsDataConnection::requestWriteIfNeeded()
 {
    if (writeNeeded() && wsi_ != nullptr) {
       lws_callback_on_writable(wsi_);
+   }
+   if (shuttingDown_) {
+      lws_cancel_service(context_);
    }
 }
 

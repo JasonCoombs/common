@@ -109,11 +109,6 @@ void WsServerConnection::stopServer()
       return;
    }
 
-   DataToSend toSend{kAllClientsId, WsPacket::close()};
-   {
-      std::lock_guard<std::mutex> lock(mutex_);
-      packets_.push(std::move(toSend));
-   }
    shuttingDown_ = true;
    lws_cancel_service(context_);
 
@@ -122,8 +117,14 @@ void WsServerConnection::stopServer()
    lws_context_destroy(context_);
    listener_ = nullptr;
    context_ = nullptr;
+
    packets_ = {};
    clients_ = {};
+   connections_ = {};
+   cookieToClientIdMap_ = {};
+   nextTimerId_ = {};
+   shuttingDownReceived_ = {};
+   timers_.clear();
 }
 
 int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
@@ -159,7 +160,16 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             client.queuedCounter += 1;
             requestWriteIfNeeded(client);
          }
-         return 0;
+
+         if (shuttingDown_.load() && !shuttingDownReceived_) {
+            shuttingDownReceived_ = true;
+            for (const auto &connection : connections_) {
+               lws_close_reason(connection.first, LWS_CLOSE_STATUS_NORMAL, nullptr, 0);
+               lws_set_timeout(connection.first, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+            }
+         }
+
+         break;
       }
 
       case LWS_CALLBACK_ESTABLISHED: {
@@ -168,7 +178,10 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          connection.ipAddr = bs::network::peerAddressString(socket);
          SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, ip address: {}"
             , static_cast<void*>(wsi), connection.ipAddr);
-         return 0;
+         if (shuttingDown_) {
+            return -1;
+         }
+         break;
       }
 
       case LWS_CALLBACK_CLOSED: {
@@ -207,7 +220,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             }
          }
          connections_.erase(connectionIt);
-         return 0;
+         break;
       }
 
       case LWS_CALLBACK_RECEIVE: {
@@ -245,13 +258,6 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                         return -1;
                      }
                      break;
-                  }
-                  case WsPacket::Type::Close: {
-                     cookieToClientIdMap_.erase(client.cookie);
-                     clients_.erase(connection.clientId);
-                     connection.state = State::Closed;
-                     listener_->OnClientDisconnected(connection.clientId);
-                     return -1;
                   }
                   default: {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
@@ -390,13 +396,36 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                return -1;
             }
          }
+         break;
       }
-      default: {
-         return 0;
+
+      case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE: {
+         uint16_t code;
+         std::memcpy(&code, in, sizeof(code));
+         code = htons(code);
+         auto &connection = connections_.at(wsi);
+         SPDLOG_LOGGER_DEBUG(logger_, "closing frame received with status code {}", code);
+         switch (connection.state) {
+            case State::Connected: {
+               if (code == LWS_CLOSE_STATUS_NORMAL) {
+                  auto &client = clients_.at(connection.clientId);
+                  cookieToClientIdMap_.erase(client.cookie);
+                  clients_.erase(connection.clientId);
+                  connection.state = State::Closed;
+                  listener_->OnClientDisconnected(connection.clientId);
+               }
+               return -1;
+            }
+            default:
+               break;
+         }
+         break;
       }
+
+      default:
+         break;
    }
 
-   assert(false);
    return 0;
 }
 
@@ -417,25 +446,7 @@ std::string WsServerConnection::nextClientId()
 
 bool WsServerConnection::done() const
 {
-   if (!shuttingDown_) {
-      return false;
-   }
-   {
-      std::lock_guard<std::mutex> lock(mutex_);
-      if (!packets_.empty()) {
-         return false;
-      }
-   }
-   for (const auto &connectionItem : connections_) {
-      const auto &connection = connectionItem.second;
-      if (connection.state == State::Connected) {
-         const auto &client = clients_.at(connection.clientId);
-         if (client.sentCounter != client.queuedCounter) {
-            return false;
-         }
-      }
-   }
-   return true;
+   return shuttingDown_ && connections_.empty();
 }
 
 bool WsServerConnection::writeNeeded(const ClientData &client) const

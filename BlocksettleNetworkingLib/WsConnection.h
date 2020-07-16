@@ -63,10 +63,9 @@ namespace bs {
             ResponseUnknown = 0x15,
             Data = 0x16,
             Ack = 0x17,
-            Close = 0x18,
 
             Min = RequestNew,
-            Max = Close,
+            Max = Ack,
          };
 
          Type type{};
@@ -80,7 +79,6 @@ namespace bs {
          static WsRawPacket responseUnknown();
          static WsRawPacket data(const std::string &payload);
          static WsRawPacket ack(uint64_t recvCounter);
-         static WsRawPacket close();
 
          static WsPacket parsePacket(const std::string &payload
             , const std::shared_ptr<spdlog::logger> &logger);
