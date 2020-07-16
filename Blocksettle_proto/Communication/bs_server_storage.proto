@@ -78,7 +78,7 @@ message AuthAddressInfo
 {
    string   auth_address   = 1;
    string   user_name      = 2;
-   int32    address_state  = 3;
+   uint32   address_state  = 3;
 }
 
 message SubmittedAddressQuery
