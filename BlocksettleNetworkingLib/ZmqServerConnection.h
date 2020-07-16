@@ -81,7 +81,6 @@ protected:
 
    // should be accessed only from overloaded ReadFromDataSocket.
    ZmqContext::sock_ptr             dataSocket_;
-   ZmqContext::sock_ptr             monSocket_;
 
    void stopServer();
 
@@ -120,7 +119,6 @@ private:
    std::atomic_flag                 dataQueueLock_ = ATOMIC_FLAG_INIT;
    std::deque<DataToSend>           dataQueue_;
    ZMQTransport                     zmqTransport_ = ZMQTransport::TCPTransport;
-   std::string                      monitorConnectionName_;
    bool        immediate_{ false };
    std::string identity_;
    int sendTimeoutInMs_{ 5000 };
