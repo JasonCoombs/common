@@ -122,21 +122,27 @@ message StorageAddressMessage
    oneof data
    {
       AuthAddress       submit_auth_address        = 1;
-      FundAuthAddress   fund_auth_address_request  = 2;
-      string            revoke_auth_address        = 3;
-      string            auth_address               = 4;
+      bool              submit_result              = 2;
 
-      AuthAddressInfo   address_info         = 5;
-      bool              put_result           = 6;
+      FundAuthAddress   fund_auth_address_request  = 3;
+      bool              update_fund_request_result = 4;
 
-      SubmittedAddressQuery      get_submitted_auth_list    = 7;
-      SubmittedAddressResponse   submitted_address_list     = 8;
+      string            revoke_auth_address        = 5;
+      bool              revoke_result              = 6;
 
-      SubmittedAddressQuery      get_submitted_auth_count   = 9;
-      int64                      submitted_address_count    = 10;
+      string            auth_address               = 7;
 
-      UpdateXbtSettlementCountRequest  update_settlement_count          = 13;
-      UpdateXbtSettlementCountResponse update_settlement_count_result   = 14;
+      AuthAddressInfo   address_info               = 8;
+      bool              update_address_info_result = 9;
+
+      SubmittedAddressQuery      get_submitted_auth_list    = 10;
+      SubmittedAddressResponse   submitted_address_list     = 11;
+
+      SubmittedAddressQuery      get_submitted_auth_count   = 12;
+      int64                      submitted_address_count    = 13;
+
+      UpdateXbtSettlementCountRequest  update_settlement_count          = 14;
+      UpdateXbtSettlementCountResponse update_settlement_count_result   = 15;
    }
 }
 
@@ -150,7 +156,8 @@ message SaveNewRequest
 
 message SaveNewResponse
 {
-   bool success = 1;
+   bool     success     = 1;
+   uint64   request_id  = 2;
 }
 
 message CcToken
