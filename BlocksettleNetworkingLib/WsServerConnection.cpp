@@ -37,7 +37,13 @@ namespace {
       { nullptr, nullptr, 0, 0, 0, nullptr, 0 },
    };
 
-   const std::string kAllClientsId = "<TO_ALL>";
+   // Make sure that regular clientId can't clash with that
+   const auto kAllClientsId = std::string({'\0'});
+
+   std::string generateNewCookie()
+   {
+      return CryptoPRNG::generateRandom(32).toBinStr();
+   }
 
 } // namespace
 
@@ -372,7 +378,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                return 0;
             }
             case State::SendingHandshakeNew: {
-               auto cookie = CryptoPRNG::generateRandom(32).toBinStr();
+               auto cookie = params_.testCookieGenerator ? params_.testCookieGenerator() : generateNewCookie();
                auto packet = WsPacket::responseNew(cookie);
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {

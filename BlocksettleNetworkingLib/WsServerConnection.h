@@ -39,6 +39,9 @@ namespace bs {
 struct WsServerConnectionParams
 {
    size_t maximumPacketSize{bs::network::ws::kDefaultMaximumWsPacketSize};
+
+   // For tests only
+   std::function<std::string()> testCookieGenerator;
 };
 
 class WsServerConnection : public ServerConnection
