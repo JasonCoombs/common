@@ -30,6 +30,8 @@ namespace bs {
 
    std::vector<std::string> split(const std::string& str, char separator);
 
+   std::string trim(std::string str);
+
 } // namespace bs
 
 #endif
