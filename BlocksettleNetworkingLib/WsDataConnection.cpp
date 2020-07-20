@@ -130,7 +130,7 @@ bool WsDataConnection::send(const std::string &data)
    }
    {
       std::lock_guard<std::mutex> lock(mutex_);
-      newPackets_.push(WsPacket::data(data));
+      newPackets_.push(filterRawPacket(WsPacket::data(data)));
    }
    lws_cancel_service(context_);
    return true;
@@ -315,7 +315,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
 
          switch (state_) {
             case State::Reconnecting: {
-               auto packet = WsPacket::requestResumed(cookie_, recvCounter_);
+               auto packet = filterRawPacket(WsPacket::requestResumed(cookie_, recvCounter_));
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {
                   SPDLOG_LOGGER_ERROR(logger_, "write failed");
@@ -326,7 +326,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                break;
             }
             case State::Connecting: {
-               auto packet = WsPacket::requestNew();
+               auto packet = filterRawPacket(WsPacket::requestNew());
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {
                   SPDLOG_LOGGER_ERROR(logger_, "write failed");
@@ -344,7 +344,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
             case State::Closing:
             case State::Connected: {
                if (recvCounter_ != recvAckCounter_) {
-                  auto packet = WsPacket::ack(recvCounter_);
+                  auto packet = filterRawPacket(WsPacket::ack(recvCounter_));
                   int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                   if (rc != static_cast<int>(packet.getSize())) {
                       SPDLOG_LOGGER_ERROR(logger_, "write failed");
@@ -574,4 +574,9 @@ bool WsDataConnection::processSentAck(uint64_t sentAckCounter)
    }
 
    return true;
+}
+
+WsRawPacket WsDataConnection::filterRawPacket(WsRawPacket packet)
+{
+   return packet;
 }

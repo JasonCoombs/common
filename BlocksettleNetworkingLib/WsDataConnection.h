@@ -82,6 +82,9 @@ private:
    void requestWriteIfNeeded();
    bool processSentAck(uint64_t sentAckCounter);
 
+   // For tests, default is noop
+   virtual bs::network::WsRawPacket filterRawPacket(bs::network::WsRawPacket packet);
+
    std::shared_ptr<spdlog::logger> logger_;
    const WsDataConnectionParams params_;
 
