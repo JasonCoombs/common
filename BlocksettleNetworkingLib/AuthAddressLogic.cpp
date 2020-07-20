@@ -287,8 +287,14 @@ void AuthAddressValidator::waitOnRefresh(const std::string& id)
    idRef.setRef(id);
 
    while (true) {
-      auto&& notifId = refreshQueue_.pop_front();
-      if (notifId == idRef) {
+      try
+      {
+         auto&& notifId = refreshQueue_.pop_front();
+         if (notifId == idRef) {
+            break;
+         }
+      }
+      catch (const ArmoryThreading::StopBlockingLoop&) {
          break;
       }
    }

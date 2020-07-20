@@ -246,6 +246,8 @@ public:
    {}
    virtual ~AuthAddressValidator(void)
    {
+      refreshQueue_.terminate();
+      
       if (lambdas_) {
          lambdas_->shutdown();
       }
