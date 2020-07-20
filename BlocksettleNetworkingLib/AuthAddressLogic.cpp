@@ -311,7 +311,9 @@ void AuthAddressValidator::waitOnRefresh(const std::string& id)
          break;
       }
       catch (const ArmoryThreading::StackTimedOutException &) {
-         break;
+         if (stopped_) {
+            break;
+         }
       }
    }
 }
