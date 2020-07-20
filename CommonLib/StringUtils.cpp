@@ -95,4 +95,18 @@ namespace bs {
       return convertToInt(inStr, converted) != 0;
    }
 
+   std::vector<std::string> split(const std::string &str, char separator)
+   {
+      std::vector<std::string> result;
+      size_t start = 0;
+      size_t end = str.find(separator);
+      while (end != std::string::npos) {
+          result.push_back(str.substr(start, end - start));
+          start = end + 1;
+          end = str.find(separator, start);
+      }
+      result.push_back(str.substr(start, end));
+      return result;
+   }
+
 } // namespace bs
