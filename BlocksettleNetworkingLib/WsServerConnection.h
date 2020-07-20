@@ -40,8 +40,9 @@ struct WsServerConnectionParams
 {
    size_t maximumPacketSize{bs::network::ws::kDefaultMaximumWsPacketSize};
 
-   // For tests only
-   std::function<std::string()> testCookieGenerator;
+   // If set, client's IP address will be read from x-forwarded-for header value if possible.
+   // Last IP address in a list will be used - https://en.wikipedia.org/wiki/X-Forwarded-For#Format
+   bool trustForwardedForHeader{};
 };
 
 class WsServerConnection : public ServerConnection
@@ -87,7 +88,8 @@ private:
       std::string currFragment;
       State state{State::WaitHandshake};
       std::string clientId; // only for State::Connected and State::SendingHandshakeResumed
-      std::string ipAddr;
+      std::string connectedIp;
+      std::string forwardedIp;
    };
 
    struct ClientData
@@ -118,6 +120,10 @@ private:
    void requestWriteIfNeeded(const ClientData &client);
    bool processSentAck(ClientData &client, uint64_t sentAckCounter);
    void scheduleCallback(std::chrono::milliseconds timeout, TimerCallback callback);
+
+   std::string connectedIp(lws *wsi);
+   // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
+   std::string forwardedIp(lws *wsi);
 
    std::shared_ptr<spdlog::logger>  logger_;
    const WsServerConnectionParams params_;

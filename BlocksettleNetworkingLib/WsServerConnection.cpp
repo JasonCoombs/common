@@ -180,10 +180,10 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
 
       case LWS_CALLBACK_ESTABLISHED: {
          auto &connection = connections_[wsi];
-         auto socket = lws_get_socket_fd(wsi);
-         connection.ipAddr = bs::network::peerAddressString(socket);
-         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, ip address: {}"
-            , static_cast<void*>(wsi), connection.ipAddr);
+         connection.connectedIp = connectedIp(wsi);
+         connection.forwardedIp = forwardedIp(wsi);
+         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ips: {}"
+            , static_cast<void*>(wsi), connection.connectedIp, connection.forwardedIp);
          if (shuttingDown_) {
             return -1;
          }
@@ -378,7 +378,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                return 0;
             }
             case State::SendingHandshakeNew: {
-               auto cookie = params_.testCookieGenerator ? params_.testCookieGenerator() : generateNewCookie();
+               auto cookie = generateNewCookie();
                auto packet = WsPacket::responseNew(cookie);
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {
@@ -392,7 +392,8 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                client.wsi = wsi;
                connection.clientId = clientId;
                ServerConnectionListener::Details details;
-               details[ServerConnectionListener::Detail::IpAddr] = connection.ipAddr;
+               details[ServerConnectionListener::Detail::IpAddr] =
+                     params_.trustForwardedForHeader && !connection.forwardedIp.empty() ? connection.forwardedIp : connection.connectedIp;
                SPDLOG_LOGGER_DEBUG(logger_, "new session started for client {}", bs::toHex(clientId));
                listener_->OnClientConnected(clientId, details);
                lws_callback_on_writable(wsi);
@@ -500,6 +501,31 @@ void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsS
    lws_sul_schedule(context_, 0, timer.get(), timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
 
    timers_.insert(std::make_pair(timerId, std::move(timer)));
+}
+
+std::string WsServerConnection::connectedIp(lws *wsi)
+{
+   auto socket = lws_get_socket_fd(wsi);
+   auto ipAddr = bs::network::peerAddressString(socket);
+   return ipAddr;
+}
+
+std::string WsServerConnection::forwardedIp(lws *wsi)
+{
+   int n = lws_hdr_total_length(wsi, WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      return "";
+   }
+   std::string value;
+   value.resize(static_cast<size_t>(n + 1));
+   n = lws_hdr_copy(wsi, &value[0], static_cast<int>(value.size()), WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      assert(false);
+      return "";
+   }
+   value.resize(static_cast<size_t>(n));
+   auto ipAddr = bs::trim(bs::split(value, ',').back());
+   return ipAddr;
 }
 
 bool WsServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)
