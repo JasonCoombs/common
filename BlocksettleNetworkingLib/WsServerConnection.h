@@ -43,6 +43,10 @@ struct WsServerConnectionParams
    // If set, client's IP address will be read from x-forwarded-for header value if possible.
    // Last IP address in a list will be used - https://en.wikipedia.org/wiki/X-Forwarded-For#Format
    bool trustForwardedForHeader{};
+
+   // If set, filterCallback must return true if connection is allowed and false if connection should be dropped
+   using FilterCallback = std::function<bool(const std::string &ip)>;
+   FilterCallback filterCallback;
 };
 
 class WsServerConnection : public ServerConnection
@@ -88,8 +92,7 @@ private:
       std::string currFragment;
       State state{State::WaitHandshake};
       std::string clientId; // only for State::Connected and State::SendingHandshakeResumed
-      std::string connectedIp;
-      std::string forwardedIp;
+      std::string ipAddr;
    };
 
    struct ClientData
