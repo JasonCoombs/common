@@ -13,7 +13,7 @@
 #include "ConnectionManager.h"
 #include "CurrencyPair.h"
 #include "WsDataConnection.h"
-#include <QApplication>
+#include <QCoreApplication>
 
 #include <spdlog/spdlog.h>
 
