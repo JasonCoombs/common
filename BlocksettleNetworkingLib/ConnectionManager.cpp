@@ -16,6 +16,7 @@
 #include "GenoaStreamServerConnection.h"
 #include "PublisherConnection.h"
 #include "SubscriberConnection.h"
+#include "WsDataConnection.h"
 #include "ZmqContext.h"
 #include "ZmqDataConnection.h"
 
@@ -142,4 +143,9 @@ const std::shared_ptr<QNetworkAccessManager> &ConnectionManager::GetNAM()
    }
 
    return nam_;
+}
+
+std::shared_ptr<DataConnection> ConnectionManager::CreateInsecureWsConnection() const
+{
+   return std::make_shared<WsDataConnection>(logger_, WsDataConnectionParams{});
 }

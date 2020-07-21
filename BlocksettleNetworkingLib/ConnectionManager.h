@@ -69,6 +69,8 @@ public:
 
    std::shared_ptr<ZmqContext> zmqContext() const { return zmqContext_; }
 
+   std::shared_ptr<DataConnection>  CreateInsecureWsConnection() const;
+
 private:
    bool InitNetworkLibs();
    void DeinitNetworkLibs();
