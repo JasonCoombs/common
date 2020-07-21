@@ -485,13 +485,11 @@ unsigned AuthAddressValidator::update(const OutpointBatch &batch)
 {
    std::unique_lock<std::mutex> lock(updateMutex_);
    if (!lambdas_ || stopped_) {
-      std::cout << "stopped 1\n";
       return UINT32_MAX;
    }
    unsigned opCount = 0;
    for (const auto &outpointPair : batch.outpoints_) {
       if (stopped_) {
-         std::cout << "stopped 2\n";
          return UINT32_MAX;
       }
       const auto& outpointVec = outpointPair.second;
@@ -1272,8 +1270,9 @@ void AuthAddressLogic::getAuthAddrState(const std::shared_ptr<AuthAddressValidat
          }
          //address has history and no validation outputs
          cb(addr, AddressVerificationState::Tainted);
+         return;
       }
-      //logic error in getAddrPathsStatus, cannot proceed 
+      //logic error in getAddrPathsStatus, cannot proceed
       cb(addr, AddressVerificationState::VerificationFailed);
       return;
    };
