@@ -13,6 +13,7 @@
 namespace {
    constexpr uint64_t kAuthValueThreshold = 1000;
 
+   const auto kStdFutureWaitTime = std::chrono::seconds(10);
    const auto kMaxFutureWaitTime = std::chrono::seconds(30);
 
    template<class T>
@@ -280,10 +281,10 @@ AuthAddressValidator::~AuthAddressValidator()
       updateThread_.join();
    }
    refreshQueue_.terminate();
-
    if (lambdas_) {
       lambdas_->shutdown();
    }
+   std::unique_lock<std::mutex> lock(updateMutex_);
 }
 
 void AuthAddressValidator::pushRefreshID(const std::vector<BinaryData> &idVec)
@@ -459,6 +460,9 @@ unsigned AuthAddressValidator::update()
       addrVec.push_back(addrPair.first);
    }
    const auto &batch = getOutpointsForAddresses(addrVec, topBlock_, zcIndex_);
+   if (stopped_) {
+      return 0;
+   }
 
    unsigned opCount = 0;
    for (auto& outpointPair : batch.outpoints_) {
@@ -550,6 +554,9 @@ void AuthAddressValidator::update(const ResultCb &cb)
    std::thread([this, cb] {
       try {
          update();
+         if (stopped_) {
+            return;
+         }
          if (cb) {
             cb(true);
          }
@@ -1004,7 +1011,9 @@ OutpointBatch AuthAddressValidator::getOutpointsForAddresses(const std::vector<b
    };
    //grab all txouts
    lambdas_->getOutpointsForAddresses(addrs, opLbd, topBlock, zcIndex);
-   checkFutureWait(futPtr);
+   if (futPtr.wait_for(kStdFutureWaitTime) == std::future_status::timeout) {
+      return {};
+   }
    return futPtr.get();
 }
 
