@@ -378,6 +378,19 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
    }
    const auto &regID = lambdas_->registerAddresses(addrVec);
 
+   if (updateThreadRunning_) {
+      if (cb) {
+         cb(true);
+      }
+      return true;
+   }
+   else {   // Can't assign to a non-joined thread
+      if (updateThread_.joinable()) {
+         updateThread_.join();
+      }
+   }
+
+   updateThreadRunning_ = true;
    updateThread_ = std::thread([this, regID, cb] {
       waitOnRefresh(regID);
 
@@ -428,6 +441,7 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
       if (cb) {
          cb(true);
       }
+      updateThreadRunning_ = false;
    });
    return true;
 }
