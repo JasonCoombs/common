@@ -327,6 +327,7 @@ private:
    mutable std::mutex vettingMutex_;
    std::mutex  updateMutex_;
    std::thread updateThread_;
+   std::atomic_bool  updateThreadRunning_{ false };
 };
 
 ////
