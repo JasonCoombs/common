@@ -34,7 +34,7 @@ class BSMarketDataProvider : public MarketDataProvider, public DataConnectionLis
 public:
    BSMarketDataProvider(const std::shared_ptr<ConnectionManager>& connectionManager
       , const std::shared_ptr<spdlog::logger> &, MDCallbackTarget *
-      , bool acceptUsdPairs = false);
+      , bool secureConnection, bool acceptUsdPairs);
    ~BSMarketDataProvider() noexcept override = default;
 
    BSMarketDataProvider(const BSMarketDataProvider&) = delete;
@@ -76,7 +76,8 @@ private:
    std::shared_ptr<ConnectionManager>  connectionManager_;
    std::shared_ptr<DataConnection> mdConnection_ = nullptr;
 
-   bool acceptUsdPairs_;
+   const bool acceptUsdPairs_;
+   const bool secureConnection_;
 };
 
 #endif // __BS_MARKET_DATA_PROVIDER_H__

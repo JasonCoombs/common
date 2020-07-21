@@ -23,10 +23,11 @@ static const std::string kUsdCcyName = "USD";
 
 BSMarketDataProvider::BSMarketDataProvider(const std::shared_ptr<ConnectionManager> &connectionManager
       , const std::shared_ptr<spdlog::logger> &logger, MDCallbackTarget *callbacks
-      , bool acceptUsdPairs)
+      , bool secureConnection, bool acceptUsdPairs)
  : MarketDataProvider(logger, callbacks)
  , connectionManager_{connectionManager}
  , acceptUsdPairs_{acceptUsdPairs}
+ , secureConnection_(secureConnection)
 {}
 
 bool BSMarketDataProvider::StartMDConnection()
@@ -36,7 +37,8 @@ bool BSMarketDataProvider::StartMDConnection()
       return false;
    }
 
-   mdConnection_ = connectionManager_->CreateSecureWsConnection();
+   mdConnection_ = secureConnection_ ?
+      connectionManager_->CreateSecureWsConnection() : connectionManager_->CreateInsecureWsConnection();
 
    logger_->debug("[BSMarketDataProvider::StartMDConnection] start connecting to PB updates");
 
