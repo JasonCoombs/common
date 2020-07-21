@@ -179,7 +179,7 @@ bool TransportBIP15x::addCookieToPeers(const std::string &id)
    // to erase any old keys first.
    std::lock_guard<std::mutex> lock(authPeersMutex_);
    authPeers_->eraseName(id);
-   authPeers_->addPeer(cookieKey, id);
+   authPeers_->addPeer(cookieKey, std::vector<std::string>({id}));
    return true;
 }
 

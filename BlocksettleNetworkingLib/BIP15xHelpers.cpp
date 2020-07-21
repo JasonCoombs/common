@@ -80,6 +80,6 @@ void bip15x::updatePeerKeys(AuthorizedPeers *authPeers_, const BIP15xPeers &newP
    }
 
    for (const auto &newPeer : newPeers) {
-      authPeers_->addPeer(newPeer.pubKey(), newPeer.name());
+      authPeers_->addPeer(newPeer.pubKey(), std::vector<std::string>({newPeer.name()}));
    }
 }
