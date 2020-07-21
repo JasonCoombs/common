@@ -49,7 +49,6 @@ private:
 
    mutable std::mutex mutex_;
    std::string welcomeMsg_;
-   std::string latestDataMsg_;
 
 };
 

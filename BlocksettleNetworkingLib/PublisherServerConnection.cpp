@@ -23,7 +23,6 @@ public:
    {
       std::lock_guard<std::mutex> lock(owner_->mutex_);
       owner_->conn_->SendDataToClient(clientId, owner_->welcomeMsg_);
-      owner_->conn_->SendDataToClient(clientId, owner_->latestDataMsg_);
    }
 
    void OnClientDisconnected(const std::string& clientId) override
@@ -53,11 +52,6 @@ bool PublisherServerConnection::BindConnection(const std::string &host, const st
 
 bool PublisherServerConnection::publishData(const std::string &data)
 {
-   {
-      std::lock_guard<std::mutex> lock(mutex_);
-      latestDataMsg_ = data;
-   }
-
    return conn_->SendDataToAllClients(data);
 }
 
