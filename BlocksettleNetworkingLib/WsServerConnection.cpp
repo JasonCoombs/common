@@ -278,6 +278,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                   }
                   default: {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
+                     client.wsi = nullptr;
                      connection.state = State::Closed;
                      return -1;
                   }
@@ -326,8 +327,14 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                   }
                }
             }
+            case State::SendingHandshakeResumed: {
+               auto &client = clients_.at(connection.clientId);
+               client.wsi = nullptr;
+               SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
+               connection.state = State::Closed;
+               return -1;
+            }
             case State::SendingHandshakeNotFound:
-            case State::SendingHandshakeResumed:
             case State::SendingHandshakeNew: {
                SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
                connection.state = State::Closed;
