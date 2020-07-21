@@ -256,7 +256,7 @@ public:
    bool goOnline(const ResultCb &);
 
    unsigned update(void);
-   void update(const ResultCb &);
+   unsigned update(const OutpointBatch &);
 
    bool isReady() const { return ready_; }
 
@@ -290,9 +290,13 @@ public:
       , const std::vector<UTXO> &) const;
 
    unsigned int topBlock() const;
+
    OutpointBatch getOutpointsFor(const bs::Address &) const;
+   void getOutpointsFor(const bs::Address &
+      , const std::function<void(const OutpointBatch &)> &) const;
    std::vector<UTXO> getUTXOsFor(const bs::Address &, bool withZC = false) const;
    void pushZC(const BinaryData &tx) const;
+   void getValidationOutpointsBatch(const std::function<void(OutpointBatch)> &);
 
 protected:
    virtual void prepareCallbacks() {}
@@ -373,9 +377,13 @@ namespace AuthAddressLogic
 
    AddressVerificationState getAuthAddrState(const AuthAddressValidator &
       , const bs::Address &);
+   void getAuthAddrState(const std::shared_ptr<AuthAddressValidator> &
+      , const bs::Address &, const std::function<void(const bs::Address, AddressVerificationState)> &);
    bool isValid(const AuthAddressValidator &, const bs::Address &);
    AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
       , const bs::Address &);
+   void getAddrPathsStatus(const std::shared_ptr<AuthAddressValidator> &
+      , const bs::Address &, const std::function<void(AddrPathsStatus)> &);
    BinaryData revoke(const AuthAddressValidator &, const bs::Address &
       , const std::shared_ptr<ResolverFeed> &);
    std::pair<bs::Address, UTXO> getRevokeData(const AuthAddressValidator &
