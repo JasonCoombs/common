@@ -68,6 +68,19 @@ public:
       ArmoryOffline,
    };
 
+   enum class AuthAddressState
+   {
+      Unknown, // in progress
+      NotSubmitted,
+      Submitted,
+      Tainted,
+      Verifying,
+      Verified,
+      Revoked,
+      RevokedByBS,
+      Invalid
+   };
+
    AuthAddressManager(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<ArmoryConnection> &);
    ~AuthAddressManager() noexcept override;
@@ -88,7 +101,7 @@ public:
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);
 
-   AddressVerificationState GetState(const bs::Address &addr) const;
+   AuthAddressState GetState(const bs::Address &addr) const;
 
    void setDefault(const bs::Address &addr);
 
@@ -174,7 +187,9 @@ private:
 
    std::vector<bs::Address> GetVerifiedAddressList() const;
 
-   void SetState(const bs::Address &addr, AddressVerificationState state);
+   void SetValidationState(const bs::Address &addr, AddressVerificationState state);
+
+   void SetExplicitState(const bs::Address &addr, AuthAddressState state);
 
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
@@ -187,8 +202,8 @@ protected:
    mutable std::atomic_flag                  lockList_ = ATOMIC_FLAG_INIT;
    std::vector<bs::Address>                  addresses_;
 
-   std::map<bs::Address, AddressVerificationState> states_;
-   mutable std::atomic_flag                        statesLock_ = ATOMIC_FLAG_INIT;
+   std::map<bs::Address, AuthAddressState>   states_;
+   mutable std::atomic_flag                  statesLock_ = ATOMIC_FLAG_INIT;
 
    using HashMap = std::map<bs::Address, BinaryData>;
    mutable bs::Address  defaultAddr_{};
