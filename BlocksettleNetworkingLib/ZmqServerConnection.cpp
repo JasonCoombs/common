@@ -164,7 +164,8 @@ void ZmqServerConnection::listenFunction()
 {
    bs::setCurrentThreadName(threadName_);
 
-   zmq_pollitem_t  poll_items[2];
+   constexpr size_t pollSize = 2;
+   zmq_pollitem_t  poll_items[pollSize];
 
    poll_items[ZmqServerConnection::ControlSocketIndex].socket = threadSlaveSocket_.get();
    poll_items[ZmqServerConnection::ControlSocketIndex].events = ZMQ_POLLIN;
@@ -178,7 +179,7 @@ void ZmqServerConnection::listenFunction()
 
    while (true) {
       int periodMs = std::chrono::duration_cast<std::chrono::milliseconds>(kHearthbeatCheckPeriod).count();
-      int result = zmq_poll(poll_items, sizeof(poll_items) / sizeof(poll_items[0]), periodMs);
+      int result = zmq_poll(poll_items, pollSize, periodMs);
 
       if (result == -1) {
          errorCount++;
