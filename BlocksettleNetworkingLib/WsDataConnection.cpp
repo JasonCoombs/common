@@ -187,27 +187,15 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
             }
          }
          if (shuttingDown_.load() && !shuttingDownReceived_
-             && ((sentCounter_ == queuedCounter_) || (state_ != State::Connected))) {
-            switch (state_) {
-               case State::Connected:
-                  lws_close_reason(wsi_, LWS_CLOSE_STATUS_NORMAL, nullptr, 0);
-                  lws_set_timeout(wsi_, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
-                  state_ = State::Closing;
-                  shuttingDownReceived_ = true;
-                  break;
-               case State::Reconnecting:
-               case State::WaitingResumedResponse:
-               case State::Connecting:
-               case State::WaitingNewResponse:
-               case State::Closed:
-                  state_ = State::Closed;
-                  shuttingDownReceived_ = true;
-                  return -1;
-               case State::Closing:
-                  assert(false);
-                  break;
+             && ((wsi_ == nullptr) || (sentCounter_ == queuedCounter_) || (state_ != State::Connected))) {
+            if (state_ == State::Connected && wsi_ != nullptr) {
+               lws_close_reason(wsi_, LWS_CLOSE_STATUS_NORMAL, nullptr, 0);
+               lws_set_timeout(wsi_, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+               state_ = State::Closing;
+            } else {
+               state_ = State::Closed;
             }
-            break;
+            shuttingDownReceived_ = true;
          }
          break;
       }
