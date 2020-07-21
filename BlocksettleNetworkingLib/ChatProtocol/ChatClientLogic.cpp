@@ -36,6 +36,7 @@ ChatClientLogic::ChatClientLogic()
    qRegisterMetaType<Chat::ChatClientLogicError>();
    qRegisterMetaType<Chat::ClientPartyLogicPtr>();
    qRegisterMetaType<Chat::ChatUserPtr>();
+   qRegisterMetaType<bs::network::BIP15xNewKeyCb>();
 
    connect(this, &ChatClientLogic::chatClientError, this, &ChatClientLogic::handleLocalErrors);
 }

@@ -244,12 +244,7 @@ public:
    AuthAddressValidator(const std::shared_ptr<AuthValidatorCallbacks> &callbacks)
       : lambdas_(callbacks)
    {}
-   virtual ~AuthAddressValidator(void)
-   {
-      if (lambdas_) {
-         lambdas_->shutdown();
-      }
-   }
+   virtual ~AuthAddressValidator(void);
 
    void addValidationAddress(const bs::Address &);
 
@@ -321,15 +316,17 @@ private:
       , bool withZC = false) const;
 
 private:
-   ArmoryThreading::BlockingQueue<BinaryData> refreshQueue_;
+   ArmoryThreading::TimedQueue<BinaryData> refreshQueue_;
 
    std::map<bs::Address, std::shared_ptr<ValidationAddressStruct>>   validationAddresses_;
    unsigned topBlock_ = 0;
    unsigned zcIndex_ = 0;
 
    std::atomic_bool  ready_{ false };
+   std::atomic_bool  stopped_{ false };
    mutable std::mutex vettingMutex_;
-   std::mutex updateMutex_;
+   std::mutex  updateMutex_;
+   std::thread updateThread_;
 };
 
 ////

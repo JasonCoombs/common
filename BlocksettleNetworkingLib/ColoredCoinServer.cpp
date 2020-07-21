@@ -13,6 +13,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "Bip15xDataConnection.h"
 #include "ColoredCoinCache.h"
 #include "ColoredCoinLogic.h"
 #include "DataConnection.h"
@@ -456,9 +457,8 @@ void CcTrackerClient::reconnect()
    params.ephemeralPeers = true;
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    transport->setKeyCb(newKeyCb_);
-
-   WsDataConnectionParams wsParams;
-   connection_ = std::make_unique<WsDataConnection>(logger_, wsParams);
+   auto wsConn = std::make_unique<WsDataConnection>(logger_, WsDataConnectionParams{});
+   connection_ = std::make_unique<Bip15xDataConnection>(logger_, std::move(wsConn), transport);
    bool result = connection_->openConnection(host_, port_, this);
    assert(result);
 }
