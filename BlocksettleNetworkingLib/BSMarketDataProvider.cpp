@@ -36,7 +36,7 @@ bool BSMarketDataProvider::StartMDConnection()
       return false;
    }
 
-   mdConnection_ = connectionManager_->CreateInsecureWsConnection();
+   mdConnection_ = connectionManager_->CreateSecureWsConnection();
 
    logger_->debug("[BSMarketDataProvider::StartMDConnection] start connecting to PB updates");
 

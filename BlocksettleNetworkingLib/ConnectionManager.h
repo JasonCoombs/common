@@ -48,6 +48,7 @@ public:
    ConnectionManager& operator = (ConnectionManager&&) = delete;
 
    bool IsInitialized() const { return isInitialized_; }
+   void setCaBundle(const void *caBundlePtr, size_t caBundleSize);
 
    std::shared_ptr<spdlog::logger>     GetLogger() const;
 
@@ -70,6 +71,7 @@ public:
    std::shared_ptr<ZmqContext> zmqContext() const { return zmqContext_; }
 
    std::shared_ptr<DataConnection>  CreateInsecureWsConnection() const;
+   std::shared_ptr<DataConnection>  CreateSecureWsConnection() const;
 
 private:
    bool InitNetworkLibs();
@@ -82,6 +84,9 @@ private:
    std::shared_ptr<QNetworkAccessManager> nam_;
    std::shared_ptr<ArmoryServersProvider> armoryServers_;
    bs::network::BIP15xPeers               zmqTrustedTerminals_;
+
+   const void *caBundlePtr_{};
+   size_t caBundleSize_{};
 };
 
 #endif // __CONNECTION_MANAGER_H__

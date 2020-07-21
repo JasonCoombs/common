@@ -83,6 +83,12 @@ ConnectionManager::~ConnectionManager() noexcept
    DeinitNetworkLibs();
 }
 
+void ConnectionManager::setCaBundle(const void *caBundlePtr, size_t caBundleSize)
+{
+   caBundlePtr_ = caBundlePtr;
+   caBundleSize_ = caBundleSize;
+}
+
 std::shared_ptr<spdlog::logger> ConnectionManager::GetLogger() const
 {
    return logger_;
@@ -148,4 +154,14 @@ const std::shared_ptr<QNetworkAccessManager> &ConnectionManager::GetNAM()
 std::shared_ptr<DataConnection> ConnectionManager::CreateInsecureWsConnection() const
 {
    return std::make_shared<WsDataConnection>(logger_, WsDataConnectionParams{});
+}
+
+std::shared_ptr<DataConnection> ConnectionManager::CreateSecureWsConnection() const
+{
+   assert(caBundlePtr_ != nullptr);
+   WsDataConnectionParams params;
+   params.useSsl = true;
+   params.caBundlePtr = caBundlePtr_;
+   params.caBundleSize = caBundleSize_;
+   return std::make_shared<WsDataConnection>(logger_, params);
 }
