@@ -431,6 +431,7 @@ void TransportBIP15xClient::rekeyIfNeeded(size_t dataSize)
 bool TransportBIP15xClient::sendData(const std::string &data)
 {
    if (!bip151Connection_ || (bip151Connection_->getBIP150State() != BIP150State::SUCCESS)) {
+      SPDLOG_LOGGER_ERROR(logger_, "transport is not connected, sending packet failed");
       return false;
    }
 

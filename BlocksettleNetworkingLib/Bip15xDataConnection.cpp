@@ -62,7 +62,14 @@ Bip15xDataConnection::Bip15xDataConnection(const std::shared_ptr<spdlog::logger>
 
    transport_->setSocketErrorCb([this](DataConnectionListener::DataConnectionError e) {
       if (e == DataConnectionListener::NoError) {
-         connected_ = true;
+         {
+            std::lock_guard<std::mutex> lock(mutex_);
+            while (!sendQueue_.empty()) {
+               transport_->sendData(sendQueue_.front());
+               sendQueue_.pop();
+            }
+            connected_ = true;
+         }
          listener_->OnConnected();
          return;
       }
@@ -94,5 +101,12 @@ bool Bip15xDataConnection::closeConnection()
 
 bool Bip15xDataConnection::send(const std::string &data)
 {
+   {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (!connected_) {
+         sendQueue_.push(data);
+         return true;
+      }
+   }
    return transport_->sendData(data);
 }

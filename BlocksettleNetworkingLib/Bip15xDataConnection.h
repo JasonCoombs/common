@@ -13,8 +13,10 @@
 
 #include "DataConnection.h"
 
-#include <memory>
 #include <atomic>
+#include <memory>
+#include <mutex>
+#include <queue>
 
 namespace spdlog {
    class logger;
@@ -55,6 +57,9 @@ private:
    std::unique_ptr<DataConnection> conn_;
    std::unique_ptr<Bip15xDataListener> ownListener_;
    std::atomic_bool connected_{};
+
+   std::mutex mutex_;
+   std::queue<std::string> sendQueue_;
 };
 
 
