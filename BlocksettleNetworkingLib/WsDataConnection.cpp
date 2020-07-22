@@ -345,7 +345,9 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                   }
                   recvAckCounter_ = recvCounter_;
                } else if (sentCounter_ != queuedCounter_) {
-                  auto &packet = allPackets_.at(sentCounter_);
+                  // NOTE: Making packet copy here!
+                  // LWS will mangle packet for WS masking purpose and thus packet won't be usable for retransmits after session resume.
+                  auto packet = allPackets_.at(sentCounter_);
                   int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                   if (rc == -1) {
                      SPDLOG_LOGGER_ERROR(logger_, "write failed");
