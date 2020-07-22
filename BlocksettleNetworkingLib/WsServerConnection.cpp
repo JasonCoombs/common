@@ -183,7 +183,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          auto connIp = connectedIp(wsi);
          auto forwIp = forwardedIp(wsi);
          connection.ipAddr = params_.trustForwardedForHeader && !forwIp.empty() ? forwIp : connIp;
-         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ips: {}"
+         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ip: {}"
             , static_cast<void*>(wsi), connIp, forwIp);
          if (shuttingDown_) {
             connection.state = State::Closed;
@@ -317,6 +317,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                      connection.clientId = clientId;
                      client.wsi = wsi;
                      client.lastResumed = std::chrono::steady_clock::now();
+                     client.sentCounter = packet.recvCounter;
                      lws_callback_on_writable(wsi);
                      return 0;
                   }

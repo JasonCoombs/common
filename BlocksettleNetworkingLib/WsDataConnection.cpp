@@ -21,10 +21,7 @@ using namespace bs::network;
 
 namespace {
 
-   const uint32_t kDelaysTable[] = { 10, 100, 200, 500, 3000, 10000 };
-   const uint16_t kDelaysTableSize = sizeof(kDelaysTable) / sizeof(kDelaysTable[0]);
-   // lws will use default value of 30% for jitter
-   const lws_retry_bo kRetryTable = { kDelaysTable, kDelaysTableSize, 0, 0, 0, 0 };
+   const std::vector<uint32_t> kDefaultDelaysTableMs = { 10, 100, 200, 500, 3000, 10000 };
 
    int callback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
    {
@@ -49,6 +46,13 @@ WsDataConnection::WsDataConnection(const std::shared_ptr<spdlog::logger> &logger
    , params_(std::move(params))
    , reconnectTimer_(new WsTimerStruct)
 {
+   // lws will use default value of 30% for jitter
+   retryTable_ = std::make_unique<lws_retry_bo>();
+   std::memset(retryTable_.get(), 0, sizeof(lws_retry_bo));
+   const auto &retryTable = params_.delaysTableMs.empty() ? kDefaultDelaysTableMs : params_.delaysTableMs;
+   retryTable_->retry_ms_table = retryTable.data();
+   retryTable_->retry_ms_table_count = static_cast<uint16_t>(retryTable.size());
+
    std::memset(reconnectTimer_.get(), 0, sizeof(*reconnectTimer_));
    reconnectTimer_->owner_ = this;
 }
@@ -261,6 +265,7 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                SPDLOG_LOGGER_DEBUG(logger_, "connection resumed succesfully");
                state_ = State::Connected;
                retryCounter_ = 0;
+               sentCounter_ = packet.recvCounter;
                requestWriteIfNeeded();
                break;
             }
@@ -431,7 +436,7 @@ void WsDataConnection::listenFunction()
 
 void WsDataConnection::scheduleReconnect()
 {
-   auto nextDelayMs = lws_retry_get_delay_ms(context_, &kRetryTable, &retryCounter_, nullptr);
+   auto nextDelayMs = lws_retry_get_delay_ms(context_, retryTable_.get(), &retryCounter_, nullptr);
    SPDLOG_LOGGER_DEBUG(logger_, "schedule reconnect in {} ms, retry counter: {}", nextDelayMs, retryCounter_);
    lws_sul_schedule(context_, 0, reconnectTimer_.get(), reconnectCallback, static_cast<lws_usec_t>(nextDelayMs) * 1000);
 }
@@ -460,7 +465,7 @@ void WsDataConnection::processError()
 {
    wsi_ = nullptr;
 
-   if (retryCounter_ >= kDelaysTableSize) {
+   if (retryCounter_ >= retryTable_->retry_ms_table_count) {
       SPDLOG_LOGGER_ERROR(logger_, "too many reconnect retries failed");
       processFatalError();
       return;
