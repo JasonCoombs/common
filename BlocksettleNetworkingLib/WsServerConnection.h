@@ -123,6 +123,7 @@ private:
    void requestWriteIfNeeded(const ClientData &client);
    bool processSentAck(ClientData &client, uint64_t sentAckCounter);
    void scheduleCallback(std::chrono::milliseconds timeout, TimerCallback callback);
+   void processError(lws *wsi);
 
    std::string connectedIp(lws *wsi);
    // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
