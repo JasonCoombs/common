@@ -168,11 +168,22 @@ bool TransportBIP15x::rmCookieFile()
    return true;
 }
 
-bool TransportBIP15x::addCookieToPeers(const std::string &id)
+bool TransportBIP15x::addCookieToPeers(const std::string &id
+   , const BinaryData &serverPubKey)
 {
    BinaryData cookieKey(static_cast<size_t>(BTC_ECKEY_COMPRESSED_LENGTH));
-   if (!getCookie(cookieKey)) {
-      return false;
+   if (serverPubKey.empty()) {
+      if (!getCookie(cookieKey)) {
+         return false;
+      }
+   }
+   else {
+      if (serverPubKey.getSize() != BTC_ECKEY_COMPRESSED_LENGTH) {
+         logger_->error("[TransportBIP15x::addCookieToPeers] invalid public key"
+            " length: {}", serverPubKey.getSize());
+         return false;
+      }
+      cookieKey = serverPubKey;
    }
 
    // Add the host and the key to the list of verified peers. Be sure
@@ -363,9 +374,14 @@ TransportBIP15xClient::TransportBIP15xClient(const std::shared_ptr<spdlog::logge
          "wallet file is specified.");
    }
 
-   if (params_.cookie != BIP15xCookie::NotUsed && params_.cookiePath.empty()) {
+   if ((params_.cookie == BIP15xCookie::MakeClient) && params_.cookiePath.empty()) {
       throw std::runtime_error("ID cookie creation requested but no name " \
          "supplied. Connection is incomplete.");
+   }
+   else if ((params_.cookie == BIP15xCookie::ReadServer) && params_.cookiePath.empty()
+      && params.serverPublicKey.empty()) {
+      throw std::runtime_error("server cookie read requested but no name " \
+         "or public key supplied. Connection is incomplete.");
    }
 
    outKeyTimePoint_ = std::chrono::steady_clock::now();
@@ -646,7 +662,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
 
          // If it's a local connection, get a cookie with the server's key.
          if (params_.cookie == BIP15xCookie::ReadServer) {
-            if (!addCookieToPeers(srvId)) {
+            if (!addCookieToPeers(srvId, params_.serverPublicKey)) {
                return false;
             }
          }

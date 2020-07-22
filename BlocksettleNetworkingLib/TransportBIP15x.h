@@ -82,6 +82,7 @@ namespace bs {
          // Ephemeral peer usage. Not recommended
          bool ephemeralPeers{ false };
 
+         BinaryData serverPublicKey;
          BIP15xCookie cookie{ BIP15xCookie::NotUsed };
 
          std::chrono::milliseconds connectionTimeout{ std::chrono::seconds(10) };
@@ -113,7 +114,7 @@ namespace bs {
                                        // for the whole object lifetime
          bool rmCookieFile();
 
-         bool addCookieToPeers(const std::string &id);
+         bool addCookieToPeers(const std::string &id, const BinaryData &pubKey = {});
          AuthPeersLambdas getAuthPeerLambda();
 
          using WriteDataCb = std::function<bool(bip15x::MsgType, const BinaryData &
