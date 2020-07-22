@@ -197,7 +197,11 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) },
       { LoginApiKey,             SettingDef(QLatin1String("LoginApiKey")) },
       { AutoQouting,             SettingDef(QLatin1String("AutoQuoting"), false) },
-      { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) }
+      { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) },
+      { ExtConnName,             SettingDef(QLatin1String("ExtConnName")) },
+      { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
+      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
+      { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) }
    };
 }
 
