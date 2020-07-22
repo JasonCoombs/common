@@ -107,7 +107,6 @@ private:
       uint64_t queuedCounter{};
       uint64_t recvCounter{};
       uint64_t recvAckCounter{};
-      std::chrono::steady_clock::time_point lastResumed{};
    };
 
    void listenFunction();

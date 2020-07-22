@@ -208,13 +208,13 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                SPDLOG_LOGGER_DEBUG(logger_, "connection closed unexpectedly, clientId: {}", bs::toHex(connection.clientId));
                client.wsi = nullptr;
-               scheduleCallback(params_.clientTimeout + std::chrono::milliseconds(10), [this, clientId] {
+               scheduleCallback(params_.clientTimeout, [this, clientId] {
                   auto clientIt = clients_.find(clientId);
                   if (clientIt == clients_.end()) {
                      return;
                   }
                   auto &client = clientIt->second;
-                  if (client.wsi == nullptr && std::chrono::steady_clock::now() - client.lastResumed > params_.clientTimeout) {
+                  if (client.wsi == nullptr) {
                      SPDLOG_LOGGER_ERROR(logger_, "connection removed by timeout");
                      closeConnectedClient(clientId);
                      listener_->OnClientDisconnected(clientId);
@@ -313,7 +313,6 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                      connection.state = State::SendingHandshakeResumed;
                      connection.clientId = clientId;
                      client.wsi = wsi;
-                     client.lastResumed = std::chrono::steady_clock::now();
                      client.sentCounter = packet.recvCounter;
                      lws_callback_on_writable(wsi);
                      return 0;
