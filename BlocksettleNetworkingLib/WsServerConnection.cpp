@@ -25,8 +25,6 @@ using namespace bs::network;
 
 namespace {
 
-   const auto kClientTimeout = std::chrono::seconds(30);
-
    int callback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
    {
       return WsServerConnection::callbackHelper(wsi, reason, in, len);
@@ -210,17 +208,17 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                SPDLOG_LOGGER_DEBUG(logger_, "connection closed unexpectedly, clientId: {}", bs::toHex(connection.clientId));
                client.wsi = nullptr;
-               scheduleCallback(kClientTimeout + std::chrono::seconds(1), [this, clientId] {
+               scheduleCallback(params_.clientTimeout + std::chrono::milliseconds(10), [this, clientId] {
                   auto clientIt = clients_.find(clientId);
                   if (clientIt == clients_.end()) {
                      return;
                   }
                   auto &client = clientIt->second;
-                  if (client.wsi == nullptr && std::chrono::steady_clock::now() - client.lastResumed > kClientTimeout) {
+                  if (client.wsi == nullptr && std::chrono::steady_clock::now() - client.lastResumed > params_.clientTimeout) {
                      SPDLOG_LOGGER_ERROR(logger_, "connection removed by timeout");
+                     closeConnectedClient(clientId);
                      listener_->OnClientDisconnected(clientId);
                      listener_->onClientError(clientId, ServerConnectionListener::Timeout, {});
-                     clients_.erase(clientIt);
                   }
                });
                break;
@@ -418,6 +416,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                connection.state = State::Connected;
                cookieToClientIdMap_[cookie] = clientId;
                auto &client = clients_[clientId];
+               client.cookie = cookie;
                client.wsi = wsi;
                connection.clientId = clientId;
                ServerConnectionListener::Details details;
@@ -443,10 +442,8 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          switch (connection.state) {
             case State::Connected: {
                if (code == LWS_CLOSE_STATUS_NORMAL) {
-                  auto &client = clients_.at(connection.clientId);
-                  cookieToClientIdMap_.erase(client.cookie);
-                  clients_.erase(connection.clientId);
                   connection.state = State::Closed;
+                  closeConnectedClient(connection.clientId);
                   listener_->OnClientDisconnected(connection.clientId);
                }
                return -1;
@@ -548,6 +545,14 @@ void WsServerConnection::processError(lws *wsi)
       }
    }
    connection.state = State::Closed;
+}
+
+void WsServerConnection::closeConnectedClient(const std::string &clientId)
+{
+   auto &client = clients_.at(clientId);
+   auto count = cookieToClientIdMap_.erase(client.cookie);
+   assert(count == 1);
+   clients_.erase(clientId);
 }
 
 std::string WsServerConnection::connectedIp(lws *wsi)

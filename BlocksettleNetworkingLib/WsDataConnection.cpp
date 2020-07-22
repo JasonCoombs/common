@@ -384,6 +384,8 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
          return -1;
       }
 
+      // LWS_CALLBACK_WSI_DESTROY is added to fix TestWebSocket.DISABLED_StressTest
+      case LWS_CALLBACK_WSI_DESTROY:
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
          if (wsi == wsi_) {
             processError();

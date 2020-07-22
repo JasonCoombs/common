@@ -47,6 +47,8 @@ struct WsServerConnectionParams
    // If set, filterCallback must return true if connection is allowed and false if connection should be dropped
    using FilterCallback = std::function<bool(const std::string &ip)>;
    FilterCallback filterCallback;
+
+   std::chrono::milliseconds clientTimeout{std::chrono::seconds(30)};
 };
 
 class WsServerConnection : public ServerConnection
@@ -124,6 +126,7 @@ private:
    bool processSentAck(ClientData &client, uint64_t sentAckCounter);
    void scheduleCallback(std::chrono::milliseconds timeout, TimerCallback callback);
    void processError(lws *wsi);
+   void closeConnectedClient(const std::string &clientId);
 
    std::string connectedIp(lws *wsi);
    // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
