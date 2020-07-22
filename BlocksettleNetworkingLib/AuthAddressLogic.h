@@ -377,13 +377,15 @@ namespace AuthAddressLogic
 
    AddressVerificationState getAuthAddrState(const AuthAddressValidator &
       , const bs::Address &);
-   void getAuthAddrState(const std::shared_ptr<AuthAddressValidator> &
-      , const bs::Address &, const std::function<void(const bs::Address, AddressVerificationState)> &);
+   AddressVerificationState getAuthAddrState(const AuthAddressValidator &
+      , const OutpointBatch &);
+
    bool isValid(const AuthAddressValidator &, const bs::Address &);
+
    AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
       , const bs::Address &);
-   void getAddrPathsStatus(const std::shared_ptr<AuthAddressValidator> &
-      , const bs::Address &, const std::function<void(AddrPathsStatus)> &);
+   AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
+      , const OutpointBatch &);
    BinaryData revoke(const AuthAddressValidator &, const bs::Address &
       , const std::shared_ptr<ResolverFeed> &);
    std::pair<bs::Address, UTXO> getRevokeData(const AuthAddressValidator &
