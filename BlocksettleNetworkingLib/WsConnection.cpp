@@ -52,6 +52,12 @@ namespace {
          return WsRawPacket(w.toString());
       }
    };
+
+   constexpr auto kPingPongInterval = std::chrono::seconds(60);
+   constexpr auto kHungupInterval = std::chrono::seconds(90);
+   const lws_retry_bo kDefaultRetryAndIdlePolicy = { nullptr, 0, 0
+      , kPingPongInterval / std::chrono::seconds(1), kHungupInterval / std::chrono::seconds(1), 0 };
+
 }
 
 WsRawPacket::WsRawPacket(const std::string &data)
@@ -165,4 +171,9 @@ WsPacket WsPacket::parsePacket(const std::string &data, const std::shared_ptr<sp
       SPDLOG_LOGGER_ERROR(logger, "invalid packet: {}", e.what());
       return {};
    }
+}
+
+const lws_retry_bo *ws::defaultRetryAndIdlePolicy()
+{
+   return &kDefaultRetryAndIdlePolicy;
 }

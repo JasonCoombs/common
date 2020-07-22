@@ -75,7 +75,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    info.protocols = kProtocols;
    info.gid = -1;
    info.uid = -1;
-   info.ws_ping_pong_interval = kPingPongInterval / std::chrono::seconds(1);
+   info.retry_and_idle_policy = bs::network::ws::defaultRetryAndIdlePolicy();
    info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
 

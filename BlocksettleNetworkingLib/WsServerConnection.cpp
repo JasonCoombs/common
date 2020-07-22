@@ -79,9 +79,9 @@ bool WsServerConnection::BindConnection(const std::string& host , const std::str
    memset(&info, 0, sizeof(info));
    info.port = std::stoi(port);
    info.protocols = kProtocols;
-   info.ws_ping_pong_interval = kPingPongInterval / std::chrono::seconds(1);
    info.gid = -1;
    info.uid = -1;
+   info.retry_and_idle_policy = bs::network::ws::defaultRetryAndIdlePolicy();
    info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 | LWS_SERVER_OPTION_DISABLE_IPV6;
    info.user = this;
 

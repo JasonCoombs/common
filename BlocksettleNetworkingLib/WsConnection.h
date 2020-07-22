@@ -21,11 +21,15 @@ namespace spdlog {
    class logger;
 }
 
+struct lws_retry_bo;
+
 namespace bs {
    namespace network {
       namespace ws {
 
          constexpr size_t kDefaultMaximumWsPacketSize = 100 * 1024 * 1024;
+
+         const lws_retry_bo *defaultRetryAndIdlePolicy();
 
       }
       class WsRawPacket
@@ -47,9 +51,6 @@ namespace bs {
       constexpr size_t kRxBufferSize = 16 * 1024;
       constexpr size_t kTxPacketSize = 16 * 1024;
       constexpr int kId = 0;
-
-      constexpr auto kPingPongInterval = std::chrono::seconds(30);
-
 
       struct WsPacket
       {
