@@ -47,7 +47,6 @@ public:
 
 protected:
    bool sendRawData(const std::string& data);
-   bool sendData(const std::string &data) { return send(data); }
    void notifyOnData(const std::string& data);
 
 protected:

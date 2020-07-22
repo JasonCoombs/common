@@ -42,6 +42,7 @@ namespace bs {
       class Wallet;
       class WalletsManager;
    }
+   struct TradeSettings;
 }
 class AddressVerificator;
 class ApplicationSettings;
@@ -67,6 +68,19 @@ public:
       ArmoryOffline,
    };
 
+   enum class AuthAddressState
+   {
+      Unknown, // in progress
+      NotSubmitted,
+      Submitted,
+      Tainted,
+      Verifying,
+      Verified,
+      Revoked,
+      RevokedByBS,
+      Invalid
+   };
+
    AuthAddressManager(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<ArmoryConnection> &);
    ~AuthAddressManager() noexcept override;
@@ -79,40 +93,42 @@ public:
    void init(const std::shared_ptr<ApplicationSettings> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<SignContainer> &);
-   void setCelerClient(const std::shared_ptr<BaseCelerClient> &);
+   void initLogin(const std::shared_ptr<BaseCelerClient> &,
+      const std::shared_ptr<bs::TradeSettings> &);
+
+   const std::shared_ptr<bs::TradeSettings>& tradeSettings() const;
 
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);
 
-   AddressVerificationState GetState(const bs::Address &addr) const;
-   void SetState(const bs::Address &addr, AddressVerificationState state);
+   AuthAddressState GetState(const bs::Address &addr) const;
 
    void setDefault(const bs::Address &addr);
-   bs::Address getDefault() const;
-   virtual size_t getDefaultIndex() const;
 
-   virtual bool HaveAuthWallet() const;
-   virtual bool HasAuthAddr() const;
+   bs::Address getDefault() const;
+   size_t getDefaultIndex() const;
+
+   bool HaveAuthWallet() const;
+   bool HasAuthAddr() const;
 
    void createAuthWallet(const std::function<void()> &);
-   virtual bool CreateNewAuthAddress();
+   bool CreateNewAuthAddress();
 
    bool hasSettlementLeaf(const bs::Address &) const;
    void createSettlementLeaf(const bs::Address &, const std::function<void()> &);
 
-   virtual void SubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
-   virtual void ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
+   void ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
 
-   virtual bool RevokeAddress(const bs::Address &address);
+   bool RevokeAddress(const bs::Address &address);
 
-   virtual ReadyError readyError() const;
+   ReadyError readyError() const;
 
-   virtual void OnDisconnectedFromCeler();
+   void OnDisconnectedFromCeler();
 
-   virtual std::vector<bs::Address> GetVerifiedAddressList() const;
+   std::vector<bs::Address> GetSubmittedAddressList(bool includeVerified = true) const;
+
    bool isAtLeastOneAwaitingVerification() const;
    bool isAllLoadded() const;
-   size_t FromVerifiedIndex(size_t index) const;
    const std::unordered_set<std::string> &GetBSAddresses() const;
 
    void setAuthAddressesSigned(const BinaryData &data);
@@ -137,13 +153,12 @@ signals:
    void ConnectionComplete();
    void Error(const QString &errorText) const;
    void Info(const QString &info);
-   void AuthAddrSubmitError(const QString &address, const QString &error);
-   void AuthConfirmSubmitError(const QString &address, const QString &error);
-   void AuthAddrSubmitSuccess(const QString &address);
+
+   void AuthAddressSubmitError(const QString &address, const QString &error);
+   void AuthAddressSubmitSuccess(const QString &address);
    void AuthAddressSubmitCancelled(const QString &address);
    void AuthRevokeTxSent();
    void gotBsAddressList();
-   void AuthAddressConfirmationRequired(float validationAmount);
 
 private:
    void SetAuthWallet();
@@ -170,6 +185,12 @@ private:
 
    void markAsSubmitted(const bs::Address &address);
 
+   std::vector<bs::Address> GetVerifiedAddressList() const;
+
+   void SetValidationState(const bs::Address &addr, AddressVerificationState state);
+
+   void SetExplicitState(const bs::Address &addr, AuthAddressState state);
+
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<ArmoryConnection>      armory_;
@@ -181,8 +202,8 @@ protected:
    mutable std::atomic_flag                  lockList_ = ATOMIC_FLAG_INIT;
    std::vector<bs::Address>                  addresses_;
 
-   std::map<bs::Address, AddressVerificationState> states_;
-   mutable std::atomic_flag                        statesLock_ = ATOMIC_FLAG_INIT;
+   std::map<bs::Address, AuthAddressState>   states_;
+   mutable std::atomic_flag                  statesLock_ = ATOMIC_FLAG_INIT;
 
    using HashMap = std::map<bs::Address, BinaryData>;
    mutable bs::Address  defaultAddr_{};
@@ -192,6 +213,7 @@ protected:
 
    std::shared_ptr<SignContainer>      signingContainer_;
    std::unordered_set<unsigned int>    signIdsRevoke_;
+   std::shared_ptr<bs::TradeSettings>  tradeSettings_;
 
 };
 

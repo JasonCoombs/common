@@ -24,6 +24,7 @@
 #include "CelerMessageMapper.h"
 #include "CommonTypes.h"
 #include "DataConnectionListener.h"
+#include "TradeSettings.h"
 #include "ValidityFlag.h"
 #include "autheid_utils.h"
 
@@ -36,6 +37,7 @@ namespace Blocksettle {
          class Request;
          class Response;
          class Response_StartLogin;
+         class Response_Authorize;
          class Response_GetLoginResult;
          class Response_Celer;
          class Response_ProxyPb;
@@ -73,6 +75,7 @@ struct BsClientLoginResult
    BinaryData ccAddressesSigned;
    bool enabled{};
    float feeRatePb{};
+   bs::TradeSettings tradeSettings;
 };
 
 class BsClient : public QObject, public DataConnectionListener
@@ -92,13 +95,6 @@ public:
    };
    using SignCb = std::function<void(SignResponse)>;
 
-   struct AuthAddrSubmitResponse : public BasicResponse
-   {
-      int validationAmountCents{};
-      bool confirmationRequired{};
-   };
-   using AuthAddrSubmitCb = std::function<void(AuthAddrSubmitResponse)>;
-
    struct DescCc
    {
       std::string ccProduct;
@@ -113,6 +109,7 @@ public:
    void setConnection(std::unique_ptr<DataConnection>);
 
    void startLogin(const std::string &email);
+   void authorize(const std::string &apiKey);
 
    void sendPbMessage(std::string data);
 
@@ -122,7 +119,6 @@ public:
    void logout();
    void celerSend(CelerAPI::CelerMessageType messageType, const std::string &data);
 
-   void submitAuthAddress(const bs::Address address, const AuthAddrSubmitCb &cb);
    void signAuthAddress(const bs::Address address, const SignCb &cb);
    void confirmAuthAddress(const bs::Address address, const BasicCb &cb);
 
@@ -157,6 +153,7 @@ public slots:
 
 signals:
    void startLoginDone(AutheIDClient::ErrorType status);
+   void authorizeDone(bool success, const std::string &email = {});
    void getLoginResultDone(const BsClientLoginResult &result);
 
    void celerRecv(CelerAPI::CelerMessageType messageType, const std::string &data);
@@ -197,6 +194,7 @@ private:
    void sendMessage(Blocksettle::Communication::ProxyTerminal::Request *request);
 
    void processStartLogin(const Blocksettle::Communication::ProxyTerminal::Response_StartLogin &response);
+   void processAuthorize(const Blocksettle::Communication::ProxyTerminal::Response_Authorize &response);
    void processGetLoginResult(const Blocksettle::Communication::ProxyTerminal::Response_GetLoginResult &response);
    void processCeler(const Blocksettle::Communication::ProxyTerminal::Response_Celer &response);
    void processProxyPb(const Blocksettle::Communication::ProxyTerminal::Response_ProxyPb &response);
