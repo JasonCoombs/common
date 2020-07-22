@@ -401,6 +401,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                }
                connection.state = State::Connected;
                lws_callback_on_writable(wsi);
+               SPDLOG_LOGGER_DEBUG(logger_, "session resumed for client {}", bs::toHex(connection.clientId));
                return 0;
             }
             case State::SendingHandshakeNew: {
