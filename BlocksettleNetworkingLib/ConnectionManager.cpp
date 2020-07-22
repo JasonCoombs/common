@@ -16,10 +16,9 @@
 #include "GenoaStreamServerConnection.h"
 #include "PublisherConnection.h"
 #include "SubscriberConnection.h"
+#include "WsDataConnection.h"
 #include "ZmqContext.h"
 #include "ZmqDataConnection.h"
-#include "TransportBIP15x.h"
-#include "TransportBIP15xServer.h"
 
 #include <QNetworkAccessManager>
 
@@ -84,6 +83,12 @@ ConnectionManager::~ConnectionManager() noexcept
    DeinitNetworkLibs();
 }
 
+void ConnectionManager::setCaBundle(const void *caBundlePtr, size_t caBundleSize)
+{
+   caBundlePtr_ = caBundlePtr;
+   caBundleSize_ = caBundleSize;
+}
+
 std::shared_ptr<spdlog::logger> ConnectionManager::GetLogger() const
 {
    return logger_;
@@ -115,37 +120,6 @@ std::shared_ptr<DataConnection> ConnectionManager::CreateGenoaClientConnection(b
    return connection;
 }
 
-std::shared_ptr<ServerConnection> ConnectionManager::createZmqBIP15xChatServerConnection(
-   bool ephemeral, const std::string& ownKeyFileDir, const std::string& ownKeyFileName) const
-{
-   auto cbTrustedClients = [this]() {
-      return zmqTrustedTerminals_;
-   };
-   const auto &bip15xTransport = std::make_shared<bs::network::TransportBIP15xServer>(
-      logger_, cbTrustedClients, ephemeral, ownKeyFileDir, ownKeyFileName, false);
-
-   return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_
-      , bip15xTransport);
-}
-
-std::unique_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection(
-   const std::shared_ptr<bs::network::TransportBIP15xClient> &transport) const
-{
-   auto conn = std::make_unique<ZmqBinaryConnection>(logger_, transport);
-   conn->SetContext(zmqContext_);
-   return conn;
-}
-
-std::shared_ptr<DataConnection> ConnectionManager::createZmqBIP15xDataConnection() const
-{
-   bs::network::BIP15xParams params;
-   params.ephemeralPeers = true;
-   const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
-   auto conn = std::make_shared<ZmqBinaryConnection>(logger_, transport);
-   conn->SetContext(zmqContext_);
-   return conn;
-}
-
 std::shared_ptr<ServerConnection> ConnectionManager::CreatePubBridgeServerConnection() const
 {
    return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_);
@@ -175,4 +149,19 @@ const std::shared_ptr<QNetworkAccessManager> &ConnectionManager::GetNAM()
    }
 
    return nam_;
+}
+
+std::shared_ptr<DataConnection> ConnectionManager::CreateInsecureWsConnection() const
+{
+   return std::make_shared<WsDataConnection>(logger_, WsDataConnectionParams{});
+}
+
+std::shared_ptr<DataConnection> ConnectionManager::CreateSecureWsConnection() const
+{
+   assert(caBundlePtr_ != nullptr);
+   WsDataConnectionParams params;
+   params.useSsl = true;
+   params.caBundlePtr = caBundlePtr_;
+   params.caBundleSize = caBundleSize_;
+   return std::make_shared<WsDataConnection>(logger_, params);
 }

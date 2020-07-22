@@ -15,6 +15,7 @@
 #include "WsConnection.h"
 
 #include <atomic>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -23,26 +24,22 @@
 namespace spdlog {
    class logger;
 }
-namespace bs {
-   namespace network {
-      class TransportClient;
-   }
-}
-
+struct WsTimerStruct;
 struct lws_context;
+struct lws_sorted_usec_list;
 
-/*struct WsDataConnectionParams
+struct WsDataConnectionParams
 {
    const void *caBundlePtr{};
    uint32_t caBundleSize{};
-   bool useSsl{true};
-};*/
+   bool useSsl{false};
+   size_t maximumPacketSize{bs::network::ws::kDefaultMaximumWsPacketSize};
+};
 
 class WsDataConnection : public DataConnection
 {
 public:
-   WsDataConnection(const std::shared_ptr<spdlog::logger> &
-      , const std::shared_ptr<bs::network::TransportClient> &);
+   WsDataConnection(const std::shared_ptr<spdlog::logger>& logger, WsDataConnectionParams params);
    ~WsDataConnection() override;
 
    WsDataConnection(const WsDataConnection&) = delete;
@@ -55,39 +52,66 @@ public:
    bool closeConnection() override;
 
    bool send(const std::string& data) override;
-   bool isActive() const override { return active_; }
+   bool isActive() const override;
 
    static int callbackHelper(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
 private:
+   enum class State
+   {
+      Connecting,
+      Reconnecting,
+      WaitingNewResponse,
+      WaitingResumedResponse,
+      Connected,
+      Closing,
+      Closed,
+   };
+
    int callback(struct lws *wsi, int reason, void *user, void *in, size_t len);
+
+   static void reconnectCallback(lws_sorted_usec_list *list);
 
    void listenFunction();
 
-   bool sendRawData(const std::string &);
-   void onRawDataReceived(const std::string& rawData) override;
+   void scheduleReconnect();
+   void reconnect();
+   void processError();
+   void processFatalError();
+   bool writeNeeded() const;
+   void requestWriteIfNeeded();
+   bool processSentAck(uint64_t sentAckCounter);
 
-   void reportFatalError(DataConnectionListener::DataConnectionError error);
+   // For tests, default is noop
+   virtual bs::network::WsRawPacket filterRawPacket(bs::network::WsRawPacket packet);
 
    std::shared_ptr<spdlog::logger> logger_;
-//   const WsDataConnectionParams params_;
-   std::shared_ptr<bs::network::TransportClient>   transport_;
+   const WsDataConnectionParams params_;
 
    lws_context *context_{};
    std::string host_;
    int port_{};
-   std::atomic_bool stopped_{};
-   bool  active_{ false };
+   std::atomic_bool shuttingDown_{};
 
    std::thread listenThread_;
 
-   std::recursive_mutex mutex_;
-   std::queue<bs::network::WsPacket> newPackets_;
+   std::mutex mutex_;
+   std::queue<bs::network::WsRawPacket> newPackets_;
 
    // Fields accessible from listener thread only!
-   std::queue<bs::network::WsPacket> allPackets_;
+   std::map<uint64_t, bs::network::WsRawPacket> allPackets_;
    std::string currFragment_;
    lws *wsi_{};
+   State state_{State::Connecting};
+   uint64_t sentCounter_{};
+   uint64_t sentAckCounter_{};
+   uint64_t queuedCounter_{};
+   uint64_t recvCounter_{};
+   uint64_t recvAckCounter_{};
+   std::string cookie_;
+   std::unique_ptr<WsTimerStruct> reconnectTimer_;
+   uint16_t retryCounter_{};
+   bool shuttingDownReceived_{};
 
 };
 

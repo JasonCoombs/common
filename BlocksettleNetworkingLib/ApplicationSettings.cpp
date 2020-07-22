@@ -694,47 +694,6 @@ std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthK
    return { authPrivKey_, authPubKey_ };
 }
 
-std::string ApplicationSettings::pubBridgeHost() const
-{
-   auto env = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-
-   switch (env) {
-   case EnvConfiguration::Production:
-         return "185.213.153.36";
-   case EnvConfiguration::Test:
-         return "185.213.153.44";
-#ifndef PRODUCTION_BUILD
-   case EnvConfiguration::Staging:
-         return "185.213.153.45";
-   case EnvConfiguration::Custom:
-         return get<std::string>(ApplicationSettings::customPubBridgeHost);
-#endif
-   }
-
-   assert(false);
-   return "";
-}
-
-std::string ApplicationSettings::pubBridgePort() const
-{
-   auto env = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-
-   switch (env) {
-   case EnvConfiguration::Production:
-   case EnvConfiguration::Test:
-      return "9091";
-#ifndef PRODUCTION_BUILD
-   case EnvConfiguration::Staging:
-      return "9091";
-   case EnvConfiguration::Custom:
-      return get<std::string>(ApplicationSettings::customPubBridgePort);
-#endif
-   }
-
-   assert(false);
-   return "";
-}
-
 void ApplicationSettings::selectNetwork()
 {
    // Set up Armory as needed. Even though the BDMC object isn't used, it sets

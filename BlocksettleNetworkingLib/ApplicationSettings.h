@@ -201,9 +201,6 @@ public:
 
    std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
 
-   std::string pubBridgeHost() const;
-   std::string pubBridgePort() const;
-
    void selectNetwork();
 
    AuthEidEnv autheidEnv() const;

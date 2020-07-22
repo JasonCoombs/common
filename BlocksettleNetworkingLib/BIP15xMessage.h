@@ -51,8 +51,6 @@ namespace bs {
             AuthChallenge = 21,
             AuthReply = 22,
             AuthPropose = 23,
-            Heartbeat = 30,
-            Disconnect = 31
          };
 
          constexpr unsigned int AEAD_REKEY_INTERVAL_SECS = 600;
@@ -77,7 +75,6 @@ namespace bs {
 
             // Returns packet that is ready for send
             BinaryData build() const;
-            static std::vector<BinaryData> parsePackets(const BinaryDataRef& packets);
 
          private:
             void construct(const uint8_t *data, uint32_t dataSize, MsgType type);

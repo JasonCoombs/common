@@ -273,6 +273,19 @@ void ValidationAddressManager::prepareCallbacks()
 }
 
 ////
+AuthAddressValidator::~AuthAddressValidator()
+{
+   stopped_ = true;
+   if (updateThread_.joinable()) {
+      updateThread_.join();
+   }
+   refreshQueue_.terminate();
+
+   if (lambdas_) {
+      lambdas_->shutdown();
+   }
+}
+
 void AuthAddressValidator::pushRefreshID(const std::vector<BinaryData> &idVec)
 {
    for (auto id : idVec) {
@@ -287,9 +300,20 @@ void AuthAddressValidator::waitOnRefresh(const std::string& id)
    idRef.setRef(id);
 
    while (true) {
-      auto&& notifId = refreshQueue_.pop_front();
-      if (notifId == idRef) {
+      try
+      {
+         auto&& notifId = refreshQueue_.pop_front(std::chrono::seconds{ 5 });
+         if ((notifId == idRef) || stopped_) {
+            break;
+         }
+      }
+      catch (const ArmoryThreading::StopBlockingLoop&) {
          break;
+      }
+      catch (const ArmoryThreading::StackTimedOutException &) {
+         if (stopped_) {
+            break;
+         }
       }
    }
 }
@@ -354,14 +378,39 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
    }
    const auto &regID = lambdas_->registerAddresses(addrVec);
 
-   std::thread([this, regID, cb] {
+   if (updateThreadRunning_) {
+      if (cb) {
+         cb(true);
+      }
+      return true;
+   }
+   else {   // Can't assign to a non-joined thread
+      if (updateThread_.joinable()) {
+         updateThread_.join();
+      }
+   }
+
+   updateThreadRunning_ = true;
+   updateThread_ = std::thread([this, regID, cb] {
       waitOnRefresh(regID);
 
+      if (stopped_) {
+         if (cb) {
+            cb(false);
+         }
+         return;
+      }
       update();
 
       //find & set first outpoints
       for (auto& maPair : validationAddresses_) {
          const auto& maStruct = *maPair.second.get();
+         if (stopped_) {
+            if (cb) {
+               cb(false);
+            }
+            return;
+         }
 
          std::shared_ptr<AuthOutpoint> aopPtr;
          BinaryDataRef txHash;
@@ -392,7 +441,8 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
       if (cb) {
          cb(true);
       }
-   }).detach();
+      updateThreadRunning_ = false;
+   });
    return true;
 }
 
@@ -401,7 +451,7 @@ unsigned AuthAddressValidator::update()
 {
    std::unique_lock<std::mutex> lock(updateMutex_);
 
-   if (!lambdas_) {
+   if (!lambdas_ || stopped_) {
       return 0;
    }
    std::vector<bs::Address> addrVec;
@@ -412,6 +462,9 @@ unsigned AuthAddressValidator::update()
 
    unsigned opCount = 0;
    for (auto& outpointPair : batch.outpoints_) {
+      if (stopped_) {
+         return 0;
+      }
       auto& outpointVec = outpointPair.second;
       if (outpointVec.size() == 0) {
          continue;

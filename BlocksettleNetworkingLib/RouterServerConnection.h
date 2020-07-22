@@ -49,8 +49,6 @@ public:
    bool BindConnection(const std::string& host, const std::string& port
       , ServerConnectionListener* listener) override;
 
-   std::string GetClientInfo(const std::string &clientId) const override;
-
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string&) override;
 

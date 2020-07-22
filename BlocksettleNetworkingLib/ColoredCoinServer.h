@@ -116,7 +116,7 @@ public:
 
    void OnDataFromClient(const std::string& clientId, const std::string& data) override;
 
-   void OnClientConnected(const std::string& clientId) override;
+   void OnClientConnected(const std::string& clientId, const Details &details) override;
    void OnClientDisconnected(const std::string& clientId) override;
 
 private:

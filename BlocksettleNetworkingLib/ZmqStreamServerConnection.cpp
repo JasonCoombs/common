@@ -9,18 +9,17 @@
 
 */
 #include "ZmqStreamServerConnection.h"
-#include <zmq.h>
-#include <spdlog/spdlog.h>
+
 #include "ActiveStreamClient.h"
 #include "FastLock.h"
 #include "MessageHolder.h"
-#include "Transport.h"
 
+#include <zmq.h>
+#include <spdlog/spdlog.h>
 
 ZmqStreamServerConnection::ZmqStreamServerConnection(const std::shared_ptr<spdlog::logger>& logger
-   , const std::shared_ptr<ZmqContext>& context
-   , const std::shared_ptr<bs::network::TransportServer> &tr)
-   : ZmqServerConnection(logger, context, tr)
+      , const std::shared_ptr<ZmqContext>& context)
+ : ZmqServerConnection(logger, context)
 {}
 
 ZmqContext::sock_ptr ZmqStreamServerConnection::CreateDataSocket()
@@ -50,35 +49,13 @@ bool ZmqStreamServerConnection::ReadFromDataSocket()
       return false;
    }
 
-   if (transport_) {
-      if (data.GetSize() == 0) {
-         return true;
-      }
-      int socket = zmq_msg_get(&data, ZMQ_SRCFD);
+   if (data.GetSize() == 0) {
+      //we are either connected or disconncted
+      onZeroFrame(id.ToString());
+   } else {
+      onDataFrameReceived(id.ToString(), data.ToString());
+   }
 
-      if (data.GetSize() == bufSizeLimit_) {
-         accumulBuf_.append(data.ToString());
-         return true;
-      }
-      else {
-         if (accumulBuf_.empty()) {
-            transport_->processIncomingData(data.ToString(), id.ToString(), socket);
-         }
-         else {
-            accumulBuf_.append(data.ToString());
-            transport_->processIncomingData(accumulBuf_, id.ToString(), socket);
-            accumulBuf_.clear();
-         }
-      }
-   }
-   else {
-      if (data.GetSize() == 0) {
-         //we are either connected or disconncted
-         onZeroFrame(id.ToString());
-      } else {
-         onDataFrameReceived(id.ToString(), data.ToString());
-      }
-   }
    return true;
 }
 
@@ -107,7 +84,7 @@ void ZmqStreamServerConnection::onZeroFrame(const std::string& clientId)
    }
 
    if (clientConnected) {
-      notifyListenerOnNewConnection(clientId);
+      notifyListenerOnNewConnection(clientId, {});
    } else {
       notifyListenerOnDisconnectedClient(clientId);
    }
@@ -138,42 +115,29 @@ bool ZmqStreamServerConnection::sendRawData(const std::string& clientId, const s
 
 bool ZmqStreamServerConnection::SendDataToClient(const std::string& clientId, const std::string& data)
 {
-   if (transport_) {
-      return transport_->sendData(clientId, data);
+   auto connection = findConnection(clientId);
+   if (connection == nullptr) {
+      logger_->error("[ZmqStreamServerConnection::SendDataToClient] {} send data to closed connection {}"
+         , connectionName_, clientId);
+      return false;
    }
-   else {
-      auto connection = findConnection(clientId);
-      if (connection == nullptr) {
-         logger_->error("[ZmqStreamServerConnection::SendDataToClient] {} send data to closed connection {}"
-            , connectionName_, clientId);
-         return false;
-      }
-      return connection->send(data);
-   }
+
+   const bool result = connection->send(data);
+   return result;
 }
 
 bool ZmqStreamServerConnection::SendDataToAllClients(const std::string& data)
 {
    unsigned int successCount = 0;
 
-   if (transport_) {
-      for (const auto &client : clientInfo_) {
-         if (transport_->sendData(client.first, data)) {
-            successCount++;
-         }
+   FastLock locker(connectionsLockFlag_);
+   for (auto & it : activeConnections_) {
+      const bool result = it.second->send(data);
+      if (result) {
+         successCount++;
       }
-      return (successCount == clientInfo_.size());
    }
-   else {
-      FastLock locker(connectionsLockFlag_);
-      for (const auto &it : activeConnections_) {
-         const bool result = it.second->send(data);
-         if (result) {
-            successCount++;
-         }
-      }
-      return (successCount == activeConnections_.size());
-   }
+   return (successCount == activeConnections_.size());
 }
 
 ZmqStreamServerConnection::server_connection_ptr

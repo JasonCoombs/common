@@ -17,19 +17,13 @@
 namespace spdlog {
    class logger;
 }
-namespace bs {
-   namespace network {
-      class TransportClient;
-   }
-}
 
 class ZmqStreamServerConnection;
 
 class ActiveStreamClient
 {
 public:
-   ActiveStreamClient(const std::shared_ptr<spdlog::logger> &
-      , const std::shared_ptr<bs::network::TransportClient> &t = nullptr);
+   ActiveStreamClient(const std::shared_ptr<spdlog::logger> &);
    virtual ~ActiveStreamClient() noexcept = default;
 
    ActiveStreamClient(const ActiveStreamClient&) = delete;

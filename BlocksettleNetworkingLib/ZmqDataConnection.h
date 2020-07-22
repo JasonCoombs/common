@@ -17,25 +17,18 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include "BinaryData.h"
-#include "ZmqContext.h"
 
-namespace spdlog{ 
+namespace spdlog
+{
    class logger;
 }
-namespace bs {
-   namespace network {
-      class TransportClient;
-   }
-}
 
+#include "ZmqContext.h"
 
 class ZmqDataConnection : public DataConnection
 {
 public:
-   ZmqDataConnection(const std::shared_ptr<spdlog::logger>& logger
-      , const std::shared_ptr<bs::network::TransportClient> &tr = nullptr
-      , bool useMonitor = false);
+   ZmqDataConnection(const std::shared_ptr<spdlog::logger>& logger, bool useMonitor = false);
    ~ZmqDataConnection() noexcept override;
 
    ZmqDataConnection(const ZmqDataConnection&) = delete;
@@ -53,13 +46,12 @@ public:
                      , const std::string& port
                      , DataConnectionListener* listener) override;
    bool closeConnection() override;
-   bool isActive() const override;
+   bool isActive() const;
 
    bool SetZMQTransport(ZMQTransport transport);
 
 protected:
    bool sendRawData(const std::string& rawData);
-   bool sendData(const std::string &);
 
    virtual bool recvData();
 
@@ -75,10 +67,6 @@ private:
    // socket monitor is not added. so will use 0 frame as notification
    void zeroFrameReceived();
 
-   void onError(DataConnectionListener::DataConnectionError);
-   void onDisconnected();
-   void onConnected();
-
 private:
    enum SocketIndex {
       ControlSocketIndex = 0,
@@ -93,7 +81,6 @@ private:
 
 protected:
    std::shared_ptr<spdlog::logger>  logger_;
-   std::shared_ptr<bs::network::TransportClient>   transport_;
    const bool                       useMonitor_;
    std::string                      connectionName_;
 
@@ -104,7 +91,6 @@ protected:
    ZmqContext::sock_ptr             monSocket_;
    std::string                      hostAddr_;
    std::string                      hostPort_;
-
 private:
    std::string                      socketId_;
 
@@ -113,45 +99,13 @@ private:
    ZmqContext::sock_ptr             threadMasterSocket_;
    ZmqContext::sock_ptr             threadSlaveSocket_;
 
-   bool                             isConnected_{ false };
+   bool                             isConnected_;
 
    std::vector<std::string>         sendQueue_;
 
    ZMQTransport                     zmqTransport_ = ZMQTransport::TCPTransport;
 
    std::shared_ptr<bool>            continueExecution_ = nullptr;
-
-   size_t         bufSizeLimit_{ 8192 };
-   std::string    accumulBuf_;
-};
-
-
-class ZmqBinaryConnection : public ZmqDataConnection
-{
-public:
-   ZmqBinaryConnection(const std::shared_ptr<spdlog::logger> &logger
-      , const std::shared_ptr<bs::network::TransportClient> &t)
-      : ZmqDataConnection(logger, t, true)
-   {}
-
-   ~ZmqBinaryConnection() noexcept override = default;
-
-   ZmqBinaryConnection(const ZmqBinaryConnection&) = delete;
-   ZmqBinaryConnection& operator = (const ZmqBinaryConnection&) = delete;
-   ZmqBinaryConnection(ZmqBinaryConnection&&) = delete;
-   ZmqBinaryConnection& operator = (ZmqBinaryConnection&&) = delete;
-
-public:
-   bool send(const std::string& data) override
-   {
-      return ZmqDataConnection::sendData(data);
-   }
-
-protected:
-   void onRawDataReceived(const std::string &rawData) override
-   {
-      ZmqDataConnection::notifyOnData(rawData);
-   }
 };
 
 #endif // __ZEROMQ_DATA_CONNECTION_H__
