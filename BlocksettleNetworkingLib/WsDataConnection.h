@@ -26,6 +26,7 @@ namespace spdlog {
 }
 struct WsTimerStruct;
 struct lws_context;
+struct lws_retry_bo;
 struct lws_sorted_usec_list;
 
 struct WsDataConnectionParams
@@ -34,6 +35,7 @@ struct WsDataConnectionParams
    uint32_t caBundleSize{};
    bool useSsl{false};
    size_t maximumPacketSize{bs::network::ws::kDefaultMaximumWsPacketSize};
+   std::vector<uint32_t> delaysTableMs;
 };
 
 class WsDataConnection : public DataConnection
@@ -112,6 +114,7 @@ private:
    std::unique_ptr<WsTimerStruct> reconnectTimer_;
    uint16_t retryCounter_{};
    bool shuttingDownReceived_{};
+   std::unique_ptr<lws_retry_bo> retryTable_;
 
 };
 
