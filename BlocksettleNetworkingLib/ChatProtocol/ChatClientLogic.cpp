@@ -13,10 +13,11 @@
 
 #include "ChatProtocol/ChatClientLogic.h"
 
+#include "Bip15xDataConnection.h"
 #include "ConnectionManager.h"
 #include "DataConnection.h"
-#include "ZmqDataConnection.h"
 #include "ProtobufUtils.h"
+#include "WsDataConnection.h"
 
 #include <disable_warnings.h>
 #include <spdlog/spdlog.h>
@@ -35,6 +36,7 @@ ChatClientLogic::ChatClientLogic()
    qRegisterMetaType<Chat::ChatClientLogicError>();
    qRegisterMetaType<Chat::ClientPartyLogicPtr>();
    qRegisterMetaType<Chat::ChatUserPtr>();
+   qRegisterMetaType<bs::network::BIP15xNewKeyCb>();
 
    connect(this, &ChatClientLogic::chatClientError, this, &ChatClientLogic::handleLocalErrors);
 }
@@ -130,8 +132,8 @@ void ChatClientLogic::LoginToServer(const BinaryData &token, const BinaryData &t
    params.ephemeralPeers = true;
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(loggerPtr_, params);
    transport->setKeyCb(cb);
-   auto conn =  std::make_unique<ZmqBinaryConnection>(loggerPtr_, transport);
-   conn->SetContext(std::make_shared<ZmqContext>(loggerPtr_));
+   auto wsConn = std::make_unique<WsDataConnection>(loggerPtr_, WsDataConnectionParams{});
+   auto conn = std::make_unique<Bip15xDataConnection>(loggerPtr_, std::move(wsConn), transport);
    connectionPtr_ = std::move(conn);
 
    clientConnectionLogicPtr_->setToken(token, tokenSign);

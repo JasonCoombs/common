@@ -133,5 +133,6 @@ Q_DECLARE_METATYPE(DataConnectionListener::DataConnectionError)
 Q_DECLARE_METATYPE(Chat::ChatClientLogicError)
 Q_DECLARE_METATYPE(Chat::ClientPartyLogicPtr)
 Q_DECLARE_METATYPE(Chat::ChatUserPtr)
+Q_DECLARE_METATYPE(bs::network::BIP15xNewKeyCb)
 
 #endif // CHATCLIENTLOGIC_H

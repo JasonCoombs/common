@@ -14,7 +14,6 @@
 #include "FastLock.h"
 #include "MessageHolder.h"
 #include "ThreadName.h"
-#include "Transport.h"
 
 #include <spdlog/spdlog.h>
 #include <zmq.h>
@@ -26,22 +25,18 @@ namespace
 
 } // namespace
 
-ZmqServerConnection::ZmqServerConnection(const std::shared_ptr<spdlog::logger> &logger
-   , const std::shared_ptr<ZmqContext> &context
-   , const std::shared_ptr<bs::network::TransportServer> &tr)
-   : logger_(logger), context_(context)
+ZmqServerConnection::ZmqServerConnection(
+   const std::shared_ptr<spdlog::logger>& logger
+   , const std::shared_ptr<ZmqContext>& context)
+   : logger_(logger)
+   , context_(context)
    , dataSocket_(ZmqContext::CreateNullSocket())
-   , monSocket_(ZmqContext::CreateNullSocket())
    , threadMasterSocket_(ZmqContext::CreateNullSocket())
    , threadSlaveSocket_(ZmqContext::CreateNullSocket())
    , threadName_("ZmqSrv")
 {
    assert(logger_ != nullptr);
    assert(context_ != nullptr);
-
-   if (tr) {
-      setTransport(tr);
-   }
 }
 
 ZmqServerConnection::~ZmqServerConnection() noexcept
@@ -55,21 +50,6 @@ ZmqServerConnection::~ZmqServerConnection() noexcept
       // This is not normally needed but good to have to prevent crash in case stopServer fails
       listenThread_.join();
    }
-}
-
-void ZmqServerConnection::setTransport(const std::shared_ptr<bs::network::TransportServer> &tr)
-{
-   transport_ = tr;
-   transport_->setClientErrorCb(
-      [this](const std::string &id, const std::string &err) { notifyListenerOnClientError(id, err); }
-      , [this](const std::string &clientId, ServerConnectionListener::ClientError errorCode
-         , int socket) { notifyListenerOnClientSocketError(clientId, errorCode, socket); });
-   transport_->setDataReceivedCb([this](const std::string &clientId, const std::string &data) {
-      notifyListenerOnData(clientId, data); });
-   transport_->setSendDataCb([this](const std::string &clientId, const std::string &data) {
-      return QueueDataToSend(clientId, data, false); });
-   transport_->setConnectedCb([this](const std::string &clientId) { notifyListenerOnNewConnection(clientId); }
-      , [this](const std::string &clientId) { notifyListenerOnDisconnectedClient(clientId); });
 }
 
 bool ZmqServerConnection::isActive() const
@@ -103,46 +83,8 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       return false;
    }
 
-   int bufSz = 0;
-   size_t bufSzSize = sizeof(bufSz);
-   if (zmq_getsockopt(tempDataSocket.get(), ZMQ_RCVBUF, &bufSz, &bufSzSize) != 0) {
-      if (logger_) {
-         logger_->error("[{}] failed to get RCVBUF size {}", __func__
-            , tempConnectionName);
-      }
-      return false;
-   }
-   if (bufSz > 0) {
-      bufSizeLimit_ = bufSz;
-   }
-
    if (!ConfigDataSocket(tempDataSocket)) {
       logger_->error("[{}] failed to config data socket {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
-   ZmqContext::sock_ptr tempMonSocket = context_->CreateMonitorSocket();
-   if (tempMonSocket == nullptr) {
-      logger_->error("[{}] failed to open monitor socket {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
-   int lingerPeriod = 0;
-   int result = zmq_setsockopt(tempMonSocket.get(), ZMQ_LINGER, &lingerPeriod, sizeof(lingerPeriod));
-   if (result != 0) {
-      logger_->error("[{}] failed to config monitor socket on {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
-   monitorConnectionName_ = "inproc://monitor-" + tempConnectionName;
-
-   result = zmq_socket_monitor(tempDataSocket.get(), monitorConnectionName_.c_str(),
-      ZMQ_EVENT_ALL);
-   if (result != 0) {
-      logger_->error("[{}] failed to create monitor {}", __func__
          , tempConnectionName);
       return false;
    }
@@ -157,13 +99,6 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       }
    }
 
-   result = zmq_connect(tempMonSocket.get(), monitorConnectionName_.c_str());
-   if (result != 0) {
-      logger_->error("[{}] failed to connect to monitor {}", __func__
-         , tempConnectionName);
-      return false;
-   }
-
    // connect socket to server ( connection state will be changed in listen thread )
    std::string endpoint = ZmqContext::CreateConnectionEndpoint(zmqTransport_, host, port);
    if (endpoint.empty()) {
@@ -171,7 +106,7 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
       return false;
    }
 
-   result = zmq_bind(tempDataSocket.get(), endpoint.c_str());
+   bool result = zmq_bind(tempDataSocket.get(), endpoint.c_str());
    if (result != 0) {
       logger_->error("[{}] failed to bind socket to {} : {}", __func__
          , endpoint, zmq_strerror(zmq_errno()));
@@ -212,7 +147,6 @@ bool ZmqServerConnection::BindConnection(const std::string& host , const std::st
    // ok, move temp data to members
    connectionName_ = std::move(tempConnectionName);
    dataSocket_ = std::move(tempDataSocket);
-   monSocket_ = std::move(tempMonSocket);
    threadMasterSocket_ = std::move(tempThreadMasterSocket);
    threadSlaveSocket_ = std::move(tempThreadSlaveSocket);
 
@@ -230,7 +164,8 @@ void ZmqServerConnection::listenFunction()
 {
    bs::setCurrentThreadName(threadName_);
 
-   zmq_pollitem_t  poll_items[3];
+   constexpr size_t pollSize = 2;
+   zmq_pollitem_t  poll_items[pollSize];
 
    poll_items[ZmqServerConnection::ControlSocketIndex].socket = threadSlaveSocket_.get();
    poll_items[ZmqServerConnection::ControlSocketIndex].events = ZMQ_POLLIN;
@@ -238,16 +173,13 @@ void ZmqServerConnection::listenFunction()
    poll_items[ZmqServerConnection::DataSocketIndex].socket = dataSocket_.get();
    poll_items[ZmqServerConnection::DataSocketIndex].events = ZMQ_POLLIN;
 
-   poll_items[ZmqServerConnection::MonitorSocketIndex].socket = monSocket_.get();
-   poll_items[ZmqServerConnection::MonitorSocketIndex].events = ZMQ_POLLIN;
-
    logger_->debug("[{}] poll thread started for {}", __func__, connectionName_);
 
    int errorCount = 0;
 
    while (true) {
       int periodMs = std::chrono::duration_cast<std::chrono::milliseconds>(kHearthbeatCheckPeriod).count();
-      int result = zmq_poll(poll_items, 3, periodMs);
+      int result = zmq_poll(poll_items, pollSize, periodMs);
 
       if (result == -1) {
          errorCount++;
@@ -293,48 +225,11 @@ void ZmqServerConnection::listenFunction()
          }
       }
 
-      if (poll_items[ZmqServerConnection::MonitorSocketIndex].revents & ZMQ_POLLIN) {
-         int sock = 0;
-         switch (bs::network::get_monitor_event(monSocket_.get(), &sock)) {
-            case ZMQ_EVENT_ACCEPTED :
-            {
-               std::string cliIP = bs::network::peerAddressString(sock);
-               connectedPeers_.emplace(std::make_pair(sock, cliIP));
-               if (listener_) {
-                  listener_->OnPeerConnected(cliIP);
-               }
-            }
-            break;
-
-            case ZMQ_EVENT_DISCONNECTED :
-            case ZMQ_EVENT_CLOSED :
-            {
-               const auto it = connectedPeers_.find(sock);
-
-               if (it != connectedPeers_.cend()) {
-                  if (listener_) {
-                     listener_->OnPeerDisconnected(it->second);
-                  }
-                  connectedPeers_.erase(it);
-               }
-            }
-            break;
-         }
-      }
-
       onPeriodicCheck();
    }
 
    zmq_socket_monitor(dataSocket_.get(), nullptr, ZMQ_EVENT_ALL);
    dataSocket_ = context_->CreateNullSocket();
-   monSocket_ = context_->CreateNullSocket();
-
-   if (listener_) {
-      for (const auto &peer : connectedPeers_) {
-         listener_->OnPeerDisconnected(peer.second);
-      }
-   }
-   connectedPeers_.clear();
 
    logger_->debug("[{}] poll thread stopped for {}", __func__, connectionName_);
 }
@@ -399,12 +294,12 @@ void ZmqServerConnection::notifyListenerOnData(const std::string& clientId, cons
    }
 }
 
-void ZmqServerConnection::notifyListenerOnNewConnection(const std::string& clientId)
+void ZmqServerConnection::notifyListenerOnNewConnection(const std::string& clientId
+   , const ServerConnectionListener::Details &details)
 {
    if (listener_) {
-      listener_->OnClientConnected(clientId);
+      listener_->OnClientConnected(clientId, details);
    }
-   clientInfo_[clientId] = {};
 }
 
 void ZmqServerConnection::notifyListenerOnDisconnectedClient(const std::string& clientId)
@@ -412,31 +307,14 @@ void ZmqServerConnection::notifyListenerOnDisconnectedClient(const std::string& 
    if (listener_) {
       listener_->OnClientDisconnected(clientId);
    }
-   clientInfo_.erase(clientId);
 }
 
-void ZmqServerConnection::notifyListenerOnClientError(const std::string& clientId, const std::string &error)
+void ZmqServerConnection::notifyListenerOnClientError(const std::string &clientId
+   , ServerConnectionListener::ClientError errorCode, const ServerConnectionListener::Details &details)
 {
    if (listener_) {
-      listener_->onClientError(clientId, error);
+      listener_->onClientError(clientId, errorCode, details);
    }
-}
-
-void ZmqServerConnection::notifyListenerOnClientSocketError(const std::string &clientId
-   , ServerConnectionListener::ClientError errorCode, int socket)
-{
-   if (listener_) {
-      listener_->onClientError(clientId, errorCode, socket);
-   }
-}
-
-std::string ZmqServerConnection::GetClientInfo(const std::string &clientId) const
-{
-   const auto &it = clientInfo_.find(clientId);
-   if (it != clientInfo_.end()) {
-      return it->second;
-   }
-   return "Unknown";
 }
 
 bool ZmqServerConnection::QueueDataToSend(const std::string& clientId, const std::string& data
@@ -452,30 +330,26 @@ bool ZmqServerConnection::QueueDataToSend(const std::string& clientId, const std
 
 void ZmqServerConnection::onPeriodicCheck()
 {
-   if (transport_) {
-      transport_->periodicCheck();
-   }
 }
 
 void ZmqServerConnection::SendDataToDataSocket()
 {
    decltype(dataQueue_) pendingData;
+
    {
       FastLock locker{dataQueueLock_};
       pendingData.swap(dataQueue_);
    }
 
    for (const auto &dataPacket : pendingData) {
-      int result = zmq_send(dataSocket_.get(), dataPacket.clientId.c_str()
-         , dataPacket.clientId.size(), ZMQ_SNDMORE);
+      int result = zmq_send(dataSocket_.get(), dataPacket.clientId.c_str(), dataPacket.clientId.size(), ZMQ_SNDMORE);
       if (result != dataPacket.clientId.size()) {
          logger_->error("[{}] {} failed to send client id {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()));
          continue;
       }
 
-      result = zmq_send(dataSocket_.get(), dataPacket.data.data(), dataPacket.data.size()
-         , (dataPacket.sendMore ? ZMQ_SNDMORE : 0));
+      result = zmq_send(dataSocket_.get(), dataPacket.data.data(), dataPacket.data.size(), (dataPacket.sendMore ? ZMQ_SNDMORE : 0));
       if (result != dataPacket.data.size()) {
          logger_->error("[{}] {} failed to send data frame {} to {}", __func__
             , connectionName_, zmq_strerror(zmq_errno()), dataPacket.clientId);

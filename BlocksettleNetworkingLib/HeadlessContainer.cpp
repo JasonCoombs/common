@@ -11,13 +11,14 @@
 #include "HeadlessContainer.h"
 
 #include "BSErrorCodeStrings.h"
+#include "Bip15xDataConnection.h"
 #include "ConnectionManager.h"
 #include "DataConnection.h"
 #include "ProtobufHeadlessUtils.h"
 #include "SystemFileUtils.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
-#include "ZmqDataConnection.h"
+#include "WsDataConnection.h"
 
 #include <QCoreApplication>
 #include <QDataStream>
@@ -1338,13 +1339,6 @@ bool RemoteSigner::Start()
       return true;
    }
 
-   if (opMode() == OpMode::RemoteInproc) {
-      const auto zmqConn = std::dynamic_pointer_cast<ZmqDataConnection>(connection_);
-      if (zmqConn) {
-         zmqConn->SetZMQTransport(ZMQTransport::InprocTransport);
-      }
-   }
-
    {
       std::lock_guard<std::mutex> lock(mutex_);
       listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_);
@@ -1445,9 +1439,8 @@ void RemoteSigner::RecreateConnection()
    try {
       bip15xTransport_ = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
       bip15xTransport_->setKeyCb(cbNewKey_);
-      bip15xTransport_->setLocalHeartbeatInterval();
-      auto conn = std::make_shared<ZmqBinaryConnection>(logger_, bip15xTransport_);
-      conn->SetContext(connectionManager_->zmqContext());
+      auto wsConn = std::make_unique<WsDataConnection>(logger_, WsDataConnectionParams{});
+      auto conn = std::make_shared<Bip15xDataConnection>(logger_, std::move(wsConn), bip15xTransport_);
       connection_ = std::move(conn);
 
       headlessConnFinished_ = false;

@@ -12,7 +12,8 @@
 
 #include "ConnectionManager.h"
 #include "CurrencyPair.h"
-#include "SubscriberConnection.h"
+#include "WsDataConnection.h"
+#include <QCoreApplication>
 
 #include <spdlog/spdlog.h>
 
@@ -22,10 +23,11 @@ static const std::string kUsdCcyName = "USD";
 
 BSMarketDataProvider::BSMarketDataProvider(const std::shared_ptr<ConnectionManager> &connectionManager
       , const std::shared_ptr<spdlog::logger> &logger, MDCallbackTarget *callbacks
-      , bool acceptUsdPairs)
+      , bool secureConnection, bool acceptUsdPairs)
  : MarketDataProvider(logger, callbacks)
  , connectionManager_{connectionManager}
  , acceptUsdPairs_{acceptUsdPairs}
+ , secureConnection_(secureConnection)
 {}
 
 bool BSMarketDataProvider::StartMDConnection()
@@ -35,19 +37,13 @@ bool BSMarketDataProvider::StartMDConnection()
       return false;
    }
 
-   mdConnection_ = connectionManager_->CreateSubscriberConnection();
-
-   auto onDataReceived = [this](const std::string& data) { this->onDataFromMD(data); };
-   auto onConnectedToPb = [this]() { this->onConnectedToMD(); };
-   auto onDisconnectedFromPB = [this]() { this->onDisconnectedFromMD(); };
-
-   listener_ = std::make_shared<SubscriberConnectionListenerCB>(onDataReceived
-      , onConnectedToPb, onDisconnectedFromPB);
+   mdConnection_ = secureConnection_ ?
+      connectionManager_->CreateSecureWsConnection() : connectionManager_->CreateInsecureWsConnection();
 
    logger_->debug("[BSMarketDataProvider::StartMDConnection] start connecting to PB updates");
 
    callbacks_->startConnecting();
-   if (!mdConnection_->ConnectToPublisher(host_, port_, listener_.get())) {
+   if (!mdConnection_->openConnection(host_, port_, this)) {
       logger_->error("[BSMarketDataProvider::StartMDConnection] failed to start connection");
       callbacks_->disconnected();
       return false;
@@ -61,31 +57,13 @@ void BSMarketDataProvider::StopMDConnection()
    callbacks_->onMDUpdate(bs::network::Asset::Undefined, {}, {});
 
    if (mdConnection_ != nullptr) {
-      mdConnection_->stopListen();
+      mdConnection_->closeConnection();
       mdConnection_ = nullptr;
    }
    callbacks_->disconnected();
 }
 
-bool BSMarketDataProvider::IsConnectionActive() const
-{
-   return mdConnection_ != nullptr;
-}
-
-bool BSMarketDataProvider::DisconnectFromMDSource()
-{
-   if (mdConnection_ == nullptr) {
-      return true;
-   }
-   callbacks_->disconnecting();
-
-   if (mdConnection_ != nullptr)
-      mdConnection_->stopListen();
-
-   return true;
-}
-
-void BSMarketDataProvider::onDataFromMD(const std::string& data)
+void BSMarketDataProvider::OnDataReceived(const std::string &data)
 {
    Blocksettle::Communication::BlocksettleMarketData::UpdateHeader header;
 
@@ -107,18 +85,44 @@ void BSMarketDataProvider::onDataFromMD(const std::string& data)
    }
 }
 
-void BSMarketDataProvider::onConnectedToMD()
+void BSMarketDataProvider::OnConnected()
 {
    callbacks_->connected();
 }
 
-void BSMarketDataProvider::onDisconnectedFromMD()
+void BSMarketDataProvider::OnDisconnected()
 {
-   callbacks_->disconnecting();
-   callbacks_->onMDUpdate(bs::network::Asset::Undefined, {}, {});
+   // Can't stop connection from callback.
+   // FIXME: Do not use qApp here.
+   QMetaObject::invokeMethod(qApp, [this] {
+      callbacks_->disconnecting();
+      callbacks_->onMDUpdate(bs::network::Asset::Undefined, {}, {});
 
-   mdConnection_ = nullptr;
-   callbacks_->disconnected();
+      mdConnection_ = nullptr;
+      callbacks_->disconnected();
+   });
+}
+
+void BSMarketDataProvider::OnError(DataConnectionListener::DataConnectionError errorCode)
+{
+}
+
+bool BSMarketDataProvider::IsConnectionActive() const
+{
+   return mdConnection_ != nullptr;
+}
+
+bool BSMarketDataProvider::DisconnectFromMDSource()
+{
+   if (mdConnection_ == nullptr) {
+      return true;
+   }
+   callbacks_->disconnecting();
+
+   if (mdConnection_ != nullptr)
+      mdConnection_->closeConnection();
+
+   return true;
 }
 
 bs::network::MDFields GetMDFields(const Blocksettle::Communication::BlocksettleMarketData::ProductPriceInfo& productInfo)
