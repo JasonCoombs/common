@@ -25,8 +25,6 @@ using namespace bs::network;
 
 namespace {
 
-   const auto kClientTimeout = std::chrono::seconds(30);
-
    int callback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
    {
       return WsServerConnection::callbackHelper(wsi, reason, in, len);
@@ -183,7 +181,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          auto connIp = connectedIp(wsi);
          auto forwIp = forwardedIp(wsi);
          connection.ipAddr = params_.trustForwardedForHeader && !forwIp.empty() ? forwIp : connIp;
-         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ips: {}"
+         SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ip: {}"
             , static_cast<void*>(wsi), connIp, forwIp);
          if (shuttingDown_) {
             connection.state = State::Closed;
@@ -210,17 +208,17 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                SPDLOG_LOGGER_DEBUG(logger_, "connection closed unexpectedly, clientId: {}", bs::toHex(connection.clientId));
                client.wsi = nullptr;
-               scheduleCallback(kClientTimeout + std::chrono::seconds(1), [this, clientId] {
+               scheduleCallback(params_.clientTimeout, [this, clientId] {
                   auto clientIt = clients_.find(clientId);
                   if (clientIt == clients_.end()) {
                      return;
                   }
                   auto &client = clientIt->second;
-                  if (client.wsi == nullptr && std::chrono::steady_clock::now() - client.lastResumed > kClientTimeout) {
+                  if (client.wsi == nullptr) {
                      SPDLOG_LOGGER_ERROR(logger_, "connection removed by timeout");
+                     closeConnectedClient(clientId);
                      listener_->OnClientDisconnected(clientId);
                      listener_->onClientError(clientId, ServerConnectionListener::Timeout, {});
-                     clients_.erase(clientIt);
                   }
                });
                break;
@@ -244,7 +242,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          connection.currFragment.insert(connection.currFragment.end(), ptr, ptr + len);
          if (connection.currFragment.size() > params_.maximumPacketSize) {
             SPDLOG_LOGGER_ERROR(logger_, "maximum packet size reached");
-            connection.state = State::Closed;
+            processError(wsi);
             return -1;
          }
          if (lws_remaining_packet_payload(wsi) > 0) {
@@ -252,7 +250,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          }
          if (!lws_is_final_fragment(wsi)) {
             SPDLOG_LOGGER_ERROR(logger_, "unexpected fragment");
-            connection.state = State::Closed;
+            processError(wsi);
             return -1;
          }
 
@@ -271,15 +269,14 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                   case WsPacket::Type::Ack: {
                      if (!processSentAck(client, packet.recvCounter)) {
                         SPDLOG_LOGGER_ERROR(logger_, "invalid ack");
-                        connection.state = State::Closed;
+                        processError(wsi);
                         return -1;
                      }
                      break;
                   }
                   default: {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
-                     client.wsi = nullptr;
-                     connection.state = State::Closed;
+                     processError(wsi);
                      return -1;
                   }
                }
@@ -305,7 +302,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                      auto &client = clients_.at(clientId);
                      if (!processSentAck(client, packet.recvCounter)) {
                         SPDLOG_LOGGER_ERROR(logger_, "resuming connection failed");
-                        connection.state = State::Closed;
+                        processError(wsi);
                         return -1;
                      }
                      if (client.wsi != nullptr) {
@@ -316,13 +313,13 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                      connection.state = State::SendingHandshakeResumed;
                      connection.clientId = clientId;
                      client.wsi = wsi;
-                     client.lastResumed = std::chrono::steady_clock::now();
+                     client.sentCounter = packet.recvCounter;
                      lws_callback_on_writable(wsi);
                      return 0;
                   }
                   default: {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
-                     connection.state = State::Closed;
+                     processError(wsi);
                      return -1;
                   }
                }
@@ -331,16 +328,17 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                client.wsi = nullptr;
                SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
-               connection.state = State::Closed;
+               processError(wsi);
                return -1;
             }
             case State::SendingHandshakeNotFound:
             case State::SendingHandshakeNew: {
                SPDLOG_LOGGER_ERROR(logger_, "unexpected packet");
-               connection.state = State::Closed;
+               processError(wsi);
                return -1;
             }
             case State::Closed: {
+               processError(wsi);
                return -1;
             }
          }
@@ -359,7 +357,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                   int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                   if (rc != static_cast<int>(packet.getSize())) {
                       SPDLOG_LOGGER_ERROR(logger_, "write failed");
-                      connection.state = State::Closed;
+                      processError(wsi);
                       return -1;
                   }
                   client.recvAckCounter = client.recvCounter;
@@ -368,12 +366,12 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                   int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                   if (rc == -1) {
                      SPDLOG_LOGGER_ERROR(logger_, "write failed");
-                     connection.state = State::Closed;
+                     processError(wsi);
                      return -1;
                   }
                   if (rc != static_cast<int>(packet.getSize())) {
                       SPDLOG_LOGGER_ERROR(logger_, "write truncated");
-                      connection.state = State::Closed;
+                      processError(wsi);
                       return -1;
                   }
                   client.sentCounter += 1;
@@ -396,7 +394,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {
                   SPDLOG_LOGGER_ERROR(logger_, "write failed");
-                  connection.state = State::Closed;
+                  processError(wsi);
                   return -1;
                }
                connection.state = State::Connected;
@@ -410,13 +408,14 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
                if (rc == -1) {
                   SPDLOG_LOGGER_ERROR(logger_, "write failed");
-                  connection.state = State::Closed;
+                  processError(wsi);
                   return -1;
                }
                auto clientId = nextClientId();
                connection.state = State::Connected;
                cookieToClientIdMap_[cookie] = clientId;
                auto &client = clients_[clientId];
+               client.cookie = cookie;
                client.wsi = wsi;
                connection.clientId = clientId;
                ServerConnectionListener::Details details;
@@ -442,10 +441,8 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
          switch (connection.state) {
             case State::Connected: {
                if (code == LWS_CLOSE_STATUS_NORMAL) {
-                  auto &client = clients_.at(connection.clientId);
-                  cookieToClientIdMap_.erase(client.cookie);
-                  clients_.erase(connection.clientId);
                   connection.state = State::Closed;
+                  closeConnectedClient(connection.clientId);
                   listener_->OnClientDisconnected(connection.clientId);
                }
                return -1;
@@ -528,6 +525,33 @@ void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsS
    lws_sul_schedule(context_, 0, timer.get(), timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
 
    timers_.insert(std::make_pair(timerId, std::move(timer)));
+}
+
+void WsServerConnection::processError(lws *wsi)
+{
+   auto &connection = connections_.at(wsi);
+   switch (connection.state) {
+      case State::SendingHandshakeResumed:
+      case State::Connected: {
+         auto &client = clients_.at(connection.clientId);
+         assert(client.wsi == wsi);
+         client.wsi = nullptr;
+         break;
+      }
+      default: {
+         assert(connection.clientId.empty());
+         break;
+      }
+   }
+   connection.state = State::Closed;
+}
+
+void WsServerConnection::closeConnectedClient(const std::string &clientId)
+{
+   auto &client = clients_.at(clientId);
+   auto count = cookieToClientIdMap_.erase(client.cookie);
+   assert(count == 1);
+   clients_.erase(clientId);
 }
 
 std::string WsServerConnection::connectedIp(lws *wsi)

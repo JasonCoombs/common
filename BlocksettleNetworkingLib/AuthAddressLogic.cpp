@@ -280,7 +280,6 @@ AuthAddressValidator::~AuthAddressValidator()
       updateThread_.join();
    }
    refreshQueue_.terminate();
-
    if (lambdas_) {
       lambdas_->shutdown();
    }
@@ -449,23 +448,51 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
 ////
 unsigned AuthAddressValidator::update()
 {
-   std::unique_lock<std::mutex> lock(updateMutex_);
-
-   if (!lambdas_ || stopped_) {
+   if (stopped_) {
       return 0;
+   }
+   //keep track of txout changes in validation addresses since last seen block
+   auto promPtr = std::make_shared<std::promise<OutpointBatch>>();
+   auto futPtr = promPtr->get_future();
+   const auto &opLbd = [this, promPtr](const OutpointBatch &batch)
+   {
+      promPtr->set_value(batch);
+   };
+   getValidationOutpointsBatch(opLbd);
+   try {
+      checkFutureWait(futPtr);
+   }
+   catch (const std::exception &) {
+      return 0;
+   }
+   return update(futPtr.get());
+}
+
+void AuthAddressValidator::getValidationOutpointsBatch(const std::function<void(OutpointBatch)> &cb)
+{
+   if (!lambdas_) {
+      return;
    }
    std::vector<bs::Address> addrVec;
    for (auto& addrPair : validationAddresses_) {
       addrVec.push_back(addrPair.first);
    }
-   const auto &batch = getOutpointsForAddresses(addrVec, topBlock_, zcIndex_);
+   //grab all txouts
+   lambdas_->getOutpointsForAddresses(addrVec, cb, topBlock_, zcIndex_);
+}
 
+unsigned AuthAddressValidator::update(const OutpointBatch &batch)
+{
+   std::unique_lock<std::mutex> lock(updateMutex_);
+   if (!lambdas_ || stopped_) {
+      return UINT32_MAX;
+   }
    unsigned opCount = 0;
-   for (auto& outpointPair : batch.outpoints_) {
+   for (const auto &outpointPair : batch.outpoints_) {
       if (stopped_) {
-         return 0;
+         return UINT32_MAX;
       }
-      auto& outpointVec = outpointPair.second;
+      const auto& outpointVec = outpointPair.second;
       if (outpointVec.size() == 0) {
          continue;
       }
@@ -494,7 +521,7 @@ unsigned AuthAddressValidator::update()
       }
 
       //populate new outpoints
-      for (auto& op : outpointVec) {
+      for (const auto& op : outpointVec) {
          auto aop = std::make_shared<AuthOutpoint>(
             op.txHeight_, op.txIndex_, op.txOutIndex_,
             op.value_, op.isSpent_, op.spenderHash_);
@@ -545,25 +572,7 @@ unsigned AuthAddressValidator::update()
    return opCount;
 }
 
-void AuthAddressValidator::update(const ResultCb &cb)
-{  // Async update to allow processing of messages while waiting for them at the same time
-   std::thread([this, cb] {
-      try {
-         update();
-         if (cb) {
-            cb(true);
-         }
-      }
-      catch (const AuthLogicException &) {
-         if (cb) {
-            cb(false);
-         }
-      }
-   }).detach();
-}
-
 ////
-
 bool AuthAddressValidator::isValidMasterAddress(const bs::Address &addr) const
 {
    auto maStructPtr = getValidationAddress(addr);
@@ -976,6 +985,15 @@ OutpointBatch AuthAddressValidator::getOutpointsFor(const bs::Address &addr) con
    return getOutpointsForAddresses({ addr });
 }
 
+void AuthAddressValidator::getOutpointsFor(const bs::Address &addr
+   , const std::function<void(const OutpointBatch &)> &cb) const
+{
+   if (!lambdas_) {
+      return;
+   }
+   lambdas_->getOutpointsForAddresses({ addr }, cb);
+}
+
 std::vector<UTXO> AuthAddressValidator::getUTXOsFor(const bs::Address &addr
    , bool withZC) const
 {
@@ -1058,21 +1076,25 @@ std::vector<UTXO> AuthAddressValidator::getUTXOsForAddress(const bs::Address &ad
 AuthAddressLogic::AddrPathsStatus AuthAddressLogic::getAddrPathsStatus(
    const AuthAddressValidator &aav, const bs::Address &addr)
 {
+   const auto &outpoints = aav.getOutpointsFor(addr);
+   return getAddrPathsStatus(aav, outpoints);
+}
+
+AuthAddressLogic::AddrPathsStatus AuthAddressLogic::getAddrPathsStatus(
+   const AuthAddressValidator &aav, const OutpointBatch &batch)
+{
    /*
-   This code can be sped up for revoked/invalidated addresses by returning at 
+   This code can be sped up for revoked/invalidated addresses by returning at
    the first fail condition. It returns the full path status at the moment.
    */
-
    AuthAddressLogic::AddrPathsStatus paths;
-
    //get txout history for address
-   const auto &opMap = aav.getOutpointsFor(addr).outpoints_;
+   const auto &opMap = batch.outpoints_;
    if (opMap.size() == 0) {
       //no data for this address
       paths.pathCount_ = 0;
       return paths;
-   }
-   else if (opMap.size() != 1) {
+   } else if (opMap.size() != 1) {
       //this is an error state, don't initialize the path
       return paths;
    }
@@ -1081,14 +1103,14 @@ AuthAddressLogic::AddrPathsStatus AuthAddressLogic::getAddrPathsStatus(
    paths.pathCount_ = opVec.size();
 
    //check all spent outputs vs ValidationAddressManager
-   for (unsigned i=0; i<opVec.size(); i++) {
+   for (unsigned i = 0; i < opVec.size(); i++) {
       auto& outpoint = opVec[i];
       try {
          /*
          Does this txHash spend from a validation address output? It will
          throw if not.
          */
-         auto& validationAddr = 
+         auto& validationAddr =
             aav.findValidationAddressForTxHash(outpoint.txHash_);
 
          /*
@@ -1110,8 +1132,7 @@ AuthAddressLogic::AddrPathsStatus AuthAddressLogic::getAddrPathsStatus(
          }
 
          paths.validPaths_.emplace(i, std::move(outpoint));
-      }
-      catch (const AuthLogicException &) {
+      } catch (const AuthLogicException &) {
          continue;
       }
    }
@@ -1126,9 +1147,9 @@ bool AuthAddressLogic::isValid(
 }
 
 ////
-AddressVerificationState AuthAddressLogic::getAuthAddrState(
-   const AuthAddressValidator &aav, const bs::Address& addr)
-{  /***
+AddressVerificationState AuthAddressLogic::getAuthAddrState(const AuthAddressValidator &aav
+   , const OutpointBatch &batch)
+{   /***
    Validity is unique. This means there should be only one output chain
    defining validity. Any concurent path, whether partial or full,
    invalidates the user address.
@@ -1139,56 +1160,56 @@ AddressVerificationState AuthAddressLogic::getAuthAddrState(
       throw std::runtime_error("invalid top height");
    }
 
-   try {
-      auto&& pathState = getAddrPathsStatus(aav, addr);
-      if (!pathState.isInitialized()) {
-         throw std::runtime_error("uninitialized path state, "
-            "this happens on corrupt data from db");
-      }
-
-      try {
-         //grab the outpoint for the validation path
-         const auto& outpoint = pathState.getValidationOutpoint();
-
-         //does it have enough confirmations?
-         auto opHeight = outpoint.txHeight_;
-         if (currentTop >= opHeight &&
-            (1 + currentTop - opHeight) >= VALIDATION_CONF_COUNT) {
-            return AddressVerificationState::Verified;
-         }
-         return AddressVerificationState::Verifying;
-      }
-      catch (const AuthLogicException&) {
-         //failed to grab the validation output, this address is invalid
-
-         if (pathState.pathCount_ == 0) {
-            //address has no history
-            return AddressVerificationState::Virgin;
-         }
-
-         if (!pathState.invalidPaths_.empty()) {
-            //has a validation output from a revoked validation address
-            return AddressVerificationState::Invalidated_Implicit;
-         }
-
-         if (pathState.validPaths_.size() > 1) {
-            //has multiple validation outputs (we explicitly revoked this)
-            return AddressVerificationState::Invalidated_Explicit;
-         }
-
-         if (!pathState.revokedPaths_.empty()) {
-            //validation output was spent by user
-            return AddressVerificationState::Revoked;
-         }
-
-         //address has history and no validation outputs
-         return AddressVerificationState::Tainted;
-      }
+   const auto &pathState = getAddrPathsStatus(aav, batch);
+   if (!pathState.isInitialized()) {
+      // uninitialized path state, this happens on corrupt data from db
+      return AddressVerificationState::VerificationFailed;
    }
-   catch (const AuthLogicException &) { }
 
-   //logic error in getAddrPathsStatus, cannot proceed 
+   try {
+      //grab the outpoint for the validation path
+      const auto& outpoint = pathState.getValidationOutpoint();
+
+      //does it have enough confirmations?
+      auto opHeight = outpoint.txHeight_;
+      if (currentTop >= opHeight &&
+         (1 + currentTop - opHeight) >= VALIDATION_CONF_COUNT) {
+         return AddressVerificationState::Verified;
+      }
+      return AddressVerificationState::Verifying;
+   } catch (const AuthLogicException&) {
+      //failed to grab the validation output, this address is invalid
+
+      if (pathState.pathCount_ == 0) {
+         //address has no history
+         return AddressVerificationState::Virgin;
+      }
+
+      if (!pathState.invalidPaths_.empty()) {
+         //has a validation output from a revoked validation address
+         return AddressVerificationState::Invalidated_Implicit;
+      }
+
+      if (pathState.validPaths_.size() > 1) {
+         //has multiple validation outputs (we explicitly revoked this)
+         return AddressVerificationState::Invalidated_Explicit;
+      }
+
+      if (!pathState.revokedPaths_.empty()) {
+         //validation output was spent by user
+         return AddressVerificationState::Revoked;
+      }
+      //address has history and no validation outputs
+      return AddressVerificationState::Tainted;
+   }
+   //logic error in getAddrPathsStatus, cannot proceed
    return AddressVerificationState::VerificationFailed;
+}
+
+AddressVerificationState AuthAddressLogic::getAuthAddrState(
+   const AuthAddressValidator &aav, const bs::Address& addr)
+{
+   return getAuthAddrState(aav, aav.getOutpointsFor(addr));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
