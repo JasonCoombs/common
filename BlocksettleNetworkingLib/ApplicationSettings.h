@@ -148,6 +148,10 @@ public:
       LoginApiKey,
       AutoQouting,
       AutoSigning,
+      ExtConnName,
+      ExtConnHost,
+      ExtConnPort,
+      ExtConnPubKey,
       _last
    };
 
