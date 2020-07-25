@@ -558,7 +558,8 @@ void AuthAddressManager::SetValidationState(const bs::Address &addr, AddressVeri
    SetExplicitState(addr, mappedState);
 
    if (mappedState == AuthAddressState::Verified
-       && prevState == AuthAddressState::Verifying) {
+      && (  prevState == AuthAddressState::Verifying
+         || prevState == AuthAddressState::Submitted)) {
       emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), tr("Verified"));
       emit VerifiedAddressListUpdated();
    } else if (   (mappedState == AuthAddressState::Revoked || mappedState == AuthAddressState::RevokedByBS)
