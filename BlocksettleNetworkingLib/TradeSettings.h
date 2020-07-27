@@ -24,6 +24,7 @@ namespace bs {
       uint32_t xbtPriceBand{};
       uint32_t authRequiredSettledTrades{};
       uint32_t authSubmitAddressLimit{};
+      uint32_t dealerAuthSubmitAddressLimit{};
 
       void toPb(types::TradeSettings &msg);
       static TradeSettings fromPb(const types::TradeSettings &msg);
