@@ -1498,5 +1498,7 @@ message AuthManaging
       SettledXbtTradeNotification   settled_xbt_trade  = 3;
 
       FilterAuthFundUTXOs  auth_fund_utxos = 4;
+
+      string               user_promoted_to_dealer = 5;
    }
 }
