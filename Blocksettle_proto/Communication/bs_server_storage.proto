@@ -196,6 +196,12 @@ message CcToken
    uint32 bs_seed = 3;
 }
 
+message AddCcToken
+{
+   CcToken  cc_token    = 1;
+   string   request_id  = 2;
+}
+
 enum CcTokenStatus
 {
    CC_TOKEN_STATUS_FAILED = 0;
@@ -311,8 +317,8 @@ message StorageRequestsMessage
       ExportRequestFiles         export_request    = 4;
       ExportRequestFilesResponse export_response   = 5;
       RequestCompletedUpdate     completed_request = 6;
-      PendingRequestsInfo        pending_requests_statistics = 7;
-      CcToken                    add_cc_token_request          = 9;
+      PendingRequestsInfo        pending_requests_statistics   = 7;
+      AddCcToken                 add_cc_token_request          = 9;
       bool                       add_cc_token_response         = 10;
       CcToken                    verify_cc_token_request       = 11;
       CcTokenStatus              verify_cc_token_response      = 12;
