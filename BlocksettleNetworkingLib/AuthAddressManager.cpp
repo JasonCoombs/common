@@ -789,3 +789,23 @@ void AuthAddressManager::createSettlementLeaf(const bs::Address &addr
    };
    walletsManager_->createSettlementLeaf(addr, cbPubKey);
 }
+
+bool AuthAddressManager::UserCanSubmitAuthAddress() const
+{
+   size_t submittedAddressCount = GetSubmittedAddressList(false).size();
+
+   size_t maxSubmitCount = 0;
+
+   if (userType_ == bs::network::UserType::Dealing) {
+      maxSubmitCount = tradeSettings_->dealerAuthSubmitAddressLimit;
+   } else if (userType_ == bs::network::UserType::Trading) {
+      maxSubmitCount = tradeSettings_->authSubmitAddressLimit;
+   }
+
+   return maxSubmitCount > submittedAddressCount;
+}
+
+void AuthAddressManager::setUserType(bs::network::UserType userType)
+{
+   userType_ = userType;
+}
