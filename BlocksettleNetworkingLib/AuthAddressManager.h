@@ -135,6 +135,10 @@ public:
 
    static std::string readyErrorStr(ReadyError error);
 
+   void setUserType(bs::network::UserType userType);
+
+   bool UserCanSubmitAuthAddress() const;
+
 private slots:
    void tryVerifyWalletAddresses();
    void onAuthWalletChanged();
@@ -215,6 +219,7 @@ protected:
    std::unordered_set<unsigned int>    signIdsRevoke_;
    std::shared_ptr<bs::TradeSettings>  tradeSettings_;
 
+   bs::network::UserType userType_ = bs::network::UserType::Undefined;
 };
 
 #endif // __AUTH_ADDRESS_MANAGER_H__
