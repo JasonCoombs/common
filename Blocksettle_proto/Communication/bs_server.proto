@@ -459,6 +459,7 @@ enum GenoaType
    GenoaEODUpdate                = 31;
    GenoaMigrateUserIds           = 32;
    GenoaApiKey                   = 33;
+   GetEntityName                 = 34;
 }
 
 message GenoaConnectedBroadcast
@@ -540,7 +541,7 @@ message GenoaCancelCCReservationResponse
 
 message GenoaUserRequest
 {
-   string email = 1;
+   string entity_name = 1;
 }
 
 message GenoaOrderData
@@ -565,10 +566,9 @@ message GenoaFindOrdersResponse
 
 message GenoaTradingStatusResponse
 {
-   bool   success = 1;
-   string error_text = 2;
-   string email = 3;
-   int32  user_type = 4;
+   bool   success       = 1;
+   string error_text    = 2;
+   int32  user_type     = 3;
 }
 
 message GenoaReserveXbtResponse
@@ -741,6 +741,12 @@ message GenoaApiKeyCheckResponse
    string email = 2;
 }
 
+message UserEntityInfo
+{
+   string user_email    = 1;
+   string entity_name   = 2;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -774,6 +780,7 @@ message GenoaMessage
       GenoaEODUpdateMessage            eod_update                 = 32;
       GenoaApiKeyCheckRequest          api_key_request            = 33;
       GenoaApiKeyCheckResponse         api_key_response           = 34;
+      UserEntityInfo                   entity_info                = 35;
    }
 }
 
