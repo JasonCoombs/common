@@ -285,7 +285,7 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
 
       if (!response.success) {
          SPDLOG_LOGGER_ERROR(logger_, "signing auth address failed: {}", response.errorMsg);
-         emit AuthAddressSubmitError(QString::fromStdString(address.display()), QString::fromStdString(response.errorMsg));
+         emit AuthAddressSubmitError(QString::fromStdString(address.display()), bs::error::AuthAddressSubmitResult::AuthRequestSignFailed);
          return;
       }
 
@@ -297,10 +297,10 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
          return;
       }
 
-      bsClientPtr->confirmAuthAddress(address, [this, address] (const BsClient::BasicResponse &response) {
-         if (!response.success) {
-            SPDLOG_LOGGER_ERROR(logger_, "confirming auth address failed: {}", response.errorMsg);
-            emit AuthAddressSubmitError(QString::fromStdString(address.display()), QString::fromStdString(response.errorMsg));
+      bsClientPtr->confirmAuthAddress(address, [this, address] (bs::error::AuthAddressSubmitResult submitResult) {
+         if (submitResult != bs::error::AuthAddressSubmitResult::Success) {
+            SPDLOG_LOGGER_ERROR(logger_, "confirming auth address failed: {}", static_cast<int>(submitResult));
+            emit AuthAddressSubmitError(QString::fromStdString(address.display()), submitResult);
             return;
          }
 

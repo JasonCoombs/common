@@ -1497,10 +1497,15 @@ message AuthManaging
       repeated bytes utxos = 1;
    }
 
+   message AuthConfirmResponse
+   {
+      int32 result_code = 1;
+   }
+
    oneof data
    {
       AuthAddressConfirm   auth_confirm_request    = 1;
-      bool                 auth_confirm_response   = 2;
+      AuthConfirmResponse  auth_confirm_response   = 2;
 
       SettledXbtTradeNotification   settled_xbt_trade  = 3;
 

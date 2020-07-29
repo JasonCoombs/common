@@ -242,24 +242,22 @@ void BsClient::signAuthAddress(const bs::Address address, const SignCb &cb)
    lastSignRequestId_ = sendRequest(&request, autheidAuthAddressTimeout() + std::chrono::seconds(5), std::move(timeoutCb), std::move(processCb));
 }
 
-void BsClient::confirmAuthAddress(const bs::Address address, const BsClient::BasicCb &cb)
+void BsClient::confirmAuthAddress(const bs::Address address, const BsClient::AuthConfirmCb &cb)
 {
    auto processCb = [this, cb, address](const Response &response) {
       if (!response.has_confirm_auth_submit()) {
          SPDLOG_LOGGER_ERROR(logger_, "unexpected response from BsProxy, expected confirm_auth_submit response");
-         cb(errorResponse<BasicResponse>(kServerError));
+         cb(bs::error::AuthAddressSubmitResult::ServerError);
          return;
       }
 
       const auto &d = response.confirm_auth_submit();
-      BasicResponse result;
-      result.success = d.success();
-      result.errorMsg = d.error_msg();
-      cb(result);
+
+      cb(static_cast<bs::error::AuthAddressSubmitResult>(d.status_code()));
    };
 
    auto timeoutCb = [cb] {
-      cb(errorResponse<BasicResponse>(kTimeoutError));
+      cb(bs::error::AuthAddressSubmitResult::RequestTimeout);
    };
 
    Request request;

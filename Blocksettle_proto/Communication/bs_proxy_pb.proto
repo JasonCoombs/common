@@ -91,12 +91,19 @@ message Request
       string email = 3;
    }
 
+   message ConfirmReply
+   {
+      string   email                = 1;
+      int32    status_code          = 2;
+      int64    internal_request_id  = 3;
+   }
+
    oneof data
    {
       // Messages
       Terminal                terminal                = 30;
       UserInfo                user_info               = 31;
-      TermRep                 confirm_auth_address    = 33;
+      ConfirmReply            confirm_auth_address    = 33;
       TermRep                 submit_cc_address       = 34;
       TermRep                 confirm_cc_address      = 35;
       UserStatusUpdated       user_status_updated     = 36;
