@@ -33,12 +33,10 @@ enum OrderStatus
    ORDER_STATUS_PENDING = 1;
    ORDER_STATUS_FILLED = 2;
    ORDER_STATUS_VOID = 3;
-   ORDER_STATUS_WAIT_CONFIRM = 4;
 }
 
 message Order
 {
-   string id = 1;
    OrderStatus status = 2;
    string status_text = 3;
    int64 timestamp_ms = 4;
