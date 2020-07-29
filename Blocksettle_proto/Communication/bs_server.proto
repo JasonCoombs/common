@@ -1382,19 +1382,13 @@ message TerminalMessage
 
 enum ProxyMessageType
 {
-   ProxyUnknownType = 0;
-   ProxyConnected    = 1;
-   ProxyDisconnected = 2;
-   ProxyReconnect    = 3;
-   ProxyLoadTrades   = 4;
-   ProxyBlotterUpdates = 5;
-   ProxyOnlineUsers  = 6;
-   ProxyUserStatusUpdated = 7;
-}
-
-message ProxyLoadTradesMessage
-{
-   repeated TradeDataXbtMessage trades = 1;
+   ProxyUnknownType        = 0;
+   ProxyConnected          = 1;
+   ProxyDisconnected       = 2;
+   ProxyReconnect          = 3;
+   ProxyBlotterUpdates     = 4;
+   ProxyOnlineUsers        = 5;
+   ProxyUserStatusUpdated  = 6;
 }
 
 message ProxyOnlineUsersMessage
@@ -1415,9 +1409,8 @@ message ProxyMessage
 {
    ProxyMessageType type = 1;
    oneof data {
-      ProxyLoadTradesMessage  load_trades = 2;
-      ProxyOnlineUsersMessage online_users = 3;
-      ProxyUserStatusUpdatedMessage user_status_updated = 4;
+      ProxyOnlineUsersMessage       online_users         = 2;
+      ProxyUserStatusUpdatedMessage user_status_updated  = 3;
    }
 }
 
