@@ -273,38 +273,38 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
 
 void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address)
 {
-   SPDLOG_LOGGER_DEBUG(logger_, "confirm submission of {}", address.display());
+   logger_->debug("[AuthAddressManager::ConfirmSubmitForVerification] confirm submission of {}", address.display());
 
    auto bsClientPtr = bsClient.lock();
    bsClientPtr->signAuthAddress(address, [this, address, bsClient] (const BsClient::SignResponse &response) {
       if (response.userCancelled) {
-         SPDLOG_LOGGER_DEBUG(logger_, "signing auth address cancelled: {}", response.errorMsg);
+         logger_->error("[AuthAddressManager::ConfirmSubmitForVerification sign cb] signing auth address cancelled: {}", response.errorMsg);
          emit AuthAddressSubmitCancelled(QString::fromStdString(address.display()));
          return;
       }
 
       if (!response.success) {
-         SPDLOG_LOGGER_ERROR(logger_, "signing auth address failed: {}", response.errorMsg);
+         logger_->error("[AuthAddressManager::ConfirmSubmitForVerification sign cb] signing auth address failed: {}", response.errorMsg);
          emit AuthAddressSubmitError(QString::fromStdString(address.display()), bs::error::AuthAddressSubmitResult::AuthRequestSignFailed);
          return;
       }
 
-      SPDLOG_LOGGER_DEBUG(logger_, "signing auth address succeed");
+      logger_->debug("[AuthAddressManager::ConfirmSubmitForVerification sign cb] signing auth address succeed");
 
       auto bsClientPtr = bsClient.lock();
       if (!bsClientPtr) {
-         SPDLOG_LOGGER_ERROR(logger_, "disconnected from server");
+         logger_->error("[AuthAddressManager::ConfirmSubmitForVerification sign cb] disconnected from server");
          return;
       }
 
       bsClientPtr->confirmAuthAddress(address, [this, address] (bs::error::AuthAddressSubmitResult submitResult) {
          if (submitResult != bs::error::AuthAddressSubmitResult::Success) {
-            SPDLOG_LOGGER_ERROR(logger_, "confirming auth address failed: {}", static_cast<int>(submitResult));
+            logger_->error("[AuthAddressManager::ConfirmSubmitForVerification confirm cb] confirming auth address failed: {}", static_cast<int>(submitResult));
             emit AuthAddressSubmitError(QString::fromStdString(address.display()), submitResult);
             return;
          }
 
-         SPDLOG_LOGGER_DEBUG(logger_, "confirming auth address succeed");
+         logger_->debug("[AuthAddressManager::ConfirmSubmitForVerification confirm cb] confirming auth address succeed");
 
          markAsSubmitted(address);
       });
