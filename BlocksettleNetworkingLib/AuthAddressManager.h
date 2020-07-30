@@ -158,7 +158,7 @@ signals:
    void Error(const QString &errorText) const;
    void Info(const QString &info);
 
-   void AuthAddressSubmitError(const QString &address, const QString &error);
+   void AuthAddressSubmitError(const QString &address, const bs::error::AuthAddressSubmitResult statusCode);
    void AuthAddressSubmitSuccess(const QString &address);
    void AuthAddressSubmitCancelled(const QString &address);
    void AuthRevokeTxSent();
