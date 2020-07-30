@@ -16,17 +16,21 @@
 #include <map>
 #include <memory>
 #include <string>
+
 #include <QObject>
+
 #include <spdlog/logger.h>
 
 #include "Address.h"
+
+#include "autheid_utils.h"
 #include "AutheIDClient.h"
+#include "BSErrorCode.h"
 #include "CelerMessageMapper.h"
 #include "CommonTypes.h"
 #include "DataConnectionListener.h"
 #include "TradeSettings.h"
 #include "ValidityFlag.h"
-#include "autheid_utils.h"
 
 class DataConnection;
 template<typename T> class FutureValue;
@@ -36,15 +40,15 @@ namespace Blocksettle {
       namespace ProxyTerminal {
          class Request;
          class Response;
-         class Response_StartLogin;
          class Response_Authorize;
-         class Response_GetLoginResult;
          class Response_Celer;
-         class Response_ProxyPb;
          class Response_GenAddrUpdated;
-         class Response_UserStatusUpdated;
-         class Response_UpdateFeeRate;
+         class Response_GetLoginResult;
+         class Response_ProxyPb;
+         class Response_StartLogin;
          class Response_UpdateBalance;
+         class Response_UpdateFeeRate;
+         class Response_UserStatusUpdated;
       }
    }
 }
@@ -89,6 +93,8 @@ public:
    };
    using BasicCb = std::function<void(BasicResponse)>;
 
+   using AuthConfirmCb = std::function<void(bs::error::AuthAddressSubmitResult)>;
+
    struct SignResponse : public BasicResponse
    {
       bool userCancelled{};
@@ -120,7 +126,7 @@ public:
    void celerSend(CelerAPI::CelerMessageType messageType, const std::string &data);
 
    void signAuthAddress(const bs::Address address, const SignCb &cb);
-   void confirmAuthAddress(const bs::Address address, const BasicCb &cb);
+   void confirmAuthAddress(const bs::Address address, const AuthConfirmCb &cb);
 
    void submitCcAddress(const bs::Address address, uint32_t seed, const std::string &ccProduct, const BasicCb &cb);
    void signCcAddress(const bs::Address address, const SignCb &cb);
