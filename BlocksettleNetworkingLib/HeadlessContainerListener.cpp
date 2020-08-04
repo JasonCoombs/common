@@ -336,13 +336,8 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   bool isLegacy = false;
-   for (const auto& input : txSignReq.inputs) {
-      if (bs::Address::fromUTXO(input).getType() == AddressEntryType_P2PKH) {
-         isLegacy = true;
-         break;
-      }
-   }
+   bool isLegacy = !txSignReq.armorySigner_.isSegWit();
+
    if (!isLegacy && !partial && txSignReq.txHash.empty()) {
       SPDLOG_LOGGER_ERROR(logger_, "expected tx hash must be set before sign");
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxInvalidRequest);
@@ -419,7 +414,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   const auto onPassword = [this, autoSign, wallets, txSignReq, rootWalletId, clientId, id = packet.id(), partial
+   auto onPassword = [this, autoSign, wallets, txSignReq, rootWalletId, clientId, id = packet.id(), partial
       , reqType, amount, isLegacy
       , keepDuplicatedRecipients = request.keepduplicatedrecipients()]
       (bs::error::ErrorCode result, const SecureBinaryData &pass)
@@ -443,7 +438,9 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          // from signer ui instead of password
          if (rootWallet->isHardwareWallet()) {
             bs::core::WalletPasswordScoped lock(rootWallet, pass);
-            auto signedTx = rootWallet->signTXRequestWithWallet(txSignReq);
+            //this needs to be a shared_ptr
+            auto signReqCopy = txSignReq;
+            auto signedTx = rootWallet->signTXRequestWithWallet(signReqCopy);
 
             if (!isLegacy) {
                try {
@@ -484,8 +481,9 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          if (wallets.size() == 1) {
             const auto wallet = wallets.front();
             const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
-            const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignReq).SerializeAsString())
-               : wallet->signTXRequest(txSignReq, keepDuplicatedRecipients);
+            auto txSignCopy = txSignReq; //TODO: txSignReq should be passed as a shared_ptr instead
+            const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignCopy).SerializeAsString())
+               : wallet->signTXRequest(txSignCopy, keepDuplicatedRecipients);
             if (!partial) {
                Tx t(tx);
                if (t.getThisHash() != txSignReq.txHash) {
@@ -498,18 +496,13 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          }
          else {
             bs::core::wallet::TXMultiSignRequest multiReq;
-            multiReq.recipients = txSignReq.recipients;
-            if (txSignReq.change.value) {
-               multiReq.recipients.push_back(txSignReq.change.address.getRecipient(bs::XBTAmount{ txSignReq.change.value }));
-            }
-            if (!txSignReq.prevStates.empty()) {
-               multiReq.prevState = txSignReq.prevStates.front();
-            }
-            multiReq.RBF = txSignReq.RBF;
+            multiReq.armorySigner_.merge(txSignReq.armorySigner_);
+            multiReq.RBF |= txSignReq.RBF;
 
             bs::core::WalletMap wallets;
-            for (const auto &input : txSignReq.inputs) {
-               const auto addr = bs::Address::fromUTXO(input);
+            for (unsigned i=0; i<txSignReq.armorySigner_.getTxInCount(); i++) {
+               const auto& utxo = txSignReq.armorySigner_.getSpender(i)->getUtxo();
+               const auto addr = bs::Address::fromUTXO(utxo);
                const auto wallet = walletsMgr_->getWalletByAddress(addr);
                if (!wallet) {
                   logger_->error("[{}] failed to find wallet for input address {}"
@@ -517,7 +510,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
                   SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
                   return;
                }
-               multiReq.addInput(input, wallet->walletId());
+               multiReq.addWalletId(wallet->walletId());
                wallets[wallet->walletId()] = wallet;
             }
 
@@ -628,15 +621,13 @@ bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::strin
    bs::core::wallet::TXSignRequest txSignReq;
    txSignReq.walletIds = { walletsMgr_->getPrimaryWallet()->walletId() };
 
-   UTXO utxo;
-   utxo.unserialize(BinaryData::fromString(request.signpayouttxrequest().input()));
-   if (utxo.isInitialized()) {
-      txSignReq.inputs.push_back(utxo);
+   Codec_SignerState::SignerState msgSignerState;
+   if (!msgSignerState.ParseFromString(request.signpayouttxrequest().signerstate())) {
+      logger_->error("[{}] failed to parse signer state", __func__);
+      SignTXResponse(clientId, packet.id(), reqType, ErrorCode::FailedToParse);
+      return false;
    }
-
-   auto serialized = BinaryData::fromString(request.signpayouttxrequest().recipient());
-   const auto recip = ScriptRecipient::fromScript(serialized);
-   txSignReq.recipients.push_back(recip);
+   txSignReq.armorySigner_.deserializeState(msgSignerState);
 
    txSignReq.fee = request.signpayouttxrequest().fee();
    txSignReq.txHash = BinaryData::fromString(request.signpayouttxrequest().tx_hash());
@@ -674,7 +665,8 @@ bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::strin
          }
          {
             const bs::core::WalletPasswordScoped passLock(wallet, pass);
-            const auto tx = wallet->signSettlementTXRequest(txSignReq, sd);
+            auto txSignCopy = txSignReq; //TODO: txSignReq should be a shared_ptr
+            const auto tx = wallet->signSettlementTXRequest(txSignCopy, sd);
             SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
          }
       } catch (const std::exception &e) {
@@ -714,7 +706,8 @@ bool HeadlessContainerListener::onSignAuthAddrRevokeRequest(const std::string &c
    UTXO utxo;
    utxo.unserialize(BinaryData::fromString(request.utxo()));
    if (utxo.isInitialized()) {
-      txSignReq.inputs.push_back(utxo);
+      auto spender = std::make_shared<ArmorySigner::ScriptSpender>(utxo);
+      txSignReq.armorySigner_.addSpender(spender);
    }
    else {
       logger_->error("[{}] failed to parse UTXO", __func__);
@@ -765,7 +758,7 @@ bool HeadlessContainerListener::onResolvePubSpenders(const std::string &clientId
    }
 
    bs::core::wallet::TXSignRequest txSignReq = bs::signer::pbTxRequestToCore(request, logger_);
-   if (txSignReq.inputs.empty()) {
+   if (txSignReq.armorySigner_.getTxInCount() == 0) {
       logger_->error("[HeadlessContainerListener::onResolvePubSpenders] invalid SignTxRequest");
       SignTXResponse(clientId, packet.id(), packet.type(), ErrorCode::TxInvalidRequest);
       return false;

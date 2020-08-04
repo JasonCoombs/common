@@ -460,16 +460,17 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    , const bs::core::wallet::SettlementData &sd, const bs::sync::PasswordDialogData &dialogData
    , const SignTxCb &cb)
 {
-   if ((txSignReq.inputs.size() != 1) || (txSignReq.recipients.size() != 1) || sd.settlementId.empty()) {
+   if ((txSignReq.armorySigner_.getTxInCount() != 1) || 
+      (txSignReq.armorySigner_.getTxOutCount() != 1) || 
+      sd.settlementId.empty()) {
       logger_->error("[HeadlessContainer::signSettlementPayoutTXRequest] Invalid PayoutTXSignRequest");
       return 0;
    }
    headless::SignSettlementPayoutTxRequest settlementRequest;
    auto request = settlementRequest.mutable_signpayouttxrequest();
-   request->set_input(txSignReq.inputs[0].serialize().toBinStr());
-   request->set_recipient(txSignReq.recipients[0]->getSerializedScript().toBinStr());
    request->set_fee(txSignReq.fee);
    request->set_tx_hash(txSignReq.txHash.toBinStr());
+   request->set_signerstate(txSignReq.serializeState().SerializeAsString());
 
    fillSettlementData(request->mutable_settlement_data(), sd);
    *(settlementRequest.mutable_passworddialogdata()) = dialogData.toProtobufMessage();
