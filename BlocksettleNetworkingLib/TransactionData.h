@@ -34,8 +34,12 @@ namespace bs {
 }
 class CoinSelection;
 class RecipientContainer;
-class ScriptRecipient;
 class SelectedTransactionInputs;
+
+namespace ArmorySigner
+{
+   class ScriptRecipient;
+};
 
 struct PaymentStruct;
 struct UtxoSelection;

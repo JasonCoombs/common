@@ -19,7 +19,11 @@
 
 class AddressEntry;
 class BinaryData;
-class ScriptRecipient;
+
+namespace ArmorySigner
+{
+   class ScriptRecipient;
+};
 
 class RecipientContainer
 {

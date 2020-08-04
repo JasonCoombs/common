@@ -355,6 +355,8 @@ uint64_t wallet::TXSignRequest::amountReceivedOn(const bs::Address &address, boo
          amount += recip->getValue();
       }
    }
+
+   return amount;
 }
 
 uint64_t wallet::TXSignRequest::getFee() const
