@@ -278,18 +278,18 @@ public:
    const BinaryData& findValidationAddressForTxHash(const BinaryData&) const;
 
    //tx generating methods
-   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ResolverFeed>,
+   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
       const bs::Address& validationAddr = bs::Address()) const;
-   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ResolverFeed>,
+   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
       const UTXO &) const;
    BinaryData fundUserAddresses(const std::vector<bs::Address> &, const bs::Address &validationAddress
-      , std::shared_ptr<ResolverFeed>, const std::vector<UTXO> &, int64_t totalFee) const;
-   BinaryData vetUserAddress(const bs::Address&, std::shared_ptr<ResolverFeed>,
+      , std::shared_ptr<ArmorySigner::ResolverFeed>, const std::vector<UTXO> &, int64_t totalFee) const;
+   BinaryData vetUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
       const bs::Address& validationAddr = bs::Address()) const;
    BinaryData revokeValidationAddress(
-      const bs::Address&, std::shared_ptr<ResolverFeed>) const;
+      const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>) const;
    BinaryData revokeUserAddress(
-      const bs::Address&, std::shared_ptr<ResolverFeed>);
+      const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>);
 
    std::vector<UTXO> filterAuthFundingUTXO(const std::vector<UTXO>& authInputs);
 };
@@ -305,10 +305,10 @@ struct AuthAddressLogic
    static std::vector<OutpointData> getValidPaths(
       const ValidationAddressManager&, const bs::Address&, size_t &nbPaths);
    static BinaryData revoke(const ValidationAddressManager&, const bs::Address&,
-      std::shared_ptr<ResolverFeed>);
+      std::shared_ptr<ArmorySigner::ResolverFeed>);
    static std::pair<bs::Address, UTXO> getRevokeData(const ValidationAddressManager &
       , const bs::Address &authAddr);
-   static BinaryData revoke(const bs::Address &, const std::shared_ptr<ResolverFeed> &
+   static BinaryData revoke(const bs::Address &, const std::shared_ptr<ArmorySigner::ResolverFeed> &
       , const bs::Address &validationAddr, const UTXO &);
 };
 

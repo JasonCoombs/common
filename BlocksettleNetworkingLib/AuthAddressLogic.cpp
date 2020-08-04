@@ -10,6 +10,8 @@
 */
 #include "AuthAddressLogic.h"
 
+using namespace ArmorySigner;
+
 namespace {
    constexpr uint64_t kAuthValueThreshold = 1000;
 
