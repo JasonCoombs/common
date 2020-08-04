@@ -12,6 +12,8 @@
 #include "BlockDataManagerConfig.h"
 #include <bech32.h>
 
+using namespace ArmorySigner;
+
 bs::Address::Address(const BinaryDataRef& data) :
    BinaryData(data)
 {
