@@ -16,6 +16,7 @@
 #include "NetworkConfig.h"
 
 using namespace bs;
+using namespace ArmorySigner;
 
 
 void bs::TxAddressChecker::containsInputAddress(Tx tx, std::function<void(bool)> cb
@@ -344,6 +345,7 @@ bool CheckRecipSigner::GetInputAddressList(const std::shared_ptr<spdlog::logger>
 
 bool CheckRecipSigner::verifyPartial(void)
 {
+   //TODO: this isnt a sig check at all, fix it
    for (const auto &spender : spenders_) {
       if (spender->isResolved()) {
          return true;
