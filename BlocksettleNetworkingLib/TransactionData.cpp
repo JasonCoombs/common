@@ -24,6 +24,8 @@
 #include <map>
 #include <spdlog/spdlog.h>
 
+using namespace ArmorySigner;
+
 static const size_t kMaxTxStdWeight = 400000;
 
 
