@@ -105,7 +105,7 @@ namespace bs {
 
             virtual std::vector<std::string> setUnconfirmedTarget(void);
 
-            std::shared_ptr<ResolverFeed> getPublicResolver() const override;
+            std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const override;
 
          protected:
             struct AddrPoolKey {

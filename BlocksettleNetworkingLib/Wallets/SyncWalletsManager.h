@@ -154,7 +154,7 @@ namespace bs {
          static core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
             , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress = {}
             , float feePerByte = 0, uint32_t topHeight = 0
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients = {}
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
             , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
                , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
             , const Codec_SignerState::SignerState &prevPart = {}, bool useAllInputs = false

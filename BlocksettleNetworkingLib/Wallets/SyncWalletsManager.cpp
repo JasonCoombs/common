@@ -229,7 +229,7 @@ void WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
 
    {
       QMutexLocker lock(&mtxWallets_);
-      auto &itWallet = wallets_.find(wallet->walletId());
+      const auto &itWallet = wallets_.find(wallet->walletId());
       if (itWallet != wallets_.end()) {
          itWallet->second->merge(wallet);
       }
@@ -2004,7 +2004,6 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
    bs::core::wallet::TXSignRequest request;
    request.walletIds.insert(request.walletIds.end(), walletIds.cbegin(), walletIds.cend());
-   request.populateUTXOs = true;
    request.outSortOrder = outSortOrder;
    Signer signer;
    for (const auto &spender : prevStateSigner.spenders()) {
@@ -2016,7 +2015,6 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    uint64_t inputAmount = 0;
    for (const auto &utxo : utxos) {
       signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex()));
-      request.inputs.push_back(utxo);
       inputAmount += utxo.getValue();
    }
    if (!inputAmount) {
@@ -2027,7 +2025,6 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    (const std::vector<std::shared_ptr<ScriptRecipient>> &recipients)
    {
       for (const auto& recipient : recipients) {
-         request.recipients.push_back(recipient);
          signer.addRecipient(recipient);
       }
    };
@@ -2064,7 +2061,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       }
    }
 
-   request.prevStates.emplace_back(signer.serializeState());
+   request.armorySigner_.deserializeState(signer.serializeState());
    return request;
 }
 

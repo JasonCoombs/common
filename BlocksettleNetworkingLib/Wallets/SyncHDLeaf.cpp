@@ -796,7 +796,7 @@ bs::hd::Path hd::Leaf::getPathForAddress(const bs::Address &addr) const
    return index.path;
 }
 
-std::shared_ptr<ResolverFeed> hd::Leaf::getPublicResolver() const
+std::shared_ptr<ArmorySigner::ResolverFeed> hd::Leaf::getPublicResolver() const
 {
    return nullptr;
 }

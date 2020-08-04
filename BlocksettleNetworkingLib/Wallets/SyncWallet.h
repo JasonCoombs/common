@@ -82,7 +82,7 @@ namespace bs {
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::string> &walletsIds
             , const std::vector<UTXO> &inputs
             , const std::vector<std::string> &inputIndices
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const std::string &changeIndex = {}
@@ -90,14 +90,14 @@ namespace bs {
 
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
@@ -179,7 +179,7 @@ namespace bs {
 
          virtual std::string getAddressIndex(const bs::Address &) = 0;
 
-         virtual std::shared_ptr<ResolverFeed> getPublicResolver() const = 0;
+         virtual std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const = 0;
 
          //Adds an arbitrary address identified by index
          virtual int addAddress(const bs::Address &, const std::string &index, bool sync = true);
@@ -196,14 +196,14 @@ namespace bs {
 
          // changeAddress must be set if there is change
          virtual core::wallet::TXSignRequest createTXRequest(const std::vector<UTXO> &
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const uint64_t fee = 0, bool isRBF = false
             , const bs::Address &changeAddress = {});
          virtual core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
             , const std::vector<UTXO> &inputs, bs::Address changeAddress = {}
             , float feePerByte = 0
-            , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients = {}
+            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
             , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
                , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
             , const Codec_SignerState::SignerState &prevPart = {});
