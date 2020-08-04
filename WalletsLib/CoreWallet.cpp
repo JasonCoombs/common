@@ -222,111 +222,17 @@ void wallet::MetaData::readFromDB(const std::shared_ptr<DBIfaceTransaction> &tx)
 bool wallet::TXSignRequest::isValid() const noexcept
 {
    // serializedTx will be set for signed offline tx
-   if (!serializedTx.empty()) {
-      return true;
-   }
-   if (!prevStates.empty()) {
-      return true;
-   }
-   if (inputs.empty() || recipients.empty()) {
+   if (armorySigner_.getTxInCount() == 0 || 
+      armorySigner_.getTxOutCount() == 0) {
       return false;
    }
+   
    return true;
 }
 
-void wallet::TXSignRequest::resetSigner()
+Signer& wallet::TXSignRequest::getSigner()
 {
-   signerCreated_ = false;
-   signer_.reset();
-   getSigner();
-}
-
-void wallet::TXSignRequest::setSignerState(const Codec_SignerState::SignerState &state)
-{
-   signer_.reset();
-   signer_.deserializeState(state);
-   signerCreated_ = true;
-}
-
-Signer wallet::TXSignRequest::getSigner(const std::shared_ptr<ResolverFeed> &resolver) const
-{
-   if (!signerCreated_) {
-      bs::CheckRecipSigner prevStateSigner;
-      if (!prevStates.empty()) {
-         for (const auto &prevState : prevStates) {
-            prevStateSigner.deserializeState(prevState);
-         }
-
-         signer_.setFlags(prevStateSigner.getFlags());
-         for (const auto &spender : prevStateSigner.spenders()) {
-            signer_.addSpender(spender);
-         }
-      } else {
-         signer_.setFlags(SCRIPT_VERIFY_SEGWIT);
-
-         for (const auto &utxo : inputs) {   // TODO: maybe this loop should always run, not only if prevStates are empty
-            std::shared_ptr<ScriptSpender> spender;
-            if (resolver) {
-               spender = std::make_shared<ScriptSpender>(utxo, resolver);
-            } else if (populateUTXOs) {
-               spender = std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex());
-            } else {
-               spender = std::make_shared<ScriptSpender>(utxo);
-            }
-            if (RBF) {
-               spender->setSequence(UINT32_MAX - 2);
-            }
-            signer_.addSpender(spender);
-         }
-      }
-
-      if (populateUTXOs) {
-         for (const auto &utxo : inputs) {
-            try {
-               signer_.populateUtxo(utxo);
-            } catch (const std::exception &) {}
-         }
-      }
-
-      for (const auto &orderType : outSortOrder) {
-         switch (orderType) {
-         case OutputOrderType::PrevState:
-            for (const auto &recip : prevStateSigner.recipients()) {
-               signer_.addRecipient(recip);
-            }
-            break;
-
-         case OutputOrderType::Recipients:
-            for (const auto& recipient : recipients) {
-               signer_.addRecipient(recipient);
-            }
-            break;
-
-         case OutputOrderType::Change:
-            if (!change.value) {
-               break;
-            }
-            {
-               const auto changeRecip = change.address.getRecipient(bs::XBTAmount{ change.value });
-               if (changeRecip) {
-                  signer_.addRecipient(changeRecip);
-               } else {
-                  throw std::runtime_error("failed to get change recipient for " + std::to_string(change.value));
-               }
-            }
-            break;
-
-         default:
-            throw std::invalid_argument("invalid output order type " + std::to_string((int)orderType));
-         }
-      }
-      signer_.removeDupRecipients();
-      signerCreated_ = true;
-   }
-   if (resolver) {
-      signer_.setFeed(resolver);
-   }
-   return signer_;
+   return armorySigner_;
 }
 
 static UtxoSelection computeSizeAndFee(const std::vector<UTXO> &inUTXOs, const PaymentStruct &inPS)
@@ -349,10 +255,10 @@ static size_t getVirtSize(const UtxoSelection &inUTXOSel)
 
 size_t wallet::TXSignRequest::estimateTxVirtSize() const
 {   // another implementation based on Armory and TransactionData code
-   auto transactions = bs::Address::decorateUTXOsCopy(inputs);
+   auto transactions = bs::Address::decorateUTXOsCopy(getInputs(nullptr));
    std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
-   for (unsigned int i = 0; i < recipients.size(); ++i) {
-      recipientsMap[i] = recipients[i];
+   for (unsigned int i = 0; i < armorySigner_.getTxOutCount(); ++i) {
+      recipientsMap[i] = armorySigner_.getRecipient(i);
    }
 
    try {
@@ -369,42 +275,10 @@ uint64_t wallet::TXSignRequest::amount(const wallet::TXSignRequest::ContainsAddr
    return amountSent(containsAddressCb);
 }
 
-uint64_t wallet::TXSignRequest::inputAmount(const ContainsAddressCb &containsAddressCb) const
+uint64_t wallet::TXSignRequest::inputAmount(const ContainsAddressCb &) const
 {
-   // calculate total input amount based on inputs
-   // prevStates inputs parsed first
-   // duplicated inputs skipped
-
-   std::set<UTXO> utxoSet;
-   uint64_t inputAmount = 0;
-
-   if (!prevStates.empty() && containsAddressCb != nullptr) {
-      Codec_SignerState::SignerState state;
-      bs::CheckRecipSigner signer(prevStates.front());
-
-      for (auto spender : signer.spenders()) {
-         const auto addr = bs::Address::fromUTXO(spender->getUtxo());
-         if (utxoSet.find(spender->getUtxo()) == utxoSet.cend()) {
-            if (containsAddressCb(addr)) {
-               utxoSet.insert(spender->getUtxo());
-               inputAmount += spender->getValue();
-            }
-         }
-      }
-   }
-
-   for (const auto &utxo: inputs) {
-      const auto addr = bs::Address::fromUTXO(utxo);
-
-      if (utxoSet.find(utxo) == utxoSet.cend()) {
-         if (containsAddressCb(addr)) {
-            utxoSet.insert(utxo);
-            inputAmount += utxo.getValue();
-         }
-      }
-   }
-
-   return inputAmount;
+   // calculate total input amount based on spenders
+   return armorySigner_.getTotalInputsValue();
 }
 
 uint64_t wallet::TXSignRequest::totalSpent(const ContainsAddressCb &containsAddressCb) const
@@ -417,11 +291,10 @@ uint64_t wallet::TXSignRequest::changeAmount(const wallet::TXSignRequest::Contai
    // calculate change amount
    // if change is not explicitly set, calculate change using prevStates for provided containsAddressCb
 
-   uint64_t changeVal = change.value;
-   if (changeVal == 0 && !prevStates.empty() && containsAddressCb != nullptr) {
-      bs::CheckRecipSigner signer(prevStates.front());
-
-      for (auto recip : signer.recipients()) {
+   uint64_t changeVal = 0;
+   if (containsAddressCb != nullptr) {
+      for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
+         auto recip = armorySigner_.getRecipient(i);
          const auto addr = bs::Address::fromRecipient(recip);
          if (containsAddressCb(addr)) {
             uint64_t change = recip->getValue();
@@ -441,31 +314,14 @@ uint64_t wallet::TXSignRequest::amountReceived(const wallet::TXSignRequest::Cont
    // duplicated recipients skipped
 
    std::set<BinaryData> txSet;
-   uint64_t amount = 0;
+   uint64_t amount = UINT64_MAX;
 
-   if (!prevStates.empty() && containsAddressCb != nullptr) {
-      bs::CheckRecipSigner signer(prevStates.front());
-      for (auto recip : signer.recipients()) {
+   if (containsAddressCb != nullptr) {
+      for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
+         auto recip = armorySigner_.getRecipient(i);
          const auto addr = bs::Address::fromRecipient(recip);
-         const auto hash = recip->getSerializedScript();
-
-         if (txSet.find(hash) == txSet.cend()) {
-            if (containsAddressCb(addr)) {
-               txSet.insert(hash);
-               amount += recip->getValue();
-            }
-         }
-      }
-   }
-
-   for (const auto &recip: recipients) {
-      const auto addr = bs::Address::fromRecipient(recip);
-      const auto hash = recip->getSerializedScript();
-
-      if (txSet.find(hash) == txSet.cend()) {
          if (containsAddressCb(addr)) {
-            txSet.insert(hash);
-            amount += recip->getValue();
+               amount += recip->getValue();
          }
       }
    }
@@ -480,19 +336,10 @@ uint64_t wallet::TXSignRequest::amountSent(const wallet::TXSignRequest::Contains
    // or
    // get sent amount directly from recipients
 
-   if (!prevStates.empty() && containsAddressCb != nullptr) {
-      return totalSpent(containsAddressCb) - getFee();
-   }
-
-   uint64_t amount = 0;
-   for (const auto &recip : recipients) {
-      amount += recip->getValue();
-   }
-
-   return amount;
+   return totalSpent(containsAddressCb) - getFee();
 }
 
-uint64_t wallet::TXSignRequest::amountReceivedOn(const bs::Address &address, bool removeDuplicatedRecipients) const
+uint64_t wallet::TXSignRequest::amountReceivedOn(const bs::Address &address, bool) const
 {
    // Duplicated recipients removal should be used only for calculaion values in TXInfo for CC settlements
    // to bypass workaround In ReqCCSettlementContainer::createCCUnsignedTXdata()
@@ -500,86 +347,34 @@ uint64_t wallet::TXSignRequest::amountReceivedOn(const bs::Address &address, boo
    std::set<BinaryData> txSet;
    uint64_t amount = 0;
 
-   if (!prevStates.empty()) {
-      bs::CheckRecipSigner signer(prevStates.front());
-      for (auto recip : signer.recipients()) {
-         const auto addr = bs::Address::fromRecipient(recip);
-         const auto hash = recip->getSerializedScript();
-
-         if (txSet.find(hash) == txSet.cend()) {
-            if (addr == address) {
-               if (removeDuplicatedRecipients) {
-                  txSet.insert(hash);
-               }
-               amount += recip->getValue();
-            }
-         }
-      }
-   }
-
-   for (const auto &recip: recipients) {
+   for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
+      auto recip = armorySigner_.getRecipient(i);
       const auto addr = bs::Address::fromRecipient(recip);
-      const auto hash = recip->getSerializedScript();
 
-      if (txSet.find(hash) == txSet.cend()) {
-         if (addr == address) {
-            if (removeDuplicatedRecipients) {
-               txSet.insert(hash);
-            }
-            amount += recip->getValue();
-         }
+      if (addr == address) {
+         amount += recip->getValue();
       }
    }
-
-   if (change.address == address) {
-      amount += change.value;
-   }
-
-   return amount;
 }
 
 uint64_t wallet::TXSignRequest::getFee() const
 {
-   if (fee > 0) {
-      return fee;
-   }
-
-   if (!prevStates.empty()) {
-      bs::CheckRecipSigner signer(prevStates.front());
-      return signer.inputsTotalValue() - signer.outputsTotalValue();
-   }
-
-   return 0;
+   return armorySigner_.getTotalInputsValue() - armorySigner_.getTotalOutputsValue();
 }
 
 std::vector<UTXO> wallet::TXSignRequest::getInputs(const wallet::TXSignRequest::ContainsAddressCb &containsAddressCb) const
 {
    std::vector<UTXO> inputsVector;
-   std::set<UTXO> inputsSet;
 
-   if (!prevStates.empty()) {
-      bs::CheckRecipSigner signer(prevStates.front());
-      for (auto spender : signer.spenders()) {
-         const auto &addr = bs::Address::fromUTXO(spender->getUtxo());
+   for (unsigned i=0; i<armorySigner_.getTxInCount(); i++) {
+      auto spender = armorySigner_.getSpender(i);
+      const auto &addr = bs::Address::fromScript(spender->getOutputScript());
 
-         if (inputsSet.find(spender->getUtxo()) == inputsSet.cend()) {
-            if (containsAddressCb(addr)) {
-               inputsSet.insert(spender->getUtxo());
-               inputsVector.push_back(spender->getUtxo());
-            }
-         }
+      if (containsAddressCb && !containsAddressCb(addr)) {
+         continue;
       }
-   }
 
-   for (const auto &utxo : inputs) {
-      const auto &addr = bs::Address::fromUTXO(utxo);
-
-      if (inputsSet.find(utxo) == inputsSet.cend()) {
-         if (containsAddressCb(addr)) {
-            inputsSet.insert(utxo);
-            inputsVector.push_back(utxo);
-         }
-      }
+      inputsVector.push_back(spender->getUtxo());      
    }
 
    return inputsVector;
@@ -588,32 +383,13 @@ std::vector<UTXO> wallet::TXSignRequest::getInputs(const wallet::TXSignRequest::
 std::vector<std::shared_ptr<ScriptRecipient>> wallet::TXSignRequest::getRecipients(const wallet::TXSignRequest::ContainsAddressCb &containsAddressCb) const
 {
    std::vector<std::shared_ptr<ScriptRecipient>> recipientsVector;
-   std::set<BinaryData> recipientsSet;
-
-   if (!prevStates.empty()) {
-      bs::CheckRecipSigner signer(prevStates.front());
-      for (auto recip : signer.recipients()) {
-         const auto &addr = bs::Address::fromRecipient(recip);
-         const auto &hash = recip->getSerializedScript();
-
-         if (recipientsSet.find(hash) == recipientsSet.cend()) {
-            if (containsAddressCb(addr)) {
-               recipientsSet.insert(hash);
-               recipientsVector.push_back(recip);
-            }
-         }
-      }
-   }
-
-   for (const auto &recip : recipients) {
+   
+   for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
+      auto recip = armorySigner_.getRecipient(i);
       const auto &addr = bs::Address::fromRecipient(recip);
-      const auto &hash = recip->getSerializedScript();
 
-      if (recipientsSet.find(hash) == recipientsSet.cend()) {
-         if (containsAddressCb(addr)) {
-            recipientsSet.insert(hash);
-            recipientsVector.push_back(recip);
-         }
+      if (containsAddressCb(addr)) {
+         recipientsVector.push_back(recip);
       }
    }
 
@@ -623,17 +399,21 @@ std::vector<std::shared_ptr<ScriptRecipient>> wallet::TXSignRequest::getRecipien
 bool wallet::TXSignRequest::isSourceOfTx(const Tx &signedTx) const
 {
    try {
-      if ((inputs.size() != signedTx.getNumTxIn())) {
+      if ((armorySigner_.getTxInCount() != signedTx.getNumTxIn())) {
          return false;
       }
 
-      const size_t nbRecipients = change.value > 0 ? recipients.size() + 1 : recipients.size();
+      size_t nbRecipients = armorySigner_.getTxOutCount();
+      if (change.value > 0) {
+         ++nbRecipients;
+      }
+
       // this->change may contains one of TxOut
       if (signedTx.getNumTxOut() != nbRecipients) {
          return false;
       }
 
-      for (int i = 0; i < signedTx.getNumTxOut(); i++) {
+      for (unsigned i = 0; i < signedTx.getNumTxOut(); i++) {
          auto&& txOut = signedTx.getTxOutCopy(i);
          bs::Address txAddr = bs::Address::fromTxOut(txOut);
          uint64_t outValSigned = txOut.getValue();
@@ -652,9 +432,10 @@ bool wallet::TXSignRequest::isSourceOfTx(const Tx &signedTx) const
          uint32_t signedTxOutIndex = op.getTxOutIndex();
 
          bool hasUnsignedInput = false;
-         for (int j = 0; j < inputs.size(); j++) {
-            const auto unsignedHash = inputs.at(j).getTxHash();
-            uint32_t unsignedTxOutIndex = inputs.at(j).getTxOutIndex();
+         for (int j = 0; j < armorySigner_.getTxInCount(); j++) {
+            auto spender = armorySigner_.getSpender(j);
+            auto unsignedHash = spender->getOutputHash();
+            auto unsignedTxOutIndex = spender->getOutputIndex();
 
             if (signedHash == unsignedHash && signedTxOutIndex == unsignedTxOutIndex) {
                hasUnsignedInput = true;
@@ -675,10 +456,8 @@ bool wallet::TXSignRequest::isSourceOfTx(const Tx &signedTx) const
 
 bool wallet::TXMultiSignRequest::isValid() const noexcept
 {
-   if (inputs.empty() || recipients.empty()) {
-      return false;
-   }
-   return true;
+   return (armorySigner_.getTxInCount() != 0 &&
+      armorySigner_.getTxOutCount() != 0);
 }
 
 
@@ -921,105 +700,17 @@ std::pair<BinaryData, BinaryData> Wallet::getSettlCP(const BinaryData &txHash)
 Signer Wallet::getSigner(const wallet::TXSignRequest &request,
                              bool keepDuplicatedRecipients)
 {
-   bs::CheckRecipSigner signer, prevStateSigner;
-
-   if (!request.prevStates.empty()) {
-      for (const auto &prevState : request.prevStates) {
-         prevStateSigner.deserializeState(prevState);
-      }
-
-      signer.setFlags(prevStateSigner.getFlags());
-      for (const auto &spender : prevStateSigner.spenders()) {
-         signer.addSpender(spender);
-      }
-      for (const auto &recip : prevStateSigner.recipients()) {
-         signer.addRecipient(recip);
-      }
-   }
-   else {
-      signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-   }
-
-   if (request.populateUTXOs) {
-      for (const auto &utxo : request.inputs) {
-         try {
-            signer.populateUtxo(utxo);
-         }
-         catch (const std::exception &) { }
-      }
-   }
-   else {
-      for (const auto &utxo : request.inputs) {
-         auto spender = std::make_shared<ScriptSpender>(utxo, getResolver());
-         if (request.RBF) {
-            spender->setSequence(UINT32_MAX - 2);
-         }
-         signer.addSpender(spender);
-      }
-   }
-
-   for (const auto &orderType : request.outSortOrder) {
-      switch (orderType) {
-      case wallet::OutputOrderType::PrevState:
-         for (const auto &recip : prevStateSigner.recipients()) {
-            signer.addRecipient(recip);
-         }
-         break;
-
-      case wallet::OutputOrderType::Recipients:
-         for (const auto& recipient : request.recipients) {
-            signer.addRecipient(recipient);
-         }
-         break;
-
-      case wallet::OutputOrderType::Change:
-         if (!request.change.value || request.populateUTXOs) {
-            break;
-         }
-         {
-            const auto changeRecip = request.change.address
-               .getRecipient(bs::XBTAmount{ request.change.value });
-            if (changeRecip) {
-               signer.addRecipient(changeRecip);
-            } else {
-               throw std::runtime_error("failed to get change recipient for "
-                  + std::to_string(request.change.value));
-            }
-         }
-         break;
-
-      default:
-         throw std::invalid_argument("invalid output order type " + std::to_string((int)orderType));
-      }
-   }
-
-   if (!keepDuplicatedRecipients) {
-      signer.removeDupRecipients();
-   }
-
-#ifndef NDEBUG
-   if (logger_) {
-      for (const auto &spender : signer.spenders()) {
-         logger_->debug("[{}] {} spender: {} @ {}", __func__
-            , walletId(), spender->getValue()
-            , bs::Address::fromUTXO(spender->getUtxo()).display());
-      }
-      for (const auto &recip : signer.recipients()) {
-         logger_->debug("[{}] {} recipient: {} @ {}", __func__
-            , walletId(), recip->getValue()
-            , bs::Address::fromRecipient(recip).display());
-      }
-   }
-#endif //NDEBUG
-
+   ArmorySigner::Signer signer(request.armorySigner_);
+   signer.resetFeed();
    signer.setFeed(getResolver());
    return signer;
 }
 
 BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keepDuplicatedRecipients)
 {
+
    auto lock = lockDecryptedContainer();
-   auto signer = getSigner(request, keepDuplicatedRecipients);
+   ArmorySigner::Signer signer(request.armorySigner_);
    signer.sign();
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
@@ -1030,66 +721,24 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
 Codec_SignerState::SignerState Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
 {
    auto lock = lockDecryptedContainer();
-   bs::CheckRecipSigner signer{ getSigner(request) };
+   ArmorySigner::Signer signer(request.armorySigner_);
    signer.sign();
-   if (!signer.verifyPartial()) {
+   /* TODO: implement partial sig checks correctly
+   if (!request.armorySigner_.verifyPartial()) {
       throw std::logic_error("signer failed to verify");
-   }
+   }*/
    return signer.serializeState();
 }
 
 BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
    , const InputSigs &inputSigs)
 {
-   if (request.inputs.size() != inputSigs.size()) {
+   if (request.armorySigner_.getTxInCount() != inputSigs.size()) {
       throw std::invalid_argument("inputSigs do not equal to inputs count");
    }
-   bs::CheckRecipSigner signer;
 
-   for (int i = 0; i < request.inputs.size(); ++i) {
-      const auto &utxo = request.inputs[i];
-      const auto &spender = std::make_shared<ScriptSpender>(utxo);
-
-      if (request.RBF) {
-         spender->setSequence(UINT32_MAX - 2);
-      }
-      signer.addSpender(spender);
-   }
-
-   for (const auto& recipient : request.recipients) {
-      signer.addRecipient(recipient);
-   }
-
-   if (request.change.value) {
-      const auto changeRecip = request.change.address
-         .getRecipient(bs::XBTAmount{ request.change.value });
-      if (changeRecip) {
-         signer.addRecipient(changeRecip);
-      } else {
-         throw std::runtime_error("failed to get change recipient for "
-            + std::to_string(request.change.value));
-      }
-   }
-
-#ifndef NDEBUG
-   if (logger_) {
-      for (const auto &spender : signer.spenders()) {
-         logger_->debug("[{}] {} spender: {} @ {}", __func__
-            , walletId(), spender->getValue()
-            , bs::Address::fromUTXO(spender->getUtxo()).display());
-      }
-      for (const auto &recip : signer.recipients()) {
-         logger_->debug("[{}] {} recipient: {} @ {}", __func__
-            , walletId(), recip->getValue()
-            , bs::Address::fromRecipient(recip).display());
-      }
-   }
-#endif //NDEBUG
-
-   signer.setFeed(getPublicResolver());
-   signer.resolvePublicData();
-
-   for (unsigned int i = 0; i < request.inputs.size(); ++i) {
+   ArmorySigner::Signer signer(request.armorySigner_);
+   for (unsigned i = 0; i < signer.getTxInCount(); ++i) {
       const auto &itSig = inputSigs.find(i);
       if (itSig == inputSigs.end()) {
          throw std::invalid_argument("can't find sig for input #" + std::to_string(i));
@@ -1098,10 +747,6 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       signer.injectSignature(i, sig);
    }
 
-   //std::cout << signer.serialize().toHexStr() << std::endl;
-   if (!signer.verify()) {
-      throw std::runtime_error("failed to verify signer");
-   }
    return signer.serializeSignedTx();
 }
 
@@ -1110,43 +755,17 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
    , const WalletMap &wallets, bool partial)
 {
    bs::CheckRecipSigner signer;
-   if (txMultiReq.prevState.IsInitialized()) {
-      signer.deserializeState(txMultiReq.prevState);
+   signer.merge(txMultiReq.armorySigner_);
+   signer.setFlags(SCRIPT_VERIFY_SEGWIT);
 
-      signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-
-      for (const auto &wallet : wallets) {
-         if (wallet.second->isWatchingOnly()) {
-            throw std::logic_error("Won't sign with watching-only wallet");
-         }
-         auto lock = wallet.second->lockDecryptedContainer();
-         signer.setFeed(wallet.second->getResolver());
-         signer.sign();
-         signer.resetFeeds();
+   for (const auto &wallet : wallets) {
+      if (wallet.second->isWatchingOnly()) {
+         throw std::logic_error("Won't sign with watching-only wallet");
       }
-   }
-   else {
-      signer.setFlags(SCRIPT_VERIFY_SEGWIT);
-
-      for (const auto &input : txMultiReq.inputs) {
-         const auto itWallet = wallets.find(input.walletId);
-         if (itWallet == wallets.end()) {
-            throw std::runtime_error("missing wallet for id " + input.walletId);
-         }
-         auto lock = itWallet->second->lockDecryptedContainer();
-         auto spender = std::make_shared<ScriptSpender>(input.utxo, itWallet->second->getResolver());
-         if (txMultiReq.RBF) {
-            spender->setSequence(UINT32_MAX - 2);
-         }
-         signer.addSpender(spender);
-      }
-
-      for (const auto &recipient : txMultiReq.recipients) {
-         signer.addRecipient(recipient);
-      }
-
-      auto lock = wallets.begin()->second->lockDecryptedContainer();
+      auto lock = wallet.second->lockDecryptedContainer();
+      signer.setFeed(wallet.second->getResolver());
       signer.sign();
+      signer.resetFeed();
    }
 
    if (partial) {
@@ -1157,6 +776,7 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
    }
    else {
       if (!signer.verify()) {
+         std::cout << signer.serializeSignedTx().toHexStr() << std::endl;
          throw std::logic_error("signer failed to verify");
       }
       return signer.serializeSignedTx();
@@ -1167,9 +787,21 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
    , const WalletMap &wallets, const InputSigs &inputSigs)
 {
    bs::CheckRecipSigner signer;
-   std::map<unsigned int, std::shared_ptr<ScriptSpender>> spenders;
+   signer.merge(txMultiReq.armorySigner_);
 
-   for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
+   for (const auto& wltID : txMultiReq.walletIDs_) {
+      const auto itWallet = wallets.find(wltID);
+      if (itWallet == wallets.end()) {
+         throw std::runtime_error("missing wallet for id " + wltID);
+      }
+
+      const auto &wallet = itWallet->second;
+      signer.resetFeed();
+      signer.setFeed(wallet->getResolver());
+      signer.resolvePublicData();
+   }
+
+   /*for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
       auto inputData = txMultiReq.inputs[i];
 
       const auto itWallet = wallets.find(inputData.walletId);
@@ -1191,15 +823,11 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
 
    for (const auto &recipient : txMultiReq.recipients) {
       signer.addRecipient(recipient);
-   }
+   }*/
 
-   for (const auto &spender : spenders) {
-      const auto &itSig = inputSigs.find(spender.first);
-      if (itSig == inputSigs.end() || !spender.second->isSegWit()) {
-         throw std::invalid_argument("can't find sig for input #" + std::to_string(spender.first));
-      }
-      auto sig = SecureBinaryData(itSig->second);
-      spender.second->injectSignature(sig);
+   for (const auto &sig : inputSigs) {
+      auto sigSBD = SecureBinaryData(sig.second);
+      signer.injectSignature(sig.first, sigSBD);
    }
 
    if (!signer.verify()) {
@@ -1233,8 +861,10 @@ void wallet::TXSignRequest::DebugPrint(const std::string& prefix, const std::sha
    }
 
    uint64_t inputAmount = 0;
-   ss << "      Inputs: " << inputs.size() << '\n';
-   for (const auto& utxo : inputs) {
+   ss << "      Inputs: " << armorySigner_.getTxInCount() << '\n';
+   for (unsigned i=0; i<armorySigner_.getTxInCount(); i++) {
+      auto spender = armorySigner_.getSpender(i);
+      const auto& utxo = spender->getUtxo();
       ss << "    UTXO txHash : " << utxo.txHash_.toHexStr() << '\n';
       ss << "         txOutIndex : " << utxo.txOutIndex_ << '\n';
       ss << "         txHeight : " << utxo.txHeight_ << '\n';
@@ -1248,8 +878,9 @@ void wallet::TXSignRequest::DebugPrint(const std::string& prefix, const std::sha
    }
 
    // outputs
-   ss << "   Outputs: " << recipients.size() << '\n';
-   for (const auto &recipient : recipients) {
+   ss << "   Outputs: " << armorySigner_.getTxOutCount() << '\n';
+   for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
+      auto recipient = armorySigner_.getRecipient(i);
       ss << "       Amount: " << recipient->getValue() << '\n';
    }
 
@@ -1265,7 +896,7 @@ void wallet::TXSignRequest::DebugPrint(const std::string& prefix, const std::sha
    ss << "    Fee: " << fee << '\n';
 
    if (serializeAndPrint) {
-      const auto &serialized = serializeState(resolver);
+      const auto &serialized = serializeState();
 
       ss << "     Serialized: " << serialized.DebugString() << '\n';
 #if 0 // Can't be serialized to Tx anymore
