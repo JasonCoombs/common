@@ -57,7 +57,7 @@ bs::XBTAmount RecipientContainer::GetAmount() const
    return xbtAmount_;
 }
 
-std::shared_ptr<ScriptRecipient> RecipientContainer::GetScriptRecipient() const
+std::shared_ptr<ArmorySigner::ScriptRecipient> RecipientContainer::GetScriptRecipient() const
 {
    if (!IsReady()) {
       return nullptr;
