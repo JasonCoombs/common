@@ -20,6 +20,8 @@
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
+using namespace ArmorySigner;
+
 namespace {
 
    std::shared_ptr<bs::sync::hd::SettlementLeaf> findSettlementLeaf(const std::shared_ptr<bs::sync::WalletsManager> &walletsMgr, const bs::Address &ourAuthAddress)
@@ -115,9 +117,9 @@ uint64_t bs::tradeutils::estimatePayinFeeWithoutChange(const std::vector<UTXO> &
    BinaryData prefixed;
    prefixed.append(AddressEntry::getPrefixByte(AddressEntryType_P2WSH));
    prefixed.append(CryptoPRNG::generateRandom(32));
-   auto recipient = bs::Address::fromHash(prefixed);
+   auto bsAddr = bs::Address::fromHash(prefixed);
    // Select some random amount
-   recipientsMap[0] = recipient.getRecipient(bs::XBTAmount{ uint64_t{1000} });
+   recipientsMap[0] = bsAddr.getRecipient(bs::XBTAmount{ uint64_t{1000} });
 
    auto inputsCopy = bs::Address::decorateUTXOsCopy(inputs);
    PaymentStruct payment(recipientsMap, 0, feePerByte, 0);
@@ -207,16 +209,6 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                   auto changeCb = [args, selectedInputs, fee, settlAddr, xbtWallet, recipient, cb]
                      (const bs::Address &changeAddr)
                   {
-                     std::vector<UTXO> p2shInputs;
-
-                     for (const auto& input : selectedInputs) {
-                        const auto scrType = BtcUtils::getTxOutScriptType(input.getScript());
-
-                        if (scrType == TXOUT_SCRIPT_P2SH) {
-                           p2shInputs.push_back(input);
-                        }
-                     }
-
                      auto recipients = std::vector<std::shared_ptr<ScriptRecipient>>(1, recipient);
                      auto txReq = std::make_shared<bs::core::wallet::TXSignRequest>(
                         bs::sync::wallet::createTXRequest(args.inputXbtWallets
@@ -228,10 +220,6 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                         PayinResult result;
                         result.settlementAddr = settlAddr;
                         result.success = true;
-
-                        if (errCode == bs::error::ErrorCode::NoError) {
-                           txReq->setSignerState(state);
-                        }
 
                         try {
                            result.signRequest = *txReq;
@@ -249,8 +237,9 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                         }
 
                         std::set<BinaryData> hashes;
-                        for (const auto& input : result.signRequest.inputs) {
-                           hashes.emplace(input.getTxHash());
+                        for (unsigned i=0; i<result.signRequest.armorySigner_.getTxInCount(); i++) {
+                           auto spender = result.signRequest.armorySigner_.getSpender(i);
+                           hashes.emplace(spender->getOutputHash());
                         }
 
                         auto supportingTxMapCb = [cb, result = std::move(result)]
@@ -262,7 +251,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                            }
 
                            for (auto& txPair : txs) {
-                              result.signRequest.supportingTXs.emplace(txPair.first, txPair.second->serialize());
+                              result.signRequest.armorySigner_.addSupportingTx(*txPair.second);
                            }
 
                            if (!result.signRequest.isValid()) {
@@ -279,11 +268,8 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                         }
                      };
 
-                     if (p2shInputs.empty()) {
-                        cbResolvePubData(bs::error::ErrorCode::WrongAddress, {});
-                     } else {
-                        args.signContainer->resolvePublicSpenders(*txReq, cbResolvePubData);
-                     }
+                     //resolve in all circumstances
+                     args.signContainer->resolvePublicSpenders(*txReq, cbResolvePubData);
                   };
 
                   if (needChange) {
@@ -350,7 +336,7 @@ bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    , const bs::Address &recvAddr, float feePerByte, unsigned int topBlock)
 {
    bs::core::wallet::TXSignRequest txReq;
-   txReq.inputs.push_back(input);
+   txReq.armorySigner_.addSpender(std::make_shared<ScriptSpender>(input));
    input.isInputSW_ = true;
    input.witnessDataSizeBytes_ = unsigned(bs::Address::getPayoutWitnessDataSize());
    uint64_t fee = getEstimatedFeeFor(input, recvAddr, feePerByte, topBlock);
@@ -363,7 +349,7 @@ bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    }
 
    txReq.fee = fee;
-   txReq.recipients.emplace_back(recvAddr.getRecipient(bs::XBTAmount{ value }));
+   txReq.armorySigner_.addRecipient(recvAddr.getRecipient(bs::XBTAmount{ value }));
    return txReq;
 }
 
@@ -421,6 +407,8 @@ void bs::tradeutils::createPayout(bs::tradeutils::PayoutArgs args
                result.settlementAddr = settlAddr;
                result.signRequest = createPayoutTXRequest(
                   payinUTXO, recvAddr, feePerByte, args.armory->topBlock());
+
+               //this will resolve public data along the way
                result.signRequest.txHash = result.signRequest.txId();
                cb(std::move(result));
             };
