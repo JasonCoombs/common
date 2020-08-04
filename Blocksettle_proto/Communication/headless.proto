@@ -152,8 +152,7 @@ message SignSettlementPayoutTxRequest
 
 message SignPayoutTXRequest
 {
-   bytes    input = 1;
-   bytes    recipient = 2;
+   bytes signerState = 1;
    uint64   fee = 3;
    SettlementData settlement_data = 4;
    bytes tx_hash = 5;
