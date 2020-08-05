@@ -154,7 +154,6 @@ signals:
    void AddrStateChanged();
    void AuthWalletChanged();
    void AuthWalletCreated(const QString &walletId);
-   void ConnectionComplete();
    void Error(const QString &errorText) const;
    void Info(const QString &info);
 

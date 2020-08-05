@@ -126,8 +126,6 @@ void CCFileManager::ProcessGenAddressesResponse(const std::string& response, con
       return;
    }
 
-   emit definitionsLoadedFromPub();
-
    if (currentRev_ > 0 && genAddrResp.revision() == currentRev_) {
       logger_->debug("[CCFileManager::ProcessCCGenAddressesResponse] having the same revision already");
       return;

@@ -1111,19 +1111,16 @@ void WalletsManager::onAuthLeafAdded(const std::string &walletId)
          logger_->debug("[WalletsManager::onAuthLeafAdded] auth wallet {} unset", authAddressWallet_->walletId());
          deleteWallet(authAddressWallet_, false);
       }
-      emit AuthLeafNotCreated();
       return;
    }
    const auto wallet = getPrimaryWallet();
    if (!wallet) {
       logger_->error("[WalletsManager::onAuthLeafAdded] no primary wallet loaded");
-      emit AuthLeafNotCreated();
       return;
    }
    auto group = wallet->getGroup(bs::hd::CoinType::BlockSettle_Auth);
    if (!group) {
       logger_->error("[WalletsManager::onAuthLeafAdded] no auth group in primary wallet");
-      emit AuthLeafNotCreated();
       return;
    }
 
@@ -1141,7 +1138,6 @@ void WalletsManager::onAuthLeafAdded(const std::string &walletId)
    }
    catch (const std::exception &e) {
       logger_->error("[WalletsManager::onAuthLeafAdded] failed to create auth leaf: {}", e.what());
-      emit AuthLeafNotCreated();
       return;
    }
    leaf->synchronize([this, leaf] {
@@ -1790,21 +1786,18 @@ bool WalletsManager::createAuthLeaf(const std::function<void()> &cb)
       if (result != bs::error::ErrorCode::NoError) {
          logger_->error("[WalletsManager::createAuthLeaf] auth leaf creation failure: {}"
             , (int)result);
-         emit AuthLeafNotCreated();
          return;
       }
       const auto group = primaryWallet->getGroup(bs::hd::CoinType::BlockSettle_Auth);
       const auto authGroup = std::dynamic_pointer_cast<bs::sync::hd::AuthGroup>(group);
       if (!authGroup) {
          logger_->error("[WalletsManager::createAuthLeaf] no auth group exists");
-         emit AuthLeafNotCreated();
          return;
       }
       authGroup->setUserId(userId_);
       const auto leaf = authGroup->createLeaf(authPath, walletId);
       if (!leaf) {
          logger_->error("[WalletsManager::createAuthLeaf] failed to create auth leaf");
-         emit AuthLeafNotCreated();
          return;
       }
       leaf->synchronize([this, cb, leaf] {
