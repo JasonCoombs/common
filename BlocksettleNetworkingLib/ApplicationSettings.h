@@ -145,8 +145,13 @@ public:
       AutoStartRFQScript,
       CurrentRFQScript,
       ShowInfoWidget,
+      LoginApiKey,
       AutoQouting,
       AutoSigning,
+      ExtConnName,
+      ExtConnHost,
+      ExtConnPort,
+      ExtConnPubKey,
       _last
    };
 
@@ -195,9 +200,6 @@ public:
    std::vector<bs::LogConfig> GetLogsConfig() const;
 
    std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
-
-   std::string pubBridgeHost() const;
-   std::string pubBridgePort() const;
 
    void selectNetwork();
 

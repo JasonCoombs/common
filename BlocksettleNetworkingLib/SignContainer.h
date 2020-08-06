@@ -52,9 +52,6 @@ public:
    enum class OpMode {
       Local = 1,
       Remote,
-      // RemoteInproc - should be used for testing only, when you need to have signer and listener
-      // running in same process and could not use TCP for any reason
-      RemoteInproc,
       LocalInproc
    };
    enum class TXSignMode {

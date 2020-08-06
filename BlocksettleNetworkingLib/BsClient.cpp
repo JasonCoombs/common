@@ -68,6 +68,17 @@ void BsClient::startLogin(const std::string &email)
    });
 }
 
+void BsClient::authorize(const std::string &apiKey)
+{
+   Request request;
+   auto d = request.mutable_authorize();
+   d->set_api_key(apiKey);
+
+   sendRequest(&request, std::chrono::seconds(10), [this] {
+      emit authorizeDone(false);
+   });
+}
+
 void BsClient::sendPbMessage(std::string data)
 {
    Request request;
@@ -196,34 +207,6 @@ void BsClient::celerSend(CelerAPI::CelerMessageType messageType, const std::stri
    sendMessage(&request);
 }
 
-void BsClient::submitAuthAddress(const bs::Address address, const AuthAddrSubmitCb &cb)
-{
-   auto processCb = [this, cb, address](const Response &response) {
-      if (!response.has_submit_auth_address()) {
-         SPDLOG_LOGGER_ERROR(logger_, "unexpected response from BsProxy, expected submit_auth_address response");
-         cb(errorResponse<AuthAddrSubmitResponse>(kServerError));
-         return;
-      }
-
-      const auto &d = response.submit_auth_address();
-      AuthAddrSubmitResponse result;
-      result.success = d.basic().success();
-      result.errorMsg = d.basic().error_msg();
-      result.validationAmountCents = d.validation_amount_cents();
-      result.confirmationRequired = d.confirmation_required();
-      cb(result);
-   };
-
-   auto timeoutCb = [cb] {
-      cb(errorResponse<AuthAddrSubmitResponse>(kTimeoutError));
-   };
-
-   Request request;
-   auto d = request.mutable_submit_auth_address();
-   d->set_address(address.display());
-   sendRequest(&request, std::chrono::seconds(10), std::move(timeoutCb), std::move(processCb));
-}
-
 void BsClient::signAuthAddress(const bs::Address address, const SignCb &cb)
 {
    cancelActiveSign();
@@ -253,24 +236,22 @@ void BsClient::signAuthAddress(const bs::Address address, const SignCb &cb)
    lastSignRequestId_ = sendRequest(&request, autheidAuthAddressTimeout() + std::chrono::seconds(5), std::move(timeoutCb), std::move(processCb));
 }
 
-void BsClient::confirmAuthAddress(const bs::Address address, const BsClient::BasicCb &cb)
+void BsClient::confirmAuthAddress(const bs::Address address, const BsClient::AuthConfirmCb &cb)
 {
    auto processCb = [this, cb, address](const Response &response) {
       if (!response.has_confirm_auth_submit()) {
          SPDLOG_LOGGER_ERROR(logger_, "unexpected response from BsProxy, expected confirm_auth_submit response");
-         cb(errorResponse<BasicResponse>(kServerError));
+         cb(bs::error::AuthAddressSubmitResult::ServerError);
          return;
       }
 
       const auto &d = response.confirm_auth_submit();
-      BasicResponse result;
-      result.success = d.success();
-      result.errorMsg = d.error_msg();
-      cb(result);
+
+      cb(static_cast<bs::error::AuthAddressSubmitResult>(d.status_code()));
    };
 
    auto timeoutCb = [cb] {
-      cb(errorResponse<BasicResponse>(kTimeoutError));
+      cb(bs::error::AuthAddressSubmitResult::RequestTimeout);
    };
 
    Request request;
@@ -452,6 +433,9 @@ void BsClient::OnDataReceived(const std::string &data)
          case Response::kStartLogin:
             processStartLogin(response->start_login());
             return;
+         case Response::kAuthorize:
+            processAuthorize(response->authorize());
+            return;
          case Response::kGetLoginResult:
             processGetLoginResult(response->get_login_result());
             return;
@@ -478,7 +462,6 @@ void BsClient::OnDataReceived(const std::string &data)
             return;
 
          case Response::kGetEmailHash:
-         case Response::kSubmitAuthAddress:
          case Response::kSignAuthAddress:
          case Response::kConfirmAuthSubmit:
          case Response::kSubmitCcAddress:
@@ -553,6 +536,11 @@ void BsClient::processStartLogin(const Response_StartLogin &response)
    emit startLoginDone(AutheIDClient::ErrorType(response.error().error_code()));
 }
 
+void BsClient::processAuthorize(const Response_Authorize &response)
+{
+   emit authorizeDone(!response.email().empty(), response.email());
+}
+
 void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
 {
    BsClientLoginResult result;
@@ -565,6 +553,7 @@ void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
    result.ccAddressesSigned = BinaryData::fromString(response.cc_addresses_signed());
    result.enabled = response.enabled();
    result.feeRatePb = response.fee_rate();
+   result.tradeSettings = bs::TradeSettings::fromPb(response.trade_settings());
    emit getLoginResultDone(result);
 }
 

@@ -55,6 +55,7 @@ message Request
    {
       bytes auth_addresses_signed = 1;
       bytes cc_addresses_signed = 2;
+      bs.types.TradeSettings trade_settings = 3;
    }
 
    message TermRep
@@ -63,13 +64,6 @@ message Request
       bool success = 2;
       string error_msg = 3;
       int64 internal_request_id = 4;
-   }
-
-   message TermRepSubmitAuthAddr
-   {
-      TermRep term_rep = 1;
-      int32 validation_amount_cents = 2;
-      bool confirmation_required = 3;
    }
 
    message UpdateFeeRate
@@ -90,13 +84,26 @@ message Request
       bool     trading_enabled   = 2;
    }
 
+   message CheckApiKey
+   {
+      bytes client_id = 1;
+      string api_key = 2;
+      string email = 3;
+   }
+
+   message ConfirmReply
+   {
+      string   email                = 1;
+      int32    status_code          = 2;
+      int64    internal_request_id  = 3;
+   }
+
    oneof data
    {
       // Messages
       Terminal                terminal                = 30;
       UserInfo                user_info               = 31;
-      TermRepSubmitAuthAddr   submit_auth_address     = 32;
-      TermRep                 confirm_auth_address    = 33;
+      ConfirmReply            confirm_auth_address    = 33;
       TermRep                 submit_cc_address       = 34;
       TermRep                 confirm_cc_address      = 35;
       UserStatusUpdated       user_status_updated     = 36;
@@ -104,6 +111,7 @@ message Request
       UpdateFeeRate           update_fee_rate         = 38;
       UpdateBalance           update_balance          = 39;
       TradingStatus           trading_status_update   = 40;
+      CheckApiKey             check_api_key           = 41;
    }
 }
 
@@ -154,6 +162,13 @@ message Response
       string cc_product = 3;
    }
 
+   message CheckApiKey
+   {
+      bytes client_id = 1;
+      string api_key = 2;
+      string ip_addr = 3;
+   }
+
    oneof data
    {
       // Messages
@@ -161,9 +176,9 @@ message Response
       OnlineUsers online_users = 31;
       ClientConnected client_connected = 32;
       ClientDisconnected client_disconnected = 33;
-      TermReq submit_auth_address = 34;
       TermReq confirm_auth_address = 35;
       TermReqCc submit_cc_address = 36;
       TermReqCc confirm_cc_address = 37;
+      CheckApiKey check_api_key = 38;
    }
 }

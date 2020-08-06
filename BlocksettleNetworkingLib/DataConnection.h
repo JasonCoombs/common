@@ -52,7 +52,7 @@ protected:
 
    void detachFromListener();
 
-   virtual void onRawDataReceived(const std::string& rawData) = 0;
+   virtual void onRawDataReceived(const std::string& rawData) {}
 
    void notifyOnData(const std::string& data);
    virtual void notifyOnConnected();

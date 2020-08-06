@@ -161,11 +161,11 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { Filter_MD_QN,            SettingDef(QLatin1String("Filter/MD/QN")) },
       { Filter_MD_QN_cnt,        SettingDef(QLatin1String("Filter/MD/QN/counters")) },
       { ChangeLog_Base_Url,      SettingDef(QString(), QLatin1String("https://cogent-symbol-153209.appspot.com/api/terminal/check"))},
-      { Binaries_Dl_Url,         SettingDef(QString(), QLatin1String("https://pubb.blocksettle.com/downloads/terminal"))},
-      { ResetPassword_Url,       SettingDef(QString(), QLatin1String("https://pubb.blocksettle.com/pub-forgot-password"))},
+      { Binaries_Dl_Url,         SettingDef(QString(), QLatin1String("https://blocksettle.com/downloads/terminal"))},
+      { ResetPassword_Url,       SettingDef(QString(), QLatin1String("https://blocksettle.com/pub-forgot-password"))},
       { GetAccount_UrlProd,      SettingDef(QString(), QLatin1String("http://blocksettle.com")) },
       { GetAccount_UrlTest,      SettingDef(QString(), QLatin1String("https://test.blocksettle.com")) },
-      { GettingStartedGuide_Url, SettingDef(QString(), QLatin1String("http://pubb.blocksettle.com/PDF/BlockSettle%20Getting%20Started.pdf")) },
+      { GettingStartedGuide_Url, SettingDef(QString(), QLatin1String("http://blocksettle.com/PDF/BlockSettle%20Getting%20Started.pdf")) },
       { WalletFiltering,         SettingDef(QLatin1String("WalletWidgetFilteringFlags"), 0x06) },
       { FxRfqLimit,              SettingDef(QLatin1String("FxRfqLimit"), 5) },
       { XbtRfqLimit,             SettingDef(QLatin1String("XbtRfqLimit"), 5) },
@@ -195,8 +195,13 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { AutoStartRFQScript,      SettingDef(QLatin1String("AutoStartRFQScript"), false) },
       { CurrentRFQScript,        SettingDef(QLatin1String("CurRFQScript")) },
       { ShowInfoWidget,          SettingDef(QLatin1String("ShowInfoWidget"), true) },
+      { LoginApiKey,             SettingDef(QLatin1String("LoginApiKey")) },
       { AutoQouting,             SettingDef(QLatin1String("AutoQuoting"), false) },
-      { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) }
+      { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) },
+      { ExtConnName,             SettingDef(QLatin1String("ExtConnName")) },
+      { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
+      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
+      { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) }
    };
 }
 
@@ -687,47 +692,6 @@ std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthK
    }
    authPubKey_ = autheid::getPublicKey(authPrivKey_);
    return { authPrivKey_, authPubKey_ };
-}
-
-std::string ApplicationSettings::pubBridgeHost() const
-{
-   auto env = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-
-   switch (env) {
-   case EnvConfiguration::Production:
-         return "185.213.153.36";
-   case EnvConfiguration::Test:
-         return "185.213.153.44";
-#ifndef PRODUCTION_BUILD
-   case EnvConfiguration::Staging:
-         return "185.213.153.45";
-   case EnvConfiguration::Custom:
-         return get<std::string>(ApplicationSettings::customPubBridgeHost);
-#endif
-   }
-
-   assert(false);
-   return "";
-}
-
-std::string ApplicationSettings::pubBridgePort() const
-{
-   auto env = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-
-   switch (env) {
-   case EnvConfiguration::Production:
-   case EnvConfiguration::Test:
-      return "9091";
-#ifndef PRODUCTION_BUILD
-   case EnvConfiguration::Staging:
-      return "9091";
-   case EnvConfiguration::Custom:
-      return get<std::string>(ApplicationSettings::customPubBridgePort);
-#endif
-   }
-
-   assert(false);
-   return "";
 }
 
 void ApplicationSettings::selectNetwork()

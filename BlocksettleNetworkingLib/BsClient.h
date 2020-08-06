@@ -16,16 +16,21 @@
 #include <map>
 #include <memory>
 #include <string>
+
 #include <QObject>
+
 #include <spdlog/logger.h>
 
 #include "Address.h"
+
+#include "autheid_utils.h"
 #include "AutheIDClient.h"
+#include "BSErrorCode.h"
 #include "CelerMessageMapper.h"
 #include "CommonTypes.h"
 #include "DataConnectionListener.h"
+#include "TradeSettings.h"
 #include "ValidityFlag.h"
-#include "autheid_utils.h"
 
 class DataConnection;
 template<typename T> class FutureValue;
@@ -35,14 +40,15 @@ namespace Blocksettle {
       namespace ProxyTerminal {
          class Request;
          class Response;
-         class Response_StartLogin;
-         class Response_GetLoginResult;
+         class Response_Authorize;
          class Response_Celer;
-         class Response_ProxyPb;
          class Response_GenAddrUpdated;
-         class Response_UserStatusUpdated;
-         class Response_UpdateFeeRate;
+         class Response_GetLoginResult;
+         class Response_ProxyPb;
+         class Response_StartLogin;
          class Response_UpdateBalance;
+         class Response_UpdateFeeRate;
+         class Response_UserStatusUpdated;
       }
    }
 }
@@ -73,6 +79,7 @@ struct BsClientLoginResult
    BinaryData ccAddressesSigned;
    bool enabled{};
    float feeRatePb{};
+   bs::TradeSettings tradeSettings;
 };
 
 class BsClient : public QObject, public DataConnectionListener
@@ -86,18 +93,13 @@ public:
    };
    using BasicCb = std::function<void(BasicResponse)>;
 
+   using AuthConfirmCb = std::function<void(bs::error::AuthAddressSubmitResult)>;
+
    struct SignResponse : public BasicResponse
    {
       bool userCancelled{};
    };
    using SignCb = std::function<void(SignResponse)>;
-
-   struct AuthAddrSubmitResponse : public BasicResponse
-   {
-      int validationAmountCents{};
-      bool confirmationRequired{};
-   };
-   using AuthAddrSubmitCb = std::function<void(AuthAddrSubmitResponse)>;
 
    struct DescCc
    {
@@ -113,6 +115,7 @@ public:
    void setConnection(std::unique_ptr<DataConnection>);
 
    void startLogin(const std::string &email);
+   void authorize(const std::string &apiKey);
 
    void sendPbMessage(std::string data);
 
@@ -122,9 +125,8 @@ public:
    void logout();
    void celerSend(CelerAPI::CelerMessageType messageType, const std::string &data);
 
-   void submitAuthAddress(const bs::Address address, const AuthAddrSubmitCb &cb);
    void signAuthAddress(const bs::Address address, const SignCb &cb);
-   void confirmAuthAddress(const bs::Address address, const BasicCb &cb);
+   void confirmAuthAddress(const bs::Address address, const AuthConfirmCb &cb);
 
    void submitCcAddress(const bs::Address address, uint32_t seed, const std::string &ccProduct, const BasicCb &cb);
    void signCcAddress(const bs::Address address, const SignCb &cb);
@@ -157,6 +159,7 @@ public slots:
 
 signals:
    void startLoginDone(AutheIDClient::ErrorType status);
+   void authorizeDone(bool success, const std::string &email = {});
    void getLoginResultDone(const BsClientLoginResult &result);
 
    void celerRecv(CelerAPI::CelerMessageType messageType, const std::string &data);
@@ -197,6 +200,7 @@ private:
    void sendMessage(Blocksettle::Communication::ProxyTerminal::Request *request);
 
    void processStartLogin(const Blocksettle::Communication::ProxyTerminal::Response_StartLogin &response);
+   void processAuthorize(const Blocksettle::Communication::ProxyTerminal::Response_Authorize &response);
    void processGetLoginResult(const Blocksettle::Communication::ProxyTerminal::Response_GetLoginResult &response);
    void processCeler(const Blocksettle::Communication::ProxyTerminal::Response_Celer &response);
    void processProxyPb(const Blocksettle::Communication::ProxyTerminal::Response_ProxyPb &response);

@@ -167,7 +167,6 @@ namespace bs {
          void CCLeafCreateFailed(const std::string& ccName, bs::error::ErrorCode result);
 
          void AuthLeafCreated();
-         void AuthLeafNotCreated();
 
          void walletPromotedToPrimary(const std::string& walletId);
          void walletPromotionFailed(const std::string& walletId, bs::error::ErrorCode result);

@@ -13,18 +13,11 @@
 
 #include "ZmqStreamServerConnection.h"
 
-namespace bs {
-   namespace network {
-      class TransportServer;
-   }
-}
-
 class GenoaStreamServerConnection : public ZmqStreamServerConnection
 {
 public:
    GenoaStreamServerConnection(const std::shared_ptr<spdlog::logger> &
-      , const std::shared_ptr<ZmqContext> &
-      , const std::shared_ptr<bs::network::TransportServer> &t = nullptr);
+      , const std::shared_ptr<ZmqContext> &);
    ~GenoaStreamServerConnection() noexcept = default;
 
    GenoaStreamServerConnection(const GenoaStreamServerConnection&) = delete;

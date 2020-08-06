@@ -48,9 +48,11 @@ namespace bs {
          bool bip150HandshakeCompleted_ = false;
          bool bip151HandshakeCompleted_ = false;
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
+         ServerConnectionListener::Details details;
          uint32_t outerRekeyCount_ = 0;
          uint32_t innerRekeyCount_ = 0;
          bool     isValid{ true };
+         std::string clientId;
       };
 
       // The class establishing BIP 150/151 handshakes before encrypting/decrypting
@@ -84,8 +86,6 @@ namespace bs {
          TransportBIP15xServer(TransportBIP15xServer&&) = delete;
          TransportBIP15xServer& operator= (TransportBIP15xServer&&) = delete;
 
-         void periodicCheck() override;
-
          // Is public only for tests
          void rekey(const std::string &clientId);
 
@@ -101,8 +101,6 @@ namespace bs {
          std::unique_ptr<BIP15xPeer> getClientKey(const std::string &clientId) const;
 
       private:
-         std::shared_ptr<BIP15xPerConnData> setBIP151Connection(const std::string& clientID);
-
          bool getCookie(BinaryData &cookieBuf) override;
 
          bool handshakeCompleted(const BIP15xPerConnData &cd) const
@@ -111,30 +109,25 @@ namespace bs {
          }
 
          void processIncomingData(const std::string &encData
-            , const std::string &clientID, int socket) override;
+            , const std::string &clientID) override;
          bool processAEADHandshake(const bip15x::Message &
             , const std::string &clientID);
 
-         void UpdateClientHeartbeatTimestamp(const std::string& clientId);
-
-         bool AddConnection(const std::string& clientId, const std::shared_ptr<BIP15xPerConnData> &);
          std::shared_ptr<BIP15xPerConnData> GetConnection(const std::string& clientId);
 
          bool sendData(const std::string &clientId, const std::string &) override;
 
-         void checkHeartbeats();
+         void closeClient(const std::string &clientId) override;
+         void addClient(const std::string &clientId, const ServerConnectionListener::Details &details) override;
 
-         void closeClient(const std::string &clientId);
+         void reportFatalError(const std::shared_ptr<BIP15xPerConnData> &conn);
 
       private:
          std::map<std::string, std::shared_ptr<BIP15xPerConnData>>   socketConnMap_;
-         std::string accumulBuf_;
 
          TrustedClientsCallback cbTrustedClients_;
          const bool useClientIDCookie_;
          const bool makeServerIDCookie_;
-
-         std::unordered_map<std::string, std::chrono::steady_clock::time_point>  lastHeartbeats_;
 
          BIP15xPeers forcedTrustedClients_;
       };

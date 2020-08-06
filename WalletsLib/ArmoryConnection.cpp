@@ -251,15 +251,14 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
          bdv_->unregisterFromDB();
          bdv_.reset();
       }
-      if (cbRemote_) {
-         cbRemote_.reset();
-      }
       isOnline_ = false;
       if (needsBreakConnectionLoop_.load()) {
          setState(ArmoryState::Cancelled);
          return;
       }
-      cbRemote_ = std::make_shared<ArmoryCallback>(this, logger_);
+      if (!cbRemote_) {
+         cbRemote_ = std::make_shared<ArmoryCallback>(this, logger_);
+      }
       logger_->debug("[ArmoryConnection::setupConnection] connecting to Armory {}:{}"
                      , host, port);
 

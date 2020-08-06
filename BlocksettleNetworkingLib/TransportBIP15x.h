@@ -82,6 +82,7 @@ namespace bs {
          // Ephemeral peer usage. Not recommended
          bool ephemeralPeers{ false };
 
+         BinaryData serverPublicKey;
          BIP15xCookie cookie{ BIP15xCookie::NotUsed };
 
          std::chrono::milliseconds connectionTimeout{ std::chrono::seconds(10) };
@@ -104,16 +105,6 @@ namespace bs {
          void addAuthPeer(const BIP15xPeer &);
          void updatePeerKeys(const BIP15xPeers &);
 
-         void setLocalHeartbeatInterval();
-         void setHeartbeatInterval(const std::chrono::milliseconds &hbi)
-         {
-            heartbeatInterval_ = hbi;
-         }
-
-         // There was some issues with static field initalization order so use static function here
-         static const std::chrono::milliseconds getDefaultHeartbeatInterval();
-         static const std::chrono::milliseconds getLocalHeartbeatInterval();
-
          static BinaryData getOwnPubKey(const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
          static BinaryData getOwnPubKey(const AuthorizedPeers &authPeers);
 
@@ -123,7 +114,7 @@ namespace bs {
                                        // for the whole object lifetime
          bool rmCookieFile();
 
-         bool addCookieToPeers(const std::string &id);
+         bool addCookieToPeers(const std::string &id, const BinaryData &pubKey = {});
          AuthPeersLambdas getAuthPeerLambda();
 
          using WriteDataCb = std::function<bool(bip15x::MsgType, const BinaryData &
@@ -139,9 +130,6 @@ namespace bs {
          std::unique_ptr<AuthorizedPeers> authPeers_;
          mutable std::mutex authPeersMutex_;
          std::string cookiePath_;
-
-         std::chrono::milliseconds heartbeatInterval_;
-         std::chrono::steady_clock::time_point lastHeartbeatCheck_{};
 
       private:
          bool isValid_{ true };
@@ -165,39 +153,14 @@ namespace bs {
 
          std::string listenThreadName() const override { return "listenBIP15x"; }
 
-         bool handshakeTimedOut() const override
-         {
-            return (bip151HandshakeCompleted_ && !bip150HandshakeCompleted_);
-         }
-
-         bool connectTimedOut() const override
-         {
-            return (!isConnected_
-               && std::chrono::steady_clock::now() - connectionStarted_ > params_.connectionTimeout);
-         }
-
          // thread-safe (could be called from callbacks too)
          void onRawDataReceived(const std::string &) override;
 
          void openConnection(const std::string &host, const std::string &port) override;
 
-         void startConnection() override;
-
-         // Do not call from callbacks!
          void closeConnection() override;
 
-         void socketConnected() override
-         {
-            isConnected_ = true;
-         }
-         void socketDisconnected() override
-         {
-            isConnected_ = false;
-         }
-
-         long pollTimeoutMS() const override;
          bool sendData(const std::string &data) override;
-         void sendDisconnect() override;
 
          void startHandshake() override
          {
@@ -210,8 +173,6 @@ namespace bs {
       private:
          bool createCookie() override;
          bool startBIP151Handshake();
-
-         void triggerHeartbeatCheck() override;
 
          void processIncomingData(const BinaryData &payload);
          bool processAEADHandshake(const bip15x::Message &);
@@ -230,16 +191,8 @@ namespace bs {
          uint32_t innerRekeyCount_ = 0;
          bool bip150HandshakeCompleted_ = false;
          bool bip151HandshakeCompleted_ = false;
-         bool rekeying_ = false;
-         std::string accumulBuf_;
 
          BIP15xNewKeyCb cbNewKey_;
-
-         // Reset this in openConnection
-         bool                             isConnected_{};
-         bool                             serverSendsHeartbeat_{};
-         std::chrono::steady_clock::time_point connectionStarted_{};
-         std::chrono::steady_clock::time_point lastHeartbeatReply_{};
       };
 
    }  // namespace network

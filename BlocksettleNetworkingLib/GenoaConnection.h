@@ -16,11 +16,6 @@
 #include <string>
 #include <memory>
 
-namespace bs {
-   namespace network {
-      class TransportClient;
-   }
-}
 namespace spdlog {
    class logger;
 }
@@ -29,13 +24,11 @@ template<class _S>
 class GenoaConnection : public _S
 {
 public:
-   GenoaConnection(const std::shared_ptr<spdlog::logger> &logger
-      , const std::shared_ptr<bs::network::TransportClient> &t = nullptr)
-      : _S(logger, t)
+   GenoaConnection(const std::shared_ptr<spdlog::logger> &logger)
+      : _S(logger)
    {}
-   GenoaConnection(const std::shared_ptr<spdlog::logger> &logger, bool monitored
-      , const std::shared_ptr<bs::network::TransportClient> &t = nullptr)
-      : _S(logger, t, monitored)
+   GenoaConnection(const std::shared_ptr<spdlog::logger> &logger, bool monitored)
+      : _S(logger, monitored)
    {}
 
    ~GenoaConnection() noexcept override = default;
@@ -50,7 +43,7 @@ public:
    bool send(const std::string& data) override
    {
       std::string message = data + marker;
-      return _S::sendData(message);
+      return _S::sendRawData(message);
    }
 
 protected:
