@@ -387,10 +387,11 @@ namespace AuthAddressLogic
    AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
       , const OutpointBatch &);
    BinaryData revoke(const AuthAddressValidator &, const bs::Address &
-      , const std::shared_ptr<ResolverFeed> &);
+      , const std::shared_ptr<ArmorySigner::ResolverFeed> &);
    std::pair<bs::Address, UTXO> getRevokeData(const AuthAddressValidator &
       , const bs::Address &authAddr);
-   BinaryData revoke(const bs::Address &, const std::shared_ptr<ResolverFeed> &
+   BinaryData revoke(const bs::Address & 
+      , const std::shared_ptr<ArmorySigner::ResolverFeed> &
       , const bs::Address &validationAddr, const UTXO &);
 };
 
