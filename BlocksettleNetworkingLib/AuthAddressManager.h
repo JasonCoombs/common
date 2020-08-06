@@ -111,7 +111,6 @@ public:
    bool HaveAuthWallet() const;
    bool HasAuthAddr() const;
 
-   void createAuthWallet(const std::function<void()> &);
    bool CreateNewAuthAddress();
 
    bool hasSettlementLeaf(const bs::Address &) const;
