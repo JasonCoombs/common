@@ -201,7 +201,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ExtConnName,             SettingDef(QLatin1String("ExtConnName")) },
       { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
       { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
-      { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) }
+      { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
+      { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) }
    };
 }
 
@@ -358,6 +359,11 @@ template<> NetworkType ApplicationSettings::get<NetworkType>(Setting set, bool g
       return NetworkType::Invalid;
    }
    return static_cast<NetworkType>(result);
+}
+
+template<> uint64_t ApplicationSettings::get<uint64_t>(Setting set, bool getDefaultValue) const
+{
+   return get(set, getDefaultValue).toULongLong();
 }
 
 ApplicationSettings::State ApplicationSettings::getState() const

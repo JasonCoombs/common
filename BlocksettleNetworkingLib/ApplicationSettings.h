@@ -152,6 +152,7 @@ public:
       ExtConnHost,
       ExtConnPort,
       ExtConnPubKey,
+      SubmittedAddressXbtLimit,
       _last
    };
 
