@@ -712,7 +712,7 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
 {
 
    auto lock = lockDecryptedContainer();
-   ArmorySigner::Signer signer(request.armorySigner_);
+   auto signer = getSigner(request, keepDuplicatedRecipients);
    signer.sign();
    if (!signer.verify()) {
       throw std::logic_error("signer failed to verify");
@@ -723,7 +723,7 @@ BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keep
 Codec_SignerState::SignerState Wallet::signPartialTXRequest(const wallet::TXSignRequest &request)
 {
    auto lock = lockDecryptedContainer();
-   ArmorySigner::Signer signer(request.armorySigner_);
+   auto signer = getSigner(request, false);
    signer.sign();
    /* TODO: implement partial sig checks correctly
    if (!request.armorySigner_.verifyPartial()) {
