@@ -208,7 +208,7 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
       auto settlAddressBin = bs::Address::fromAddressString(settlementAddress);
 
       // check that there is only one output of correct amount to settlement address
-      auto recipients = deserializedSigner.recipients();
+      auto recipients = deserializedSigner.getRecipientVector();
       uint64_t settlementAmount = 0;
       uint64_t totalOutputAmount = 0;
       uint64_t settlementOutputsCount = 0;

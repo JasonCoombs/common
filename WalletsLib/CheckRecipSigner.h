@@ -62,15 +62,11 @@ namespace bs {
 
       void hasInputAddress(const Address &, std::function<void(bool)>, uint64_t lotsize = 1);
       uint64_t estimateFee(float &feePerByte, uint64_t fixedFee = 0) const;
-      uint64_t outputsTotalValue() const;
-      uint64_t inputsTotalValue() const;
+
       std::vector<std::shared_ptr<ArmorySigner::ScriptSpender>> spenders() const { return spenders_; }
-      std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> recipients() const { return recipients_; }
       bool isRBF() const;
 
       bool GetInputAddressList(const std::shared_ptr<spdlog::logger> &logger, std::function<void(std::vector<bs::Address>)>);
-
-      void removeDupRecipients();
 
       static bs::Address getRecipientAddress(const std::shared_ptr<ArmorySigner::ScriptRecipient> &recip) {
          return bs::Address::fromScript(getRecipientOutputScript(recip));

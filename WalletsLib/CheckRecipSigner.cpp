@@ -67,13 +67,15 @@ void bs::TxAddressChecker::containsInputAddress(Tx tx, std::function<void(bool)>
 bool CheckRecipSigner::findRecipAddress(const Address &address, cbFindRecip cb) const
 {
    uint64_t valOutput = 0, valReturn = 0, valInput = 0;
-   for (const auto &recipient : recipients_) {
-      const auto recipientAddress = bs::CheckRecipSigner::getRecipientAddress(recipient);
-      if (address == recipientAddress) {
-         valOutput += recipient->getValue();
-      }
-      else {
-         valReturn += recipient->getValue();
+   for (const auto& group : recipients_) {
+      for (const auto& recipient : group.second) {
+         const auto recipientAddress = bs::CheckRecipSigner::getRecipientAddress(recipient);
+         if (address == recipientAddress) {
+            valOutput += recipient->getValue();
+         }
+         else {
+            valReturn += recipient->getValue();
+         }
       }
    }
    for (const auto &spender : spenders_) {
@@ -94,23 +96,6 @@ struct recip_compare {
       return (a->getSerializedScript() < b->getSerializedScript());
    }
 };
-void CheckRecipSigner::removeDupRecipients()
-{  // can be implemented later in a better way without temporary std::set
-   std::vector<std::shared_ptr<ScriptRecipient>> uniqueRecepients;
-
-   std::set<std::shared_ptr<ScriptRecipient>, recip_compare> recipSet;
-   for (const auto r : recipients_) {
-      auto it = recipSet.find(r);
-      if (it != recipSet.end()) {
-         continue;
-      }
-
-      uniqueRecepients.emplace_back(r);
-      recipSet.emplace(r);
-   }
-
-   recipients_.swap(uniqueRecepients);
-}
 
 void CheckRecipSigner::hasInputAddress(const bs::Address &addr, std::function<void(bool)> cb, uint64_t lotsize)
 {
@@ -194,12 +179,13 @@ uint64_t CheckRecipSigner::estimateFee(float &feePerByte, uint64_t fixedFee) con
    }
    auto transactions = bs::Address::decorateUTXOsCopy(inputs);
    std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
+   auto recipVector = getRecipientVector();
    if (recipients_.empty()) {
       recipientsMap[0] = std::make_shared<Recipient_OPRETURN>(BinaryData::fromString("fake recipient"));
    }
    else {
-      for (unsigned int i = 0; i < recipients_.size(); ++i) {
-         recipientsMap[i] = recipients_[i];
+      for (unsigned int i = 0; i < recipVector.size(); ++i) {
+         recipientsMap[i] = recipVector[i];
       }
    }
 
@@ -222,24 +208,6 @@ uint64_t CheckRecipSigner::estimateFee(float &feePerByte, uint64_t fixedFee) con
       }
    } catch (...) {}
    return txSize * ((origFeePerByte > 0) ? origFeePerByte : feePerByte);
-}
-
-uint64_t CheckRecipSigner::outputsTotalValue() const
-{
-   uint64_t result = 0;
-   for (const auto &recip : recipients_) {
-      result += recip->getValue();
-   }
-   return result;
-}
-
-uint64_t CheckRecipSigner::inputsTotalValue() const
-{
-   uint64_t result = 0;
-   for (const auto &spender : spenders_) {
-      result += spender->getValue();
-   }
-   return result;
 }
 
 bool CheckRecipSigner::isRBF() const

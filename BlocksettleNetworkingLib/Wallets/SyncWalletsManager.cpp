@@ -28,6 +28,11 @@ using namespace ArmorySigner;
 using namespace bs::sync;
 using namespace bs::signer;
 
+#define RECIP_GROUP_SPEND_1 0xA000
+#define RECIP_GROUP_CHANG_1 0xA001
+#define RECIP_GROUP_SPEND_2 0xB000
+#define RECIP_GROUP_CHANG_2 0xB001
+
 bool isCCNameCorrect(const std::string& ccName)
 {
    if ((ccName.length() == 1) && (ccName[0] >= '0') && (ccName[0] <= '9')) {
@@ -1998,10 +2003,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    bs::core::wallet::TXSignRequest request;
    request.walletIds.insert(request.walletIds.end(), walletIds.cbegin(), walletIds.cend());
    request.outSortOrder = outSortOrder;
-   Signer signer;
-   for (const auto &spender : prevStateSigner.spenders()) {
-      signer.addSpender(spender);
-   }
+   Signer signer(prevStateSigner);
    signer.setFlags(SCRIPT_VERIFY_SEGWIT);
    request.fee = fee;
 
@@ -2017,9 +2019,6 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    const auto addRecipients = [&request, &signer]
    (const std::vector<std::shared_ptr<ScriptRecipient>> &recipients)
    {
-      for (const auto& recipient : recipients) {
-         signer.addRecipient(recipient);
-      }
    };
 
    if (inputAmount < (spendVal + fee)) {
@@ -2027,31 +2026,30 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
          + ") to spend " + std::to_string(spendVal + fee));
    }
 
-   for (const auto &outputType : outSortOrder) {
-      switch (outputType) {
-      case bs::core::wallet::OutputOrderType::Recipients:
-         addRecipients(recipients);
-         break;
-      case bs::core::wallet::OutputOrderType::PrevState:
-         addRecipients(prevStateSigner.recipients());
-         break;
-      case bs::core::wallet::OutputOrderType::Change:
-         if (inputAmount == (spendVal + fee)) {
-            break;
-         }
-         {
-            const uint64_t changeVal = inputAmount - (spendVal + fee);
-            if (changeAddress.empty()) {
-               throw std::invalid_argument("Change address required, but missing");
-            }
-            signer.addRecipient(changeAddress.getRecipient(bs::XBTAmount{ changeVal }));
-            request.change.value = changeVal;
-            request.change.address = changeAddress;
-         }
-         break;
-      default:
-         throw std::invalid_argument("Unsupported output type " + std::to_string((int)outputType));
+   uint32_t recipGroup = RECIP_GROUP_SPEND_1;
+   uint32_t changGroup = RECIP_GROUP_CHANG_1;
+
+   if (!outSortOrder.empty() &&
+      *outSortOrder.begin() != bs::core::wallet::OutputOrderType::Recipients) {
+         recipGroup = RECIP_GROUP_SPEND_2;
+         changGroup = RECIP_GROUP_CHANG_2;
+   }
+
+   for (const auto& recipient : recipients) {
+      signer.addRecipient(recipient, recipGroup);
+   }
+   
+   if (inputAmount > (spendVal + fee)) {
+      const uint64_t changeVal = inputAmount - (spendVal + fee);
+      if (changeAddress.empty()) {
+         throw std::invalid_argument("Change address required, but missing");
       }
+      
+      signer.addRecipient(
+         changeAddress.getRecipient(bs::XBTAmount{ changeVal }), 
+         changGroup);
+      request.change.value = changeVal;
+      request.change.address = changeAddress;
    }
 
    request.armorySigner_.deserializeState(signer.serializeState());
