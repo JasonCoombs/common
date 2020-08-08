@@ -106,7 +106,6 @@ signals:
    void CCSubmitFailed(const QString address, const QString &err);
    void Loaded();
    void LoadingFailed();
-   void definitionsLoadedFromPub();
 
 protected:
    void ProcessGenAddressesResponse(const std::string& response, const std::string &sig) override;

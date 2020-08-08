@@ -45,7 +45,6 @@ void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSet
    connect(walletsManager_.get(), &bs::sync::WalletsManager::authWalletChanged, this, &AuthAddressManager::onAuthWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletChanged, this, &AuthAddressManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::AuthLeafCreated, this, &AuthAddressManager::onWalletCreated);
-   connect(walletsManager_.get(), &bs::sync::WalletsManager::AuthLeafNotCreated, this, &AuthAddressManager::ConnectionComplete);
 
    // signingContainer_ might be null if user rejects remote signer key
    if (signingContainer_) {
@@ -740,28 +739,8 @@ template <typename TVal> TVal AuthAddressManager::lookup(const bs::Address &key,
    return it->second;
 }
 
-void AuthAddressManager::createAuthWallet(const std::function<void()> &cb)
-{
-   if (!signingContainer_ || !walletsManager_) {
-      emit Error(tr("Unable to create auth wallet"));
-      return;
-   }
-
-   if (walletsManager_->getAuthWallet() != nullptr) {
-      emit Error(tr("Authentication wallet already exists"));
-      return;
-   }
-
-   if (!walletsManager_->createAuthLeaf(cb)) {
-      emit Error(tr("Failed to initate auth wallet creation"));
-      return;
-   }
-}
-
 void AuthAddressManager::onWalletCreated()
 {
-   emit ConnectionComplete();
-
    auto authLeaf = walletsManager_->getAuthWallet();
 
    if (authLeaf != nullptr) {
