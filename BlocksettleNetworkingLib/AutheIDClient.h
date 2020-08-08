@@ -167,8 +167,9 @@ public:
 
    // If timestamp is set (unix time in seconds) then auth eid server will use correct timeout.
    // timestamp must be valid value!
+   // if email is empty then local request (QR code) will be used.
    void getDeviceKey(RequestType requestType, const std::string &email, const std::string &walletId, const QString &authEidMessage
-      , const std::vector<std::string> &knownDeviceIds,  int expiration = kDefaultExpiration, int timestamp = 0);
+      , const std::vector<std::string> &knownDeviceIds, const std::string &qrSecret = "", int expiration = kDefaultExpiration, int timestamp = 0);
 
    void sign(const SignRequest &request, bool autoRequestResult = true);
 
@@ -182,6 +183,7 @@ public:
 
 signals:
    void createRequestDone();
+   void requestIdReceived(const std::string &requestId);
    void succeeded(const std::string& encKey, const SecureBinaryData &password);
    void signSuccess(const SignResult &result);
    void authSuccess(const std::string &jwt);
@@ -219,6 +221,7 @@ private:
    std::string requestId_;
    int expiration_{};
    std::string email_;
+   std::string qrSecret_;
    const AuthKeys authKeys_;
    bool resultAuth_{};
 
