@@ -10,6 +10,6 @@
 */
 syntax = "proto3";
 
-package Blocksettle.Terminal;
+package BlockSettle.Terminal;
 
 
