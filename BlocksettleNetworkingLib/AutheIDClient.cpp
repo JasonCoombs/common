@@ -136,6 +136,8 @@ QString AutheIDClient::errorString(AutheIDClient::ErrorType error)
       return tr("Network error");
    case NoNewDeviceAvailable:
       return tr("No new device available");
+   case WrongAccountForDeviceAdding:
+      return tr("Can't add device from different account");
    }
 
    return tr("Unknown error");
@@ -298,13 +300,14 @@ void AutheIDClient::createCreateRequest(const std::string &payload, int expirati
 
 void AutheIDClient::getDeviceKey(RequestType requestType, const std::string &email
    , const std::string &walletId, const QString &authEidMessage
-   , const std::vector<std::string> &knownDeviceIds, const std::string &qrSecret, int expiration, int timestamp)
+   , const std::vector<std::string> &knownDeviceIds, const std::string &qrSecret, int expiration, int timestamp, const std::string &oldEmail)
 {
    cancel();
 
    email_ = email;
    requestType_ = requestType;
    qrSecret_ = qrSecret;
+   oldEmail_ = oldEmail;
 
    QString action = getAutheIDClientRequestText(requestType);
    bool newDevice = isAutheIDClientNewDeviceNeeded(requestType);
@@ -500,6 +503,14 @@ void AutheIDClient::processResultReply(const QByteArray &payload)
    if (secureReply.qr_secret() != qrSecret_) {
       SPDLOG_LOGGER_ERROR(logger_, "invalid QR code secret");
       emit failed(ErrorType::InvalidSecureReplyError);
+      return;
+   }
+
+   // Device adding now works with QR codes and user could add password from some other device.
+   // This check will make sure that new device is from same account.
+   if (!oldEmail_.empty() && reply.email() != oldEmail_) {
+      SPDLOG_LOGGER_ERROR(logger_, "unexpected new email: {}, old email: {}", reply.email(), oldEmail_);
+      emit failed(ErrorType::WrongAccountForDeviceAdding);
       return;
    }
 

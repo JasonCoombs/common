@@ -120,6 +120,7 @@ public:
       ServerError,
       NetworkError,
       NoNewDeviceAvailable,
+      WrongAccountForDeviceAdding,
    };
    Q_ENUM(ErrorType)
 
@@ -169,7 +170,8 @@ public:
    // timestamp must be valid value!
    // if email is empty then local request (QR code) will be used.
    void getDeviceKey(RequestType requestType, const std::string &email, const std::string &walletId, const QString &authEidMessage
-      , const std::vector<std::string> &knownDeviceIds, const std::string &qrSecret = "", int expiration = kDefaultExpiration, int timestamp = 0);
+      , const std::vector<std::string> &knownDeviceIds, const std::string &qrSecret = "", int expiration = kDefaultExpiration, int timestamp = 0
+      , const std::string &oldEmail = {});
 
    void sign(const SignRequest &request, bool autoRequestResult = true);
 
@@ -221,6 +223,7 @@ private:
    std::string requestId_;
    int expiration_{};
    std::string email_;
+   std::string oldEmail_;
    std::string qrSecret_;
    const AuthKeys authKeys_;
    bool resultAuth_{};
