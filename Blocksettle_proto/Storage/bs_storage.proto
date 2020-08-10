@@ -53,7 +53,6 @@ enum ResponseEntryType
    AuthRevokeTransactionType              = 4;
    CCDistributionTransactionType          = 5;
    AuthAddressVerificationRejectType      = 6;
-   FundCCGenAddrTransactionType           = 7;
    BSAuthRevokeTX                         = 8;
 }
 
