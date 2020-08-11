@@ -14,14 +14,15 @@ package Blocksettle.Communication;
 
 enum RequestType
 {
-   GetBSFundingAddressListType          = 2;
-   ErrorMessageResponseType             = 3;
-   GetCCGenesisAddressesType            = 5;
-   SubmitCCAddrInitialDistribType       = 6;
-   GenerateCCSeedRequestType            = 7;
-   RevokeAuthAddressRequestType         = 8;
-   ConfirmAuthAddressSubmitType         = 9;
-   GetNetworkSettingsType               = 12;
+   GetBSFundingAddressListType         = 2;
+   ErrorMessageResponseType            = 3;
+   GetCCGenesisAddressesType           = 5;
+   SubmitCCAddrInitialDistribType      = 6;
+   GenerateCCSeedRequestType           = 7;
+   RevokeAuthAddressRequestType        = 8;
+   ConfirmAuthAddressSubmitType        = 9;
+   CreateCCDefinitionRequestType       = 10;
+   GetNetworkSettingsType              = 12;
 }
 
 enum AddressNetworkType
@@ -161,7 +162,13 @@ message GenerateCCSeedRequest
 {
    required string userName = 1;
    required string ccProduct = 2;
-   optional uint32 amount = 3;
+   required uint32 amount = 3;
+}
+
+message CreateCCDefinitionRequest
+{
+   required string cc_name       = 1;
+   required uint32 lot_size      = 2;
 }
 
 message CCSeedResponse

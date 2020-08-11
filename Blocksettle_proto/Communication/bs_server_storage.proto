@@ -267,6 +267,7 @@ enum RequestFileType
    RevokeAuthAddressRequestFileType       = 1;
    GenerateCCSeedRequestFileType          = 2;
    CCInitialDistributionRequestFileType   = 3;
+   CreateCCDefinitionRequestFileType      = 4;
 }
 
 
