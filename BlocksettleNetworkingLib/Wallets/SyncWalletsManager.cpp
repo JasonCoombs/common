@@ -28,11 +28,6 @@ using namespace ArmorySigner;
 using namespace bs::sync;
 using namespace bs::signer;
 
-#define RECIP_GROUP_SPEND_1 0xA000
-#define RECIP_GROUP_CHANG_1 0xA001
-#define RECIP_GROUP_SPEND_2 0xB000
-#define RECIP_GROUP_CHANG_2 0xB001
-
 bool isCCNameCorrect(const std::string& ccName)
 {
    if ((ccName.length() == 1) && (ccName[0] >= '0') && (ccName[0] <= '9')) {
@@ -1913,9 +1908,10 @@ std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEn
 bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t spendVal
    , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress
    , float feePerByte, uint32_t topHeight
-   , const std::vector<std::shared_ptr<ScriptRecipient>> &recipients
-   , const bs::core::wallet::OutputSortOrder &outSortOrder
+   , const std::map<unsigned, std::shared_ptr<ScriptRecipient>> &recipients
+   , unsigned changeGroup
    , const Codec_SignerState::SignerState &prevPart, bool useAllInputs
+   , unsigned assumedRecipientCount
    , const std::shared_ptr<spdlog::logger> &logger)
 {
    if (inputs.empty()) {
@@ -1940,33 +1936,32 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       }
    }
 
-   if (feePerByte > 0) {
-      unsigned int idMap = 0;
-      std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipMap;
-      for (const auto &recip : recipients) {
-         if (recip->getValue()) {
-            recipMap.emplace(idMap++, recip);
-         }
-      }
-
-      // TODO: Remove this, looks like it affects only TestCCSettlement.InvalidChangeAmount
-      if (recipMap.empty()) {
-         const auto &tmpAddr = bs::Address::fromUTXO(inputs.begin()->first);
-         recipMap[idMap++] = tmpAddr.getRecipient(bs::XBTAmount{ 0.00001 });
-      }
-
-      PaymentStruct payment(recipMap, 0, feePerByte, ADJUST_FEE);
-      for (auto &utxo : utxos) {
-         const auto scrAddr = bs::Address::fromHash(utxo.getRecipientScrAddr());
-         utxo.txinRedeemSizeBytes_ = (unsigned int)scrAddr.getInputSize();
-         utxo.witnessDataSizeBytes_ = unsigned(scrAddr.getWitnessDataSize());
-         utxo.isInputSW_ = (scrAddr.getWitnessDataSize() != UINT32_MAX);
-      }
-      payment.size_ += static_cast<uint64_t>(std::llround(prevPartFee / feePerByte));
-
-      auto coinSelection = CoinSelection(nullptr, {}, UINT64_MAX, topHeight);
-
+   if (feePerByte > 0) {  
       try {
+         std::map<unsigned, std::shared_ptr<ScriptRecipient>> recMap = recipients;
+         if (assumedRecipientCount != UINT32_MAX) {
+            for (unsigned i=0; i<assumedRecipientCount; i++) {
+               uint64_t val = 0;
+               if (i==0) {
+                  val = spendVal;
+               }
+               auto rec = std::make_shared<Recipient_P2WPKH>(
+                  CryptoPRNG::generateRandom(20), val);
+               recMap.emplace(i, rec);
+            }
+         }
+
+         PaymentStruct payment(recMap, 0, feePerByte, ADJUST_FEE);
+         for (auto &utxo : utxos) {
+            const auto scrAddr = bs::Address::fromHash(utxo.getRecipientScrAddr());
+            utxo.txinRedeemSizeBytes_ = (unsigned int)scrAddr.getInputSize();
+            utxo.witnessDataSizeBytes_ = unsigned(scrAddr.getWitnessDataSize());
+            utxo.isInputSW_ = (scrAddr.getWitnessDataSize() != UINT32_MAX);
+         }
+         payment.size_ += static_cast<uint64_t>(std::llround(prevPartFee / feePerByte));
+
+         auto coinSelection = CoinSelection(nullptr, {}, UINT64_MAX, topHeight);
+
          UtxoSelection selection;
          if (useAllInputs) {
             selection = UtxoSelection(utxos);
@@ -2002,41 +1997,26 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
    bs::core::wallet::TXSignRequest request;
    request.walletIds.insert(request.walletIds.end(), walletIds.cbegin(), walletIds.cend());
-   request.outSortOrder = outSortOrder;
    Signer signer(prevStateSigner);
    signer.setFlags(SCRIPT_VERIFY_SEGWIT);
    request.fee = fee;
 
    uint64_t inputAmount = 0;
    for (const auto &utxo : utxos) {
-      signer.addSpender(std::make_shared<ScriptSpender>(utxo.getTxHash(), utxo.getTxOutIndex()));
+      signer.addSpender(std::make_shared<ScriptSpender>(utxo));
       inputAmount += utxo.getValue();
    }
    if (!inputAmount) {
       throw std::logic_error("No inputs detected");
    }
 
-   const auto addRecipients = [&request, &signer]
-   (const std::vector<std::shared_ptr<ScriptRecipient>> &recipients)
-   {
-   };
-
    if (inputAmount < (spendVal + fee)) {
       throw std::overflow_error("Not enough inputs (" + std::to_string(inputAmount)
          + ") to spend " + std::to_string(spendVal + fee));
    }
 
-   uint32_t recipGroup = RECIP_GROUP_SPEND_1;
-   uint32_t changGroup = RECIP_GROUP_CHANG_1;
-
-   if (!outSortOrder.empty() &&
-      *outSortOrder.begin() != bs::core::wallet::OutputOrderType::Recipients) {
-         recipGroup = RECIP_GROUP_SPEND_2;
-         changGroup = RECIP_GROUP_CHANG_2;
-   }
-
    for (const auto& recipient : recipients) {
-      signer.addRecipient(recipient, recipGroup);
+      signer.addRecipient(recipient.second, recipient.first);
    }
    
    if (inputAmount > (spendVal + fee)) {
@@ -2047,12 +2027,12 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       
       signer.addRecipient(
          changeAddress.getRecipient(bs::XBTAmount{ changeVal }), 
-         changGroup);
+         changeGroup);
       request.change.value = changeVal;
       request.change.address = changeAddress;
    }
 
-   request.armorySigner_.deserializeState(signer.serializeState());
+   request.armorySigner_ = signer;
    return request;
 }
 

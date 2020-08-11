@@ -30,6 +30,12 @@
 #include "ValidityFlag.h"
 #include "WalletSignerContainer.h"
 
+
+#define RECIP_GROUP_SPEND_1 0xA000
+#define RECIP_GROUP_CHANG_1 0xA001
+#define RECIP_GROUP_SPEND_2 0xB000
+#define RECIP_GROUP_CHANG_2 0xB001
+
 namespace spdlog {
    class logger;
 }
@@ -154,10 +160,10 @@ namespace bs {
          static core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
             , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress = {}
             , float feePerByte = 0, uint32_t topHeight = 0
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
-            , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
-               , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
+            , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
+            , unsigned changeGroup = UINT32_MAX
             , const Codec_SignerState::SignerState &prevPart = {}, bool useAllInputs = false
+            , unsigned assumedRecipientCount = UINT32_MAX
             , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
          std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;

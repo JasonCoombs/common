@@ -464,34 +464,6 @@ try {
       if (scrType != TXOUT_SCRIPT_P2SH) {
          return false;
       }
-
-#if 0    // no further preimage checks as it's not passed anymore
-      // check underlying script type
-      auto address = bs::Address::fromScript(input.getScript());
-
-      //xxx: shouldn't be using string addresses when this could be binary addresses.
-      const auto it = preImages.find(address.display());
-      if (it == preImages.end()) {
-         return false;
-      }
-
-      auto underlyingScriptType = BtcUtils::getTxOutScriptType(it->second);
-      if (underlyingScriptType != TXOUT_SCRIPT_P2WPKH) {
-         return false;
-      }
-
-      // check that preimage belong to that address
-      const auto& hash = BtcUtils::getHash160(it->second);
-
-      BinaryWriter bw;
-      bw.put_uint8_t(NetworkConfig::getScriptHashPrefix());
-      bw.put_BinaryData(hash);
-      const auto& prefixedHash = bw.getData();
-
-      if (prefixedHash != address.prefixed()) {
-         return false;
-      }
-#endif   //0
    }
 
    return true;

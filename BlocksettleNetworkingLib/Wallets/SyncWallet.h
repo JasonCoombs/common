@@ -201,12 +201,12 @@ namespace bs {
             , const uint64_t fee = 0, bool isRBF = false
             , const bs::Address &changeAddress = {});
          virtual core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
-            , const std::vector<UTXO> &inputs, bs::Address changeAddress = {}
+            , const std::vector<UTXO> &inputs
+            , std::pair<bs::Address, unsigned> changePair = {bs::Address(), UINT32_MAX}
             , float feePerByte = 0
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
-            , const bs::core::wallet::OutputSortOrder &outSortOrder = { bs::core::wallet::OutputOrderType::PrevState
-               , bs::core::wallet::OutputOrderType::Recipients, bs::core::wallet::OutputOrderType::Change }
-            , const Codec_SignerState::SignerState &prevPart = {});
+            , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
+            , const Codec_SignerState::SignerState &prevPart = {}
+            , unsigned assumedRecipientCount = UINT32_MAX);
 
          virtual bool deleteRemotely() { return false; } //stub
          virtual void merge(const std::shared_ptr<Wallet> &) {};

@@ -884,18 +884,21 @@ bs::core::wallet::TXSignRequest Wallet::createTXRequest(const std::vector<UTXO> 
 }
 
 bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
-   , const std::vector<UTXO> &inputs, bs::Address changeAddress
+   , const std::vector<UTXO> &inputs
+   , std::pair<bs::Address, unsigned> changePair
    , float feePerByte
-   , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
-   , const bs::core::wallet::OutputSortOrder &outSortOrder
-   , const Codec_SignerState::SignerState &prevPart)
+   , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
+   , const Codec_SignerState::SignerState &prevPart
+   , unsigned assumedRecipientCount)
 {
    std::map<UTXO, std::string> inputsCopy;
    for (const auto &input : inputs) {
       inputsCopy[input] = walletId();
    }
-   return WalletsManager::createPartialTXRequest(spendVal, inputsCopy, changeAddress, feePerByte
-      , armory_->topBlock(), recipients, outSortOrder, prevPart, false, logger_);
+   return WalletsManager::createPartialTXRequest(
+      spendVal, inputsCopy, changePair.first, feePerByte
+      , armory_->topBlock(), recipients, changePair.second
+      , prevPart, false, assumedRecipientCount, logger_);
 }
 
 void WalletACT::onLedgerForAddress(const bs::Address &addr
