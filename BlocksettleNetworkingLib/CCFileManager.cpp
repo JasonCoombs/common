@@ -49,7 +49,7 @@ CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
    const auto &cbSecLoaded = [this](const bs::network::CCSecurityDef &ccSecDef) {
       emit CCSecurityDef(ccSecDef);
       emit CCSecurityId(ccSecDef.securityId);
-      emit CCSecurityInfo(QString::fromStdString(ccSecDef.product), QString::fromStdString(ccSecDef.description)
+      emit CCSecurityInfo(QString::fromStdString(ccSecDef.product)
          , (unsigned long)ccSecDef.nbSatoshis, QString::fromStdString(ccSecDef.genesisAddr.display()));
    };
    const auto &cbLoadComplete = [this] (unsigned int rev) {
@@ -264,15 +264,6 @@ uint64_t CCPubResolver::lotSizeFor(const std::string &cc) const
    return 0;
 }
 
-std::string CCPubResolver::descriptionFor(const std::string &cc) const
-{
-   const auto &itSec = securities_.find(cc);
-   if (itSec != securities_.end()) {
-      return itSec->second.description;
-   }
-   return {};
-}
-
 bs::Address CCPubResolver::genesisAddrFor(const std::string &cc) const
 {
    const auto &itSec = securities_.find(cc);
@@ -289,7 +280,7 @@ void CCPubResolver::fillFrom(Blocksettle::Communication::GetCCGenesisAddressesRe
       const auto ccSecurity = resp->ccsecurities(i);
 
       bs::network::CCSecurityDef ccSecDef = {
-         ccSecurity.securityid(), ccSecurity.product(), ccSecurity.description(),
+         ccSecurity.securityid(), ccSecurity.product(),
          bs::Address::fromAddressString(ccSecurity.genesisaddr()), ccSecurity.satoshisnb()
       };
       add(ccSecDef);

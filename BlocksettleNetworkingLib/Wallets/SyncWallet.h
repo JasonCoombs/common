@@ -43,7 +43,6 @@ namespace bs {
          virtual std::string nameByWalletIndex(bs::hd::Path::Elem) const = 0;
          virtual uint64_t lotSizeFor(const std::string &cc) const = 0;
          virtual bs::Address genesisAddrFor(const std::string &cc) const = 0;
-         virtual std::string descriptionFor(const std::string &cc) const = 0;
          virtual std::vector<std::string> securities() const = 0;
       };
 

@@ -282,7 +282,6 @@ namespace bs {
             std::string nameByWalletIndex(bs::hd::Path::Elem) const override;
             uint64_t lotSizeFor(const std::string &cc) const override;
             bs::Address genesisAddrFor(const std::string &cc) const override;
-            std::string descriptionFor(const std::string &cc) const override;
             std::vector<std::string> securities() const override;
 
             void addData(const std::string &cc, uint64_t lotSize, const bs::Address &genAddr

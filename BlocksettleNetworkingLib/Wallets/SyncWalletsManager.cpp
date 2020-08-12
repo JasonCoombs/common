@@ -1533,15 +1533,6 @@ uint64_t WalletsManager::CCResolver::lotSizeFor(const std::string &cc) const
    return 0;
 }
 
-std::string WalletsManager::CCResolver::descriptionFor(const std::string &cc) const
-{
-   const auto &itSec = securities_.find(cc);
-   if (itSec != securities_.end()) {
-      return itSec->second.desc;
-   }
-   return {};
-}
-
 bs::Address WalletsManager::CCResolver::genesisAddrFor(const std::string &cc) const
 {
    const auto &itSec = securities_.find(cc);

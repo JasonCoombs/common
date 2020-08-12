@@ -31,12 +31,6 @@ enum AddressNetworkType
    TestNetType = 2;
 }
 
-// type of address used for verifications ( bitcoin, colored coin etc)
-enum AddressType
-{
-   BitcoinsAddressType        = 1;
-}
-
 // copy of autheid.rp.GetResultResponse.SignatureResult
 message AuthEidSign
 {
@@ -79,17 +73,16 @@ message ResponsePacket
    optional bytes       dataSignature = 3;
 }
 
-message GetBSFundingAddressListRequest
+message WalletInfoContainer
 {
-   required AddressType       addressListType = 1;
+   required ResponsePacket validation_addresses_info  = 1;
+   required ResponsePacket cc_definitions_info        = 2;
 }
 
 message GetBSFundingAddressListResponse
 {
-   required AddressType       addressListType         = 1;
-   // for now it will be always of type AddressList.
-   // use bytes just to simplify signature verification
-   repeated bytes             addressList             = 2;
+   required AddressNetworkType   network_type         = 1;
+   repeated string               validation_address   = 2;
 }
 
 message ErrorMessageResponse
@@ -123,12 +116,6 @@ message ClientAddress
    optional string countryCode = 10;
 }
 
-message GetCCGenesisAddressesRequest
-{
-   required AddressNetworkType   networkType = 1;
-   optional int32                hasRevision = 2;
-}
-
 message GetCCGenesisAddressesResponse
 {
    required AddressNetworkType   networkType  = 1;
@@ -140,7 +127,6 @@ message GetCCGenesisAddressesResponse
       required string product     = 2;
       required string genesisAddr = 3;
       required uint64 satoshisNb  = 4;
-      optional string description = 5;
    }
 }
 
