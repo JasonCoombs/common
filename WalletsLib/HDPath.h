@@ -87,8 +87,9 @@ namespace bs {
          Bitcoin_test = hardFlag + 1,
          BlockSettle_CC = hardFlag + 0x4253, // 0x80000000 | "BS" in hex
          BlockSettle_Auth = hardFlag + 0x41757468,  // 0x80000000 | "Auth" in hex
+         Blocksettle_Sign = hardFlag + 0x5369676e // Sign in hex
 
-         //this is a place holder for the Group ctor, settlement accounts 
+         //this is a place holder for the Group ctor, settlement accounts
          //are not deterministic
          BlockSettle_Settlement = 0xdeadbeef
       };
