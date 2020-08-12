@@ -27,20 +27,6 @@
 
 using namespace Blocksettle::Communication;
 
-namespace {
-
-   AddressNetworkType networkType(NetworkType netType)
-   {
-      return netType == NetworkType::MainNet ? AddressNetworkType::MainNetType : AddressNetworkType::TestNetType;
-   }
-
-   AddressNetworkType networkType(const std::shared_ptr<ApplicationSettings> &settings)
-   {
-      return networkType(settings->get<NetworkType>(ApplicationSettings::netType));
-   }
-
-} // namespace
-
 CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
    : CCPubConnection(logger)
@@ -120,9 +106,8 @@ void CCFileManager::ProcessGenAddressesResponse(const std::string& response, con
       return;
    }
 
-   if (genAddrResp.networktype() != networkType(appSettings_)) {
-      logger_->error("[CCFileManager::ProcessCCGenAddressesResponse] network type mismatch in reply: {}"
-         , (int)genAddrResp.networktype());
+   if (genAddrResp.is_testnet() != (appSettings_->get<NetworkType>(ApplicationSettings::netType) == NetworkType::TestNet)) {
+      logger_->error("[CCFileManager::ProcessCCGenAddressesResponse] network type mismatch in reply");
       return;
    }
 
@@ -326,7 +311,7 @@ bool CCPubResolver::loadFromFile(const std::string &path, NetworkType netType)
       return false;
    }
 
-   if (resp.networktype() != networkType(netType)) {
+   if (resp.is_testnet() != (netType == NetworkType::TestNet)) {
       logger_->error("[CCFileManager::LoadFromFile] wrong network type in {}", path);
       return false;
    }

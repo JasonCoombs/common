@@ -25,12 +25,6 @@ enum RequestType
    GetNetworkSettingsType              = 12;
 }
 
-enum AddressNetworkType
-{
-   MainNetType = 1;
-   TestNetType = 2;
-}
-
 // copy of autheid.rp.GetResultResponse.SignatureResult
 message AuthEidSign
 {
@@ -75,14 +69,14 @@ message ResponsePacket
 
 message WalletInfoContainer
 {
-   required ResponsePacket validation_addresses_info  = 1;
-   required ResponsePacket cc_definitions_info        = 2;
+   required string   validation_addresses_info  = 1;
+   required string   cc_definitions_info        = 2;
 }
 
 message GetBSFundingAddressListResponse
 {
-   required AddressNetworkType   network_type         = 1;
-   repeated string               validation_address   = 2;
+   required bool     is_testnet           = 1;
+   repeated string   validation_address   = 2;
 }
 
 message ErrorMessageResponse
@@ -118,9 +112,9 @@ message ClientAddress
 
 message GetCCGenesisAddressesResponse
 {
-   required AddressNetworkType   networkType  = 1;
-   required int32                revision     = 2;
-   repeated CCSecurityDefinition ccSecurities = 3;
+   required bool                 is_testnet     = 1;
+   required int32                revision       = 2;
+   repeated CCSecurityDefinition ccSecurities   = 3;
 
    message CCSecurityDefinition {
       required string securityId  = 1;
