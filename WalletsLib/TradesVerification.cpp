@@ -205,6 +205,9 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
 
    try {
       bs::CheckRecipSigner deserializedSigner(unsignedPayin);
+      if (!deserializedSigner.isResolved()) {
+         return Result::error("unresolved unsigned payin");
+      }
       auto settlAddressBin = bs::Address::fromAddressString(settlementAddress);
 
       // check that there is only one output of correct amount to settlement address
@@ -286,13 +289,18 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
 
       result->utxos.reserve(spenders.size());
 
+      std::map<BinaryData, BinaryData> preimages;
       for (const auto& spender : spenders) {
-         result->utxos.push_back(spender->getUtxo());
+         const auto& utxo = spender->getUtxo();
+         result->utxos.push_back(utxo);
+         if (spender->isP2SH()) {
+            preimages.emplace(utxo.getScript(), spender->getAvailableInputScript());
+         }
       }
 
       result->payinHash = deserializedSigner.getTxId();
 
-      if (!XBTInputsAcceptable(result->utxos)) {
+      if (!XBTInputsAcceptable(result->utxos, preimages)) {
          return Result::error("Not supported input type used");
       }
       return result;
@@ -453,7 +461,9 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
 }
 
 //only  TXOUT_SCRIPT_P2WPKH and (TXOUT_SCRIPT_P2SH | TXOUT_SCRIPT_P2WPKH) accepted
-bool bs::TradesVerification::XBTInputsAcceptable(const std::vector<UTXO>& utxoList)
+bool bs::TradesVerification::XBTInputsAcceptable(
+   const std::vector<UTXO>& utxoList, 
+   const std::map<BinaryData, BinaryData>& preImages)
 try {
    for (const auto& input : utxoList) {
       const auto scrType = BtcUtils::getTxOutScriptType(input.getScript());
@@ -462,6 +472,23 @@ try {
       }
 
       if (scrType != TXOUT_SCRIPT_P2SH) {
+         return false;
+      }
+
+      auto addr = bs::Address::fromScript(input.getScript());
+      const auto it = preImages.find(addr);
+      if (it == preImages.end()) {
+         return false;
+      }
+
+      auto underlyingScriptType = BtcUtils::getTxOutScriptType(it->second);
+      if (underlyingScriptType != TXOUT_SCRIPT_P2WPKH) {
+         return false;
+      }
+
+      // check that preimage hashes address
+      const auto& hash = BtcUtils::getHash160(it->second);
+      if (hash != addr.unprefixed()) {
          return false;
       }
    }

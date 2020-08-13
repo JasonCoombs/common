@@ -81,7 +81,9 @@ namespace bs {
 
       // preImages - key: address, value:preimage script
       // required for P2SH addresses only
-      static bool XBTInputsAcceptable(const std::vector<UTXO>& utxoList);
+      static bool XBTInputsAcceptable(
+         const std::vector<UTXO>& utxoList, 
+         const std::map<BinaryData, BinaryData>& preImages);
 
       static float getAllowedFeePerByteMin(float feePerByte);
 
