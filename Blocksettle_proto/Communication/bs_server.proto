@@ -582,6 +582,12 @@ message GenoaReserveXbtResponse
    CustomerAccountData changed_account = 6;
 }
 
+message GeanoReserveCCResponse
+{
+   bool     success        = 1;
+   string   error_message  = 2;
+}
+
 message GenoaUpdateReserveRequest
 {
    string reserve_id = 1;
@@ -782,6 +788,7 @@ message GenoaMessage
       GenoaApiKeyCheckRequest          api_key_request            = 33;
       GenoaApiKeyCheckResponse         api_key_response           = 34;
       UserEntityInfo                   entity_info                = 35;
+      GeanoReserveCCResponse           cc_reserve_response        = 36;
    }
 }
 
