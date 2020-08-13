@@ -1185,12 +1185,12 @@ void WalletsManager::goOnline()
    }
 }
 
-void WalletsManager::onCCSecurityInfo(QString ccProd, QString ccDesc, unsigned long nbSatoshis, QString genesisAddr)
+void WalletsManager::onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr)
 {
    const auto &cc = ccProd.toStdString();
    logger_->debug("[{}] received info for {}", __func__, cc);
    const auto genAddr = bs::Address::fromAddressString(genesisAddr.toStdString());
-   ccResolver_->addData(cc, nbSatoshis, genAddr, ccDesc.toStdString());
+   ccResolver_->addData(cc, nbSatoshis, genAddr);
 
    if (trackersStarted_) {
       startTracker(ccProd.toStdString());
@@ -1498,9 +1498,9 @@ void WalletsManager::threadFunction()
 
 
 void WalletsManager::CCResolver::addData(const std::string &cc, uint64_t lotSize
-   , const bs::Address &genAddr, const std::string &desc)
+   , const bs::Address &genAddr)
 {
-   securities_[cc] = { desc, lotSize, genAddr };
+   securities_[cc] = { lotSize, genAddr };
    const auto walletIdx = bs::hd::Path::keyToElem(cc) | bs::hd::hardFlag;
    walletIdxMap_[walletIdx] = cc;
 }
