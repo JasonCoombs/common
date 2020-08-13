@@ -16,20 +16,44 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <botan/secmem.h>
 
 namespace spdlog {
    class logger;
 }
 
+struct lws;
 struct lws_retry_bo;
+struct x509_store_ctx_st;
 
 namespace bs {
    namespace network {
       namespace ws {
 
+         using PrivateKey = Botan::SecureVector<uint8_t>;
+
          constexpr size_t kDefaultMaximumWsPacketSize = 100 * 1024 * 1024;
 
          const lws_retry_bo *defaultRetryAndIdlePolicy();
+
+         std::string connectedIp(lws *wsi);
+
+         // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
+         std::string forwardedIp(lws *wsi);
+
+         std::string certPublicKey(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
+
+         long sslOptionsSet();
+
+         // Generates secp256r1 private key (in DER format)
+         PrivateKey generatePrivKey();
+
+         // Returns compressed public key (33 bytes)
+         std::string publicKey(const PrivateKey &privKey);
+
+         // Generate self-signed cerificate for the privKey
+         std::string generateSelfSignedCert(const PrivateKey &privKey
+            , const std::chrono::seconds &expireTime = std::chrono::hours(20 * 365 * 24));
 
       }
       class WsRawPacket
