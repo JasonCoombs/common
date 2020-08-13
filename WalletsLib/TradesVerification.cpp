@@ -294,7 +294,17 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
          const auto& utxo = spender->getUtxo();
          result->utxos.push_back(utxo);
          if (spender->isP2SH()) {
-            preimages.emplace(utxo.getScript(), spender->getAvailableInputScript());
+            //grab serialized input
+            auto inputData = spender->getSerializedInput(false);
+            
+            //extract preimage from it
+            BinaryRefReader brr(inputData.getRef());
+            brr.advance(36); //skip outpoint data
+
+            auto sigScriptLen = brr.get_var_int();
+            auto sigSciptRef = brr.get_BinaryDataRef(sigScriptLen);
+            
+            preimages.emplace(utxo.getScript(), sigSciptRef);
          }
       }
 
