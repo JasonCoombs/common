@@ -15,6 +15,7 @@
 #include "WsConnection.h"
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -25,12 +26,34 @@ namespace spdlog {
 }
 
 struct lws_context;
+struct lws_vhost;
 
 struct SslDataConnectionParams
 {
+   // If not set, plain TCP connection is used
+   bool useSsl{false};
+
+   // If set server's certificate will be checked against
    const void *caBundlePtr{};
    uint32_t caBundleSize{};
-   bool useSsl{false};
+
+   // If set, server's cerificate will not be checked against CA bundle
+   bool allowSelfSigned{false};
+
+   // If set, server's cerificate hostname will not be checked
+   bool skipHostNameChecks{false};
+
+   // If set, client's cerificate and key will be loaded and used for SSL connection
+   // Could be in PEM or DER format.
+   std::string certFilePath;
+   std::string privKeyFilePath;
+
+   // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
+   // publicKey is compressed public key from server's certificate in HEX format
+   // (only P256 allowed, all other connections rejected if verifyCallback is set).
+   // Callback should not block and useSsl must be set.
+   using VerifyCallback = std::function<bool(const std::string &publicKey)>;
+   VerifyCallback verifyCallback;
 };
 
 class SslDataConnection : public DataConnection
@@ -65,6 +88,8 @@ private:
    const SslDataConnectionParams params_;
 
    lws_context *context_{};
+   lws_vhost *vhost_{};
+
    std::string host_;
    int port_{};
    std::atomic_bool stopped_{};

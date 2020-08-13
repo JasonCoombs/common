@@ -26,7 +26,7 @@ namespace {
 
    int callback(lws *wsi, lws_callback_reasons reason, void *user, void *in, size_t len)
    {
-      return SslServerConnection::callbackHelper(wsi, reason, in, len);
+      return SslServerConnection::callbackHelper(wsi, reason, user, in, len);
    }
 
    struct lws_protocols kProtocols[] = {
@@ -42,6 +42,11 @@ SslServerConnection::SslServerConnection(const std::shared_ptr<spdlog::logger>& 
    : logger_(logger)
    , params_(std::move(params))
 {
+   assert(params_.useSsl != params_.privateKey.empty());
+   assert(params_.useSsl != params_.cert.empty());
+   assert(params_.useSsl || !params_.requireClientCert);
+   assert(params_.useSsl || !params_.verifyCallback);
+   assert(bool(params_.verifyCallback) == params_.requireClientCert);
 }
 
 SslServerConnection::~SslServerConnection()
@@ -66,8 +71,17 @@ bool SslServerConnection::BindConnection(const std::string& host , const std::st
    info.gid = -1;
    info.uid = -1;
    info.retry_and_idle_policy = bs::network::ws::defaultRetryAndIdlePolicy();
-   info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 | LWS_SERVER_OPTION_DISABLE_IPV6;
+   info.options = 0;
+   info.options |= LWS_SERVER_OPTION_VALIDATE_UTF8;
+   info.options |= LWS_SERVER_OPTION_DISABLE_IPV6;
+   info.options |= params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
+   info.options |= params_.requireClientCert ? LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT : 0;
    info.user = this;
+
+   info.server_ssl_private_key_mem = params_.privateKey.data();
+   info.server_ssl_private_key_mem_len = static_cast<uint32_t>(params_.privateKey.size());
+   info.server_ssl_cert_mem = params_.cert.data();
+   info.server_ssl_cert_mem_len = static_cast<uint32_t>(params_.cert.size());
 
    // Context creation will return nullptr if port binding failed
    context_ = lws_create_context(&info);
@@ -112,9 +126,27 @@ void SslServerConnection::stopServer()
    socketToClientIdMap_ = {};
 }
 
-int SslServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
+int SslServerConnection::callback(lws *wsi, int reason, void *user, void *in, size_t len)
 {
    switch (reason) {
+      case LWS_CALLBACK_OPENSSL_PERFORM_CLIENT_CERT_VERIFICATION: {
+         if (!params_.verifyCallback) {
+            return 0;
+         }
+         auto ctx = static_cast<X509_STORE_CTX*>(user);
+         auto pubKeyHex = ws::certPublicKeyHex(logger_, ctx);
+         if (pubKeyHex.empty()) {
+            SPDLOG_LOGGER_ERROR(logger_, "can't get public key");
+            return -1;
+         }
+         bool verifyResult = params_.verifyCallback(pubKeyHex);
+         if (!verifyResult) {
+            SPDLOG_LOGGER_DEBUG(logger_, "drop connection, pubKey: {}", pubKeyHex);
+            return -1;
+         }
+         SPDLOG_LOGGER_DEBUG(logger_, "accept connection, pubKey: {}", pubKeyHex);
+         return 0;
+      }
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
          std::queue<WsServerDataToSend> packets;
          {  std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -230,11 +262,6 @@ std::string SslServerConnection::nextClientId()
    return std::string(ptr, ptr + sizeof(nextClientId_));
 }
 
-std::thread::id SslServerConnection::listenThreadId() const
-{
-   return listenThread_.get_id();
-}
-
 bool SslServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)
 {
    WsServerDataToSend toSend{clientId, WsRawPacket(data)};
@@ -250,9 +277,9 @@ bool SslServerConnection::SendDataToAllClients(const std::string &data)
    return SendDataToClient(kAllClientsId, data);
 }
 
-int SslServerConnection::callbackHelper(lws *wsi, int reason, void *in, size_t len)
+int SslServerConnection::callbackHelper(lws *wsi, int reason, void *user, void *in, size_t len)
 {
    auto context = lws_get_context(wsi);
    auto server = static_cast<SslServerConnection*>(lws_context_user(context));
-   return server->callback(wsi, reason, in, len);
+   return server->callback(wsi, reason, user, in, len);
 }

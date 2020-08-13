@@ -23,6 +23,7 @@ namespace spdlog {
 
 struct lws;
 struct lws_retry_bo;
+struct x509_store_ctx_st;
 
 namespace bs {
    namespace network {
@@ -36,6 +37,8 @@ namespace bs {
 
          // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
          std::string forwardedIp(lws *wsi);
+
+         std::string certPublicKeyHex(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
 
       }
       class WsRawPacket

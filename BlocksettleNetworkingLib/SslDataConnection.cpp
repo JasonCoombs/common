@@ -40,6 +40,11 @@ SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logg
    : logger_(logger)
    , params_(std::move(params))
 {
+   assert(params_.useSsl || (params_.caBundlePtr == nullptr));
+   assert(params_.useSsl || (params_.caBundleSize == 0));
+   assert(params_.useSsl || !params_.verifyCallback);
+   assert(params_.useSsl || params_.certFilePath.empty());
+   assert(params_.useSsl || params_.privKeyFilePath.empty());
 }
 
 SslDataConnection::~SslDataConnection()
@@ -68,11 +73,18 @@ bool SslDataConnection::openConnection(const std::string &host, const std::strin
    info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
 
+   info.client_ssl_cert_filepath = params_.certFilePath.c_str();
+   info.client_ssl_private_key_filepath = params_.privKeyFilePath.c_str();
+
    context_ = lws_create_context(&info);
    if (!context_) {
       SPDLOG_LOGGER_ERROR(logger_, "context create failed");
       return false;
    }
+
+   vhost_ = lws_create_vhost(context_, &info);
+
+   lws_init_vhost_client_ssl(&info, vhost_);
 
    listenThread_ = std::thread(&SslDataConnection::listenFunction, this);
 
@@ -127,8 +139,29 @@ int SslDataConnection::callbackHelper(lws *wsi, int reason, void *user, void *in
 int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_t len)
 {
    switch (reason) {
+      case LWS_CALLBACK_OPENSSL_PERFORM_SERVER_CERT_VERIFICATION: {
+         if (!params_.verifyCallback) {
+            return 0;
+         }
+         auto ctx = static_cast<X509_STORE_CTX*>(user);
+         auto pubKeyHex = ws::certPublicKeyHex(logger_, ctx);
+         if (pubKeyHex.empty()) {
+            SPDLOG_LOGGER_ERROR(logger_, "can't get public key");
+            reportFatalError(DataConnectionListener::HandshakeFailed);
+            return -1;
+         }
+         bool verifyResult = params_.verifyCallback(pubKeyHex);
+         if (!verifyResult) {
+            reportFatalError(DataConnectionListener::HandshakeFailed);
+            SPDLOG_LOGGER_DEBUG(logger_, "drop connection, pubKey: {}", pubKeyHex);
+            return -1;
+         }
+         SPDLOG_LOGGER_DEBUG(logger_, "accept connection, pubKey: {}", pubKeyHex);
+         return 0;
+      }
+
       case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: {
-         if (!params_.useSsl || params_.caBundleSize == 0) {
+         if (!params_.caBundlePtr) {
             return 0;
          }
          auto sslCtx = static_cast<SSL_CTX*>(user);
@@ -232,8 +265,12 @@ void SslDataConnection::listenFunction()
    i.context = context_;
    i.protocol = kProtocolNameWs;
    i.userdata = this;
+   i.vhost = vhost_;
 
-   i.ssl_connection = params_.useSsl ? LCCSCF_USE_SSL : 0;
+   i.ssl_connection = 0;
+   i.ssl_connection |= params_.useSsl ? LCCSCF_USE_SSL : 0;
+   i.ssl_connection |= params_.allowSelfSigned ? LCCSCF_ALLOW_SELFSIGNED : 0;
+   i.ssl_connection |= params_.skipHostNameChecks ? LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK : 0;
 
    wsi_ = lws_client_connect_via_info(&i);
 

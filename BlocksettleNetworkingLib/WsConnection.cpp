@@ -204,3 +204,46 @@ std::string ws::forwardedIp(lws *wsi)
    auto ipAddr = bs::trim(bs::split(value, ',').back());
    return ipAddr;
 }
+
+std::string ws::certPublicKeyHex(const std::shared_ptr<spdlog::logger> &logger_, x509_store_ctx_st *ctx)
+{
+   auto currCert = X509_STORE_CTX_get_current_cert(ctx);
+   if (!currCert) {
+      SPDLOG_LOGGER_ERROR(logger_, "X509_STORE_CTX_get_current_cert failed");
+      return {};
+   }
+   auto pubKey = X509_get0_pubkey(currCert);
+   if (!pubKey) {
+      SPDLOG_LOGGER_ERROR(logger_, "X509_get0_pubkey failed");
+      return {};
+   }
+   auto ecKey = EVP_PKEY_get0_EC_KEY(pubKey);
+   if (!ecKey) {
+      SPDLOG_LOGGER_ERROR(logger_, "EVP_PKEY_get0_EC_KEY failed");
+      return {};
+   }
+   auto point = EC_KEY_get0_public_key(ecKey);
+   if (!point) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_KEY_get0_public_key failed");
+      return {};
+   }
+   auto group = EC_KEY_get0_group(ecKey);
+   if (!group) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_KEY_get0_group failed");
+      return {};
+   }
+   int curveName = EC_GROUP_get_curve_name(group);
+   if (curveName != NID_X9_62_prime256v1) {
+      SPDLOG_LOGGER_ERROR(logger_, "unexpected curve name: {}", curveName);
+      return {};
+   }
+   auto pubKeyHex = EC_POINT_point2hex(group, point, POINT_CONVERSION_COMPRESSED, nullptr);
+   if (!pubKeyHex) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2hex failed");
+      return {};
+   }
+   std::string pubKeyHexCopy = pubKeyHex;
+   OPENSSL_free(pubKeyHex);
+   pubKeyHex = nullptr;
+   return pubKeyHexCopy;
+}

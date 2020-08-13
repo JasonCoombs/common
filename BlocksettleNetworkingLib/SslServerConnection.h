@@ -29,9 +29,24 @@ struct lws;
 
 struct SslServerConnectionParams
 {
+   bool useSsl{false};
+
    // If set, client's IP address will be read from x-forwarded-for header value if possible.
    // Last IP address in a list will be used - https://en.wikipedia.org/wiki/X-Forwarded-For#Format
    bool trustForwardedForHeader{};
+
+   // If set, clients connection must use client certificate
+   bool requireClientCert{false};
+
+   std::string privateKey;
+   std::string cert;
+
+   // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
+   // publicKey is compressed public key from server's certificate in HEX format
+   // (only P256 allowed, all other connections rejected if verifyCallback is set).
+   // Callback should not block and useSsl must be set.
+   using VerifyCallback = std::function<bool(const std::string &publicKey)>;
+   VerifyCallback verifyCallback;
 };
 
 class SslServerConnection : public ServerConnection
@@ -51,7 +66,7 @@ public:
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string&) override;
 
-   static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
+   static int callbackHelper(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
 private:
    struct WsServerDataToSend
@@ -68,13 +83,11 @@ private:
       std::string currFragment;
    };
 
-   std::thread::id listenThreadId() const;
-
    void listenFunction();
 
    void stopServer();
 
-   int callback(struct lws *wsi, int reason, void *in, size_t len);
+   int callback(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
    std::string nextClientId();
 
