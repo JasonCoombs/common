@@ -76,6 +76,7 @@ bool SslServerConnection::BindConnection(const std::string& host , const std::st
    info.options |= LWS_SERVER_OPTION_DISABLE_IPV6;
    info.options |= params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.options |= params_.requireClientCert ? LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT : 0;
+   info.ssl_options_set = params_.useSsl ? ws::sslOptionsSet() : 0;
    info.user = this;
 
    info.server_ssl_private_key_mem = params_.privKey.data();

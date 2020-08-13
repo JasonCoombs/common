@@ -291,3 +291,14 @@ std::string ws::publicKey(const ws::PrivateKey &privKey)
    auto publicKey = privKeyEc->public_point().encode(Botan::PointGFp::COMPRESSED);
    return std::string(publicKey.begin(), publicKey.end());
 }
+
+long ws::sslOptionsSet()
+{
+   // Allow TLSv1_3 only
+   return
+         SSL_OP_NO_SSLv2 |
+         SSL_OP_NO_SSLv3 |
+         SSL_OP_NO_TLSv1 |
+         SSL_OP_NO_TLSv1_1 |
+         SSL_OP_NO_TLSv1_2;
+}

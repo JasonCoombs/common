@@ -43,6 +43,8 @@ namespace bs {
 
          std::string certPublicKey(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
 
+         long sslOptionsSet();
+
          // Generates secp256r1 private key (in DER format)
          PrivateKey generatePrivKey();
 
