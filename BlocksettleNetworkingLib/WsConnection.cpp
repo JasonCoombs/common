@@ -13,6 +13,13 @@
 #include <libwebsockets.h>
 #include <spdlog/spdlog.h>
 
+#include <botan/auto_rng.h>
+#include <botan/data_src.h>
+#include <botan/der_enc.h>
+#include <botan/ecdsa.h>
+#include <botan/pkcs8.h>
+#include <botan/x509self.h>
+
 #include "BinaryData.h"
 #include "StringUtils.h"
 #include "ZmqHelperFunctions.h"
@@ -24,6 +31,10 @@ const char *bs::network::kProtocolNameWs = "bs-ws-protocol";
 namespace {
 
    constexpr size_t kLwsPrePaddingSize = LWS_PRE;
+
+   constexpr auto kDefaultCurve = NID_X9_62_prime256v1;
+   const Botan::EC_Group kDefaultDomain("secp256r1");
+   const auto kDefaultHash = "SHA-256";
 
    class WsRawPacketBuilder
    {
@@ -205,7 +216,7 @@ std::string ws::forwardedIp(lws *wsi)
    return ipAddr;
 }
 
-std::string ws::certPublicKeyHex(const std::shared_ptr<spdlog::logger> &logger_, x509_store_ctx_st *ctx)
+std::string ws::certPublicKey(const std::shared_ptr<spdlog::logger> &logger_, x509_store_ctx_st *ctx)
 {
    auto currCert = X509_STORE_CTX_get_current_cert(ctx);
    if (!currCert) {
@@ -233,17 +244,48 @@ std::string ws::certPublicKeyHex(const std::shared_ptr<spdlog::logger> &logger_,
       return {};
    }
    int curveName = EC_GROUP_get_curve_name(group);
-   if (curveName != NID_X9_62_prime256v1) {
+   if (curveName != kDefaultCurve) {
       SPDLOG_LOGGER_ERROR(logger_, "unexpected curve name: {}", curveName);
       return {};
    }
-   auto pubKeyHex = EC_POINT_point2hex(group, point, POINT_CONVERSION_COMPRESSED, nullptr);
-   if (!pubKeyHex) {
-      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2hex failed");
+   auto size = EC_POINT_point2oct(group, point, POINT_CONVERSION_COMPRESSED, nullptr, 0, nullptr);
+   if (size == 0) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2oct failed");
       return {};
    }
-   std::string pubKeyHexCopy = pubKeyHex;
-   OPENSSL_free(pubKeyHex);
-   pubKeyHex = nullptr;
-   return pubKeyHexCopy;
+   std::string result(size, 0);
+   size = EC_POINT_point2oct(group, point, POINT_CONVERSION_COMPRESSED, reinterpret_cast<uint8_t*>(&result[0]), result.size(), nullptr);
+   if (size != result.size()) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2oct failed");
+      return {};
+   }
+   return result;
+}
+
+ws::PrivateKey ws::generatePrivKey()
+{
+   Botan::AutoSeeded_RNG rng;
+   auto privKey = Botan::ECDSA_PrivateKey(rng, kDefaultDomain);
+   return Botan::PKCS8::BER_encode(privKey);
+}
+
+std::string ws::generateSelfSignedCert(const PrivateKey &privKey)
+{
+   Botan::AutoSeeded_RNG rng;
+   Botan::DataSource_Memory privKeySrc(privKey);
+   auto privKeyLoaded = Botan::PKCS8::load_key(privKeySrc);
+   auto cert = Botan::X509::create_self_signed_cert(Botan::X509_Cert_Options(), *privKeyLoaded, kDefaultHash, rng);
+   std::vector<uint8_t> output;
+   Botan::DER_Encoder encoder(output);
+   cert.encode_into(encoder);
+   return std::string(output.begin(), output.end());
+}
+
+std::string ws::publicKey(const ws::PrivateKey &privKey)
+{
+   Botan::DataSource_Memory privKeySrc(privKey);
+   auto privKeyLoaded = Botan::PKCS8::load_key(privKeySrc);
+   auto privKeyEc = dynamic_cast<Botan::EC_PrivateKey*>(privKeyLoaded.get());
+   auto publicKey = privKeyEc->public_point().encode(Botan::PointGFp::COMPRESSED);
+   return std::string(publicKey.begin(), publicKey.end());
 }

@@ -40,11 +40,11 @@ struct SslServerConnectionParams
 
    // Use this cerificate and key to server SSL connection.
    // Must be set if useSsl is set. Could be in DER or PEM format.
-   std::string privKey;
    std::string cert;
+   bs::network::ws::PrivateKey privKey;
 
    // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
-   // publicKey is compressed public key from server's certificate in HEX format
+   // publicKey is compressed public key from server's certificate (33 bytes).
    // (only P256 allowed, all other connections rejected if verifyCallback is set).
    // Callback should not block and useSsl must be set.
    using VerifyCallback = std::function<bool(const std::string &publicKey)>;

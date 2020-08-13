@@ -46,10 +46,10 @@ struct SslDataConnectionParams
    // If set, client's cerificate and key will be loaded and used for SSL connection
    // Could be in DER format only!
    std::string cert;
-   std::string privKey;
+   bs::network::ws::PrivateKey privKey;
 
    // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
-   // publicKey is compressed public key from server's certificate in HEX format
+   // publicKey is compressed public key from server's certificate (33 bytes)
    // (only P256 allowed, all other connections rejected if verifyCallback is set).
    // Callback should not block and useSsl must be set.
    using VerifyCallback = std::function<bool(const std::string &publicKey)>;

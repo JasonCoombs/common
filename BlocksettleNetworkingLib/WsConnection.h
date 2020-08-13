@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <botan/secmem.h>
 
 namespace spdlog {
    class logger;
@@ -29,6 +30,8 @@ namespace bs {
    namespace network {
       namespace ws {
 
+         using PrivateKey = Botan::SecureVector<uint8_t>;
+
          constexpr size_t kDefaultMaximumWsPacketSize = 100 * 1024 * 1024;
 
          const lws_retry_bo *defaultRetryAndIdlePolicy();
@@ -38,7 +41,11 @@ namespace bs {
          // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
          std::string forwardedIp(lws *wsi);
 
-         std::string certPublicKeyHex(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
+         std::string certPublicKey(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
+
+         PrivateKey generatePrivKey();
+         std::string publicKey(const PrivateKey &privKey);
+         std::string generateSelfSignedCert(const PrivateKey &privKey);
 
       }
       class WsRawPacket

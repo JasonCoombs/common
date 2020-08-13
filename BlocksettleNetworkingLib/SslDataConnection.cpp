@@ -10,7 +10,7 @@
 */
 #include "SslDataConnection.h"
 
-#include "WsConnection.h"
+#include "StringUtils.h"
 
 #include <libwebsockets.h>
 #include <openssl/ssl.h>
@@ -141,19 +141,19 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
             return 0;
          }
          auto ctx = static_cast<X509_STORE_CTX*>(user);
-         auto pubKeyHex = ws::certPublicKeyHex(logger_, ctx);
-         if (pubKeyHex.empty()) {
+         auto pubKey = ws::certPublicKey(logger_, ctx);
+         if (pubKey.empty()) {
             SPDLOG_LOGGER_ERROR(logger_, "can't get public key");
             reportFatalError(DataConnectionListener::HandshakeFailed);
             return -1;
          }
-         bool verifyResult = params_.verifyCallback(pubKeyHex);
+         bool verifyResult = params_.verifyCallback(pubKey);
          if (!verifyResult) {
             reportFatalError(DataConnectionListener::HandshakeFailed);
-            SPDLOG_LOGGER_DEBUG(logger_, "drop connection, pubKey: {}", pubKeyHex);
+            SPDLOG_LOGGER_DEBUG(logger_, "drop connection, pubKey: {}", bs::toHex(pubKey));
             return -1;
          }
-         SPDLOG_LOGGER_DEBUG(logger_, "accept connection, pubKey: {}", pubKeyHex);
+         SPDLOG_LOGGER_DEBUG(logger_, "accept connection, pubKey: {}", bs::toHex(pubKey));
          return 0;
       }
 
