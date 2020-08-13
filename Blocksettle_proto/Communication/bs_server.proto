@@ -574,10 +574,11 @@ message GenoaTradingStatusResponse
 message GenoaReserveXbtResponse
 {
    string settlement_id = 1;
-   bool   success = 2;
-   int32  error_code = 3;
-   string currency = 4;
-   double new_balance = 5;
+   bool   success       = 2;
+   string error_message = 3;
+   string currency      = 4;
+   double new_balance   = 5;
+
    CustomerAccountData changed_account = 6;
 }
 
