@@ -252,7 +252,7 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
          , static_cast<int>(response.responsetype()));
    }
    else {
-      BinaryData publicKey = BinaryData::CreateFromHex(settings_->get<std::string>(ApplicationSettings::bsPublicKey));
+      BinaryData publicKey = BinaryData::CreateFromHex(settings_->GetBlocksettlePublicKey());
       sigVerified = CryptoECDSA().VerifyData(BinaryData::fromString(response.responsedata()), BinaryData::fromString(response.datasignature()), publicKey);
       if (!sigVerified) {
          logger_->error("[AuthAddressManager::OnDataReceived] Response signature verification failed - response {} dropped"

@@ -44,7 +44,7 @@ CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
       emit Loaded();
    };
    resolver_ = std::make_shared<CCPubResolver>(logger_
-      , BinaryData::CreateFromHex(appSettings_->get<std::string>(ApplicationSettings::bsPublicKey))
+      , BinaryData::CreateFromHex(appSettings_->GetBlocksettlePublicKey())
       , cbSecLoaded, cbLoadComplete);
 
    ccFilePath_ = appSettings->ccFilePath();

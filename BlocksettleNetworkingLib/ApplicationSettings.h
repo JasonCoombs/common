@@ -95,7 +95,6 @@ public:
       notifyOnTX,
       defaultAuthAddr,
       numberOfAuthAddressVisible,
-      bsPublicKey,
       logDefault,
       logMessages,
       txCacheFileName,
@@ -201,6 +200,7 @@ public:
    std::vector<bs::LogConfig> GetLogsConfig() const;
 
    std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
+   std::string GetBlocksettlePublicKey() const;
 
    void selectNetwork();
 
