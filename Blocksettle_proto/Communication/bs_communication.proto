@@ -69,8 +69,8 @@ message ResponsePacket
 
 message WalletInfoContainer
 {
-   required string   validation_addresses_info  = 1;
-   required string   cc_definitions_info        = 2;
+   required bytes validation_addresses_info  = 1;
+   required bytes cc_definitions_info        = 2;
 }
 
 message GetBSFundingAddressListResponse
