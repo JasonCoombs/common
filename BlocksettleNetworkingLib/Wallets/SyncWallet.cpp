@@ -887,7 +887,7 @@ bs::core::wallet::TXSignRequest Wallet::createPartialTXRequest(uint64_t spendVal
    , const std::vector<UTXO> &inputs
    , std::pair<bs::Address, unsigned> changePair
    , float feePerByte
-   , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
+   , const RecipientMap &recipients
    , const Codec_SignerState::SignerState &prevPart
    , unsigned assumedRecipientCount)
 {

@@ -178,20 +178,10 @@ uint64_t CheckRecipSigner::estimateFee(float &feePerByte, uint64_t fixedFee) con
       inputs.emplace_back(std::move(spender->getUtxo()));
    }
    auto transactions = bs::Address::decorateUTXOsCopy(inputs);
-   std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
-   auto recipVector = getRecipientVector();
-   if (recipients_.empty()) {
-      recipientsMap[0] = std::make_shared<Recipient_OPRETURN>(BinaryData::fromString("fake recipient"));
-   }
-   else {
-      for (unsigned int i = 0; i < recipVector.size(); ++i) {
-         recipientsMap[i] = recipVector[i];
-      }
-   }
 
    const auto origFeePerByte = feePerByte;
    try {
-      PaymentStruct payment(recipientsMap, fixedFee, 0, 0);
+      PaymentStruct payment(recipients_, fixedFee, 0, 0);
 
       auto usedUTXOCopy{ transactions };
       UtxoSelection selection{ usedUTXOCopy };
@@ -203,9 +193,6 @@ uint64_t CheckRecipSigner::estimateFee(float &feePerByte, uint64_t fixedFee) con
 
       const size_t nonWitSize = selection.size_ - selection.witnessSize_;
       txSize = std::ceil(static_cast<float>(3 * nonWitSize + selection.size_) / 4.0f);
-      if (recipients_.empty()) { // subtract fake recipient size
-         txSize -= recipientsMap[0]->getSize();
-      }
    } catch (...) {}
    return txSize * ((origFeePerByte > 0) ? origFeePerByte : feePerByte);
 }

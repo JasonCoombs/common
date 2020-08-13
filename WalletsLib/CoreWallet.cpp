@@ -256,13 +256,9 @@ static size_t getVirtSize(const UtxoSelection &inUTXOSel)
 size_t wallet::TXSignRequest::estimateTxVirtSize() const
 {   // another implementation based on Armory and TransactionData code
    auto transactions = bs::Address::decorateUTXOsCopy(getInputs(nullptr));
-   std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
-   for (unsigned int i = 0; i < armorySigner_.getTxOutCount(); ++i) {
-      recipientsMap[i] = armorySigner_.getRecipient(i);
-   }
 
    try {
-      const PaymentStruct payment(recipientsMap, fee, 0, 0);
+      const PaymentStruct payment(armorySigner_.getRecipientMap(), fee, 0, 0);
       return getVirtSize(computeSizeAndFee(transactions, payment));
    }
    catch (const std::exception &) {}

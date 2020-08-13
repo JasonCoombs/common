@@ -112,18 +112,20 @@ uint64_t bs::tradeutils::estimatePayinFeeWithoutChange(const std::vector<UTXO> &
       feePerByte = 1.01f;
    }
 
-   std::map<unsigned, std::shared_ptr<ScriptRecipient>> recipientsMap;
+   std::map<unsigned, std::vector<std::shared_ptr<ScriptRecipient>>> recipientsMap;
    // Use some fake settlement address as the only recipient
    BinaryData prefixed;
    prefixed.append(AddressEntry::getPrefixByte(AddressEntryType_P2WSH));
    prefixed.append(CryptoPRNG::generateRandom(32));
    auto bsAddr = bs::Address::fromHash(prefixed);
    // Select some random amount
-   recipientsMap[0] = bsAddr.getRecipient(bs::XBTAmount{ uint64_t{1000} });
+   std::vector<std::shared_ptr<ScriptRecipient>> recVec(
+      {bsAddr.getRecipient(bs::XBTAmount(uint64_t(1000)))});
+   recipientsMap.emplace(0, std::move(recVec));
 
    auto inputsCopy = bs::Address::decorateUTXOsCopy(inputs);
    PaymentStruct payment(recipientsMap, 0, feePerByte, 0);
-   uint64_t result = bs::Address::getFeeForMaxVal(inputsCopy, payment.size_, feePerByte);
+   uint64_t result = bs::Address::getFeeForMaxVal(inputsCopy, payment.size(), feePerByte);
    return result;
 }
 
@@ -173,9 +175,9 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
             auto inputsCb = [args, cb, settlAddr, feePerByte, xbtWallet](const std::vector<UTXO> &utxosOrig, bool useAllInputs) {
                auto utxos = bs::Address::decorateUTXOsCopy(utxosOrig);
 
-               std::map<unsigned, std::shared_ptr<ScriptRecipient>> recipientsMap;
-               auto recipient = settlAddr.getRecipient(args.amount);
-               recipientsMap.emplace(0, recipient);
+               std::map<unsigned, std::vector<std::shared_ptr<ScriptRecipient>>> recipientsMap;
+               std::vector<std::shared_ptr<ScriptRecipient>> recVec({settlAddr.getRecipient(args.amount)});
+               recipientsMap.emplace(0, recVec);
                auto payment = PaymentStruct(recipientsMap, 0, feePerByte, 0);
 
                auto coinSelection = CoinSelection(nullptr, {}, args.amount.GetValue(), args.armory->topBlock());
@@ -206,13 +208,12 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
                      fee += changeAmount;
                   }
 
-                  auto changeCb = [args, selectedInputs, fee, settlAddr, xbtWallet, recipient, cb]
+                  auto changeCb = [args, selectedInputs, fee, settlAddr, xbtWallet, recVec, cb]
                      (const bs::Address &changeAddr)
                   {
-                     auto recipients = std::vector<std::shared_ptr<ScriptRecipient>>(1, recipient);
                      auto txReq = std::make_shared<bs::core::wallet::TXSignRequest>(
                         bs::sync::wallet::createTXRequest(args.inputXbtWallets
-                           , selectedInputs, recipients, false, changeAddr, fee, false));
+                           , selectedInputs, recVec, false, changeAddr, fee, false));
 
                      const auto cbResolvePubData = [args, settlAddr, cb, txReq, xbtWallet, changeAddr]
                         (bs::error::ErrorCode errCode, const Codec_SignerState::SignerState &state)

@@ -58,6 +58,8 @@ namespace bs {
       }
       class Wallet;
 
+      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>>;
+
       class WalletsManager : public QObject, public ArmoryCallbackTarget, public WalletCallbackTarget
       {
          Q_OBJECT
@@ -160,7 +162,7 @@ namespace bs {
          static core::wallet::TXSignRequest createPartialTXRequest(uint64_t spendVal
             , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress = {}
             , float feePerByte = 0, uint32_t topHeight = 0
-            , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
+            , const RecipientMap &recipients = {}
             , unsigned changeGroup = UINT32_MAX
             , const Codec_SignerState::SignerState &prevPart = {}, bool useAllInputs = false
             , unsigned assumedRecipientCount = UINT32_MAX

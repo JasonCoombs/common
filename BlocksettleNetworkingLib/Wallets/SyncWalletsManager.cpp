@@ -1908,7 +1908,7 @@ std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEn
 bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t spendVal
    , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress
    , float feePerByte, uint32_t topHeight
-   , const std::map<unsigned, std::shared_ptr<ScriptRecipient>> &recipients
+   , const RecipientMap &recipients
    , unsigned changeGroup
    , const Codec_SignerState::SignerState &prevPart, bool useAllInputs
    , unsigned assumedRecipientCount
@@ -1938,7 +1938,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
    if (feePerByte > 0) {  
       try {
-         std::map<unsigned, std::shared_ptr<ScriptRecipient>> recMap = recipients;
+         RecipientMap recMap = recipients;
          if (assumedRecipientCount != UINT32_MAX) {
             for (unsigned i=0; i<assumedRecipientCount; i++) {
                uint64_t val = 0;
@@ -1947,7 +1947,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
                }
                auto rec = std::make_shared<Recipient_P2WPKH>(
                   CryptoPRNG::generateRandom(20), val);
-               recMap.emplace(i, rec);
+               recMap.emplace(i, std::vector<std::shared_ptr<ScriptRecipient>>({rec}));
             }
          }
 
@@ -1958,7 +1958,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
             utxo.witnessDataSizeBytes_ = unsigned(scrAddr.getWitnessDataSize());
             utxo.isInputSW_ = (scrAddr.getWitnessDataSize() != UINT32_MAX);
          }
-         payment.size_ += static_cast<uint64_t>(std::llround(prevPartFee / feePerByte));
+         payment.addToSize(static_cast<uint64_t>(std::llround(prevPartFee / feePerByte)));
 
          auto coinSelection = CoinSelection(nullptr, {}, UINT64_MAX, topHeight);
 
@@ -2015,8 +2015,9 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
          + ") to spend " + std::to_string(spendVal + fee));
    }
 
-   for (const auto& recipient : recipients) {
-      signer.addRecipient(recipient.second, recipient.first);
+   for (const auto& group : recipients) {
+      for (const auto& recipient : group.second)
+      signer.addRecipient(recipient, group.first);
    }
    
    if (inputAmount > (spendVal + fee)) {

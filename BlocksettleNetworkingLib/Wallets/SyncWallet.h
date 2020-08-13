@@ -107,6 +107,8 @@ namespace bs {
       class WalletACT;
       class WalletCallbackTarget;
 
+      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>>;
+
       class Wallet
       {
          friend class WalletACT;
@@ -204,7 +206,7 @@ namespace bs {
             , const std::vector<UTXO> &inputs
             , std::pair<bs::Address, unsigned> changePair = {bs::Address(), UINT32_MAX}
             , float feePerByte = 0
-            , const std::map<unsigned, std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients = {}
+            , const RecipientMap &recipients = {}
             , const Codec_SignerState::SignerState &prevPart = {}
             , unsigned assumedRecipientCount = UINT32_MAX);
 
