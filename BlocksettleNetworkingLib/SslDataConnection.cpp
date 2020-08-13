@@ -43,8 +43,8 @@ SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logg
    assert(params_.useSsl || (params_.caBundlePtr == nullptr));
    assert(params_.useSsl || (params_.caBundleSize == 0));
    assert(params_.useSsl || !params_.verifyCallback);
-   assert(params_.useSsl || params_.certFilePath.empty());
-   assert(params_.useSsl || params_.privKeyFilePath.empty());
+   assert(params_.useSsl || params_.cert.empty());
+   assert(params_.useSsl || params_.privKey.empty());
 }
 
 SslDataConnection::~SslDataConnection()
@@ -72,9 +72,6 @@ bool SslDataConnection::openConnection(const std::string &host, const std::strin
    info.retry_and_idle_policy = bs::network::ws::defaultRetryAndIdlePolicy();
    info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
-
-   info.client_ssl_cert_filepath = params_.certFilePath.c_str();
-   info.client_ssl_private_key_filepath = params_.privKeyFilePath.c_str();
 
    context_ = lws_create_context(&info);
    if (!context_) {
@@ -161,22 +158,37 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
       }
 
       case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS: {
-         if (!params_.caBundlePtr) {
-            return 0;
-         }
-         auto sslCtx = static_cast<SSL_CTX*>(user);
-         auto store = SSL_CTX_get_cert_store(sslCtx);
-         auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
-         while (true) {
-            auto x = PEM_read_bio_X509_AUX(bio, nullptr, nullptr, nullptr);
-            if (!x) {
-               break;
+         auto ctx = static_cast<SSL_CTX*>(user);
+
+         if (!params_.cert.empty()) {
+            if (!SSL_CTX_use_certificate_ASN1(ctx, static_cast<int>(params_.cert.size())
+               , reinterpret_cast<const uint8_t*>(params_.cert.data()))) {
+               SPDLOG_LOGGER_ERROR(logger_, "SSL_CTX_use_certificate_ASN1 failed");
+               reportFatalError(DataConnectionListener::HandshakeFailed);
+               return -1;
             }
-            int rc = X509_STORE_add_cert(store, x);
-            assert(rc);
-            X509_free(x);
+            if (!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_EC, ctx
+               , reinterpret_cast<const uint8_t*>(params_.privKey.data()), static_cast<int>(params_.privKey.size()))) {
+               SPDLOG_LOGGER_ERROR(logger_, "SSL_CTX_use_PrivateKey_ASN1 failed");
+               reportFatalError(DataConnectionListener::HandshakeFailed);
+               return -1;
+            }
          }
-         BIO_free(bio);
+
+         if (params_.caBundlePtr) {
+            auto store = SSL_CTX_get_cert_store(ctx);
+            auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
+            while (true) {
+               auto x = PEM_read_bio_X509_AUX(bio, nullptr, nullptr, nullptr);
+               if (!x) {
+                  break;
+               }
+               int rc = X509_STORE_add_cert(store, x);
+               assert(rc);
+               X509_free(x);
+            }
+            BIO_free(bio);
+         }
          break;
       }
 

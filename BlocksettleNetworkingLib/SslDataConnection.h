@@ -44,9 +44,9 @@ struct SslDataConnectionParams
    bool skipHostNameChecks{false};
 
    // If set, client's cerificate and key will be loaded and used for SSL connection
-   // Could be in PEM or DER format.
-   std::string certFilePath;
-   std::string privKeyFilePath;
+   // Could be in DER format only!
+   std::string cert;
+   std::string privKey;
 
    // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
    // publicKey is compressed public key from server's certificate in HEX format

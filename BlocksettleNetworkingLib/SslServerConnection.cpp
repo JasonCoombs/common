@@ -42,7 +42,7 @@ SslServerConnection::SslServerConnection(const std::shared_ptr<spdlog::logger>& 
    : logger_(logger)
    , params_(std::move(params))
 {
-   assert(params_.useSsl != params_.privateKey.empty());
+   assert(params_.useSsl != params_.privKey.empty());
    assert(params_.useSsl != params_.cert.empty());
    assert(params_.useSsl || !params_.requireClientCert);
    assert(params_.useSsl || !params_.verifyCallback);
@@ -78,8 +78,8 @@ bool SslServerConnection::BindConnection(const std::string& host , const std::st
    info.options |= params_.requireClientCert ? LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT : 0;
    info.user = this;
 
-   info.server_ssl_private_key_mem = params_.privateKey.data();
-   info.server_ssl_private_key_mem_len = static_cast<uint32_t>(params_.privateKey.size());
+   info.server_ssl_private_key_mem = params_.privKey.data();
+   info.server_ssl_private_key_mem_len = static_cast<uint32_t>(params_.privKey.size());
    info.server_ssl_cert_mem = params_.cert.data();
    info.server_ssl_cert_mem_len = static_cast<uint32_t>(params_.cert.size());
 

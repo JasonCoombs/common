@@ -38,7 +38,9 @@ struct SslServerConnectionParams
    // If set, clients connection must use client certificate
    bool requireClientCert{false};
 
-   std::string privateKey;
+   // Use this cerificate and key to server SSL connection.
+   // Must be set if useSsl is set. Could be in DER or PEM format.
+   std::string privKey;
    std::string cert;
 
    // If set, verifyCallback must return true if connection is allowed and false if connection should be dropped.
