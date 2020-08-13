@@ -14,6 +14,8 @@
 #include <spdlog/spdlog.h>
 
 #include "BinaryData.h"
+#include "StringUtils.h"
+#include "ZmqHelperFunctions.h"
 
 using namespace bs::network;
 
@@ -176,4 +178,29 @@ WsPacket WsPacket::parsePacket(const std::string &data, const std::shared_ptr<sp
 const lws_retry_bo *ws::defaultRetryAndIdlePolicy()
 {
    return &kDefaultRetryAndIdlePolicy;
+}
+
+std::string ws::connectedIp(lws *wsi)
+{
+   auto socket = lws_get_socket_fd(wsi);
+   auto ipAddr = bs::network::peerAddressString(socket);
+   return ipAddr;
+}
+
+std::string ws::forwardedIp(lws *wsi)
+{
+   int n = lws_hdr_total_length(wsi, WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      return "";
+   }
+   std::string value;
+   value.resize(static_cast<size_t>(n + 1));
+   n = lws_hdr_copy(wsi, &value[0], static_cast<int>(value.size()), WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      assert(false);
+      return "";
+   }
+   value.resize(static_cast<size_t>(n));
+   auto ipAddr = bs::trim(bs::split(value, ',').back());
+   return ipAddr;
 }

@@ -21,6 +21,7 @@ namespace spdlog {
    class logger;
 }
 
+struct lws;
 struct lws_retry_bo;
 
 namespace bs {
@@ -30,6 +31,11 @@ namespace bs {
          constexpr size_t kDefaultMaximumWsPacketSize = 100 * 1024 * 1024;
 
          const lws_retry_bo *defaultRetryAndIdlePolicy();
+
+         std::string connectedIp(lws *wsi);
+
+         // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
+         std::string forwardedIp(lws *wsi);
 
       }
       class WsRawPacket
