@@ -302,9 +302,13 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifyUn
             brr.advance(36); //skip outpoint data
 
             auto sigScriptLen = brr.get_var_int();
-            auto sigSciptRef = brr.get_BinaryDataRef(sigScriptLen);
+            auto sigScriptRef = brr.get_BinaryDataRef(sigScriptLen);
+
+            //if this is a p2sh input, it has push data
+            auto pushData = BtcUtils::getLastPushDataInScript(sigScriptRef);
             
-            preimages.emplace(utxo.getScript(), sigSciptRef);
+            auto addr = bs::Address::fromScript(utxo.getScript());
+            preimages.emplace(addr, pushData);
          }
       }
 
