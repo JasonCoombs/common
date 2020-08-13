@@ -269,12 +269,14 @@ ws::PrivateKey ws::generatePrivKey()
    return Botan::PKCS8::BER_encode(privKey);
 }
 
-std::string ws::generateSelfSignedCert(const PrivateKey &privKey)
+std::string ws::generateSelfSignedCert(const PrivateKey &privKey, const std::chrono::seconds &expireTime)
 {
    Botan::AutoSeeded_RNG rng;
    Botan::DataSource_Memory privKeySrc(privKey);
    auto privKeyLoaded = Botan::PKCS8::load_key(privKeySrc);
-   auto cert = Botan::X509::create_self_signed_cert(Botan::X509_Cert_Options(), *privKeyLoaded, kDefaultHash, rng);
+   auto expireTimeSeconds = expireTime / std::chrono::seconds(1);
+   Botan::X509_Cert_Options options("", static_cast<uint32_t>(expireTimeSeconds));
+   auto cert = Botan::X509::create_self_signed_cert(options, *privKeyLoaded, kDefaultHash, rng);
    std::vector<uint8_t> output;
    Botan::DER_Encoder encoder(output);
    cert.encode_into(encoder);

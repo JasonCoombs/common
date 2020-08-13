@@ -43,9 +43,15 @@ namespace bs {
 
          std::string certPublicKey(const std::shared_ptr<spdlog::logger> &logger, x509_store_ctx_st *ctx);
 
+         // Generates secp256r1 private key (in DER format)
          PrivateKey generatePrivKey();
+
+         // Returns compressed public key (33 bytes)
          std::string publicKey(const PrivateKey &privKey);
-         std::string generateSelfSignedCert(const PrivateKey &privKey);
+
+         // Generate self-signed cerificate for the privKey
+         std::string generateSelfSignedCert(const PrivateKey &privKey
+            , const std::chrono::seconds &expireTime = std::chrono::hours(20 * 365 * 24));
 
       }
       class WsRawPacket
