@@ -574,11 +574,18 @@ message GenoaTradingStatusResponse
 message GenoaReserveXbtResponse
 {
    string settlement_id = 1;
-   bool   success = 2;
-   int32  error_code = 3;
-   string currency = 4;
-   double new_balance = 5;
+   bool   success       = 2;
+   string error_message = 3;
+   string currency      = 4;
+   double new_balance   = 5;
+
    CustomerAccountData changed_account = 6;
+}
+
+message GeanoReserveCCResponse
+{
+   bool     success        = 1;
+   string   error_message  = 2;
 }
 
 message GenoaUpdateReserveRequest
@@ -781,6 +788,7 @@ message GenoaMessage
       GenoaApiKeyCheckRequest          api_key_request            = 33;
       GenoaApiKeyCheckResponse         api_key_response           = 34;
       UserEntityInfo                   entity_info                = 35;
+      GeanoReserveCCResponse           cc_reserve_response        = 36;
    }
 }
 
