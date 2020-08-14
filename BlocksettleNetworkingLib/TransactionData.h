@@ -34,8 +34,12 @@ namespace bs {
 }
 class CoinSelection;
 class RecipientContainer;
-class ScriptRecipient;
 class SelectedTransactionInputs;
+
+namespace ArmorySigner
+{
+   class ScriptRecipient;
+};
 
 struct PaymentStruct;
 struct UtxoSelection;
@@ -118,7 +122,7 @@ public:
    void ClearAllRecipients();
 
    bs::Address GetRecipientAddress(unsigned int recipientId) const;
-   std::shared_ptr<ScriptRecipient> GetScriptRecipient(unsigned int recipientId) const;
+   std::shared_ptr<ArmorySigner::ScriptRecipient> GetScriptRecipient(unsigned int recipientId) const;
    bs::XBTAmount GetRecipientAmount(unsigned int recipientId) const;
    bs::XBTAmount  GetTotalRecipientsAmount() const;
    bool IsMaxAmount(unsigned int recipientId) const;
@@ -155,7 +159,7 @@ private:
    // Temporary function until some Armory changes are accepted upstream.
    size_t getVirtSize(const UtxoSelection& inUTXOSel) const;
 
-   std::vector<std::shared_ptr<ScriptRecipient>> GetRecipientList() const;
+   std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> GetRecipientList() const;
 
 private:
    onTransactionChanged             changedCallback_;

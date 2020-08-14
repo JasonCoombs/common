@@ -10,6 +10,8 @@
 */
 #include "AuthAddressLogic.h"
 
+using namespace ArmorySigner;
+
 namespace {
    constexpr uint64_t kAuthValueThreshold = 1000;
 
@@ -701,11 +703,11 @@ BinaryData AuthAddressValidator::fundUserAddress(
    const UTXO &vettingUtxo) const
 {
    //#3: create vetting tx
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
+   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
    signer.addSpender(spenderPtr);
 
    //vetting output
@@ -738,7 +740,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
    , std::shared_ptr<ResolverFeed> feedPtr
    , const std::vector<UTXO> &vettingUtxos, int64_t totalFee) const
 {
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //vetting outputs
@@ -749,7 +751,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
    int64_t changeVal = 0;
    //spenders
    for (const auto &vettingUtxo : vettingUtxos) {
-      auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
+      auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
       signer.addSpender(spenderPtr);
 
       const auto &addr = bs::Address::fromUTXO(vettingUtxo);
@@ -825,11 +827,11 @@ BinaryData AuthAddressValidator::revokeValidationAddress(
    }
 
    //spend it
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ScriptSpender>(firstUtxo);
+   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(firstUtxo);
    signer.addSpender(spenderPtr);
 
    //revocation output, no need for change
@@ -888,7 +890,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
    }
 
    //3: spend to the user address
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
@@ -1268,9 +1270,9 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const bs::Address &, const UTXO &revokeUtxo)
 {
    //User side revoke: burn the validation UTXO as an OP_RETURN
-   Signer signer;
+   ArmorySigner::Signer signer;
    signer.setFeed(feedPtr);
-   signer.addSpender(std::make_shared<ScriptSpender>(revokeUtxo));
+   signer.addSpender(std::make_shared<ArmorySigner::ScriptSpender>(revokeUtxo));
 
    //don't waste space, OP_RETURNs are useless to the chain
    const std::string opReturnMsg = "BSTrevoke";
