@@ -15,7 +15,6 @@
 #include "StringUtils.h"
 #include "ThreadName.h"
 #include "WsConnection.h"
-#include "ZmqHelperFunctions.h"
 
 #include <random>
 #include <libwebsockets.h>
@@ -178,8 +177,8 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
 
       case LWS_CALLBACK_ESTABLISHED: {
          auto &connection = connections_[wsi];
-         auto connIp = connectedIp(wsi);
-         auto forwIp = forwardedIp(wsi);
+         auto connIp = bs::network::ws::connectedIp(wsi);
+         auto forwIp = bs::network::ws::forwardedIp(wsi);
          connection.ipAddr = params_.trustForwardedForHeader && !forwIp.empty() ? forwIp : connIp;
          SPDLOG_LOGGER_DEBUG(logger_, "wsi connected: {}, connected ip: {}, forwarded ip: {}"
             , static_cast<void*>(wsi), connIp, forwIp);
@@ -552,31 +551,6 @@ void WsServerConnection::closeConnectedClient(const std::string &clientId)
    auto count = cookieToClientIdMap_.erase(client.cookie);
    assert(count == 1);
    clients_.erase(clientId);
-}
-
-std::string WsServerConnection::connectedIp(lws *wsi)
-{
-   auto socket = lws_get_socket_fd(wsi);
-   auto ipAddr = bs::network::peerAddressString(socket);
-   return ipAddr;
-}
-
-std::string WsServerConnection::forwardedIp(lws *wsi)
-{
-   int n = lws_hdr_total_length(wsi, WSI_TOKEN_X_FORWARDED_FOR);
-   if (n < 0) {
-      return "";
-   }
-   std::string value;
-   value.resize(static_cast<size_t>(n + 1));
-   n = lws_hdr_copy(wsi, &value[0], static_cast<int>(value.size()), WSI_TOKEN_X_FORWARDED_FOR);
-   if (n < 0) {
-      assert(false);
-      return "";
-   }
-   value.resize(static_cast<size_t>(n));
-   auto ipAddr = bs::trim(bs::split(value, ',').back());
-   return ipAddr;
 }
 
 bool WsServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)

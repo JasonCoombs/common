@@ -82,6 +82,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
    info.retry_and_idle_policy = bs::network::ws::defaultRetryAndIdlePolicy();
    info.options = params_.useSsl ? LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT : 0;
    info.user = this;
+   info.ssl_options_set = params_.useSsl ? ws::sslOptionsSet() : 0;
 
    context_ = lws_create_context(&info);
    if (!context_) {

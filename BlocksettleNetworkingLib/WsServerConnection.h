@@ -127,10 +127,6 @@ private:
    void processError(lws *wsi);
    void closeConnectedClient(const std::string &clientId);
 
-   std::string connectedIp(lws *wsi);
-   // NOTE: Not available after LWS_CALLBACK_ESTABLISHED
-   std::string forwardedIp(lws *wsi);
-
    std::shared_ptr<spdlog::logger>  logger_;
    const WsServerConnectionParams params_;
 
