@@ -830,17 +830,17 @@ message GenoaServerXbtTradingStatus
 
 message GenoaServerNewCcSeedRequest
 {
-   string      email          = 1;
    string      cc_name        = 2;
    string      correlation_id = 3;
    double      initial_price  = 4;
+   uint32      lot_size       = 5;
 }
 
 message GenoaServerNewCCDepositRequest
 {
    string      entity_name = 1;
    string      cc_name     = 2;
-   double      amount      = 3;
+   uint32      amount      = 3;
    string      correlation_id = 4;
 }
 

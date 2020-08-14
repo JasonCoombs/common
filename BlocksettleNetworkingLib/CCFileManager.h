@@ -47,7 +47,6 @@ public:
    std::string nameByWalletIndex(bs::hd::Path::Elem) const override;
    uint64_t lotSizeFor(const std::string &cc) const override;
    bs::Address genesisAddrFor(const std::string &cc) const override;
-   std::string descriptionFor(const std::string &cc) const override;
    std::vector<std::string> securities() const override;
 
    void fillFrom(Blocksettle::Communication::GetCCGenesisAddressesResponse *resp);
@@ -99,7 +98,7 @@ public:
 signals:
    void CCSecurityDef(bs::network::CCSecurityDef);
    void CCSecurityId(const std::string& securityId);
-   void CCSecurityInfo(QString ccProd, QString ccDesc, unsigned long nbSatoshis, QString genesisAddr);
+   void CCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr);
 
    void CCAddressSubmitted(const QString);
    void CCInitialSubmitted(const QString);

@@ -295,7 +295,6 @@ namespace bs {
       {
          std::string    securityId;
          std::string    product;
-         std::string    description;
          bs::Address    genesisAddr;
          uint64_t       nbSatoshis;
       };

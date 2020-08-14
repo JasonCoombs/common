@@ -252,7 +252,7 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
          , static_cast<int>(response.responsetype()));
    }
    else {
-      BinaryData publicKey = BinaryData::CreateFromHex(settings_->get<std::string>(ApplicationSettings::bsPublicKey));
+      BinaryData publicKey = BinaryData::CreateFromHex(settings_->GetBlocksettlePublicKey());
       sigVerified = CryptoECDSA().VerifyData(BinaryData::fromString(response.responsedata()), BinaryData::fromString(response.datasignature()), publicKey);
       if (!sigVerified) {
          logger_->error("[AuthAddressManager::OnDataReceived] Response signature verification failed - response {} dropped"
@@ -471,16 +471,10 @@ void AuthAddressManager::ProcessBSAddressListResponse(const std::string& respons
       return;
    }
 
-   if (recvList.addresslisttype() != AddressType::BitcoinsAddressType) {
-      logger_->error("[AuthAddressManager::ProcessBSAddressListResponse] invalid address list type: {}"
-         , recvList.addresslisttype());
-      return;
-   }
-
    std::unordered_set<std::string> tempList;
-   int size = recvList.addresslist_size();
+   int size = recvList.validation_address_size();
    for (int i = 0; i < size; i++) {
-      tempList.emplace(recvList.addresslist(i));
+      tempList.emplace(recvList.validation_address(i));
    }
 
    logger_->debug("[AuthAddressManager::ProcessBSAddressListResponse] get {} BS addresses", tempList.size());

@@ -201,7 +201,7 @@ namespace bs {
          void settlementLeavesLoaded(unsigned int);
 
       public slots:
-         void onCCSecurityInfo(QString ccProd, QString ccDesc, unsigned long nbSatoshis, QString genesisAddr);
+         void onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr);
          void onCCInfoLoaded();
 
       private:
@@ -287,15 +287,12 @@ namespace bs {
             std::string nameByWalletIndex(bs::hd::Path::Elem) const override;
             uint64_t lotSizeFor(const std::string &cc) const override;
             bs::Address genesisAddrFor(const std::string &cc) const override;
-            std::string descriptionFor(const std::string &cc) const override;
             std::vector<std::string> securities() const override;
 
-            void addData(const std::string &cc, uint64_t lotSize, const bs::Address &genAddr
-               , const std::string &desc);
+            void addData(const std::string &cc, uint64_t lotSize, const bs::Address &genAddr);
 
          private:
             struct CCInfo {
-               std::string desc;
                uint64_t    lotSize;
                bs::Address genesisAddr;
             };
