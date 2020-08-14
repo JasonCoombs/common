@@ -13,7 +13,16 @@
 #include <libwebsockets.h>
 #include <spdlog/spdlog.h>
 
+#include <botan/auto_rng.h>
+#include <botan/data_src.h>
+#include <botan/der_enc.h>
+#include <botan/ecdsa.h>
+#include <botan/pkcs8.h>
+#include <botan/x509self.h>
+
 #include "BinaryData.h"
+#include "StringUtils.h"
+#include "ZmqHelperFunctions.h"
 
 using namespace bs::network;
 
@@ -22,6 +31,10 @@ const char *bs::network::kProtocolNameWs = "bs-ws-protocol";
 namespace {
 
    constexpr size_t kLwsPrePaddingSize = LWS_PRE;
+
+   constexpr auto kDefaultCurve = NID_X9_62_prime256v1;
+   const Botan::EC_Group kDefaultDomain("secp256r1");
+   const auto kDefaultHash = "SHA-256";
 
    class WsRawPacketBuilder
    {
@@ -176,4 +189,116 @@ WsPacket WsPacket::parsePacket(const std::string &data, const std::shared_ptr<sp
 const lws_retry_bo *ws::defaultRetryAndIdlePolicy()
 {
    return &kDefaultRetryAndIdlePolicy;
+}
+
+std::string ws::connectedIp(lws *wsi)
+{
+   auto socket = lws_get_socket_fd(wsi);
+   auto ipAddr = bs::network::peerAddressString(socket);
+   return ipAddr;
+}
+
+std::string ws::forwardedIp(lws *wsi)
+{
+   int n = lws_hdr_total_length(wsi, WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      return "";
+   }
+   std::string value;
+   value.resize(static_cast<size_t>(n + 1));
+   n = lws_hdr_copy(wsi, &value[0], static_cast<int>(value.size()), WSI_TOKEN_X_FORWARDED_FOR);
+   if (n < 0) {
+      assert(false);
+      return "";
+   }
+   value.resize(static_cast<size_t>(n));
+   auto ipAddr = bs::trim(bs::split(value, ',').back());
+   return ipAddr;
+}
+
+std::string ws::certPublicKey(const std::shared_ptr<spdlog::logger> &logger_, x509_store_ctx_st *ctx)
+{
+   auto currCert = X509_STORE_CTX_get_current_cert(ctx);
+   if (!currCert) {
+      SPDLOG_LOGGER_ERROR(logger_, "X509_STORE_CTX_get_current_cert failed");
+      return {};
+   }
+   auto pubKey = X509_get0_pubkey(currCert);
+   if (!pubKey) {
+      SPDLOG_LOGGER_ERROR(logger_, "X509_get0_pubkey failed");
+      return {};
+   }
+   auto ecKey = EVP_PKEY_get0_EC_KEY(pubKey);
+   if (!ecKey) {
+      SPDLOG_LOGGER_ERROR(logger_, "EVP_PKEY_get0_EC_KEY failed");
+      return {};
+   }
+   auto point = EC_KEY_get0_public_key(ecKey);
+   if (!point) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_KEY_get0_public_key failed");
+      return {};
+   }
+   auto group = EC_KEY_get0_group(ecKey);
+   if (!group) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_KEY_get0_group failed");
+      return {};
+   }
+   int curveName = EC_GROUP_get_curve_name(group);
+   if (curveName != kDefaultCurve) {
+      SPDLOG_LOGGER_ERROR(logger_, "unexpected curve name: {}", curveName);
+      return {};
+   }
+   auto size = EC_POINT_point2oct(group, point, POINT_CONVERSION_COMPRESSED, nullptr, 0, nullptr);
+   if (size == 0) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2oct failed");
+      return {};
+   }
+   std::string result(size, 0);
+   size = EC_POINT_point2oct(group, point, POINT_CONVERSION_COMPRESSED, reinterpret_cast<uint8_t*>(&result[0]), result.size(), nullptr);
+   if (size != result.size()) {
+      SPDLOG_LOGGER_ERROR(logger_, "EC_POINT_point2oct failed");
+      return {};
+   }
+   return result;
+}
+
+ws::PrivateKey ws::generatePrivKey()
+{
+   Botan::AutoSeeded_RNG rng;
+   auto privKey = Botan::ECDSA_PrivateKey(rng, kDefaultDomain);
+   return Botan::PKCS8::BER_encode(privKey);
+}
+
+std::string ws::generateSelfSignedCert(const PrivateKey &privKey, const std::chrono::seconds &expireTime)
+{
+   Botan::AutoSeeded_RNG rng;
+   Botan::DataSource_Memory privKeySrc(privKey);
+   auto privKeyLoaded = Botan::PKCS8::load_key(privKeySrc);
+   auto expireTimeSeconds = expireTime / std::chrono::seconds(1);
+   Botan::X509_Cert_Options options("", static_cast<uint32_t>(expireTimeSeconds));
+   auto cert = Botan::X509::create_self_signed_cert(options, *privKeyLoaded, kDefaultHash, rng);
+   std::vector<uint8_t> output;
+   Botan::DER_Encoder encoder(output);
+   cert.encode_into(encoder);
+   return std::string(output.begin(), output.end());
+}
+
+std::string ws::publicKey(const ws::PrivateKey &privKey)
+{
+   Botan::DataSource_Memory privKeySrc(privKey);
+   auto privKeyLoaded = Botan::PKCS8::load_key(privKeySrc);
+   auto privKeyEc = dynamic_cast<Botan::EC_PrivateKey*>(privKeyLoaded.get());
+   auto publicKey = privKeyEc->public_point().encode(Botan::PointGFp::COMPRESSED);
+   return std::string(publicKey.begin(), publicKey.end());
+}
+
+long ws::sslOptionsSet()
+{
+   // Allow TLSv1_3 only
+   return
+         SSL_OP_NO_SSLv2 |
+         SSL_OP_NO_SSLv3 |
+         SSL_OP_NO_TLSv1 |
+         SSL_OP_NO_TLSv1_1 |
+         SSL_OP_NO_TLSv1_2;
 }

@@ -19,7 +19,11 @@
 
 class AddressEntry;
 class BinaryData;
-class ScriptRecipient;
+
+namespace ArmorySigner
+{
+   class ScriptRecipient;
+};
 
 class RecipientContainer
 {
@@ -43,7 +47,7 @@ public:
    bs::XBTAmount GetAmount() const;
    bool IsMaxAmount() const { return isMax_; }
 
-   std::shared_ptr<ScriptRecipient> GetScriptRecipient() const;
+   std::shared_ptr<ArmorySigner::ScriptRecipient> GetScriptRecipient() const;
 
 private:
    bs::Address    address_;

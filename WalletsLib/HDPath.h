@@ -48,6 +48,7 @@ namespace bs {
          void pop();
 
          size_t length() const { return path_.size(); }
+         std::vector<Elem> toVector() const { return path_; }
          Elem get(int index) const;   // negative index is an offset from end
          void clear();
          bool isAbsolute() const { return isAbsolute_; }
