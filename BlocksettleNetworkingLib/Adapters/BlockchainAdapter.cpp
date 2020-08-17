@@ -137,7 +137,9 @@ void BlockchainAdapter::reconnect()
 
 void BlockchainAdapter::resumeRegistrations()
 {
-
+   for (const auto &wallet : wallets_) {
+      registerWallet(wallet.first, wallet.second);
+   }
 }
 
 void BlockchainAdapter::onStateChanged(ArmoryState st)
@@ -368,7 +370,7 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
       sendError();
    }
    const auto &regId = registerWallet(request.wallet_id(), wallet);
-   if (regId.empty) {
+   if (regId.empty()) {
       sendError();
    }
    else {
