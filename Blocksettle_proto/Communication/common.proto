@@ -1,0 +1,167 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2018 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+// Messages common between systems (e.g. terminal and PB)
+package BlockSettle.Common;
+
+
+message Empty {}
+
+
+message ArmoryMessage
+{
+   message Loading
+   {
+      int32 network_type = 1;
+   }
+
+   message Settings
+   {
+      int32  socket_type = 1;
+      int32  network_type = 2;
+      string host = 3;
+      string port = 4;
+      string bip15x_key = 5;
+      bool   run_locally = 6;
+      string data_dir = 7;
+      string executable_path = 8;
+      string bitcoin_dir = 9;
+      string db_dir = 10;
+   }
+
+   message State
+   {
+      int32  state = 1;
+      uint32 top_block = 2;
+   }
+
+   message RegisterWallet
+   {
+      string wallet_id = 1;
+      bool   as_new = 2;
+      repeated string addresses = 3;
+   }
+
+   message WalletRegistered
+   {
+      string wallet_id = 1;
+      bool   success = 2;
+   }
+
+   message Refresh
+   {
+      repeated string ids = 1;
+      bool online = 2;
+   }
+
+   message NewBlock
+   {
+      uint32 top_block = 1;
+      uint32 branch_height = 2;
+   }
+
+   message ZCInvalidated
+   {
+      repeated bytes tx_hashes = 1;
+   }
+
+   message TXEntry
+   {
+      bytes  tx_hash = 1;
+      repeated string wallets_id = 2;
+      int64  value = 3;
+      uint32 block_num = 4;
+      uint32 tx_time = 5;
+      bool   RBF = 6;
+      bool   chained = 7;
+      repeated string addresses = 8;
+   }
+
+   message ZCReceived
+   {
+      string request_id = 1;
+      repeated TXEntry tx_entries = 2;
+   }
+
+   message TXPushData
+   {
+      bytes expected_tx_hash = 1;
+      bytes tx = 2;
+   }
+
+   message TXPushRequest
+   {
+      repeated TXPushData txs_to_push = 1;
+      string push_id = 2;	// optional
+   }
+
+   enum PushTxResult
+   {
+      PushTxSuccess = 0;
+      PushTxInvalidated = 1;
+      PushTxMempoolConflict = 2;
+      PushTxMempoolFull = 3;
+      PushTxOtherError = 5;
+      PushTxAlreadyInChain = 6;
+      PushTxAlreadyInMempool = 7;
+   }
+
+   message TXPushResult
+   {
+      string request_id = 1;
+      string push_id = 2;
+      bytes  tx_hash = 3;
+      PushTxResult result = 4;
+      string error_message = 5;
+   }
+
+   oneof data
+   {
+      Loading          loading = 1;
+      Empty            ready   = 2;
+      Empty            reconnect = 3;
+      Empty            settings_request = 4;
+      Settings         settings_response = 5;
+      State            state_changed = 6;
+      RegisterWallet   register_wallet = 10;
+      WalletRegistered wallet_registered = 11;
+      Refresh          refresh = 12;
+      NewBlock         new_block = 13;
+      ZCInvalidated    zc_invalidated = 14;
+      ZCReceived       zc_received = 15;
+      TXPushRequest    tx_push = 16;
+      TXPushResult     tx_push_result = 17;
+      string           tx_push_timeout = 18;
+   }
+}
+
+
+message WalletsMessage
+{
+   message Loading
+   {
+      uint32 nb_wallets = 1;
+      repeated string wallet_id = 2;
+   }
+
+   message WalletLoaded
+   {
+      string wallet_id = 1;
+   }
+
+   oneof data
+   {
+      Loading      loading = 1;
+      WalletLoaded wallet_loaded = 2;
+      Empty        ready   = 3;
+   }
+}

@@ -37,6 +37,9 @@ namespace bs {
          virtual std::vector<std::shared_ptr<bs::message::Adapter>> process(const Envelope &) const = 0;
          virtual void reset() = 0;
          virtual std::set<UserValue> supportedReceivers() const = 0;
+
+      protected:
+         virtual bool isDefaultRouted(const bs::message::Envelope &) const = 0;
       };
 
       class Router : public RouterInterface
@@ -48,6 +51,9 @@ namespace bs {
          std::set<UserValue> supportedReceivers() const override;
          std::vector<std::shared_ptr<bs::message::Adapter>> process(const Envelope &) const override;
          void reset() override;
+
+      protected:
+         bool isDefaultRouted(const bs::message::Envelope &) const override;
 
       private:
          std::shared_ptr<spdlog::logger>           logger_;

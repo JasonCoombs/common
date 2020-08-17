@@ -18,6 +18,7 @@ FILE(GLOB SOURCES
    Wallets/*.cpp
    ChatProtocol/*.cpp
    Encryption/*.cpp
+   Adapters/*.cpp
    Message/*.cpp
 )
 
@@ -64,6 +65,7 @@ FILE(GLOB HEADERS
    ChatProtocol/ResponseObjects/*.h
    ChatClientTree/*.h
    Encryption/*.h
+   Adapters/*.h
    Message/*.h
 )
 

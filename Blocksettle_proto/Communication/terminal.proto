@@ -13,3 +13,327 @@ syntax = "proto3";
 package BlockSettle.Terminal;
 
 
+message Empty {}
+
+enum SettingIndex
+{
+   SetIdx_Initialized = 0;
+   SetIdx_RunLocalArmory = 1;
+   SetIdx_NetType = 2;
+   SetIdx_ArmoryDbName = 3;
+   SetIdx_ArmoryDbIP = 4;
+   SetIdx_ArmoryDbPort = 5;
+   SetIdx_ArmoryPathName = 6;
+   SetIdx_PuBHost = 7;
+   SetIdx_PuBPort = 8;
+   SetIdx_PuBPubKey = 9;
+   SetIdx_Environment = 10;
+   SetIdx_MDServerHost = 11;
+   SetIdx_MDServerPort = 12;
+   SetIdx_MDHSHost = 13;
+   SetIdx_MDHSPort = 14;
+   SetIdx_ChatServerHost = 15;
+   SetIdx_ChatServerPort = 16;
+   SetIdx_ChatServerPubKey = 17;
+   SetIdx_ChatDbFile = 18;
+   SetIdx_SavedUsername = 19;
+   SetIdx_LocalSignerPort = 20;
+   SetIdx_SignerIndex = 21;
+   SetIdx_SignerOfflineDir = 22;
+   SetIdx_AutoSignSpendLimit = 23;
+   SetIdx_LaunchToTray = 24;
+   SetIdx_MinimizeToTray = 25;
+   SetIdx_CloseToTray = 26;
+   SetIdx_NotifyOnTX = 27;
+   SetIdx_DefaultAuthAddr = 28;
+   SetIdx_NbAuthAddrsVisible = 29;
+   SetIdx_BSPubKey = 30;
+   SetIdx_LogDefault = 31;
+   SetIdx_LogMessages = 32;
+   SetIdx_TxCacheFileName = 33;
+   SetIdx_NbBackupFilesKeep = 34;
+   SetIdx_AQScripts = 35;
+   SetIdx_LastAQScript = 36;
+   SetIdx_DropQuoteNotif = 37;
+   SetIdx_GUI_MainGeom = 38;
+   SetIdx_GUI_MainTab = 39;
+   SetIdx_Filter_MD_RFQ = 40;
+   SetIdx_Filter_MD_RFQ_Portfolio = 41;
+   SetIdx_Filter_MD_QN = 42;
+   SetIdx_Filter_MD_QN_cnt = 43;
+   SetIdx_ChangeLog_BaseURL = 44;
+   SetIdx_Binaries_DownloadURL = 45;
+   SetIdx_ResetPasswordURL = 46;
+   SetIdx_GetAccount_ProdURL = 47;
+   SetIdx_GetAccount_TestURL = 48;
+   SetIdx_GetStartedGuideURL = 49;
+   SetIdx_WalletFiltering = 50;
+   SetIdx_Limit_FxRFQ = 51;
+   SetIdx_Limit_XbtRFQ = 52;
+   SetIdx_Limit_CcRFQ = 53;
+   SetIdx_NoNotifyRFQ = 54;
+   SetIdx_PriceUpdateInterval = 55;
+   SetIdx_ShowQuoted = 56;
+   SetIdx_AdvancedTXisDefault = 57;
+   SetIdx_TxFilter = 58;
+   SetIdx_SubscribeMDatStart = 59;
+   SetIdx_MDLicenseAccepted = 60;
+   SetIdx_AuthPrivKey = 61;
+   SetIdx_jwtUsername = 62;
+   SetIdx_LocalSignerPubKeyPath = 63;
+   SetIdx_RemoteSigners = 64;
+   SetIdx_RememberLogin = 65;
+   SetIdx_ArmoryServers = 66;
+   SetIdx_DefArmoryServerKeys = 67;
+   SetIdx_TwoWaySignerAuth = 68;
+   SetIdx_ChartProduct = 69;
+   SetIdx_ChartTimeframe = 70;
+   SetIdx_ChartCandleCount = 71;
+   SetIdx_LastAQDir = 72;
+   SetIdx_ProxyPubKey = 73;
+   SetIdx_CCServerPubKey = 74;
+   SetIdx_HideLegacyWalletWarn = 75;
+   SetIdx_DetailedSettlDisalogByDef = 76;
+   SetIdx_AutoStartRFQScript = 77;
+   SetIdx_CurrentRFQScript = 78;
+   SetIdx_ShowInfoWidget = 79;
+   SetIdx_LoginApiKey = 80;
+   SetIdx_AutoQuoting = 81;
+   SetIdx_AutoSigning = 82;
+//   SetIdx_ExtConnName = 83;
+//   SetIdx_ExtConnHost = 84;
+   SetIdx_ExtConnPort = 85;
+   SetIdx_ExtConnPubKey = 86;
+   SetIdx_SubmittedAddrXbtLimit = 87;
+}
+
+enum SettingType
+{
+   SettingType_Unknown = 0;
+   SettingType_String  = 1;
+   SettingType_Int     = 2;
+   SettingType_UInt    = 3;
+   SettingType_UInt64  = 4;
+   SettingType_Bool    = 5;
+   SettingType_Float   = 6;
+   SettingType_Rect    = 10;
+   SettingType_Strings = 11;
+   SettingType_StrMap  = 12;
+}
+
+enum SettingSource
+{
+   SettingSource_Unknown = 0;
+   SettingSource_Local   = 1;
+   SettingSource_Remote  = 2;
+}
+
+message SettingRequest
+{
+   SettingSource source = 1;
+   SettingIndex  index  = 2;
+   SettingType   type   = 3;
+}
+
+message StrKeyVal {
+   string key   = 1;
+   string value = 2;
+}
+
+
+message SettingResponse
+{
+   SettingRequest request = 1;
+
+   message RectData {
+      int32 left   = 1;
+      int32 top    = 2;
+      int32 width  = 3;
+      int32 height = 4;
+   }
+
+   message Strings {
+      repeated string strings = 1;
+   }
+
+   message StrMap {
+      repeated StrKeyVal key_vals = 1;
+   }
+
+   oneof data
+   {
+      string s    = 2;
+      int32  i    = 3;
+      uint32 ui   = 4;
+      uint64 ui64 = 5;
+      bool   b    = 6;
+      double f    = 7;
+      RectData rect = 10;
+      Strings  strings = 11;
+      StrMap   key_vals = 12;
+   }
+}
+
+message SettingsMessage
+{
+   message SettingsRequest
+   {
+      repeated SettingRequest requests = 1;
+   }
+
+   message SettingsResponse
+   {
+      repeated SettingResponse responses = 1;
+   }
+
+   message ArmoryServerSet
+   {
+      int32  network_type = 1;
+      string server_name  = 2;
+   }
+
+   message SignerServer
+   {
+      string id = 1;
+      string name = 2;
+      bool   is_local = 3;
+      int32  network_type = 4;
+      string host = 5;
+      string port = 6;
+      string key = 7;
+      string remote_keys_dir = 8;
+      string remote_keys_file = 9;
+      repeated StrKeyVal client_keys = 10;
+      string local_port = 11;
+      string home_dir = 12;
+      double auto_sign_spend_limit = 13;
+   }
+
+   message SignerSetKey
+   {
+      string server_id = 1;
+      string new_key = 2;
+   }
+
+   oneof data
+   {
+      SettingsRequest  get_request  = 1;
+      SettingsResponse get_response = 2;
+      SettingsResponse put_request = 3;
+      SettingsResponse settings_updated = 4;
+      ArmoryServerSet  armory_server = 5;
+      Empty            signer_request = 6;
+      SignerServer     signer_response = 7;
+      SignerSetKey     signer_set_key = 8;
+      Empty            signer_reset = 9;
+   }
+}
+
+
+message AdministrativeMessage
+{
+   oneof data
+   {
+      Empty start = 1;
+      Empty stop  = 2;
+      Empty restart = 3;
+      int32 component_created = 4;
+      int32 component_loading = 5;
+      int32 component_ready = 6;
+   }
+}
+
+
+message ErrorResult
+{
+   int32  code = 1;
+   string text = 2;
+}
+
+
+message SignerMessage
+{
+   message NewKeyCompare
+   {
+      string old_key = 1;
+      string new_key = 2;
+      string server_id = 3;
+   }
+
+   oneof data
+   {
+      NewKeyCompare new_key_request  = 1;
+      bool          new_key_response = 2;
+      ErrorResult   error = 3;
+      string        auth_leaf_added = 4;
+      Empty         wallets_list_updated = 5;
+      Empty         wallet_storage_decrypted = 6;
+      Empty         ready = 7;
+      Empty         need_new_wallet_prompt = 8;
+      Empty         wallets_ready_to_sync = 9;
+      bool          window_visible_changed = 10;
+   }
+}
+
+
+message BsServerMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message MatchingMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message AssetsMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message MktDataMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message MDHistMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message SettlementMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message ChatMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}

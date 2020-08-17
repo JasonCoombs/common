@@ -65,6 +65,24 @@ std::set<UserValue> Router::supportedReceivers() const
    return result;
 }
 
+bool Router::isDefaultRouted(const bs::message::Envelope &env) const
+{
+   if (env.receiver->isFallback()) {
+      return true;
+   }
+   auto itAdapter = adapters_.find(env.receiver->value());
+   if (itAdapter == adapters_.end()) {
+      if (env.sender->isFallback()) {
+         logger_->warn("[Router::process] failed to find route for {} "
+            "(from {}) - dropping message", env.receiver->name(), env.sender->name());
+         return false;
+      }
+   } else {
+      return false;
+   }
+   return true;
+}
+
 std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::message::Envelope &env) const
 {
    std::vector<std::shared_ptr<bs::message::Adapter>> result;
@@ -82,24 +100,26 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
       auto last = std::unique(result.begin(), result.end());
       result.erase(last, result.end());
    } else {
-      auto itAdapter = adapters_.find(env.receiver->value());
-      if (itAdapter == adapters_.end()) {
-         if (env.sender->isFallback()) {
-            logger_->warn("[Router::process] failed to find route for {} "
-               "(from {}) - dropping message", env.receiver->name(), env.sender->name());
-            return {};
-         }
+      if (isDefaultRouted(env)) {
          if (defaultRoute_) {
             return { defaultRoute_ };
          }
          else {
-            logger_->error("[Router::process] failed to find route for {} - dropping message"
-               , env.receiver->name());
+            logger_->error("[Router::process] failed to find route for {} - "
+               "dropping message #{} from {} ({})", env.receiver->name(), env.id
+               , env.sender->name(), env.sender->value());
             return {};
          }
       }
       else {
-         return { itAdapter->second };
+         try {
+            return { adapters_.at(env.receiver->value()) };
+         }
+         catch (const std::exception &) {
+            logger_->error("[Router::process] can't find receiver {}"
+               , env.receiver->name());
+            return {};
+         }
       }
    }
    return result;
@@ -184,6 +204,11 @@ void Queue_Locking::process()
             acc.addQueueTime(std::chrono::duration_cast<std::chrono::microseconds>(timeNow - env.posted));
          }
 
+         if (!env.sender) {
+            logger_->info("[Queue::process] no sender found - skipping msg #{}", env.id);
+            continue;
+         }
+
          if (env.sender->isSystem() && env.receiver->isSystem()) {
             if (env.message == kQuitMessage) {
                logger_->info("[Queue::process] detected quit system message");
@@ -207,7 +232,7 @@ void Queue_Locking::process()
                   deferredQueue.emplace_back(std::move(env));
                }
                if (accounting_) {
-                  acc.add(static_cast<int>(env.receiver->value())
+                  acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
                      , std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - procStart));
                }
             } else {
@@ -221,7 +246,7 @@ void Queue_Locking::process()
                   adapter->process(env);
                }
                if (accounting_) {
-                  acc.add(static_cast<int>(env.receiver->value())
+                  acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
                      , std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - procStart));
                }
             }
