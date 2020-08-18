@@ -71,6 +71,7 @@ namespace bs {
 struct BsClientLoginResult
 {
    AutheIDClient::ErrorType status{};
+   std::string errorMsg;
    bs::network::UserType userType{};
    std::string celerLogin;
    BinaryData chatTokenData;
@@ -158,7 +159,7 @@ public slots:
    void findEmailHash(const std::string &email);
 
 signals:
-   void startLoginDone(AutheIDClient::ErrorType status);
+   void startLoginDone(bool success, const std::string &errorMsg);
    void authorizeDone(bool success, const std::string &email = {});
    void getLoginResultDone(const BsClientLoginResult &result);
 

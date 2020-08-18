@@ -17,10 +17,11 @@ import "bs_types.proto";
 // Messages sent from terminal to proxy and back.
 // `Request` is sent from terminal (proxy is a server here).
 
-message AuthEidError
+message Error
 {
     // AutheIDClient::ErrorType as int
     int32 error_code = 1;
+    string message = 2;
 }
 
 message Empty
@@ -97,7 +98,7 @@ message Response
 {
    message StartLogin
    {
-      AuthEidError error = 1;
+      Error error = 1;
    }
 
    message Authorize
@@ -107,7 +108,7 @@ message Response
 
    message GetLoginResult
    {
-      AuthEidError   error                   = 1;
+      Error          error                   = 1;
       string         celer_login             = 2;
       // bs::network::UserType as int
       int32          user_type               = 3;
