@@ -295,7 +295,6 @@ namespace bs {
       {
          std::string    securityId;
          std::string    product;
-         std::string    description;
          bs::Address    genesisAddr;
          uint64_t       nbSatoshis;
       };
@@ -333,7 +332,6 @@ namespace bs {
       struct UnsignedPayinData
       {
          std::string    unsignedPayin;
-         std::map<bs::Address, BinaryData>   preimageData;
       };
 
    }  //namespace network

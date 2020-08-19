@@ -24,6 +24,8 @@
 #include <map>
 #include <spdlog/spdlog.h>
 
+using namespace ArmorySigner;
+
 static const size_t kMaxTxStdWeight = 400000;
 
 
@@ -226,7 +228,7 @@ bool TransactionData::UpdateTransactionData()
    }
 
    bool maxAmount = true;
-   std::map<unsigned, std::shared_ptr<ScriptRecipient>> recipientsMap;
+   std::map<unsigned, std::vector<std::shared_ptr<ScriptRecipient>>> recipientsMap;
    if (RecipientsReady()) {
       for (const auto& it : recipients_) {
          if (!it.second->IsReady()) {
@@ -237,7 +239,8 @@ bool TransactionData::UpdateTransactionData()
          if (!recip) {
             return false;
          }
-         recipientsMap.emplace(it.first, recip);
+         recipientsMap.emplace(it.first, 
+            std::vector<std::shared_ptr<ScriptRecipient>>({recip}));
       }
    }
    if (recipientsMap.empty()) {
@@ -248,7 +251,7 @@ bool TransactionData::UpdateTransactionData()
    PaymentStruct payment = (!totalFee && !qFuzzyIsNull(feePerByte_))
       ? PaymentStruct(recipientsMap, 0, feePerByte_, 0)
       : PaymentStruct(recipientsMap, totalFee, 0, 0);
-   summary_.balanceToSpend = payment.spendVal_ / BTCNumericTypes::BalanceDivider;
+   summary_.balanceToSpend = payment.spendVal() / BTCNumericTypes::BalanceDivider;
 
    if (summary_.fixedInputs) {
       if (!summary_.txVirtSize && !usedUTXO_.empty()) {
@@ -270,7 +273,7 @@ bool TransactionData::UpdateTransactionData()
       }
       summary_.hasChange = summary_.availableBalance > (summary_.balanceToSpend + totalFee_ / BTCNumericTypes::BalanceDivider);
    }
-   else if (payment.spendVal_ <= availableBalance) {
+   else if (payment.spendVal() <= availableBalance) {
       if (maxAmount) {
          const UtxoSelection selection = computeSizeAndFee(transactions, payment);
          summary_.txVirtSize = getVirtSize(selection);
@@ -280,7 +283,7 @@ bool TransactionData::UpdateTransactionData()
             }
             summary_.txVirtSize = 0;
          }
-         summary_.totalFee = availableBalance - payment.spendVal_;
+         summary_.totalFee = availableBalance - payment.spendVal();
          summary_.feePerByte =
             std::round((float)summary_.totalFee / (float)summary_.txVirtSize);
          summary_.hasChange = false;
@@ -369,19 +372,19 @@ bs::XBTAmount TransactionData::CalculateMaxAmount(const bs::Address &recipient, 
          return {};
       }
 
-      std::map<unsigned int, std::shared_ptr<ScriptRecipient>> recipientsMap;
+      std::map<unsigned int, std::vector<std::shared_ptr<ScriptRecipient>>> recipientsMap;
       unsigned int recipId = 0;
       for (const auto &recip : recipients_) {
          const auto recipPtr = recip.second->GetScriptRecipient();
          if (!recipPtr || !recipPtr->getValue()) {
             continue;
          }
-         recipientsMap[recipId++] = recipPtr;
+         recipientsMap[recipId++] = std::vector<std::shared_ptr<ScriptRecipient>>({recipPtr});
       }
       if (!recipient.empty()) {
          const auto recipPtr = recipient.getRecipient(bs::XBTAmount{ 0.001 });  // spontaneous output amount, shouldn't be 0
          if (recipPtr) {
-            recipientsMap[recipId++] = recipPtr;
+            recipientsMap[recipId++] = std::vector<std::shared_ptr<ScriptRecipient>>({recipPtr});
          }
       }
       if (recipientsMap.empty()) {
@@ -396,7 +399,7 @@ bs::XBTAmount TransactionData::CalculateMaxAmount(const bs::Address &recipient, 
       // satoshis higher than is strictly required by Core but that's okay.
       // If truly required, the fee can be tweaked later.
       try {
-         uint64_t fee = coinSelection_->getFeeForMaxVal(payment.size_, feePerByte_
+         uint64_t fee = coinSelection_->getFeeForMaxVal(payment.size(), feePerByte_
             , transactions);
          if (fee < minTotalFee_) {
             fee = minTotalFee_;

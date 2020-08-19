@@ -61,7 +61,7 @@ namespace bs {
       BinaryData unprefixed() const;
       BinaryData id() const;
 
-      std::shared_ptr<ScriptRecipient> getRecipient(const XBTAmount& amount) const;
+      std::shared_ptr<ArmorySigner::ScriptRecipient> getRecipient(const XBTAmount& amount) const;
 
       size_t getInputSize() const;
       size_t getWitnessDataSize() const;  // returns UINT32_MAX if irrelevant
@@ -72,7 +72,7 @@ namespace bs {
       static bs::Address fromPubKey(const BinaryData &data, AddressEntryType aet);
       static bs::Address fromTxOut(const TxOut &);
       static bs::Address fromUTXO(const UTXO &);
-      static bs::Address fromRecipient(const std::shared_ptr<ScriptRecipient> &);
+      static bs::Address fromRecipient(const std::shared_ptr<ArmorySigner::ScriptRecipient> &);
       static bs::Address fromScript(const BinaryData&);
       static bs::Address fromAddressString(const std::string&);
       static bs::Address fromAddressEntry(const AddressEntry&);

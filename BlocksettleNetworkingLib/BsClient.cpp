@@ -64,7 +64,7 @@ void BsClient::startLogin(const std::string &email)
    d->set_email(email);
 
    sendRequest(&request, std::chrono::seconds(10), [this] {
-      emit startLoginDone(AutheIDClient::NetworkError);
+      emit startLoginDone(false, kTimeoutError);
    });
 }
 
@@ -111,7 +111,8 @@ void BsClient::sendCancelOnXBTTrade(const std::string& settlementId)
    sendPbMessage(request.SerializeAsString());
 }
 
-void BsClient::sendUnsignedPayin(const std::string& settlementId, const bs::network::UnsignedPayinData& unsignedPayinData)
+void BsClient::sendUnsignedPayin(const std::string& settlementId
+   , const bs::network::UnsignedPayinData& unsignedPayinData)
 {
    SPDLOG_LOGGER_DEBUG(logger_, "send unsigned payin {}", settlementId);
 
@@ -120,13 +121,6 @@ void BsClient::sendUnsignedPayin(const std::string& settlementId, const bs::netw
    auto data = request.mutable_unsigned_payin();
    data->set_settlement_id(settlementId);
    data->set_unsigned_payin(unsignedPayinData.unsignedPayin);
-
-   for (const auto &preImageIt : unsignedPayinData.preimageData) {
-      auto preImage = data->add_preimage_data();
-
-      preImage->set_address(preImageIt.first.display());
-      preImage->set_preimage_script(preImageIt.second.toBinStr());
-   }
 
    sendPbMessage(request.SerializeAsString());
 }
@@ -192,7 +186,7 @@ void BsClient::getLoginResult()
    // Add some time to be able get timeout error from the server
    sendRequest(&request, autheidLoginTimeout() + std::chrono::seconds(3), [this] {
       BsClientLoginResult result;
-      result.status = AutheIDClient::NetworkError;
+      result.errorMsg = kTimeoutError;
       emit getLoginResultDone(result);
    });
 }
@@ -539,7 +533,8 @@ void BsClient::sendMessage(Request *request)
 
 void BsClient::processStartLogin(const Response_StartLogin &response)
 {
-   emit startLoginDone(AutheIDClient::ErrorType(response.error().error_code()));
+   bool success = response.error().error_code() == 0;
+   emit startLoginDone(success, response.error().message());
 }
 
 void BsClient::processAuthorize(const Response_Authorize &response)
@@ -551,6 +546,7 @@ void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
 {
    BsClientLoginResult result;
    result.status = static_cast<AutheIDClient::ErrorType>(response.error().error_code());
+   result.errorMsg = response.error().message();
    result.userType = static_cast<bs::network::UserType>(response.user_type());
    result.celerLogin = response.celer_login();
    result.chatTokenData = BinaryData::fromString(response.chat_token_data());
