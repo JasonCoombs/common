@@ -776,7 +776,7 @@ std::string ApplicationSettings::networkName(NetworkType type)
    }
 }
 
-std::string ApplicationSettings::GetBlocksettlePublicKey() const
+std::string ApplicationSettings::GetBlocksettleSignAddress() const
 {
    auto env = static_cast<ApplicationSettings::EnvConfiguration>(get<int>(ApplicationSettings::envConfiguration));
 
@@ -784,10 +784,10 @@ std::string ApplicationSettings::GetBlocksettlePublicKey() const
       case ApplicationSettings::EnvConfiguration::Production:
          return "";
       case ApplicationSettings::EnvConfiguration::Test:
-         return "0355621c63cb9b3e2449cceb7a0fbbaf37b9d123fe6bc6e465c4dc3ebcca36df41";
+         return "";
 #ifndef PRODUCTION_BUILD
       case ApplicationSettings::EnvConfiguration::Staging:
-         return "0332834fa4d4bef48d651573a23a8257b981f3000e592d22f270fffdf5c66a3b18";
+         return "";
 #endif
       default:
          return "";
