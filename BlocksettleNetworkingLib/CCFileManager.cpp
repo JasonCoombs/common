@@ -342,7 +342,10 @@ bool CCPubResolver::saveToFile(const std::string &path, const std::string &respo
    return true;
 }
 
-bool CCPubResolver::verifySignature(const std::string& data, const std::string& signature) const
+bool CCPubResolver::verifySignature(const std::string& data, const std::string& signatureStr) const
 {
-   return CryptoECDSA().VerifyData(BinaryData::fromString(data), BinaryData::fromString(signature), pubKey_);
+   const auto message = BinaryData::fromString(data);
+   const auto signature = BinaryData::fromString(signatureStr);
+
+   return ArmorySigner::Signer::verifyMessageSignature(message, pubKey_, signature);
 }
