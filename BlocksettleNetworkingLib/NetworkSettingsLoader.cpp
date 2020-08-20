@@ -25,8 +25,7 @@ NetworkSettingsLoader::NetworkSettingsLoader(const std::shared_ptr<spdlog::logge
    , cbApprove_(cbApprove)
    , pubHost_(pubHost)
    , pubPort_(pubPort)
-{
-}
+{}
 
 void NetworkSettingsLoader::loadSettings()
 {
