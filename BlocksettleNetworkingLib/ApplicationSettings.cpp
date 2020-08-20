@@ -780,6 +780,7 @@ std::string ApplicationSettings::GetBlocksettleSignAddress() const
 {
    auto env = static_cast<ApplicationSettings::EnvConfiguration>(get<int>(ApplicationSettings::envConfiguration));
 
+// NOTE: BlockSettle offline sign address hardcoded here
    switch (env) {
       case ApplicationSettings::EnvConfiguration::Production:
          return "";
