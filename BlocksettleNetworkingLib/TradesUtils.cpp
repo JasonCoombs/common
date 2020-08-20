@@ -224,6 +224,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
 
                         try {
                            result.signRequest = *txReq;
+                           result.txReq.armorySigner_.merge(state);
                            result.payinHash = txReq->txId();
                            result.signRequest.txHash = result.payinHash;
 
