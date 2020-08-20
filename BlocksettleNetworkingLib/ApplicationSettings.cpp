@@ -785,10 +785,10 @@ std::string ApplicationSettings::GetBlocksettleSignAddress() const
       case ApplicationSettings::EnvConfiguration::Production:
          return "";
       case ApplicationSettings::EnvConfiguration::Test:
-         return "";
+         return "tb1q3ajkr6yyvpdd9rqfm7f2y68etq60237sjq687c";
 #ifndef PRODUCTION_BUILD
       case ApplicationSettings::EnvConfiguration::Staging:
-         return "";
+         return "tb1q0g3xhhdy5d90dfmcs9zf4vy2hqaeazhhsc8qg0";
 #endif
       default:
          return "";
