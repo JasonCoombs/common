@@ -783,7 +783,7 @@ std::string ApplicationSettings::GetBlocksettleSignAddress() const
 // NOTE: BlockSettle offline sign address hardcoded here
    switch (env) {
       case ApplicationSettings::EnvConfiguration::Production:
-         return "";
+         return "bc1q8e2e3q9rnder5zuam50uurjaxs3xyw6793lxzh";
       case ApplicationSettings::EnvConfiguration::Test:
          return "tb1q3ajkr6yyvpdd9rqfm7f2y68etq60237sjq687c";
 #ifndef PRODUCTION_BUILD
