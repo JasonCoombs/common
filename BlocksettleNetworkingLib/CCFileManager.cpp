@@ -44,7 +44,7 @@ CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
       emit Loaded();
    };
    resolver_ = std::make_shared<CCPubResolver>(logger_
-      , BinaryData::CreateFromHex(appSettings_->GetBlocksettlePublicKey())
+      , appSettings_->GetBlocksettleSignAddress()
       , cbSecLoaded, cbLoadComplete);
 
    ccFilePath_ = appSettings->ccFilePath();
@@ -342,7 +342,11 @@ bool CCPubResolver::saveToFile(const std::string &path, const std::string &respo
    return true;
 }
 
-bool CCPubResolver::verifySignature(const std::string& data, const std::string& signature) const
+bool CCPubResolver::verifySignature(const std::string& data, const std::string& signatureStr) const
 {
-   return CryptoECDSA().VerifyData(BinaryData::fromString(data), BinaryData::fromString(signature), pubKey_);
+   const auto message = BinaryData::fromString(data);
+   const auto signature = BinaryData::fromString(signatureStr);
+   const auto signAddress = bs::Address::fromAddressString(signAddress_).prefixed();
+
+   return ArmorySigner::Signer::verifyMessageSignature(message, signAddress, signature);
 }

@@ -200,7 +200,7 @@ public:
    std::vector<bs::LogConfig> GetLogsConfig() const;
 
    std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
-   std::string GetBlocksettlePublicKey() const;
+   std::string GetBlocksettleSignAddress() const;
 
    void selectNetwork();
 

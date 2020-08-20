@@ -252,8 +252,11 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
          , static_cast<int>(response.responsetype()));
    }
    else {
-      BinaryData publicKey = BinaryData::CreateFromHex(settings_->GetBlocksettlePublicKey());
-      sigVerified = CryptoECDSA().VerifyData(BinaryData::fromString(response.responsedata()), BinaryData::fromString(response.datasignature()), publicKey);
+      const auto signAddress = bs::Address::fromAddressString(settings_->GetBlocksettleSignAddress()).prefixed();
+      const auto message = BinaryData::fromString(response.responsedata());
+      const auto signature = BinaryData::fromString(response.datasignature());
+
+      sigVerified = ArmorySigner::Signer::verifyMessageSignature(message, signAddress, signature);
       if (!sigVerified) {
          logger_->error("[AuthAddressManager::OnDataReceived] Response signature verification failed - response {} dropped"
             , static_cast<int>(response.responsetype()));
