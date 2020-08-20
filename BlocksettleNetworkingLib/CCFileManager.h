@@ -39,7 +39,7 @@ public:
    using CCSecLoadedCb = std::function<void(const bs::network::CCSecurityDef &)>;
    using CCLoadCompleteCb = std::function<void(unsigned int)>;
    CCPubResolver(const std::shared_ptr<spdlog::logger> &logger
-      , const SecureBinaryData &signAddress, const CCSecLoadedCb &cbSec
+      , const std::string &signAddress, const CCSecLoadedCb &cbSec
       , const CCLoadCompleteCb &cbLoad)
       : logger_(logger), signAddress_(signAddress), cbSecLoaded_(cbSec)
       , cbLoadComplete_(cbLoad) {}
@@ -61,7 +61,7 @@ private:
 
 private:
    std::shared_ptr<spdlog::logger>  logger_;
-   const SecureBinaryData           signAddress_;
+   const std::string                signAddress_;
    std::map<std::string, bs::network::CCSecurityDef>  securities_;
    std::map<bs::hd::Path::Elem, std::string>          walletIdxMap_;
    const CCSecLoadedCb     cbSecLoaded_;

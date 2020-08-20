@@ -252,7 +252,7 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
          , static_cast<int>(response.responsetype()));
    }
    else {
-      const auto signAddress = BinaryData::CreateFromHex(settings_->GetBlocksettleSignAddress());
+      const auto signAddress = bs::Address::fromAddressString(settings_->GetBlocksettleSignAddress()).prefixed();
       const auto message = BinaryData::fromString(response.responsedata());
       const auto signature = BinaryData::fromString(response.datasignature());
 
