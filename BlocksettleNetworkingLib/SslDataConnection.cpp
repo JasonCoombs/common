@@ -288,7 +288,7 @@ void SslDataConnection::listenFunction()
    wsi_ = lws_client_connect_via_info(&i);
 
    while (!stopped_.load()) {
-      lws_service(context_, kPeriodicCheckTimeout / std::chrono::milliseconds(1));
+      lws_service(context_, 0);
    }
 
    wsi_ = nullptr;

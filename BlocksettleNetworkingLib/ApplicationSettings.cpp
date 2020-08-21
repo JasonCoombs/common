@@ -201,7 +201,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
       { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
-      { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) }
+      { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
+      { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) }
    };
 }
 
