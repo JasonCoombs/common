@@ -1321,3 +1321,77 @@ const OutpointData& AuthAddressLogic::AddrPathsStatus::getValidationOutpoint() c
 
    return iter->second;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+void ValidationAddressStruct::prettyPrint(void) const
+{
+   std::stringstream ss;
+   if (firstOutpointHash_.empty()) {
+      ss << " - missing first outpoint" << std::endl;
+   } else {
+      ss << " - first outpoint: " << firstOutpointHash_.toHexStr() << 
+         ", id: " << firstOutpointIndex_ << std::endl;
+
+
+      //order by height and txindex
+      size_t count = 0;
+      std::map<unsigned, std::map<unsigned, BinaryDataRef>> heightIdMap;
+
+      for (const auto& hashPair : outpoints_) {
+         if (hashPair.second.empty()) {
+            continue;
+         }
+
+         //tally count
+         count += hashPair.second.size();
+
+         //populate height and index map
+         const auto& firstOp = hashPair.second.begin()->second;
+         auto height = firstOp->txHeight();
+         auto txIndex = firstOp->txIndex();
+
+         auto& idMap = heightIdMap[height];
+         idMap.emplace(txIndex, hashPair.first.getRef());
+      }
+
+      ss << " - outpoints count: " << count << std::endl;
+      for (const auto& heightPair : heightIdMap) {
+         for (auto& idPair : heightPair.second) {
+            
+            auto hashIter = outpoints_.find(idPair.second);
+            if (hashIter == outpoints_.end()) {
+               throw std::runtime_error("missing outpoint hash");
+            }
+
+            ss << "  hash: " << hashIter->first.toHexStr() << std::endl;
+            
+            for (const auto& opPair : hashIter->second) {
+               opPair.second->prettyPrint(ss);
+            }
+         }
+      }
+   }
+
+   ss << std::endl;
+   std::cout << ss.str();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void AuthOutpoint::prettyPrint(std::ostream& st) const
+{
+   if (value_ == UINT64_MAX) {
+      st << "   N/A" << std::endl;
+      return;
+   }
+
+   st << "  . id: " << txOutIndex_ << ", height: " << txHeight_ << 
+      ", txId: " << txIndex_ << std::endl;
+
+   st << "    value: " << value_ << ", spender: ";
+
+   if (isSpent_) {
+      st << spenderHash_.toHexStr() << std::endl;
+   } else {
+      st << "N/A" << std::endl;
+   }
+}
