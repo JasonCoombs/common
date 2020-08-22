@@ -169,10 +169,23 @@ bool AuthAddressManager::HasAuthAddr() const
 
 bool AuthAddressManager::CreateNewAuthAddress()
 {
-   const auto &cbAddr = [this](const bs::Address &) {
-      emit walletsManager_->walletChanged(authWallet_->walletId());
+   const auto &cbCreateAddress = [this]
+   {
+      if (!authWallet_) {
+         logger_->error("[AuthAddressManager::CreateNewAuthAddress] no auth leaf");
+         return;
+      }
+      const auto &cbAddr = [this](const bs::Address &) {
+         emit walletsManager_->walletChanged(authWallet_->walletId());
+      };
+      authWallet_->getNewExtAddress(cbAddr);
    };
-   authWallet_->getNewExtAddress(cbAddr);
+   if (HaveAuthWallet()) {
+      cbCreateAddress();
+   }
+   else {
+      return walletsManager_->createAuthLeaf(cbCreateAddress);
+   }
    return true;
 }
 
@@ -252,8 +265,11 @@ void AuthAddressManager::OnDataReceived(const std::string& data)
          , static_cast<int>(response.responsetype()));
    }
    else {
-      BinaryData publicKey = BinaryData::CreateFromHex(settings_->GetBlocksettlePublicKey());
-      sigVerified = CryptoECDSA().VerifyData(BinaryData::fromString(response.responsedata()), BinaryData::fromString(response.datasignature()), publicKey);
+      const auto signAddress = bs::Address::fromAddressString(settings_->GetBlocksettleSignAddress()).prefixed();
+      const auto message = BinaryData::fromString(response.responsedata());
+      const auto signature = BinaryData::fromString(response.datasignature());
+
+      sigVerified = ArmorySigner::Signer::verifyMessageSignature(message, signAddress, signature);
       if (!sigVerified) {
          logger_->error("[AuthAddressManager::OnDataReceived] Response signature verification failed - response {} dropped"
             , static_cast<int>(response.responsetype()));

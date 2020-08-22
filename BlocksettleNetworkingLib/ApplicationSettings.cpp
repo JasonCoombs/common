@@ -116,20 +116,11 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { armoryDbIp,              SettingDef(QLatin1String("ArmoryDBIP"), QLatin1String(MAINNET_ARMORY_BLOCKSETTLE_ADDRESS)) },
       { armoryDbPort,            SettingDef(QLatin1String("ArmoryDBPort"), MAINNET_ARMORY_BLOCKSETTLE_PORT) },
       { armoryPathName,          SettingDef(QString(), armoryDBAppPathName) },
-      { customPubBridgeHost,     SettingDef(QLatin1String("CustomPubBridgeHost"), QString()) },
-      { customPubBridgePort,     SettingDef(QLatin1String("CustomPubBridgePort"), 9091) },
-      { pubBridgePubKey,         SettingDef(QLatin1String("PubBridgePubKey"), QString(), true) },
    #ifdef PRODUCTION_BUILD
       { envConfiguration,        SettingDef(QLatin1String("envConfiguration"), static_cast<int>(EnvConfiguration::Production)) },
    #else
       { envConfiguration,        SettingDef(QLatin1String("envConfiguration"), static_cast<int>(EnvConfiguration::Staging)) },
    #endif
-      { mdServerHost,            SettingDef(QString()) },
-      { mdServerPort,            SettingDef(QString()) },
-      { mdhsHost,                SettingDef(QString()) },
-      { mdhsPort,                SettingDef(QString()) },
-      { chatServerHost,          SettingDef(QString()) },
-      { chatServerPort,          SettingDef(QString()) },
       { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString(), true) },
       { chatDbFile,              SettingDef(QString(), AppendToWritableDir(QLatin1String("chat2.db"))) },
       { celerUsername,           SettingDef(QLatin1String("MatchSystemUsername")) },
@@ -201,7 +192,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
       { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
-      { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) }
+      { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
+      { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) }
    };
 }
 
@@ -429,14 +421,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
    }
 
 #ifndef NDEBUG
-   if (parser.isSet(chatServerIPName)) {
-      QString vcip = parser.value(chatServerIPName);
-      set(chatServerHost, vcip);
-   }
-   if (parser.isSet(chatServerPortName)) {
-      int vcp = parser.value(chatServerPortName).toInt();
-      set(chatServerPort, vcp);
-   }
    if (parser.isSet(localSignerPortName)) {
       int value = parser.value(localSignerPortName).toInt();
       set(localSignerPort, value);
@@ -452,8 +436,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
 void ApplicationSettings::SetDefaultSettings(bool toFile)
 {
    reset(envConfiguration, toFile);
-   reset(customPubBridgeHost, toFile);
-   reset(customPubBridgePort, toFile);
 
    reset(launchToTray, toFile);
    reset(minimizeToTray, toFile);
@@ -776,18 +758,19 @@ std::string ApplicationSettings::networkName(NetworkType type)
    }
 }
 
-std::string ApplicationSettings::GetBlocksettlePublicKey() const
+std::string ApplicationSettings::GetBlocksettleSignAddress() const
 {
    auto env = static_cast<ApplicationSettings::EnvConfiguration>(get<int>(ApplicationSettings::envConfiguration));
 
+// NOTE: BlockSettle offline sign address hardcoded here
    switch (env) {
       case ApplicationSettings::EnvConfiguration::Production:
-         return "";
+         return "bc1q8e2e3q9rnder5zuam50uurjaxs3xyw6793lxzh";
       case ApplicationSettings::EnvConfiguration::Test:
-         return "0355621c63cb9b3e2449cceb7a0fbbaf37b9d123fe6bc6e465c4dc3ebcca36df41";
+         return "tb1q3ajkr6yyvpdd9rqfm7f2y68etq60237sjq687c";
 #ifndef PRODUCTION_BUILD
       case ApplicationSettings::EnvConfiguration::Staging:
-         return "0332834fa4d4bef48d651573a23a8257b981f3000e592d22f270fffdf5c66a3b18";
+         return "tb1q0g3xhhdy5d90dfmcs9zf4vy2hqaeazhhsc8qg0";
 #endif
       default:
          return "";

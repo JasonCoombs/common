@@ -33,15 +33,23 @@ namespace Blocksettle {
 class ApplicationSettings;
 class BaseCelerClient;
 
+enum class CcGenFileError : int {
+   NoError,
+   ReadError,
+   InvalidFormat,
+   InvalidSign,
+};
+
 class CCPubResolver : public bs::sync::CCDataResolver
 {
 public:
+
    using CCSecLoadedCb = std::function<void(const bs::network::CCSecurityDef &)>;
    using CCLoadCompleteCb = std::function<void(unsigned int)>;
    CCPubResolver(const std::shared_ptr<spdlog::logger> &logger
-      , const SecureBinaryData &bsPubKey, const CCSecLoadedCb &cbSec
+      , const std::string &signAddress, const CCSecLoadedCb &cbSec
       , const CCLoadCompleteCb &cbLoad)
-      : logger_(logger), pubKey_(bsPubKey), cbSecLoaded_(cbSec)
+      : logger_(logger), signAddress_(signAddress), cbSecLoaded_(cbSec)
       , cbLoadComplete_(cbLoad) {}
 
    std::string nameByWalletIndex(bs::hd::Path::Elem) const override;
@@ -50,7 +58,7 @@ public:
    std::vector<std::string> securities() const override;
 
    void fillFrom(Blocksettle::Communication::GetCCGenesisAddressesResponse *resp);
-   bool loadFromFile(const std::string &path, NetworkType netType);
+   CcGenFileError loadFromFile(const std::string &path, NetworkType netType);
    bool saveToFile(const std::string &path, const std::string &response
       , const std::string &signature);
 
@@ -61,7 +69,7 @@ private:
 
 private:
    std::shared_ptr<spdlog::logger>  logger_;
-   const SecureBinaryData           pubKey_;
+   const std::string                signAddress_;
    std::map<std::string, bs::network::CCSecurityDef>  securities_;
    std::map<bs::hd::Path::Elem, std::string>          walletIdxMap_;
    const CCSecLoadedCb     cbSecLoaded_;
@@ -104,7 +112,7 @@ signals:
    void CCInitialSubmitted(const QString);
    void CCSubmitFailed(const QString address, const QString &err);
    void Loaded();
-   void LoadingFailed();
+   void LoadingFailed(CcGenFileError);
 
 protected:
    void ProcessGenAddressesResponse(const std::string& response, const std::string &sig) override;

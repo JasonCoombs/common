@@ -98,6 +98,7 @@ public:
 
    ////
    unsigned txOutIndex(void) const { return txOutIndex_; }
+   unsigned txIndex(void) const { return txIndex_; }
    unsigned txHeight(void) const { return txHeight_; }
 
    const BinaryData& spenderHash(void) const
@@ -120,6 +121,9 @@ public:
       spenderHash_ = rhs.spenderHash_;
       txIndex_ = rhs.txIndex_;
    }
+
+   ////
+   void prettyPrint(std::ostream&) const;
 };
 
 struct AuthValidatorCallbacks;
@@ -201,6 +205,8 @@ struct ValidationAddressStruct
       return index == firstOutpointIndex_ &&
          hash == firstOutpointHash_;
    }
+   
+   void prettyPrint(void) const;
 };
 
 
