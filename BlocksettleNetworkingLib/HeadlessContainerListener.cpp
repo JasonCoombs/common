@@ -24,6 +24,10 @@
 
 #include <spdlog/spdlog.h>
 
+#include "headless.pb.h"
+#include "bs_signer.pb.h"
+#include "Blocksettle_Communication_Internal.pb.h"
+
 using namespace Blocksettle::Communication;
 using namespace bs::error;
 using namespace bs::sync;

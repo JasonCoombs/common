@@ -16,9 +16,6 @@
 #include "HDPath.h"
 #include "WalletEncryption.h"
 
-#include "headless.pb.h"
-
-using namespace Blocksettle::Communication;
 
 namespace bs {
    namespace core {
@@ -26,6 +23,23 @@ namespace bs {
       namespace hd {
          class Leaf;
       }
+   }
+}
+namespace Blocksettle {
+   namespace Communication {
+      namespace headless {
+         enum EncryptionType : int;
+         enum NetworkType : int;
+         class SyncWalletInfoResponse;
+         class SyncWalletResponse;
+         enum WalletFormat : int;
+      }
+   }
+}
+namespace BlockSettle {
+   namespace Common {
+      class WalletsMessage_HDWalletData;
+      class WalletsMessage_WalletData;
    }
 }
 
@@ -84,7 +98,7 @@ namespace sync {
 
    struct WalletInfo
    {
-      static std::vector<bs::sync::WalletInfo> fromPbMessage(const headless::SyncWalletInfoResponse &response);
+      static std::vector<bs::sync::WalletInfo> fromPbMessage(const Blocksettle::Communication::headless::SyncWalletInfoResponse &);
 
       WalletFormat   format;
       std::string id;
@@ -113,6 +127,9 @@ namespace sync {
          BinaryData salt;
       };
       std::vector<Group>   groups;
+
+      BlockSettle::Common::WalletsMessage_HDWalletData toCommonMessage() const;
+      static HDWalletData fromCommonMessage(const BlockSettle::Common::WalletsMessage_HDWalletData &);
    };
 
    struct AddressData
@@ -130,7 +147,9 @@ namespace sync {
 
    struct WalletData
    {
-      static WalletData fromPbMessage(const headless::SyncWalletResponse &response);
+      static WalletData fromPbMessage(const Blocksettle::Communication::headless::SyncWalletResponse &);
+      static WalletData fromCommonMessage(const BlockSettle::Common::WalletsMessage_WalletData &);
+      BlockSettle::Common::WalletsMessage_WalletData toCommonMessage() const;
 
       //flag value, signifies the higest index entries are unset if not changed from UINT32_MAX
       unsigned int highestExtIndex = UINT32_MAX; 
@@ -166,18 +185,19 @@ namespace sync {
       std::vector<Group>   groups;
    };
 
-   headless::SyncWalletInfoResponse exportHDWalletsInfoToPbMessage(const std::shared_ptr<bs::core::WalletsManager> &walletsMgr);
-   headless::SyncWalletResponse     exportHDLeafToPbMessage(const std::shared_ptr<bs::core::hd::Leaf> &leaf);
+   Blocksettle::Communication::headless::SyncWalletInfoResponse
+      exportHDWalletsInfoToPbMessage(const std::shared_ptr<bs::core::WalletsManager> &);
+   Blocksettle::Communication::headless::SyncWalletResponse
+      exportHDLeafToPbMessage(const std::shared_ptr<bs::core::hd::Leaf> &leaf);
 
-   bs::wallet::EncryptionType mapFrom(headless::EncryptionType encType);
-   NetworkType mapFrom(headless::NetworkType netType);
-   bs::sync::WalletFormat mapFrom(headless::WalletFormat format);
+   bs::wallet::EncryptionType mapFrom(const Blocksettle::Communication::headless::EncryptionType &);
+   NetworkType mapFrom(const Blocksettle::Communication::headless::NetworkType &);
+   bs::sync::WalletFormat mapFrom(const Blocksettle::Communication::headless::WalletFormat &);
 
-   headless::EncryptionType mapFrom(bs::wallet::EncryptionType encType);
-   headless::NetworkType mapFrom(NetworkType netType);
+   Blocksettle::Communication::headless::EncryptionType mapFrom(bs::wallet::EncryptionType);
+   Blocksettle::Communication::headless::NetworkType mapFrom(NetworkType);
 
 }  //namespace sync
-
 } // bs
 
 #endif

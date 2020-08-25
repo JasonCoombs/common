@@ -94,9 +94,9 @@ void hd::Leaf::synchronize(const std::function<void()> &cbDone)
       for (const auto &txComment : data.txComments) {
          setTransactionComment(txComment.txHash, txComment.comment, false);
       }
-
-      if (cbDone)
+      if (cbDone) {
          cbDone();
+      }
    };
 
    signContainer_->syncWallet(walletId(), cbProcess);
@@ -116,15 +116,13 @@ void hd::Leaf::setPath(const bs::hd::Path &path)
    }
 }
 
-bool hd::Leaf::isOwnId(const std::string &wId) const
+std::vector<std::string> hd::Leaf::internalIds() const
 {
-   if (wId == walletId()) {
-      return true;
+   std::vector<std::string> result{ walletId() };
+   if (!isExtOnly_) {
+      result.push_back(walletIdInt());
    }
-   if (!isExtOnly_ && (walletIdInt() == wId)) {
-      return true;
-   }
-   return false;
+   return internalIds();
 }
 
 void hd::Leaf::onRefresh(const std::vector<BinaryData> &ids, bool online)
@@ -201,6 +199,13 @@ void hd::Leaf::onRefresh(const std::vector<BinaryData> &ids, bool online)
          bs::sync::Wallet::init();
       }
    }
+}
+
+void hd::Leaf::onRegistered()
+{
+   isRegistered_ = Registered::Registered;
+
+   //TODO: process refreshCallbacks if needed
 }
 
 std::vector<std::string> hd::Leaf::setUnconfirmedTarget()
@@ -498,6 +503,28 @@ std::vector<std::string> hd::Leaf::registerWallet(
       return regIds;
    }
    return {};
+}
+
+Wallet::WalletRegData hd::Leaf::regData() const
+{
+   const auto addrsExt = getAddrHashesExt();
+   const auto addrsInt = isExtOnly_ ? std::vector<BinaryData>{} : getAddrHashesInt();
+   WalletRegData result;
+   result[walletId()] = addrsExt;
+   registeredAddresses_.insert(addrsExt.begin(), addrsExt.end());
+
+   if (!isExtOnly_) {
+      result[walletIdInt()] = addrsInt;
+      registeredAddresses_.insert(addrsInt.begin(), addrsInt.end());
+   }
+   logger_->debug("[sync::hd::Leaf::regData] {}+{} addresses in {}"
+      , addrsExt.size(), addrsInt.size(), walletId());
+   return result;
+}
+
+Wallet::UnconfTgtData hd::Leaf::unconfTargets() const
+{
+   return { { walletId(), 1 }, { walletIdInt(), 1 } };
 }
 
 void hd::Leaf::unregisterWallet()

@@ -27,7 +27,10 @@ namespace BlockSettle {
    namespace Common {
       class ArmoryMessage_RegisterWallet;
       class ArmoryMessage_Settings;
+      class ArmoryMessage_TXHashes;
       class ArmoryMessage_TXPushRequest;
+      class ArmoryMessage_WalletIDs;
+      class ArmoryMessage_WalletUnconfirmedTarget;
    }
 }
 class BitcoinFeeCache;
@@ -83,6 +86,7 @@ protected:
    void suspend();
    virtual void resumeRegistrations();
 
+   void sendReady();
    void sendLoadingBC();
    bool processSettings(const BlockSettle::Common::ArmoryMessage_Settings &);
 
@@ -90,6 +94,14 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_TXPushRequest &);
    bool processRegisterWallet(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_RegisterWallet &);
+   bool processUnconfTarget(const bs::message::Envelope &
+      , const BlockSettle::Common::ArmoryMessage_WalletUnconfirmedTarget &);
+   bool processGetTxNs(const bs::message::Envelope &
+      , const BlockSettle::Common::ArmoryMessage_WalletIDs &);
+   bool processBalance(const bs::message::Envelope &
+      , const BlockSettle::Common::ArmoryMessage_WalletIDs &);
+   bool processGetTXsByHash(const bs::message::Envelope &
+      , const BlockSettle::Common::ArmoryMessage_TXHashes &);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -100,12 +112,13 @@ protected:
    struct Wallet {
       std::shared_ptr<AsyncClient::BtcWallet>   wallet;
       bool registered{ false };
-      std::vector<bs::Address>   addresses;
+      std::vector<BinaryData> addresses;
       bool asNew{ false };
    };
    std::unordered_map<std::string, Wallet>      wallets_;
    std::unordered_map<std::string, std::string> regMap_;
    std::unordered_map<std::string, bs::message::Envelope>   reqByRegId_;
+   std::unordered_map<std::string, std::pair<std::string, bs::message::Envelope>>   unconfTgtMap_;
 
    std::atomic_bool  suspended_{ false };
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;

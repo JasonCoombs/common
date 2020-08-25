@@ -144,9 +144,9 @@ bool WalletsManager::syncWallets(const CbProgress &cb)
 
    const auto &cbWalletInfo = [this, cb](const std::vector<bs::sync::WalletInfo> &wi) {
       auto walletIds = std::make_shared<std::unordered_set<std::string>>();
-      for (const auto &info : wi)
+      for (const auto &info : wi) {
          walletIds->insert(info.id);
-
+      }
       for (const auto &info : wi) {
          const auto &cbDone = [this, walletIds, id = info.id, total = wi.size(), cb]
          {

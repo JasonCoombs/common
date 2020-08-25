@@ -12,7 +12,13 @@
 #include "CoreWalletsManager.h"
 #include "CoreHDWallet.h"
 
-NetworkType bs::sync::mapFrom(headless::NetworkType netType)
+#include "common.pb.h"
+#include "headless.pb.h"
+
+using namespace Blocksettle::Communication;
+using namespace BlockSettle::Common;
+
+NetworkType bs::sync::mapFrom(const headless::NetworkType &netType)
 {
    switch (netType) {
    case headless::MainNetType:   return NetworkType::MainNet;
@@ -21,7 +27,7 @@ NetworkType bs::sync::mapFrom(headless::NetworkType netType)
    }
 }
 
-bs::sync::WalletFormat bs::sync::mapFrom(headless::WalletFormat format)
+bs::sync::WalletFormat bs::sync::mapFrom(const headless::WalletFormat &format)
 {
    switch (format) {
    case headless::WalletFormatHD:         return bs::sync::WalletFormat::HD;
@@ -93,7 +99,7 @@ std::vector<bs::sync::WalletInfo> bs::sync::WalletInfo::fromPbMessage(const head
    return result;
 }
 
-bs::wallet::EncryptionType bs::sync::mapFrom(headless::EncryptionType encType)
+bs::wallet::EncryptionType bs::sync::mapFrom(const headless::EncryptionType &encType)
 {
    switch (encType) {
    case headless::EncryptionTypePassword:    return bs::wallet::EncryptionType::Password;

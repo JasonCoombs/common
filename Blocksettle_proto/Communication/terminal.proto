@@ -11,16 +11,10 @@
 syntax = "proto3";
 
 package BlockSettle.Terminal;
+import "common.proto";
 
 
 message Empty {}
-
-message NewKeyCompare
-{
-   string old_key = 1;
-   string new_key = 2;
-   string server_id = 3;
-}
 
 
 enum SettingIndex
@@ -32,87 +26,78 @@ enum SettingIndex
    SetIdx_ArmoryDbIP = 4;
    SetIdx_ArmoryDbPort = 5;
    SetIdx_ArmoryPathName = 6;
-   SetIdx_PuBHost = 7;
-   SetIdx_PuBPort = 8;
-   SetIdx_PuBPubKey = 9;
-   SetIdx_Environment = 10;
-   SetIdx_MDServerHost = 11;
-   SetIdx_MDServerPort = 12;
-   SetIdx_MDHSHost = 13;
-   SetIdx_MDHSPort = 14;
-   SetIdx_ChatServerHost = 15;
-   SetIdx_ChatServerPort = 16;
-   SetIdx_ChatServerPubKey = 17;
-   SetIdx_ChatDbFile = 18;
-   SetIdx_SavedUsername = 19;
-   SetIdx_LocalSignerPort = 20;
-   SetIdx_SignerIndex = 21;
-   SetIdx_SignerOfflineDir = 22;
-   SetIdx_AutoSignSpendLimit = 23;
-   SetIdx_LaunchToTray = 24;
-   SetIdx_MinimizeToTray = 25;
-   SetIdx_CloseToTray = 26;
-   SetIdx_NotifyOnTX = 27;
-   SetIdx_DefaultAuthAddr = 28;
-   SetIdx_NbAuthAddrsVisible = 29;
-   SetIdx_BSPubKey = 30;
-   SetIdx_LogDefault = 31;
-   SetIdx_LogMessages = 32;
-   SetIdx_TxCacheFileName = 33;
-   SetIdx_NbBackupFilesKeep = 34;
-   SetIdx_AQScripts = 35;
-   SetIdx_LastAQScript = 36;
-   SetIdx_DropQuoteNotif = 37;
-   SetIdx_GUI_MainGeom = 38;
-   SetIdx_GUI_MainTab = 39;
-   SetIdx_Filter_MD_RFQ = 40;
-   SetIdx_Filter_MD_RFQ_Portfolio = 41;
-   SetIdx_Filter_MD_QN = 42;
-   SetIdx_Filter_MD_QN_cnt = 43;
-   SetIdx_ChangeLog_BaseURL = 44;
-   SetIdx_Binaries_DownloadURL = 45;
-   SetIdx_ResetPasswordURL = 46;
-   SetIdx_GetAccount_ProdURL = 47;
-   SetIdx_GetAccount_TestURL = 48;
-   SetIdx_GetStartedGuideURL = 49;
-   SetIdx_WalletFiltering = 50;
-   SetIdx_Limit_FxRFQ = 51;
-   SetIdx_Limit_XbtRFQ = 52;
-   SetIdx_Limit_CcRFQ = 53;
-   SetIdx_NoNotifyRFQ = 54;
-   SetIdx_PriceUpdateInterval = 55;
-   SetIdx_ShowQuoted = 56;
-   SetIdx_AdvancedTXisDefault = 57;
-   SetIdx_TxFilter = 58;
-   SetIdx_SubscribeMDatStart = 59;
-   SetIdx_MDLicenseAccepted = 60;
-   SetIdx_AuthPrivKey = 61;
-   SetIdx_jwtUsername = 62;
-   SetIdx_LocalSignerPubKeyPath = 63;
-   SetIdx_RemoteSigners = 64;
-   SetIdx_RememberLogin = 65;
-   SetIdx_ArmoryServers = 66;
-   SetIdx_DefArmoryServerKeys = 67;
-   SetIdx_TwoWaySignerAuth = 68;
-   SetIdx_ChartProduct = 69;
-   SetIdx_ChartTimeframe = 70;
-   SetIdx_ChartCandleCount = 71;
-   SetIdx_LastAQDir = 72;
-   SetIdx_ProxyPubKey = 73;
-   SetIdx_CCServerPubKey = 74;
-   SetIdx_HideLegacyWalletWarn = 75;
-   SetIdx_DetailedSettlDisalogByDef = 76;
-   SetIdx_AutoStartRFQScript = 77;
-   SetIdx_CurrentRFQScript = 78;
-   SetIdx_ShowInfoWidget = 79;
-   SetIdx_LoginApiKey = 80;
-   SetIdx_AutoQuoting = 81;
+   SetIdx_Environment = 7;
+   SetIdx_ChatServerPubKey = 8;
+   SetIdx_ChatDbFile = 9;
+   SetIdx_SavedUsername = 10;
+   SetIdx_LocalSignerPort = 11;
+   SetIdx_SignerIndex = 12;
+   SetIdx_SignerOfflineDir = 13;
+   SetIdx_AutoSignSpendLimit = 14;
+   SetIdx_LaunchToTray = 15;
+   SetIdx_MinimizeToTray = 16;
+   SetIdx_CloseToTray = 17;
+   SetIdx_NotifyOnTX = 18;
+   SetIdx_DefaultAuthAddr = 19;
+   SetIdx_NbAuthAddrsVisible = 20;
+   SetIdx_LogDefault = 21;
+   SetIdx_LogMessages = 22;
+   SetIdx_TxCacheFileName = 23;
+   SetIdx_NbBackupFilesKeep = 24;
+   SetIdx_AQScripts = 25;
+   SetIdx_LastAQScript = 26;
+   SetIdx_DropQuoteNotif = 27;
+   SetIdx_GUI_MainGeom = 28;
+   SetIdx_GUI_MainTab = 29;
+   SetIdx_Filter_MD_RFQ = 30;
+   SetIdx_Filter_MD_RFQ_Portfolio = 31;
+   SetIdx_Filter_MD_QN = 32;
+   SetIdx_Filter_MD_QN_cnt = 33;
+   SetIdx_ChangeLog_BaseURL = 34;
+   SetIdx_Binaries_DownloadURL = 35;
+   SetIdx_ResetPasswordURL = 36;
+   SetIdx_GetAccount_ProdURL = 37;
+   SetIdx_GetAccount_TestURL = 38;
+   SetIdx_GetStartedGuideURL = 39;
+   SetIdx_WalletFiltering = 40;
+   SetIdx_Limit_FxRFQ = 41;
+   SetIdx_Limit_XbtRFQ = 42;
+   SetIdx_Limit_CcRFQ = 43;
+   SetIdx_NoNotifyRFQ = 44;
+   SetIdx_PriceUpdateInterval = 45;
+   SetIdx_ShowQuoted = 46;
+   SetIdx_AdvancedTXisDefault = 47;
+   SetIdx_TxFilter = 48;
+   SetIdx_SubscribeMDatStart = 49;
+   SetIdx_MDLicenseAccepted = 50;
+   SetIdx_AuthPrivKey = 51;
+   SetIdx_jwtUsername = 52;
+   SetIdx_LocalSignerPubKeyPath = 53;
+   SetIdx_RemoteSigners = 54;
+   SetIdx_RememberLogin = 55;
+   SetIdx_ArmoryServers = 56;
+   SetIdx_DefArmoryServerKeys = 57;
+   SetIdx_TwoWaySignerAuth = 58;
+   SetIdx_ChartProduct = 59;
+   SetIdx_ChartTimeframe = 60;
+   SetIdx_ChartCandleCount = 61;
+   SetIdx_LastAQDir = 62;
+   SetIdx_ProxyPubKey = 63;
+   SetIdx_CCServerPubKey = 64;
+   SetIdx_HideLegacyWalletWarn = 65;
+   SetIdx_DetailedSettlDisalogByDef = 66;
+   SetIdx_AutoStartRFQScript = 67;
+   SetIdx_CurrentRFQScript = 68;
+   SetIdx_ShowInfoWidget = 69;
+   SetIdx_LoginApiKey = 70;
+   SetIdx_AutoQuoting = 71;
    SetIdx_AutoSigning = 82;
-//   SetIdx_ExtConnName = 83;
-//   SetIdx_ExtConnHost = 84;
-   SetIdx_ExtConnPort = 85;
-   SetIdx_ExtConnPubKey = 86;
-   SetIdx_SubmittedAddrXbtLimit = 87;
+//   SetIdx_ExtConnName = 73;
+//   SetIdx_ExtConnHost = 74;
+   SetIdx_ExtConnPort = 75;
+   SetIdx_ExtConnPubKey = 76;
+   SetIdx_SubmittedAddrXbtLimit = 77;
+//   SetIdx_ExtConnOwnPubKey = 78;
 }
 
 enum SettingType
@@ -133,7 +118,6 @@ enum SettingSource
 {
    SettingSource_Unknown = 0;
    SettingSource_Local   = 1;
-   SettingSource_Remote  = 2;
 }
 
 message SettingRequest
@@ -180,22 +164,6 @@ message SettingResponse
       Strings  strings = 11;
       StrMap   key_vals = 12;
    }
-}
-
-message HostPort
-{
-   string host = 1;
-   string port = 2;
-}
-
-message RemoteSettings
-{
-   HostPort mkt_data = 1;
-   HostPort mdhs = 2;
-   HostPort chat = 3;
-   HostPort proxy = 4;
-   int32    status = 5;
-   string   status_message = 6;
 }
 
 message SettingsMessage
@@ -268,39 +236,12 @@ message AdministrativeMessage
 }
 
 
-message ErrorResult
-{
-   int32  code = 1;
-   string text = 2;
-}
-
-
-message SignerMessage
-{
-   oneof data
-   {
-      NewKeyCompare new_key_request  = 1;
-      bool          new_key_response = 2;
-      ErrorResult   error = 3;
-      string        auth_leaf_added = 4;
-      Empty         wallets_list_updated = 5;
-      Empty         wallet_storage_decrypted = 6;
-      Empty         ready = 7;
-      Empty         need_new_wallet_prompt = 8;
-      Empty         wallets_ready_to_sync = 9;
-      bool          window_visible_changed = 10;
-   }
-}
-
-
 message BsServerMessage
 {
    oneof data
    {
-      Empty           network_settings_request  = 1;
-      RemoteSettings  network_settings_response = 2;
-      NewKeyCompare   pub_new_key_request  = 10;
-      bool            pub_new_key_response = 11;
+      Common.NewKeyCompare pub_new_key_request  = 10;
+      bool    pub_new_key_response = 11;
    }
 }
 

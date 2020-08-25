@@ -714,6 +714,11 @@ void Wallet::onRefresh(const std::vector<BinaryData> &ids, bool online)
    }
 }
 
+void Wallet::onRegistered()
+{
+   init();
+}
+
 std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConnection> &armory, bool asNew)
 {
    setArmory(armory);
@@ -731,6 +736,22 @@ std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConn
       logger_->error("[bs::sync::Wallet::registerWallet] no armory");
    }
    return {};
+}
+
+Wallet::WalletRegData Wallet::regData() const
+{
+   WalletRegData result;
+   const auto &addrHashes = getAddrHashes();
+   result[walletId()] = addrHashes;
+   registeredAddresses_.insert(addrHashes.begin(), addrHashes.end());
+   logger_->debug("[bs::sync::Wallet::regData] wallet {}, {} addresses = {}"
+      , walletId(), getAddrHashes().size(), regId_);
+   return result;
+}
+
+Wallet::UnconfTgtData Wallet::unconfTargets() const
+{
+   return { { walletId(), 1 } };
 }
 
 void Wallet::unregisterWallet()

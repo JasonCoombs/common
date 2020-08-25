@@ -16,6 +16,13 @@ package BlockSettle.Common;
 
 message Empty {}
 
+message NewKeyCompare
+{
+   string old_key = 1;
+   string new_key = 2;
+   string server_id = 3;
+}
+
 
 message ArmoryMessage
 {
@@ -48,7 +55,7 @@ message ArmoryMessage
    {
       string wallet_id = 1;
       bool   as_new = 2;
-      repeated string addresses = 3;
+      repeated bytes addresses = 3;
    }
 
    message WalletRegistered
@@ -124,6 +131,62 @@ message ArmoryMessage
       string error_message = 5;
    }
 
+   message WalletUnconfirmedTarget
+   {
+      string wallet_id = 1;
+      uint32 conf_count = 2;
+   }
+
+   message WalletIDs
+   {
+      repeated string wallet_ids = 1;
+   }
+
+   message AddressTxNsResponse
+   {
+      message AddressTxNs {
+         string wallet_id = 1;
+
+         message AddressTxN {
+            bytes  address = 1;
+            uint32 txn = 2;
+         }
+         repeated AddressTxN txns = 2;
+      }
+      repeated AddressTxNs wallet_txns = 1;
+   }
+
+   message WalletBalanceResponse
+   {
+      message WalletBalance {
+         string wallet_id = 1;
+         uint64 full_balance = 2;
+         uint64 spendable_balance = 3;
+         uint64 unconfirmed_balance = 4;
+         uint32 address_count = 5;
+
+         message AddressBalance {
+            bytes  address = 1;
+            uint64 full_balance = 2;
+            uint64 spendable_balance = 3;
+            uint64 unconfirmed_balance = 4;
+         }
+         repeated AddressBalance addr_balances = 6;
+      }
+      repeated WalletBalance balances = 1;
+   }
+
+   message TXHashes
+   {
+      repeated bytes tx_hashes = 1;
+      bool disable_cache = 2;
+   }
+
+   message Transactions
+   {
+      repeated bytes transactions = 1;
+   }
+
    oneof data
    {
       Loading          loading = 1;
@@ -141,6 +204,79 @@ message ArmoryMessage
       TXPushRequest    tx_push = 16;
       TXPushResult     tx_push_result = 17;
       string           tx_push_timeout = 18;
+      WalletUnconfirmedTarget set_unconf_target = 19;
+      string           unconf_target_set = 20;
+      WalletIDs        addr_txn_request = 21;
+      AddressTxNsResponse addr_txn_response = 22;
+      WalletIDs        wallet_balance_request = 23;
+      WalletBalanceResponse wallet_balance_response = 24;
+      TXHashes         get_txs_by_hash = 25;
+      Transactions     transactions = 26;
+   }
+}
+
+
+message ErrorResult
+{
+   int32  code = 1;
+   string text = 2;
+}
+
+
+message WalletSyncInfo
+{
+   int32  format = 1;
+   string id = 2;
+   string name = 3;
+   string description = 4;
+   int32  network_type = 5;
+   bool   watch_only = 6;
+   repeated int32 encryption_types = 7;
+   repeated bytes encryption_keys = 8;
+
+   message KeyRank {
+      uint32 m = 1;
+      uint32 n = 2;
+   }
+   KeyRank encryption_rank = 9;
+}
+
+
+message SignerMessage
+{
+   message WalletsInfo
+   {
+      repeated WalletSyncInfo wallets = 1;
+   }
+
+   message SyncAddresses
+   {
+      string wallet_id = 1;
+      repeated bytes addresses = 2;
+   }
+
+   message SyncAddrResult
+   {
+      string wallet_id = 1;
+      int32  status = 2;
+   }
+
+   oneof data
+   {
+      NewKeyCompare  new_key_request  = 1;
+      bool           new_key_response = 2;
+      ErrorResult    error = 3;
+      string         auth_leaf_added = 4;
+      Empty          wallets_list_updated = 5;
+      Empty          wallet_storage_decrypted = 6;
+      Empty          ready = 7;
+      Empty          need_new_wallet_prompt = 8;
+      Empty          wallets_ready_to_sync = 9;
+      bool           window_visible_changed = 10;
+      Empty          start_wallets_sync = 11;
+      WalletsInfo    wallets_info = 12;
+      SyncAddresses  sync_addresses = 13;
+      SyncAddrResult sync_addr_result = 14;
    }
 }
 
@@ -158,10 +294,66 @@ message WalletsMessage
       string wallet_id = 1;
    }
 
+   message WalletError
+   {
+      string wallet_id = 1;
+      string error_message = 2;
+      int32  error_code = 3;
+   }
+
+   message HDWalletData
+   {
+      message Leaf {
+         string id = 1;
+         string path = 2;
+         bool   ext_only = 3;
+         bytes  extra_data = 4;	// optional
+      }
+      message Group {
+         int32 type = 1;
+         repeated Leaf leaves = 2;
+         bool  ext_only = 3;
+         bytes salt = 4;	// optional - for Auth group
+      }
+      string wallet_id = 1;
+      repeated Group groups = 2;
+   }
+
+   message WalletData
+   {
+      message AddressData {
+         string index = 1;
+         string address = 2;
+         string comment = 3;
+      }
+      message TXComment {
+         bytes  tx_hash = 1;
+         string comment = 2;
+      }
+
+      uint32 high_ext_index = 1;
+      uint32 high_int_index = 2;
+      repeated AddressData used_addresses = 3;
+      repeated AddressData reserved_addresses = 4;
+      repeated TXComment   tx_comments = 5;
+   }
+
    oneof data
    {
       Loading      loading = 1;
-      WalletLoaded wallet_loaded = 2;
-      Empty        ready   = 3;
+      Empty        ready   = 2;
+      WalletError  error = 3;
+      WalletLoaded wallet_loaded = 4;
+      WalletLoaded auth_leaf_created = 5;
+      WalletLoaded balance_updated = 6;
+      WalletLoaded wallet_changed = 7;
+      WalletLoaded wallet_meta_changed = 8;
+      WalletLoaded wallet_ready = 9;
+      WalletLoaded wallet_reset = 10;    
+      Empty        start_wallets_sync = 11;
+      string       hd_wallet_get = 12;
+      HDWalletData hd_wallet = 13;
+      string       wallet_get = 14;
+      WalletData   wallet_data = 15;
    }
 }

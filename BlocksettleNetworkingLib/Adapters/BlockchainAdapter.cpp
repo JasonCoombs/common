@@ -65,6 +65,14 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
       case ArmoryMessage::kTxPushTimeout:
          onBroadcastTimeout(msg.tx_push_timeout());
          break;
+      case ArmoryMessage::kSetUnconfTarget:
+         return processUnconfTarget(env, msg.set_unconf_target());
+      case ArmoryMessage::kAddrTxnRequest:
+         return processGetTxNs(env, msg.addr_txn_request());
+      case ArmoryMessage::kWalletBalanceRequest:
+         return processBalance(env, msg.wallet_balance_request());
+      case ArmoryMessage::kGetTxsByHash:
+         return processGetTXsByHash(env, msg.get_txs_by_hash());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -96,6 +104,14 @@ void BlockchainAdapter::start()
    }
    init(armoryPtr_.get());
    feeEstimationsCache_ = std::make_shared<BitcoinFeeCache>(logger_, armoryPtr_);
+}
+
+void BlockchainAdapter::sendReady()
+{
+   ArmoryMessage msg;
+   msg.mutable_ready();
+   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(env);
 }
 
 void BlockchainAdapter::sendLoadingBC()
@@ -147,6 +163,7 @@ void BlockchainAdapter::onStateChanged(ArmoryState st)
    switch (st) {
    case ArmoryState::Ready:
       resumeRegistrations();
+      sendReady();
       break;
 
    case ArmoryState::Connected:
@@ -177,15 +194,49 @@ void BlockchainAdapter::onStateChanged(ArmoryState st)
 
 void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool online)
 {
-   //TODO: resume all pending requests if all wallets registered
    ArmoryMessage msg;
    auto msgRefresh = msg.mutable_refresh();
    for (const auto &id : ids) {
+      const auto &idStr = id.toBinStr();
+      const auto &itReg = regMap_.find(idStr);
+      if (itReg != regMap_.end()) {
+         ArmoryMessage msgReg;
+         auto msgWalletRegged = msgReg.mutable_wallet_registered();
+         msgWalletRegged->set_wallet_id(itReg->second);
+         const auto &itRegReq = reqByRegId_.find(idStr);
+         Envelope env;
+         if (itRegReq == reqByRegId_.end()) {
+            env = Envelope{ 0, user_, nullptr, {}, {}, msgReg.SerializeAsString() };
+         }
+         else {
+            env = Envelope{ itRegReq->second.id, user_, itRegReq->second.sender
+               , {}, {}, msgReg.SerializeAsString() };
+            reqByRegId_.erase(itRegReq);
+         }
+         pushFill(env);
+         regMap_.erase(itReg);
+         continue;
+      }
+
+      const auto &itUnconfTgt = unconfTgtMap_.find(idStr);
+      if (itUnconfTgt != unconfTgtMap_.end()) {
+         ArmoryMessage msgUnconfTgt;
+         msgUnconfTgt.set_unconf_target_set(itUnconfTgt->second.first);
+         bs::message::Envelope env{ itUnconfTgt->second.second.id, user_
+            , itUnconfTgt->second.second.sender, {}, {}
+            , msgUnconfTgt.SerializeAsString() };
+         pushFill(env);
+         unconfTgtMap_.erase(itUnconfTgt);
+         continue;
+      }
       msgRefresh->add_ids(id.toBinStr());
    }
-   msgRefresh->set_online(online);
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
-   pushFill(env);
+   //TODO: resume all pending requests if all wallets registered
+   if (msgRefresh->ids_size() > 0) {
+      msgRefresh->set_online(online);
+      bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+      pushFill(env);
+   }
 }
 
 void BlockchainAdapter::onNewBlock(unsigned int height, unsigned int branchHeight)
@@ -209,7 +260,7 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
    pushFill(env);
 }
 
-void BlockchainAdapter::onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry> &entries)
+void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::vector<bs::TXEntry> &entries)
 {
    ArmoryMessage msg;
    auto msgZC = msg.mutable_zc_received();
@@ -361,7 +412,7 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
    wallet.asNew = request.as_new();
    try {
       for (const auto &addrStr : request.addresses()) {
-         wallet.addresses.push_back(bs::Address::fromAddressString(addrStr));
+         wallet.addresses.push_back(BinaryData::fromString(addrStr));
       }
    }
    catch (const std::exception &e) {
@@ -389,10 +440,109 @@ std::string BlockchainAdapter::registerWallet(const std::string &walletId
    newWallet.asNew = wallet.asNew;
    newWallet.addresses = std::move(wallet.addresses);
 
-   std::vector<BinaryData> addrVec;
-   const auto &regId = newWallet.wallet->registerAddresses(addrVec, wallet.asNew);
+   const auto &regId = newWallet.wallet->registerAddresses(newWallet.addresses
+      , wallet.asNew);
    regMap_[regId] = walletId;
    return regId;
+}
+
+bool BlockchainAdapter::processUnconfTarget(const bs::message::Envelope &env
+   , const ArmoryMessage_WalletUnconfirmedTarget &request)
+{
+   const auto &itWallet = wallets_.find(request.wallet_id());
+   if (itWallet == wallets_.end()) {
+      logger_->error("[{}] unknown wallet {}", __func__, request.wallet_id());
+      return true;
+   }
+   if (!itWallet->second.registered) {
+      logger_->warn("[{}] wallet {} is not registered, yet", __func__
+         , request.wallet_id());
+      return false;
+   }
+   std::string regId;
+   if (itWallet->second.wallet) {
+      regId = itWallet->second.wallet->setUnconfirmedTarget(request.conf_count());
+   }
+   if (regId.empty()) {
+      logger_->error("[{}] invalid wallet {}", __func__, request.wallet_id());
+      return true;
+   }
+   unconfTgtMap_[regId] = { request.wallet_id(), env };
+   return true;
+}
+
+bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
+   , const ArmoryMessage_WalletIDs &request)
+{
+   const auto &cbTxNs = [this, env]
+      (const std::map<std::string, CombinedCounts> &txns)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_addr_txn_response();
+      for (const auto &txn : txns) {
+         auto msgByWallet = msgResp->add_wallet_txns();
+         msgByWallet->set_wallet_id(txn.first);
+         for (const auto &byAddr : txn.second.addressTxnCounts_) {
+            auto msgByAddr = msgByWallet->add_txns();
+            msgByAddr->set_address(byAddr.first.toBinStr());
+            msgByAddr->set_txn(byAddr.second);
+         }
+      }
+      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+   std::vector<std::string> walletIDs;
+   walletIDs.reserve(request.wallet_ids_size());
+   for (const auto &walletId : request.wallet_ids()) {
+      walletIDs.push_back(walletId);
+   }
+   return armoryPtr_->getCombinedTxNs(walletIDs, cbTxNs);
+}
+
+bool BlockchainAdapter::processBalance(const bs::message::Envelope &env
+   , const ArmoryMessage_WalletIDs &request)
+{
+   const auto &cbBal = [this, env]
+      (const std::map<std::string, CombinedBalances> &bals)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_wallet_balance_response();
+      for (const auto &bal : bals) {
+         auto msgByWallet = msgResp->add_balances();
+         msgByWallet->set_wallet_id(bal.first);
+         if (bal.second.walletBalanceAndCount_.size() == 4) {
+            msgByWallet->set_full_balance(bal.second.walletBalanceAndCount_[0]);
+            msgByWallet->set_spendable_balance(bal.second.walletBalanceAndCount_[1]);
+            msgByWallet->set_unconfirmed_balance(bal.second.walletBalanceAndCount_[2]);
+            msgByWallet->set_address_count(bal.second.walletBalanceAndCount_[3]);
+         }
+         else {
+            logger_->warn("[BlockchainAdapter::processBalance] empty wallet "
+               "balance received for {}", bal.first);
+         }
+         for (const auto &byAddr : bal.second.addressBalances_) {
+            auto msgByAddr = msgByWallet->add_addr_balances();
+            msgByAddr->set_address(byAddr.first.toBinStr());
+            if (byAddr.second.size() == 3) {
+               msgByAddr->set_full_balance(byAddr.second[0]);
+               msgByAddr->set_spendable_balance(byAddr.second[1]);
+               msgByAddr->set_unconfirmed_balance(byAddr.second[2]);
+            }
+            else {
+               logger_->warn("[BlockchainAdapter::processBalance] empty address"
+                  " balance received for {}/{}", bal.first, byAddr.first.toHexStr());
+            }
+         }
+      }
+      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+   std::vector<std::string> walletIDs;
+   walletIDs.reserve(request.wallet_ids_size());
+   for (const auto &walletId : request.wallet_ids()) {
+      walletIDs.push_back(walletId);
+   }
+   return armoryPtr_->getCombinedBalances(walletIDs, cbBal);
 }
 
 bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
@@ -459,4 +609,26 @@ void BlockchainAdapter::sendBroadcastTimeout(const std::string &timeoutId)
    bs::message::Envelope env{ 0, user_, user_, timeNow
       , timeNow + kBroadcastTimeout, msg.SerializeAsString() };
    pushFill(env);
+}
+
+bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
+   , const ArmoryMessage_TXHashes &request)
+{
+   const auto &cb = [this, env]
+      (const AsyncClient::TxBatchResult &txBatch, std::exception_ptr)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_transactions();
+      for (const auto &tx : txBatch) {
+         msgResp->add_transactions(tx.second->serialize().toBinStr());
+      }             // broadcast intentionally even as a reply to some request
+      Envelope envResp{ env.id, user_, nullptr, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+
+   std::set<BinaryData> hashes;
+   for (const auto &hash : request.tx_hashes()) {
+      hashes.insert(BinaryData::fromString(hash));
+   }
+   return armoryPtr_->getTXsByHash(hashes, cb, !request.disable_cache());
 }
