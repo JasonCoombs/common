@@ -86,7 +86,7 @@ namespace bs {
          const std::map<BinaryData, BinaryData>& preImages);
 
       static float getAllowedFeePerByteMin(float feePerByte);
-
+      static float minRelayFee(void);
    };
 
 }
