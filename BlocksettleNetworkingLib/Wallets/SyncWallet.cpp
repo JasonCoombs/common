@@ -779,8 +779,11 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
    }
 
    for (const auto& utxo : inputs) {
-      request.armorySigner_.addSpender(
-         std::make_shared<ArmorySigner::ScriptSpender>(utxo));
+      auto spender = std::make_shared<ArmorySigner::ScriptSpender>(utxo);
+      if (isRBF) {
+         spender->setSequence(UINT32_MAX - 2);
+      }
+      request.armorySigner_.addSpender(spender);
       inputAmount += utxo.getValue();
    }
 
