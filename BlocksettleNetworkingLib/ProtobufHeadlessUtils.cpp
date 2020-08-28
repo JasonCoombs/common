@@ -30,10 +30,6 @@ headless::SignTxRequest bs::signer::coreTxRequestToPb(const bs::core::wallet::TX
    }
    request.set_keepduplicatedrecipients(keepDuplicatedRecipients);
 
-   for (const auto &sortType : txSignReq.outSortOrder) {
-      request.add_out_sort_order(static_cast<uint32_t>(sortType));
-   }
-
    if (txSignReq.fee) {
       request.set_fee(txSignReq.fee);
    }
@@ -65,12 +61,6 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
 
    for (int i = 0; i < request.walletid_size(); ++i) {
       txSignReq.walletIds.push_back(request.walletid(i));
-   }
-
-   if (request.out_sort_order_size() == 3) {
-      txSignReq.outSortOrder = { static_cast<bs::core::wallet::OutputOrderType>(request.out_sort_order(0))
-         , static_cast<bs::core::wallet::OutputOrderType>(request.out_sort_order(1))
-         , static_cast<bs::core::wallet::OutputOrderType>(request.out_sort_order(2)) };
    }
 
    if (request.has_change() && request.change().value()) {
