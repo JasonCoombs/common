@@ -252,18 +252,9 @@ namespace bs {
             Settlement
          };
 
-         enum class OutputOrderType {
-            PrevState,
-            Recipients,
-            Change
-         };
-         using OutputSortOrder = std::array<OutputOrderType, 3>;
-
          struct TXSignRequest
          {
             std::vector<std::string>   walletIds;
-            OutputSortOrder   outSortOrder{ OutputOrderType::PrevState
-               , OutputOrderType::Recipients, OutputOrderType::Change };
             struct {
                bs::Address address;
                std::string index;
@@ -296,7 +287,6 @@ namespace bs {
 
                armorySigner_ = other.armorySigner_;
                walletIds = other.walletIds;
-               outSortOrder = other.outSortOrder;
                change = other.change;
                fee = other.fee;
                RBF = other.RBF;
@@ -486,6 +476,7 @@ namespace bs {
 
          //find the path for a set of prefixed scrAddr
          virtual std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) = 0;
+         virtual bool hasBip32Path(const ArmorySigner::BIP32_AssetPath&) const = 0;
 
          ArmorySigner::Signer getSigner(const wallet::TXSignRequest &,
             bool keepDuplicatedRecipients = false);

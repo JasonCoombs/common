@@ -387,7 +387,8 @@ std::vector<UTXO> wallet::TXSignRequest::getInputs(const wallet::TXSignRequest::
    return inputsVector;
 }
 
-std::vector<std::shared_ptr<ScriptRecipient>> wallet::TXSignRequest::getRecipients(const wallet::TXSignRequest::ContainsAddressCb &containsAddressCb) const
+std::vector<std::shared_ptr<ScriptRecipient>> wallet::TXSignRequest::getRecipients(
+   const wallet::TXSignRequest::ContainsAddressCb &containsAddressCb) const
 {
    std::vector<std::shared_ptr<ScriptRecipient>> recipientsVector;
    
@@ -715,7 +716,6 @@ Signer Wallet::getSigner(const wallet::TXSignRequest &request,
 
 BinaryData Wallet::signTXRequest(const wallet::TXSignRequest &request, bool keepDuplicatedRecipients)
 {
-
    auto lock = lockDecryptedContainer();
    auto signer = getSigner(request, keepDuplicatedRecipients);
    signer.sign();
@@ -730,10 +730,32 @@ Codec_SignerState::SignerState Wallet::signPartialTXRequest(const wallet::TXSign
    auto lock = lockDecryptedContainer();
    auto signer = getSigner(request, false);
    signer.sign();
-   /* TODO: implement partial sig checks correctly
-   if (!request.armorySigner_.verifyPartial()) {
-      throw std::logic_error("signer failed to verify");
-   }*/
+
+   //find out which spenders belong to this wallet
+   auto resolver = getResolver();
+   std::set<unsigned> signableSpenders;
+   
+   for (unsigned i=0; i<signer.getTxInCount(); i++) {
+      auto spender = signer.getSpender(i);
+      const auto& paths = spender->getBip32Paths();
+      
+      for (auto& pubkeyPath : paths) {
+         if (hasBip32Path(pubkeyPath.second)) {
+            signableSpenders.insert(i);
+            break;
+         }
+      }
+   }
+
+   auto txEvalState = signer.evaluateSignedState();
+   for (const auto& signableSpenderId : signableSpenders) {
+      const auto& txInEvalState = 
+         txEvalState.getSignedStateForInput(signableSpenderId);
+      
+      if (!txInEvalState.isValid())
+         throw std::logic_error("signer failed to verify");
+   }
+
    return signer.serializeState();
 }
 
@@ -783,7 +805,6 @@ BinaryData bs::core::SignMultiInputTX(const bs::core::wallet::TXMultiSignRequest
    }
    else {
       if (!signer.verify()) {
-         std::cout << signer.serializeSignedTx().toHexStr() << std::endl;
          throw std::logic_error("signer failed to verify");
       }
       return signer.serializeSignedTx();
@@ -807,30 +828,6 @@ BinaryData bs::core::SignMultiInputTXWithWitness(const bs::core::wallet::TXMulti
       signer.setFeed(wallet->getResolver());
       signer.resolvePublicData();
    }
-
-   /*for (int i = 0; i < txMultiReq.inputs.size();  ++i) {
-      auto inputData = txMultiReq.inputs[i];
-
-      const auto itWallet = wallets.find(inputData.walletId);
-      if (itWallet == wallets.end()) {
-         throw std::runtime_error("missing wallet for id " + inputData.walletId);
-      }
-      const auto &wallet = itWallet->second;
-      const auto &utxo = inputData.utxo;
-      const auto &spender = std::make_shared<ScriptSpender>(utxo);
-
-      if (txMultiReq.RBF) {
-         spender->setSequence(UINT32_MAX - 2);
-      }
-      spender->setFeed(wallet->getPublicResolver());
-      spenders[i] = spender;
-      signer.addSpender(spender);
-      signer.resolvePublicData();
-   }
-
-   for (const auto &recipient : txMultiReq.recipients) {
-      signer.addRecipient(recipient);
-   }*/
 
    for (const auto &sig : inputSigs) {
       auto sigSBD = SecureBinaryData(sig.second);

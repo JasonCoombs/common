@@ -106,6 +106,7 @@ namespace bs {
             std::vector<bs::Address> extendAddressChain(unsigned count, bool extInt) override;
 
             std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) override;
+            bool hasBip32Path(const ArmorySigner::BIP32_AssetPath&) const override;
 
             bs::hd::Path::Elem getExtPath(void) const override { return addrTypeExternal_; }
             bs::hd::Path::Elem getIntPath(void) const override { return addrTypeInternal_; }
