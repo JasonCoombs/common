@@ -26,7 +26,12 @@ namespace bs {
 }
 namespace BlockSettle {
    namespace Common {
+      class HDWalletData;
+      class SignerMessage_NewAddressesSynced;
+      class SignerMessage_SyncAddrResult;
+      class SignerMessage_WalletData;
       class SignerMessage_WalletsInfo;
+      class SignerMessage_RootPubKey;
    }
 }
 
@@ -75,10 +80,10 @@ public:
    void syncNewAddress(const std::string &walletId, const std::string &index
       , const std::function<void(const bs::Address &)> &) override;
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
-      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &, bool persistent = true) override;
+      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
    void syncWalletInfo(const std::function<void(std::vector<bs::sync::WalletInfo>)> &) override;
-   void syncHDWallet(const std::string &id, const std::function<void(bs::sync::HDWalletData)> &) override {}
+   void syncHDWallet(const std::string &id, const std::function<void(bs::sync::HDWalletData)> &) override;
    void syncWallet(const std::string &id, const std::function<void(bs::sync::WalletData)> &) override;
    void syncAddressComment(const std::string &walletId, const bs::Address &, const std::string &) override;
    void syncTxComment(const std::string &walletId, const BinaryData &, const std::string &) override;
@@ -96,8 +101,8 @@ public:
    void extendAddressChain(const std::string &walletId, unsigned count, bool extInt,
       const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
-   bs::signer::RequestId DeleteHDRoot(const std::string &rootWalletId) override { return 0; }
-   bs::signer::RequestId DeleteHDLeaf(const std::string &leafWalletId) override { return 0; }
+   bs::signer::RequestId DeleteHDRoot(const std::string &rootWalletId) override;
+   bs::signer::RequestId DeleteHDLeaf(const std::string &leafWalletId) override;
 
    //settlement related methods
    void createSettlementWallet(const bs::Address &authAddr
@@ -127,10 +132,18 @@ public:
    void setQueue(const std::shared_ptr<bs::message::QueueInterface> &queue) { queue_ = queue; }
 
    void setSignerReady(const std::function<void()> &cb) { cbReady_ = cb; }
+   void setWalletsLoaded(const std::function<void()> &cb) { cbWalletsReady_ = cb; }
+   void setNoWalletsFound(const std::function<void()> &cb) { cbNoWallets_ = cb; }
    void setWalletsListUpdated(const std::function<void()> &cb) { cbWalletsListUpdated_ = cb; }
 
 private:
    bool processWalletsInfo(uint64_t msgId, const BlockSettle::Common::SignerMessage_WalletsInfo &);
+   bool processSyncAddr(uint64_t msgId, const BlockSettle::Common::SignerMessage_SyncAddrResult &);
+   bool processNewAddresses(uint64_t msgId, const BlockSettle::Common::SignerMessage_NewAddressesSynced &);
+   bool processWalletSync(uint64_t msgId, const BlockSettle::Common::SignerMessage_WalletData &);
+   bool processHdWalletSync(uint64_t msgId, const BlockSettle::Common::HDWalletData &);
+   bool processSetSettlId(uint64_t msgId, bool);
+   bool processRootPubKey(uint64_t msgId, const BlockSettle::Common::SignerMessage_RootPubKey &);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -138,10 +151,18 @@ private:
    std::shared_ptr<bs::message::QueueInterface> queue_;
 
    std::function<void()>   cbReady_{ nullptr };
+   std::function<void()>   cbWalletsReady_{ nullptr };
+   std::function<void()>   cbNoWallets_{ nullptr };
    std::function<void()>   cbWalletsListUpdated_{ nullptr };
 
-   std::map<uint64_t, std::function<void(std::vector<bs::sync::WalletInfo>)>>    reqSyncWalletMap_;
+   std::map<uint64_t, std::function<void(std::vector<bs::sync::WalletInfo>)>>    reqSyncWalletInfoMap_;
    std::map<uint64_t, std::pair<std::string, std::function<void(bs::sync::SyncState)>>>   reqSyncAddrMap_;
+   std::map<uint64_t, std::function<void(const bs::Address &)>>   reqSyncNewAddrSingle_;
+   std::map<uint64_t, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>>  reqSyncNewAddrMulti_;
+   std::map<uint64_t, std::function<void(bs::sync::WalletData)>>     reqSyncWalletMap_;
+   std::map<uint64_t, std::function<void(bs::sync::HDWalletData)>>   reqSyncHdWalletMap_;
+   std::map<uint64_t, std::function<void(bool)>>                  reqSettlIdMap_;
+   std::map<uint64_t, std::function<void(bool, const SecureBinaryData &)>> reqPubKeyMap_;
 };
 
 

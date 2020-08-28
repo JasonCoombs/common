@@ -98,6 +98,13 @@ private:
 
    void processZCReceived(const BlockSettle::Common::ArmoryMessage_ZCReceived &);
 
+   bool processHdWalletGet(const bs::message::Envelope &, const std::string &walletId);
+   bool processWalletGet(const bs::message::Envelope &, const std::string &walletId);
+   bool processGetTxComment(const bs::message::Envelope &
+      , const std::string &txBinHash);
+   bool processGetWalletBalances(const bs::message::Envelope &
+      , const std::string &walletId);
+
 private:
    std::shared_ptr<spdlog::logger>     logger_;
    std::shared_ptr<bs::message::User>  ownUser_, blockchainUser_;

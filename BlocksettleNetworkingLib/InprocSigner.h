@@ -99,8 +99,7 @@ public:
       std::function<void(bs::sync::SyncState)> cb) override;
 
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
-      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &
-      , bool persistent = true) override;
+      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
    void createSettlementWallet(const bs::Address &authAddr
       , const std::function<void(const SecureBinaryData &)> &) override;

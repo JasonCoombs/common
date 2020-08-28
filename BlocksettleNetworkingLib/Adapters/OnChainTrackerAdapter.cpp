@@ -14,6 +14,7 @@
 #include "common.pb.h"
 
 using namespace BlockSettle::Common;
+using namespace bs::message;
 
 
 OnChainTrackerAdapter::OnChainTrackerAdapter(const std::shared_ptr<spdlog::logger> &logger
@@ -24,5 +25,10 @@ OnChainTrackerAdapter::OnChainTrackerAdapter(const std::shared_ptr<spdlog::logge
 
 bool OnChainTrackerAdapter::process(const bs::message::Envelope &env)
 {
+   //FIXME: this is just a temporary stub, put loading bc to more appropriate place
+/*   OnChainTrackMessage msg;
+   msg.mutable_loading();
+   Envelope envBC{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(envBC);*/
    return true;
 }

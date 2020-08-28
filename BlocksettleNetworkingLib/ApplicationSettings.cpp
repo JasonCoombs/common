@@ -37,13 +37,6 @@ static const QString bitcoinDirName = QLatin1String(".bitcoin");
 static const QString armoryDBAppPathName = QLatin1String("/usr/bin/ArmoryDB");
 #endif
 
-#ifdef __linux__
-// Needed for consistency (headless now uses company name in lowercase on Linux)
-static const QString SettingsCompanyName = QLatin1String("blocksettle");
-#else
-static const QString SettingsCompanyName = QLatin1String("BlockSettle");
-#endif
-
 static const QString LogFileName = QLatin1String("bs_terminal.log");
 static const QString LogMsgFileName = QLatin1String("bs_terminal_messages.log");
 static const QString TxCacheFileName = QLatin1String("transactions.cache");
@@ -98,12 +91,17 @@ namespace {
 } // namespace
 
 
+QString ApplicationSettings::appSubDir()
+{
+   return appDirName;
+}
+
 ApplicationSettings::ApplicationSettings(const QString &appName
    , const QString& rootDir)
-   : settings_(QSettings::IniFormat, QSettings::UserScope, SettingsCompanyName, appName)
+   : settings_(QSettings::IniFormat, QSettings::UserScope, appDirName, appName)
 {
    if (rootDir.isEmpty()) {
-      commonRoot_ = AppendToWritableDir(QLatin1String(".."));
+      commonRoot_ = AppendToWritableDir(QLatin1Literal(".."));
    } else {
       commonRoot_ = rootDir;
    }
@@ -396,8 +394,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
    parser.addOption({ localSignerPortName, localSignerPortHelp, QLatin1String("localsignerport") });
 #endif // NDEBUG
 
-
-
    if (!parser.parse(argList)) {
       errorText_ = parser.errorText();
       return false;
@@ -455,11 +451,11 @@ QString ApplicationSettings::GetDefaultHomeDir() const
 {
    switch (get<NetworkType>(netType)) {
    case NetworkType::TestNet:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + testnetSubdir);
+      return QDir::cleanPath(commonRoot_ + QDir::separator() + testnetSubdir);
    case NetworkType::RegTest:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + regtestSubdir);
+      return QDir::cleanPath(commonRoot_ + QDir::separator() + regtestSubdir);
    default:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName);
+      return QDir::cleanPath(commonRoot_);
    }
 }
 

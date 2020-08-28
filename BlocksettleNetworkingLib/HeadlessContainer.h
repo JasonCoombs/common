@@ -23,7 +23,6 @@
 #include "WalletSignerContainer.h"
 #include "BIP15xHelpers.h"
 
-#include "headless.pb.h"
 
 namespace spdlog {
    class logger;
@@ -37,6 +36,14 @@ namespace bs {
       class TransportBIP15xClient;
    }
 }
+namespace Blocksettle {
+   namespace Communication {
+      namespace headless {
+         class GetHDWalletInfoResponse;
+         class RequestPacket;
+      }
+   }
+};
 
 class ConnectionManager;
 class DataConnection;
@@ -44,13 +51,36 @@ class HeadlessListener;
 class QProcess;
 class WalletsManager;
 
-class HeadlessContainer : public WalletSignerContainer
+class HeadlessCallbackTarget
+{
+public:
+   virtual void connected(const std::string &host) {}
+   virtual void connError(SignContainer::ConnectionError, const QString &) {}
+   virtual void connTorn() {}
+   virtual void onError(bs::signer::RequestId, const std::string &errMsg) {};
+   virtual void onAuthComplete() {}
+   virtual void onReady() {}
+   virtual void restartConnection() {}
+   virtual void txSigned(bs::signer::RequestId, const BinaryData &
+      , bs::error::ErrorCode, const std::string &errMsg = {}) {};
+   virtual void walletInfo(bs::signer::RequestId
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse &) {};
+   virtual void autoSignStateChanged(bs::error::ErrorCode
+      , const std::string &walletId) {};
+   virtual void authLeafAdded(const std::string &walletId) {}
+   virtual void newWalletPrompt() {}
+   virtual void walletsReady() {}
+   virtual void walletsChanged() {}
+   virtual void windowIsVisible(bool) {}
+};
+
+class HeadlessContainer : public WalletSignerContainer, public HeadlessCallbackTarget
 {
    Q_OBJECT
 public:
    static NetworkType mapNetworkType(Blocksettle::Communication::headless::NetworkType netType);
 
-   HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode);
+   HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode, HeadlessCallbackTarget *);
    ~HeadlessContainer() noexcept override = default;
 
    bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
@@ -109,8 +139,7 @@ public:
       , const std::function<void(const BinaryData &, const BinaryData &)> &) override;
 
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
-      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &
-      , bool persistent = true) override;
+      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
    void syncAddressBatch(const std::string &walletId,
       const std::set<BinaryData>& addrSet, std::function<void(bs::sync::SyncState)>) override;
    void extendAddressChain(const std::string &walletId, unsigned count, bool extInt,
@@ -131,6 +160,12 @@ public:
    bool isReady() const override;
    bool isWalletOffline(const std::string &walletId) const override;
 
+   virtual void onConnected() = 0;
+   virtual void onDisconnected() = 0;
+   virtual void onConnError(ConnectionError error, const QString &details) = 0;
+   virtual void onAuthenticated() = 0;
+   virtual void onPacketReceived(const Blocksettle::Communication::headless::RequestPacket &) = 0;
+
 protected:
    bs::signer::RequestId Send(const Blocksettle::Communication::headless::RequestPacket &, bool incSeqNo = true);
    void ProcessSignTXResponse(unsigned int id, const std::string &data);
@@ -150,18 +185,36 @@ protected:
    void ProcessSetUserId(const std::string &data);
    void ProcessGetPayinAddr(unsigned int id, const std::string &data);
    void ProcessSettlGetRootPubkey(unsigned int id, const std::string &data);
-   void ProcessAddrPreimageResponse(unsigned int id, const std::string &data);
    void ProcessUpdateStatus(const std::string &data);
    void ProcessChatNodeResponse(unsigned int id, const std::string &data);
    void ProcessSettlAuthResponse(unsigned int id, const std::string &data);
    void ProcessSettlCPResponse(unsigned int id, const std::string &data);
    void ProcessWindowStatus(unsigned int id, const std::string &data);
 
+   void connected(const std::string &host) override;
+   void connError(SignContainer::ConnectionError, const QString &) override;
+   void onError(bs::signer::RequestId, const std::string &errMsg) override;
+   void connTorn() override;
+   void onAuthComplete() override;
+   void onReady() override;
+   void txSigned(bs::signer::RequestId, const BinaryData &, bs::error::ErrorCode
+      , const std::string &errMsg = {}) override;
+   void walletInfo(bs::signer::RequestId
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse &) override;
+   void autoSignStateChanged(bs::error::ErrorCode
+      , const std::string &walletId) override;
+   void authLeafAdded(const std::string &walletId) override;
+   void newWalletPrompt() override;
+   void walletsReady() override;
+   void walletsChanged() override;
+   void windowIsVisible(bool) override;
+
 protected:
    std::shared_ptr<HeadlessListener>   listener_;
    std::unordered_set<std::string>     missingWallets_;
    std::unordered_set<std::string>     woWallets_;
    std::set<bs::signer::RequestId>     signRequests_;
+   HeadlessCallbackTarget     * hct_{ nullptr };
 
    std::map<bs::signer::RequestId, std::function<void(std::vector<bs::sync::WalletInfo>)>>         cbWalletInfoMap_;
    std::map<bs::signer::RequestId, std::function<void(bs::sync::HDWalletData)>>  cbHDWalletMap_;
@@ -191,7 +244,7 @@ public:
    RemoteSigner(const std::shared_ptr<spdlog::logger> &, const QString &host
       , const QString &port, NetworkType netType
       , const std::shared_ptr<ConnectionManager>& connectionManager
-      , OpMode opMode = OpMode::Remote
+      , HeadlessCallbackTarget *, OpMode opMode = OpMode::Remote
       , const bool ephemeralDataConnKeys = true
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
@@ -204,13 +257,15 @@ public:
    bool Disconnect() override;
    bool isOffline() const override;
    void updatePeerKeys(const bs::network::BIP15xPeers &);
+   void reconnect();
 
-protected slots:
-   void onAuthenticated();
-   void onConnected();
-   void onDisconnected();
-   void onConnError(ConnectionError error, const QString &details);
-   void onPacketReceived(Blocksettle::Communication::headless::RequestPacket);
+protected:
+   void onConnected() override ;
+   void onDisconnected() override;
+   void onConnError(ConnectionError error, const QString &details) override;
+   void onAuthenticated() override;
+   void onPacketReceived(const Blocksettle::Communication::headless::RequestPacket &) override;
+   void restartConnection() override;
 
 private:
    void Authenticate();
@@ -243,6 +298,7 @@ public:
    LocalSigner(const std::shared_ptr<spdlog::logger> &, const QString &homeDir
       , NetworkType, const QString &port
       , const std::shared_ptr<ConnectionManager>& connectionManager
+      , HeadlessCallbackTarget *
       , const bool startSignerProcess = true
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
@@ -264,16 +320,15 @@ private:
 };
 
 
-class HeadlessListener : public QObject, public DataConnectionListener
+class HeadlessListener : public DataConnectionListener
 {
-   Q_OBJECT
-
-   friend class RemoteSigner;
-
 public:
    HeadlessListener(const std::shared_ptr<spdlog::logger> &logger
-      , const std::shared_ptr<DataConnection> &conn, NetworkType netType)
-      : logger_(logger), connection_(conn), netType_(netType) {}
+      , const std::shared_ptr<DataConnection> &conn, NetworkType netType
+      , HeadlessContainer *hc)
+      : logger_(logger), connection_(conn), netType_(netType)
+      , parent_(hc)
+   {}
 
    void OnDataReceived(const std::string& data) override;
    void OnConnected() override;
@@ -285,13 +340,7 @@ public:
 
    bool isReady() const { return isReady_; }
 
-signals:
-   void authenticated();
-   void authFailed();
-   void connected();
-   void disconnected();
-   void error(HeadlessContainer::ConnectionError error, const QString &details);
-   void PacketReceived(Blocksettle::Communication::headless::RequestPacket);
+   void setConnected(bool flag = true);
 
 private:
    bs::signer::RequestId newRequestId();
@@ -303,6 +352,7 @@ private:
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<DataConnection>  connection_;
    const NetworkType                netType_;
+   HeadlessContainer    *parent_{ nullptr };
 
    std::atomic<bs::signer::RequestId>            id_{0};
 

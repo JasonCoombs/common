@@ -25,6 +25,9 @@ Router::Router(const std::shared_ptr<spdlog::logger> &logger)
 
 void Router::bindAdapter(const std::shared_ptr<Adapter> &adapter)
 {
+   if (!adapter) {
+      throw std::runtime_error("invalid null adapter");
+   }
    const auto &supportedReceivers = adapter->supportedReceivers();
    if (supportedReceivers.empty()) {
       logger_->error("[Router::bindAdapter] {} has no supported receivers", adapter->name());
@@ -209,7 +212,7 @@ void Queue_Locking::process()
             continue;
          }
 
-         if (env.sender->isSystem() && env.receiver->isSystem()) {
+         if (env.receiver && env.sender->isSystem() && env.receiver->isSystem()) {
             if (env.message == kQuitMessage) {
                logger_->info("[Queue::process] detected quit system message");
                running_ = false;

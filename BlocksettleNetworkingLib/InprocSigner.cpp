@@ -460,8 +460,7 @@ void InprocSigner::syncTxComment(const std::string &walletId, const BinaryData &
 
 void InprocSigner::syncNewAddresses(const std::string &walletId
    , const std::vector<std::string> &inData
-   , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &cb
-   , bool persistent)
+   , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &cb)
 {
    std::vector<std::pair<bs::Address, std::string>> result;
    const auto wallet = walletsMgr_->getWalletById(walletId);

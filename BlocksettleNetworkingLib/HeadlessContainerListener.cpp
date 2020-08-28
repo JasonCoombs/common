@@ -264,6 +264,7 @@ bool HeadlessContainerListener::AuthResponse(const std::string &clientId, headle
 
    packet.set_data(response.SerializeAsString());
    bool rc = sendData(packet.SerializeAsString(), clientId);
+   logger_->debug("[HeadlessContainerListener] sent auth response");
 
    if (rc) {
       const auto &priWallet = walletsMgr_->getPrimaryWallet();

@@ -12,6 +12,7 @@
 #define BLOCKCHAIN_ADAPTER_H
 
 #include <atomic>
+#include <future>
 #include <unordered_map>
 #include "Address.h"
 #include "Message/Adapter.h"
@@ -58,7 +59,7 @@ public:
    BlockchainAdapter(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<bs::message::User> &
       , const std::shared_ptr<ArmoryConnection> &armory = nullptr);
-   ~BlockchainAdapter() override = default;
+   ~BlockchainAdapter() override;
 
    bool process(const bs::message::Envelope &) override;
 
@@ -120,10 +121,12 @@ protected:
    std::unordered_map<std::string, bs::message::Envelope>   reqByRegId_;
    std::unordered_map<std::string, std::pair<std::string, bs::message::Envelope>>   unconfTgtMap_;
 
-   std::atomic_bool  suspended_{ false };
+   std::atomic_bool  suspended_{ true };
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;
    std::map<uint64_t, bs::message::Envelope> requestsPool_;
    std::mutex                                mtxReqPool_;
+
+   std::shared_ptr< std::promise<bool>>   connKeyProm_;
 
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);

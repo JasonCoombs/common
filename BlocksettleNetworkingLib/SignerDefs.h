@@ -38,7 +38,7 @@ namespace Blocksettle {
 }
 namespace BlockSettle {
    namespace Common {
-      class WalletsMessage_HDWalletData;
+      class HDWalletData;
       class WalletsMessage_WalletData;
    }
 }
@@ -127,9 +127,10 @@ namespace sync {
          BinaryData salt;
       };
       std::vector<Group>   groups;
+      std::string          id;
 
-      BlockSettle::Common::WalletsMessage_HDWalletData toCommonMessage() const;
-      static HDWalletData fromCommonMessage(const BlockSettle::Common::WalletsMessage_HDWalletData &);
+      BlockSettle::Common::HDWalletData toCommonMessage() const;
+      static HDWalletData fromCommonMessage(const BlockSettle::Common::HDWalletData &);
    };
 
    struct AddressData

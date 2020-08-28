@@ -17,6 +17,7 @@
 
 using namespace Blocksettle::Communication;
 using namespace BlockSettle::Common;
+using namespace bs::sync;
 
 NetworkType bs::sync::mapFrom(const headless::NetworkType &netType)
 {
@@ -38,9 +39,9 @@ bs::sync::WalletFormat bs::sync::mapFrom(const headless::WalletFormat &format)
    }
 }
 
-bs::sync::WalletData bs::sync::WalletData::fromPbMessage(const headless::SyncWalletResponse &response)
+WalletData WalletData::fromPbMessage(const headless::SyncWalletResponse &response)
 {
-   bs::sync::WalletData result;
+   WalletData result;
 
    result.highestExtIndex = response.highest_ext_index();
    result.highestIntIndex = response.highest_int_index();
@@ -69,6 +70,35 @@ bs::sync::WalletData bs::sync::WalletData::fromPbMessage(const headless::SyncWal
 
    return result;
 }
+
+WalletData WalletData::fromCommonMessage(const WalletsMessage_WalletData &msg)
+{
+   WalletData result;
+
+   for (const auto &usedAddr : msg.used_addresses()) {
+      try {
+         const auto &addr = bs::Address::fromAddressString(usedAddr.address());
+         result.addresses.push_back({ usedAddr.index(), std::move(addr)
+            , usedAddr.comment() });
+      }
+      catch (const std::exception &) {}
+   }
+   return result;
+}
+
+WalletsMessage_WalletData WalletData::toCommonMessage() const
+{
+   WalletsMessage_WalletData result;
+
+   for (const auto &addr : addresses) {
+      auto msgAddr = result.add_used_addresses();
+      msgAddr->set_address(addr.address.display());
+      msgAddr->set_index(addr.index);
+      msgAddr->set_comment(addr.comment);
+   }
+   return result;
+}
+
 
 std::vector<bs::sync::WalletInfo> bs::sync::WalletInfo::fromPbMessage(const headless::SyncWalletInfoResponse &response)
 {
@@ -193,4 +223,53 @@ headless::SyncWalletResponse bs::sync::exportHDLeafToPbMessage(const std::shared
       txCommData->set_comment(txComment.second);
    }
    return response;
+}
+
+
+BlockSettle::Common::HDWalletData bs::sync::HDWalletData::toCommonMessage() const
+{
+   BlockSettle::Common::HDWalletData result;
+   result.set_wallet_id(id);
+   for (const auto &group : groups) {
+      auto msgGroup = result.add_groups();
+      msgGroup->set_type(static_cast<int>(group.type));
+      msgGroup->set_ext_only(group.extOnly);
+      if (!group.salt.empty()) {
+         msgGroup->set_salt(group.salt.toBinStr());
+      }
+      for (const auto &leaf : group.leaves) {
+         auto msgLeaf = msgGroup->add_leaves();
+         msgLeaf->set_id(leaf.id);
+         msgLeaf->set_path(leaf.path.toString());
+         msgLeaf->set_ext_only(leaf.extOnly);
+         if (!leaf.extraData.empty()) {
+            msgLeaf->set_extra_data(leaf.extraData.toBinStr());
+         }
+      }
+   }
+   return result;
+}
+
+bs::sync::HDWalletData bs::sync::HDWalletData::fromCommonMessage(
+   const BlockSettle::Common::HDWalletData &msg)
+{
+   HDWalletData result;
+   result.id = msg.wallet_id();
+   for (const auto &msgGroup : msg.groups()) {
+      HDWalletData::Group group;
+      group.type = static_cast<bs::hd::CoinType>(msgGroup.type());
+      group.extOnly = msgGroup.ext_only();
+      group.salt = BinaryData::fromString(msgGroup.salt());
+
+      for (const auto &msgLeaf : msgGroup.leaves()) {
+         HDWalletData::Leaf leaf;
+         leaf.id = msgLeaf.id();
+         leaf.path = bs::hd::Path::fromString(msgLeaf.path());
+         leaf.extOnly = msgLeaf.ext_only();
+         leaf.extraData = BinaryData::fromString(msgLeaf.extra_data());
+         group.leaves.emplace_back(std::move(leaf));
+      }
+      result.groups.emplace_back(std::move(group));
+   }
+   return result;
 }

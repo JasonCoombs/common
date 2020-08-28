@@ -62,10 +62,11 @@ namespace bs {
             bs::hd::Path::Elem index() const { return index_; }
             std::string name() const { return name_; }
             std::string description() const { return desc_; }
+            bool extOnly() const { return extOnlyAddresses_; }
 
             virtual void setUserId(const BinaryData &) {}
-
             void resetWCT();
+
          protected:
             using cb_scan_notify = std::function<void(Group *, bs::hd::Path::Elem wallet, bool isValid)>;
             using cb_scan_read_last = std::function<unsigned int(const std::string &walletId)>;
@@ -96,6 +97,7 @@ namespace bs {
             bs::core::wallet::Type type() const override { return bs::core::wallet::Type::Authentication; }
 
             void setUserId(const BinaryData &usedId) override;
+            BinaryData userId() const { return userId_; }
 
          protected:
             std::shared_ptr<hd::Leaf> newLeaf(const std::string &walletId) const override;

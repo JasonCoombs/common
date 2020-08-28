@@ -29,8 +29,13 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
 {
    signerClient_->setClientUser(ownUser_);
    signerClient_->setSignerReady([this] {
-      startWalletsSync();
       sendLoadingBC();
+   });
+   signerClient_->setWalletsLoaded([this] {
+      startWalletsSync();
+   });
+   signerClient_->setNoWalletsFound([this] {
+      logger_->debug("[WalletsAdapter] no wallets found");
    });
    signerClient_->setWalletsListUpdated([this] { reset(); });
 }
@@ -43,7 +48,7 @@ bool WalletsAdapter::process(const Envelope &env)
    else if (env.sender->value() == blockchainUser_->value()) {
       return processBlockchain(env);
    }
-   else if (env.receiver->value() == ownUser_->value()) {
+   else if (env.receiver && (env.receiver->value() == ownUser_->value())) {
       return processOwnRequest(env);
    }
    return true;
@@ -51,6 +56,9 @@ bool WalletsAdapter::process(const Envelope &env)
 
 bool WalletsAdapter::processBlockchain(const Envelope &env)
 {
+   if (!env.receiver && env.request) {
+      return true;
+   }
    ArmoryMessage msg;
    if (!msg.ParseFromString(env.message)) {
       logger_->error("[{}] failed to parse msg #{}", __func__, env.id);
@@ -104,7 +112,7 @@ void WalletsAdapter::startWalletsSync()
 void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
 {
    logger_->debug("[WalletsManager::syncWallets] syncing wallet {} ({} {})"
-      , info.id, info.name, (int)info.format);
+      , info.id, info.name, info.description);
 
    const auto &sendWalletLoaded = [this, info]
    {
@@ -202,7 +210,7 @@ void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
 {
    auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
    if (ccLeaf) {
-      ccLeaf->setCCDataResolver(ccResolver_);
+//      ccLeaf->setCCDataResolver(ccResolver_);
 //      updateTracker(ccLeaf);   //TODO: should be request to OnChainTrackerClient
    }
    wallet->setUserId(userId_);
@@ -523,5 +531,138 @@ void WalletsAdapter::processZCReceived(const ArmoryMessage_ZCReceived &event)
 
 bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
 {
+   WalletsMessage msg;
+   if (!msg.ParseFromString(env.message)) {
+      logger_->error("[{}] failed to parse msg #{}", __func__, env.id);
+      return true;
+   }
+   switch (msg.data_case()) {
+   case WalletsMessage::kHdWalletGet:
+      return processHdWalletGet(env, msg.hd_wallet_get());
+   case WalletsMessage::kWalletGet:
+      return processWalletGet(env, msg.wallet_get());
+   case WalletsMessage::kTxCommentGet:
+      return processGetTxComment(env, msg.tx_comment_get());
+   case WalletsMessage::kGetWalletBalances:
+      return processGetWalletBalances(env, msg.get_wallet_balances());
+   default: break;
+   }
    return true;
+}
+
+bool WalletsAdapter::processHdWalletGet(const Envelope &env
+   , const std::string &walletId)
+{
+   const auto &hdWallet = getHDWalletById(walletId);
+   if (!hdWallet) {
+      logger_->error("[{}] HD wallet {} not found", __func__, walletId);
+      return true;
+   }
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_hd_wallet();
+   msgResp->set_wallet_id(hdWallet->walletId());
+   msgResp->set_is_primary(hdWallet->isPrimary());
+   for (const auto &group : hdWallet->getGroups()) {
+      auto msgGroup = msgResp->add_groups();
+      msgGroup->set_type((int)group->index());
+      msgGroup->set_ext_only(group->extOnly());
+
+      const auto &authGroup = std::dynamic_pointer_cast<bs::sync::hd::AuthGroup>(group);
+      if (authGroup && !authGroup->userId().empty()) {
+         msgGroup->set_salt(authGroup->userId().toBinStr());
+      }
+
+      for (const auto &leaf : group->getLeaves()) {
+         auto msgLeaf = msgGroup->add_leaves();
+         msgLeaf->set_id(leaf->walletId());
+         msgLeaf->set_path(leaf->path().toString());
+         msgLeaf->set_ext_only(leaf->extOnly());
+      }
+   }
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processWalletGet(const Envelope &env
+   , const std::string &walletId)
+{
+   const auto &wallet = getWalletById(walletId);
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, walletId);
+      return true;
+   }
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_wallet_data();
+   msgResp->set_wallet_id(wallet->walletId());
+   for (const auto &addr : wallet->getUsedAddressList()) {
+      auto msgAddr = msgResp->add_used_addresses();
+      const auto &idx = wallet->getAddressIndex(addr);
+      const auto &comment = wallet->getAddressComment(addr);
+      msgAddr->set_index(idx);
+      msgAddr->set_address(addr.display());
+      msgAddr->set_comment(comment);
+   }
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processGetTxComment(const Envelope &env
+   , const std::string &txBinHash)
+{
+   const auto &txHash = BinaryData::fromString(txBinHash);
+   for (const auto &wallet : wallets_) {
+      const auto &comment = wallet.second->getTransactionComment(txHash);
+      if (!comment.empty()) {
+         WalletsMessage msg;
+         auto msgResp = msg.mutable_tx_comment();
+         msgResp->set_tx_hash(txBinHash);
+         msgResp->set_comment(comment);
+         Envelope envResp{ env.id, ownUser_, env.sender, {}, {}
+            , msg.SerializeAsString() };
+         return pushFill(envResp);
+      }
+   }
+   return true;
+}
+
+bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
+   , const std::string &walletId)
+{
+   const auto &wallet = getWalletById(walletId);
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, walletId);
+      return true;
+   }
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_wallet_balances();
+   msgResp->set_wallet_id(walletId);
+   double totalBalance = 0, spendableBalance = 0, unconfirmedBalance = 0;
+   unsigned int addrCount = 0;
+   for (const auto &id : wallet->internalIds()) {
+      const auto &itBal = walletBalances_.find(id);
+      if (itBal == walletBalances_.end()) {
+         continue;
+      }
+      totalBalance += itBal->second.walletBalance.totalBalance;
+      spendableBalance += itBal->second.walletBalance.spendableBalance;
+      unconfirmedBalance += itBal->second.walletBalance.unconfirmedBalance;
+      addrCount += itBal->second.addrCount;
+      for (const auto &addrTxN : itBal->second.addressTxNMap) {
+         auto msgAddr = msgResp->add_address_balances();
+         msgAddr->set_address(addrTxN.first.toBinStr());
+         msgAddr->set_txn(addrTxN.second);
+         const auto &itAddrBal = itBal->second.addressBalanceMap.find(addrTxN.first);
+         if (itAddrBal != itBal->second.addressBalanceMap.end()) {
+            msgAddr->set_total_balance(itAddrBal->second.totalBalance);
+            msgAddr->set_spendable_balance(itAddrBal->second.spendableBalance);
+            msgAddr->set_unconfirmed_balance(itAddrBal->second.unconfirmedBalance);
+         }
+      }
+   }
+   msgResp->set_total_balance(totalBalance);
+   msgResp->set_spendable_balance(spendableBalance);
+   msgResp->set_unconfirmed_balance(unconfirmedBalance);
+   msgResp->set_nb_addresses(addrCount);
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
 }

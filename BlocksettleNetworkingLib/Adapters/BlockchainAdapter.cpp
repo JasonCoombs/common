@@ -11,7 +11,9 @@
 #include "BlockchainAdapter.h"
 #include <spdlog/spdlog.h>
 #include "ArmoryErrors.h"
+#include "ArmoryObject.h"
 #include "BitcoinFeeCache.h"
+#include "StringUtils.h"
 
 #include "common.pb.h"
 
@@ -43,8 +45,16 @@ BlockchainAdapter::BlockchainAdapter(const std::shared_ptr<spdlog::logger> &logg
    : logger_(logger), user_(user), armoryPtr_(armory)
 {}
 
+BlockchainAdapter::~BlockchainAdapter()
+{
+   cleanup();
+}
+
 bool BlockchainAdapter::process(const bs::message::Envelope &env)
 {
+   if (!env.receiver) {
+      return true;   // broadcast
+   }
    if (env.receiver->value() == user_->value()) {
       ArmoryMessage msg;
       if (!msg.ParseFromString(env.message)) {
@@ -58,8 +68,13 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          break;
       case ArmoryMessage::kSettingsResponse:
          return processSettings(msg.settings_response());
-      case ArmoryMessage::kRegisterWallet:
+      case ArmoryMessage::kKeyCompared:
+         if (connKeyProm_) {
+            connKeyProm_->set_value(msg.key_compared());
+         }
          break;
+      case ArmoryMessage::kRegisterWallet:
+         return processRegisterWallet(env, msg.register_wallet());
       case ArmoryMessage::kTxPush:
          return processPushTxRequest(env, msg.tx_push());
       case ArmoryMessage::kTxPushTimeout:
@@ -90,20 +105,18 @@ void BlockchainAdapter::setQueue(const std::shared_ptr<bs::message::QueueInterfa
 
 void BlockchainAdapter::start()
 {
-   if (!armoryPtr_) {
-      armoryPtr_ = std::make_shared<ArmoryConnection>(logger_);
-
+   if (armoryPtr_) {
+      sendLoadingBC();
+      init(armoryPtr_.get());
+      feeEstimationsCache_ = std::make_shared<BitcoinFeeCache>(logger_, armoryPtr_);
+   }
+   else {
       ArmoryMessage msg;
       msg.mutable_settings_request();  // broadcast ask for someone to provide settings
       bs::message::Envelope env{ 0, user_, nullptr, {}, {}
          , msg.SerializeAsString(), true };
       pushFill(env);
    }
-   else {
-      sendLoadingBC();
-   }
-   init(armoryPtr_.get());
-   feeEstimationsCache_ = std::make_shared<BitcoinFeeCache>(logger_, armoryPtr_);
 }
 
 void BlockchainAdapter::sendReady()
@@ -124,19 +137,63 @@ void BlockchainAdapter::sendLoadingBC()
 
 bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
 {
-   BinaryData serverBIP15xKey;
-   if (!settings.bip15x_key().empty()) {
-      try {
-         serverBIP15xKey = READHEX(settings.bip15x_key());
-      } catch (const std::exception &e) {
-         logger_->error("[BlockchainAdapter::processSettings] invalid armory key detected: {}: {}"
-            , settings.bip15x_key(), e.what());
-         return true;
-      }
-   }
+   if (settings.cache_file_name().empty()) {
+      armoryPtr_ = std::make_shared<ArmoryConnection>(logger_);
+      init(armoryPtr_.get());
 
-   armoryPtr_->setupConnection(static_cast<NetworkType>(settings.network_type())
-      , settings.host(), settings.port(), settings.data_dir(), serverBIP15xKey);
+      BinaryData serverBIP15xKey;
+      if (!settings.bip15x_key().empty()) {
+         try {
+            serverBIP15xKey = READHEX(settings.bip15x_key());
+         } catch (const std::exception &e) {
+            logger_->error("[BlockchainAdapter::processSettings] invalid armory key detected: {}: {}"
+               , settings.bip15x_key(), e.what());
+            return true;
+         }
+      }
+      armoryPtr_->setupConnection(static_cast<NetworkType>(settings.network_type())
+         , settings.host(), settings.port(), settings.data_dir(), serverBIP15xKey);
+   }
+   else {
+      const auto &armory = std::make_shared<ArmoryObject>(logger_
+         , settings.cache_file_name(), false);
+      init(armory.get());
+
+      ArmorySettings armorySettings;
+      armorySettings.socketType = static_cast<SocketType>(settings.socket_type());
+      armorySettings.netType = static_cast<NetworkType>(settings.network_type());
+      armorySettings.armoryDBIp = QString::fromStdString(settings.host());
+      armorySettings.armoryDBPort = std::stoi(settings.port());
+      armorySettings.armoryDBKey = QString::fromStdString(settings.bip15x_key());
+      armorySettings.runLocally = settings.run_locally();
+      armorySettings.dataDir = QString::fromStdString(settings.data_dir());
+      armorySettings.armoryExecutablePath = QString::fromStdString(settings.executable_path());
+      armorySettings.bitcoinBlocksDir = QString::fromStdString(settings.bitcoin_dir());
+      armorySettings.dbDir = QString::fromStdString(settings.db_dir());
+
+      connKeyProm_ = std::make_shared<std::promise<bool>>();
+      armory->setupConnection(armorySettings, [this, armory]
+         (const BinaryData& srvPubKey, const std::string& srvIPPort) -> bool {
+/*         ArmoryMessage msg;
+         auto msgReq = msg.mutable_compare_key();
+         msgReq->set_new_key(srvPubKey.toBinStr());
+         msgReq->set_server_id(srvIPPort);
+         Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString(), true };
+         pushFill(env);
+
+         auto futureObj = connKeyProm_->get_future();
+         const bool result = futureObj.get();
+         if (!result) { // stop armory connection loop if server key was rejected
+            armory->needsBreakConnectionLoop_ = true;
+            armory->setState(ArmoryState::Cancelled);
+         }
+         connKeyProm_.reset();
+         return result;*/
+         return true;
+      });
+      armoryPtr_ = armory;
+   }
+   sendLoadingBC();
    return true;
 }
 
@@ -162,6 +219,7 @@ void BlockchainAdapter::onStateChanged(ArmoryState st)
 {
    switch (st) {
    case ArmoryState::Ready:
+      suspended_ = false;
       resumeRegistrations();
       sendReady();
       break;
@@ -176,12 +234,10 @@ void BlockchainAdapter::onStateChanged(ArmoryState st)
    case ArmoryState::Offline:
       logger_->info("[BlockchainAdapter::onStateChanged] Armory is offline - "
          "suspended and reconnecting");
-
+      suspend();
       reconnect();
       [[clang::fallthrough]];
-   default:
-//      settlStartRequests_.clear();
-      break;
+   default:    break;
    }
 
    ArmoryMessage msg;
@@ -398,6 +454,9 @@ void BlockchainAdapter::onBroadcastTimeout(const std::string &timeoutId)
 bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
    , const ArmoryMessage_RegisterWallet &request)
 {
+   if (suspended_) {
+      return false;  // postpone until Armory will become ready
+   }
    const auto &sendError = [this, env, request]
    {
       ArmoryMessage msg;
