@@ -40,6 +40,8 @@ namespace {
    constexpr auto kLocalReconnectPeriod = std::chrono::seconds(10);
    constexpr auto kRemoteReconnectPeriod = std::chrono::seconds(1);
 
+   const uint32_t kConnectTimeoutSec = 1;
+
 } // namespace
 
 using namespace Blocksettle::Communication;
@@ -1390,7 +1392,9 @@ void RemoteSigner::RecreateConnection()
    try {
       bip15xTransport_ = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
       bip15xTransport_->setKeyCb(cbNewKey_);
-      auto wsConn = std::make_unique<WsDataConnection>(logger_, WsDataConnectionParams{});
+      WsDataConnectionParams wsParams;
+      wsParams.timeoutSecs = kConnectTimeoutSec;
+      auto wsConn = std::make_unique<WsDataConnection>(logger_, wsParams);
       auto conn = std::make_shared<Bip15xDataConnection>(logger_, std::move(wsConn), bip15xTransport_);
       connection_ = std::move(conn);
 
