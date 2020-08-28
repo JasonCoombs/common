@@ -110,17 +110,12 @@ message SupportingTransaction
 message SignTxRequest
 {
    repeated string                  walletId = 1;
-   repeated bytes                   inputs = 2;
-   repeated string                  input_indices = 12;
    repeated bytes                   recipients = 3;
    uint64                           fee = 4;
    bool                             RBF = 5;
    bytes                            unsigned_state = 6;
    Change                           change = 7;
-   bool                             populate_UTXOs = 8;
-   repeated uint32                  out_sort_order = 9;
    bool                             keepDuplicatedRecipients = 11;
-   repeated SupportingTransaction   supportingTxs = 20;
    bool                             allow_broadcasts = 21;
    uint64                           expired_timestamp_ms = 22;
    bytes                            tx_hash = 23;

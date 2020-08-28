@@ -668,6 +668,14 @@ std::map<BinaryData, bs::hd::Path> hd::Leaf::indexPath(const std::set<BinaryData
    return result;
 }
 
+bool hd::Leaf::hasBip32Path(const ArmorySigner::BIP32_AssetPath& path) const
+{
+   if (accountPtr_ == nullptr)
+      throw AccountException("null account ptr");
+
+   return accountPtr_->hasBip32Path(path);
+}
+
 std::shared_ptr<AssetEntry> hd::Leaf::getRootAsset() const
 {
    if (accountPtr_ == nullptr)
