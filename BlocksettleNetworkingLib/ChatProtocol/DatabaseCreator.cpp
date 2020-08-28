@@ -84,14 +84,17 @@ bool DatabaseCreator::createMissingTables()
 
          result &= rc;
       }
-      else
-      {
-         loggerPtr_->debug("[DatabaseCreator::createMissingTables] table '{}' exists. Checking...", reqTable.toStdString());
-         if (!checkColumns(reqTable))
-         {
-            return false;
-         }
-      }
+      // NOTE: checkColumns use SQL command DESCRIBE to get table columns, and
+      //       that command is not supported by sqlite, which is current DB
+      //       driver for chat
+      // else
+      // {
+      //    loggerPtr_->debug("[DatabaseCreator::createMissingTables] table '{}' exists. Checking...", reqTable.toStdString());
+      //    if (!checkColumns(reqTable))
+      //    {
+      //       return false;
+      //    }
+      // }
    }
    return result;
 }
@@ -135,7 +138,7 @@ QString DatabaseCreator::buildCreateCmd(const QString& tableName, const TableStr
 
 bool DatabaseCreator::checkColumns(const QString& tableName) const
 {
-   auto cmd = QStringLiteral("DESCRIBE `%1`").arg(tableName);
+   auto cmd = QStringLiteral("DESCRIBE %1").arg(tableName);
 
    QStringList tableColumns;
    QSqlQuery infoQuery;
@@ -174,7 +177,7 @@ bool DatabaseCreator::checkColumns(const QString& tableName) const
             columnItem.columnName.toStdString(),
             columnItem.columnType.toStdString());
 
-         QString alterCmd = QStringLiteral("ALTER TABLE `%1` ADD COLUMN `%2` %3;")
+         QString alterCmd = QStringLiteral("ALTER TABLE %1 ADD COLUMN %2 %3;")
             .arg(tableName)
             .arg(columnItem.columnName)
             .arg(columnItem.columnType);

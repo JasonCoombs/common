@@ -515,5 +515,10 @@ try {
 float bs::TradesVerification::getAllowedFeePerByteMin(float feePerByte)
 {
    // Allow fee to be slightly less than expected (but not less than 1 sat/byte)
-   return std::max(1.0f, feePerByte * (1 - kFeeRateIncreaseThreshold));
+   return std::max(minRelayFee(), feePerByte * (1 - kFeeRateIncreaseThreshold));
+}
+
+float bs::TradesVerification::minRelayFee()
+{
+   return 1.0f;
 }
