@@ -36,6 +36,7 @@ struct WsDataConnectionParams
    bool useSsl{false};
    size_t maximumPacketSize{bs::network::ws::kDefaultMaximumWsPacketSize};
    std::vector<uint32_t> delaysTableMs;
+   std::uint32_t timeoutSecs{};
 };
 
 class WsDataConnection : public DataConnection
