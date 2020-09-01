@@ -248,7 +248,7 @@ bool TransactionData::UpdateTransactionData()
    }
 
    const auto totalFee = totalFee_ ? totalFee_ : minTotalFee_;
-   PaymentStruct payment = (!totalFee && !qFuzzyIsNull(feePerByte_))
+   PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
       ? PaymentStruct(recipientsMap, 0, feePerByte_, 0)
       : PaymentStruct(recipientsMap, totalFee, 0, 0);
    summary_.balanceToSpend = payment.spendVal() / BTCNumericTypes::BalanceDivider;
