@@ -99,20 +99,9 @@ void ArmoryObject::setupConnection(const ArmorySettings &settings, const BIP151C
          return;
       }
    }
-
-   // Add BIP 150 server keys
-   BinaryData serverBIP15xKey;
-   if (!settings.armoryDBKey.isEmpty()) {
-      try {
-         serverBIP15xKey = READHEX(settings.armoryDBKey.toStdString());
-      } catch (const std::exception &e) {
-         logger_->error("invalid armory key detected: {}: {}", settings.armoryDBKey.toStdString(), e.what());
-      }
-   }
-
+   
    ArmoryConnection::setupConnection(settings.netType, settings.armoryDBIp.toStdString()
-      , std::to_string(settings.armoryDBPort), settings.dataDir.toStdString(), serverBIP15xKey
-      , settings.password, bip150PromptUserCb);
+      , std::to_string(settings.armoryDBPort), bip150PromptUserCb);
 }
 
 bool ArmoryObject::getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &cb)
