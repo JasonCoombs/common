@@ -249,9 +249,8 @@ public:
 
    using BIP151Cb = std::function<bool(const BinaryData&, const std::string&)>;
    void setupConnection(NetworkType, const std::string &host, const std::string &port
-      , const std::string &dataDir, const BinaryData &serverKey
-      , const SecureBinaryData &passphrase = {}
-      , const BIP151Cb &cbBIP151 = [](const BinaryData&, const std::string&) {return true; });
+      //lambda deals with server key ACK/nACK
+      , const BIP151Cb &cbBIP151);
 
    std::shared_ptr<AsyncClient::BtcWallet> instantiateWallet(const std::string &walletId);
 
@@ -288,8 +287,6 @@ protected:
    std::atomic<ArmoryState>         state_ { ArmoryState::Offline };
    std::atomic_uint                 topBlock_ { 0 };
    std::shared_ptr<BlockHeader>     getTxBlockHeader_;
-
-   std::vector<SecureBinaryData> bsBIP150PubKeys_;
 
    std::atomic_bool  regThreadRunning_{ false };
    std::atomic_bool  connThreadRunning_{ false };

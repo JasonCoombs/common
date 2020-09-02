@@ -26,7 +26,7 @@ public:
    ~ArmoryObject() noexcept override = default;
 
    void setupConnection(const ArmorySettings &settings
-      , const BIP151Cb &bip150PromptUserCb = [](const BinaryData&, const std::string&) { return true; });
+      , const BIP151Cb &bip150PromptUserCb);
 
    bool getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &) override;
 
