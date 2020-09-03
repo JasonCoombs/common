@@ -460,6 +460,7 @@ enum GenoaType
    GenoaMigrateUserIds           = 32;
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
+   GetUserEmail                  = 35;
 }
 
 message GenoaConnectedBroadcast
@@ -790,6 +791,7 @@ message GenoaMessage
       GenoaApiKeyCheckResponse         api_key_response           = 34;
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
+      string                           entity_name                = 37;
    }
 }
 
