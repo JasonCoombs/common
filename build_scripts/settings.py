@@ -20,7 +20,7 @@ class Settings:
         self._is_server_build = False
 
         self._project_root = os.getcwd()
-        self._build_scripts_root = os.path.abspath(os.path.join(self._project_root, 'build_scripts'))
+        self._build_scripts_root = os.path.abspath(os.path.join(self._project_root, 'common', 'build_scripts'))
         self._root_dir = os.path.abspath(os.path.join(self._project_root, '..'))
         self._3rdparty_dir = os.getenv('DEV_3RD_ROOT', os.path.join(self._root_dir, '3rd'))
         download_dir_orig = os.path.join(self._3rdparty_dir, 'downloads')

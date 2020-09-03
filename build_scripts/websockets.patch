@@ -1,0 +1,20 @@
+diff --git a/lib/tls/openssl/openssl-tls.c b/lib/tls/openssl/openssl-tls.c
+index 0b8bfe55..afdf9a55 100644
+--- a/lib/tls/openssl/openssl-tls.c
++++ b/lib/tls/openssl/openssl-tls.c
+@@ -142,11 +142,11 @@ lws_context_init_ssl_library(const struct lws_context_creation_info *info)
+ 	OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, NULL);
+ #endif
+ #if defined(LWS_WITH_NETWORK)
+-	openssl_websocket_private_data_index =
+-		SSL_get_ex_new_index(0, "lws", NULL, NULL, NULL);
++	// openssl_websocket_private_data_index =
++	// 	SSL_get_ex_new_index(0, "lws", NULL, NULL, NULL);
+ 
+-	openssl_SSL_CTX_private_data_index = SSL_CTX_get_ex_new_index(0,
+-			NULL, NULL, NULL, NULL);
++	// openssl_SSL_CTX_private_data_index = SSL_CTX_get_ex_new_index(0,
++	// 		NULL, NULL, NULL, NULL);
+ #endif
+ 
+ #if LWS_MAX_SMP != 1

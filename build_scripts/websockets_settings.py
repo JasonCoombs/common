@@ -23,7 +23,7 @@ class WebsocketsSettings(Configurator):
         self._version = '4.0.15'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
-        self._script_revision = '10'
+        self._script_revision = '11'
         self._sources = os.path.join(self._project_settings.get_sources_dir(), self._package_name + '-' + self._version)
 
     def get_package_name(self):
@@ -42,6 +42,15 @@ class WebsocketsSettings(Configurator):
         return True
 
     def config(self):
+        # LibWebsockets has some problems when multiple contexts are used at the same time from different threads.
+        # One of the problems is the global variables used in OpenSSL_client_verify_callback.
+        # When SSL is enabled and new context created global variables `openssl_websocket_private_data_index` and `openssl_SSL_CTX_private_data_index`
+        # are changed and old clients fail in OpenSSL_client_verify_callback.
+        # Here is workaround (disable changing variables in LWS code and register them manually once, see ws::globalInit).
+        patch_path = os.path.join(self._project_settings._build_scripts_root, 'websockets.patch')
+        print(self.get_unpacked_sources_dir())
+        subprocess.check_call(['patch', '--quiet', '-p1', '-i', patch_path], cwd=self.get_unpacked_sources_dir())
+
         # LWS_SSL_CLIENT_USE_OS_CA_CERTS is off because it only tries to load CA bundle from OpenSSL build dir (useless feature for us).
         # As a workaround we embed CA bundle in terminal binary itself.
         command = ['cmake',
@@ -102,17 +111,6 @@ class WebsocketsSettings(Configurator):
         return result == 0
 
     def make_windows(self):
-        if self._project_settings.get_build_mode() == 'debug':
-            # Workaroung for failed assert on Windows
-            file_path = self._sources + "\\lib\\tls\\openssl\\openssl-ssl.c"
-            with open(file_path, "r") as sources:
-                lines = sources.readlines()
-            print(lines)
-            with open(file_path, "w") as sources:
-                for line in lines:
-                    if not "assert (errno != 9);" in line:
-                        sources.write(line)
-
         project_name = 'websockets'
         if self._project_settings.get_link_mode() == 'shared':
             project_name = 'websockets_shared'

@@ -55,6 +55,8 @@ namespace bs {
          std::string generateSelfSignedCert(const PrivateKey &privKey
             , const std::chrono::seconds &expireTime = std::chrono::hours(20 * 365 * 24));
 
+         void globalInit(bool useSsl);
+
       }
       class WsRawPacket
       {
