@@ -744,8 +744,8 @@ message GenoaApiKeyCheckRequest
 
 message GenoaApiKeyCheckResponse
 {
-   string api_key = 1;
-   string email = 2;
+   string api_key             = 1;
+   string entity_name         = 2;
    bs.types.ApiKeyError error = 3;
 }
 
