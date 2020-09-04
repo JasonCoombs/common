@@ -43,6 +43,8 @@ SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logg
    assert(params_.useSsl || !params_.verifyCallback);
    assert(params_.useSsl || params_.cert.empty());
    assert(params_.useSsl || params_.privKey.empty());
+
+   ws::globalInit(params_.useSsl);
 }
 
 SslDataConnection::~SslDataConnection()

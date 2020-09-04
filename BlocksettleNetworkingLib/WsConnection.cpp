@@ -71,6 +71,12 @@ namespace {
    const lws_retry_bo kDefaultRetryAndIdlePolicy = { nullptr, 0, 0
       , kPingPongInterval / std::chrono::seconds(1), kHungupInterval / std::chrono::seconds(1), 0 };
 
+   std::once_flag g_sslInitFlag;
+
+}
+
+extern "C" {
+   LWS_EXTERN int openssl_websocket_private_data_index, openssl_SSL_CTX_private_data_index;
 }
 
 WsRawPacket::WsRawPacket(const std::string &data)
@@ -301,4 +307,16 @@ long ws::sslOptionsSet()
          SSL_OP_NO_TLSv1 |
          SSL_OP_NO_TLSv1_1 |
          SSL_OP_NO_TLSv1_2;
+}
+
+void ws::globalInit(bool useSsl)
+{
+   if (!useSsl) {
+      return;
+   }
+
+   std::call_once(g_sslInitFlag, [] {
+      openssl_websocket_private_data_index = CRYPTO_get_ex_new_index(0, 0, nullptr, nullptr, nullptr, nullptr);
+      openssl_SSL_CTX_private_data_index = CRYPTO_get_ex_new_index(0, 0, nullptr, nullptr, nullptr, nullptr);
+   });
 }
