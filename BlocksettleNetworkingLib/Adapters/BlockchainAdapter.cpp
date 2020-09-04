@@ -152,7 +152,8 @@ bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
          }
       }
       armoryPtr_->setupConnection(static_cast<NetworkType>(settings.network_type())
-         , settings.host(), settings.port(), settings.data_dir(), serverBIP15xKey);
+         , settings.host(), settings.port()
+         , [serverBIP15xKey](const BinaryData&, const std::string&) { return true; });
    }
    else {
       const auto &armory = std::make_shared<ArmoryObject>(logger_
