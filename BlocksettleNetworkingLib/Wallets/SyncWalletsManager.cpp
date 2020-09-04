@@ -295,6 +295,9 @@ void WalletsManager::saveWallet(const HDWalletPtr &wallet)
    for (const auto &leaf : wallet->getLeaves()) {
       addWallet(leaf, true);
    }
+
+   // Update wallet list (fix problem with non-updated wallets list if armory disconnected)
+   emit walletChanged(wallet->walletId());
 }
 
 void WalletsManager::walletCreated(const std::string &walletId)

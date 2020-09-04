@@ -120,6 +120,8 @@ namespace bs {
 
       uint64_t getEstimatedFeeFor(UTXO input, const bs::Address &recvAddr
          , float feePerByte, unsigned int topBlock);
+      uint32_t payoutMaxTxSize();
+      XBTAmount minXbtAmount(float feePerByte);
 
       uint64_t estimatePayinFeeWithoutChange(const std::vector<UTXO> &inputs, float feePerByte);
 

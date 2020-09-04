@@ -334,6 +334,18 @@ uint64_t bs::tradeutils::getEstimatedFeeFor(UTXO input, const bs::Address &recvA
    return coinSelection.getFeeForMaxVal(scriptRecipient->getSize(), feePerByte, { input });
 }
 
+uint32_t bs::tradeutils::payoutMaxTxSize()
+{
+   // Payout has fixed structure
+   return 123;
+}
+
+bs::XBTAmount bs::tradeutils::minXbtAmount(float feePerByte)
+{
+   auto networkFee = static_cast<uint64_t>(std::round(feePerByte * payoutMaxTxSize()));
+   return bs::XBTAmount(networkFee + bs::Address::getNestedSegwitDustAmount());
+}
+
 bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    , const bs::Address &recvAddr, float feePerByte, unsigned int topBlock)
 {
