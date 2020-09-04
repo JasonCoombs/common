@@ -66,6 +66,22 @@ WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsM
    }
 }
 
+WalletInfo::WalletInfo(const bs::sync::WalletInfo &hdWallet, QObject *parent)
+{
+/*   initFromRootWallet(hdWallet);
+   initEncKeys(hdWallet);
+
+   if (walletsMgr_) {
+      connect(walletsMgr_.get(), &bs::sync::WalletsManager::walletMetaChanged, this, [this, hdWallet]
+      (const std::string &walletId) {
+         if (walletId == hdWallet->walletId()) {
+            initFromRootWallet(hdWallet);
+            initEncKeys(hdWallet);
+         }
+      });
+   }*/   //TODO: reimplement
+}
+
 WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsMgr
    , const std::shared_ptr<bs::sync::Wallet> &wallet, QObject *parent)
    : walletsMgr_(walletsMgr)

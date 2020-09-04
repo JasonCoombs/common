@@ -174,14 +174,14 @@ bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
       connKeyProm_ = std::make_shared<std::promise<bool>>();
       armory->setupConnection(armorySettings, [this, armory]
          (const BinaryData& srvPubKey, const std::string& srvIPPort) -> bool {
-/*         ArmoryMessage msg;
+         ArmoryMessage msg;
          auto msgReq = msg.mutable_compare_key();
          msgReq->set_new_key(srvPubKey.toBinStr());
          msgReq->set_server_id(srvIPPort);
          Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString(), true };
          pushFill(env);
 
-         auto futureObj = connKeyProm_->get_future();
+/*         auto futureObj = connKeyProm_->get_future();
          const bool result = futureObj.get();
          if (!result) { // stop armory connection loop if server key was rejected
             armory->needsBreakConnectionLoop_ = true;

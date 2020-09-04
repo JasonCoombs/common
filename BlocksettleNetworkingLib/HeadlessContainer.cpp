@@ -1287,19 +1287,18 @@ void HeadlessContainer::ProcessSyncHDWallet(unsigned int id, const std::string &
    }
    const bool isWoRoot = (woWallets_.find(response.walletid()) != woWallets_.end());
    bs::sync::HDWalletData result;
-   for (int i = 0; i < response.groups_size(); ++i) {
-      const auto groupInfo = response.groups(i);
+   for (const auto &groupInfo : response.groups()) {
       bs::sync::HDWalletData::Group group;
       group.type = static_cast<bs::hd::CoinType>(groupInfo.type() | bs::hd::hardFlag);
       group.extOnly = groupInfo.ext_only();
       group.salt = BinaryData::fromString(groupInfo.salt());
-      for (int j = 0; j < groupInfo.leaves_size(); ++j) {
-         const auto leafInfo = groupInfo.leaves(j);
+      for (const auto &leafInfo : groupInfo.leaves()) {
          if (isWoRoot) {
             woWallets_.insert(leafInfo.id());
          }
          group.leaves.push_back({ leafInfo.id(), bs::hd::Path::fromString(leafInfo.path())
-            , group.extOnly, BinaryData::fromString(leafInfo.extra_data()) });
+            , std::string{}, std::string{}, group.extOnly
+            , BinaryData::fromString(leafInfo.extra_data()) });
       }
       result.groups.push_back(group);
    }

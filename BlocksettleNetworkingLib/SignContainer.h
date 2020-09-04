@@ -60,9 +60,10 @@ public:
    };
    using PasswordType = SecureBinaryData;
 
-   enum ConnectionError
+   enum ConnectionError //TODO: rename to ConnectionStatus
    {
-      NoError,
+      NoError, // TODO: rename to Connected
+      Ready,   // AKA authenticated
       UnknownError,
       SocketFailed,
       HostNotFound,
@@ -73,6 +74,7 @@ public:
       NetworkTypeMismatch,
       ConnectionTimeout,
       SignerGoesOffline,
+      PublicKeyRefused
    };
    Q_ENUM(ConnectionError)
 

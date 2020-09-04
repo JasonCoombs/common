@@ -37,8 +37,9 @@ bool SignerClient::process(const Envelope &env)
       return true;
    }
    switch (msg.data_case()) {
-   case SignerMessage::kReady:
-      if (cbReady_) {
+   case SignerMessage::kState:
+      if ((static_cast<SignContainer::ConnectionError>(msg.state().code()) == 
+         SignContainer::Ready) && cbReady_) {
          cbReady_();
       }
       break;

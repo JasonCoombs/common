@@ -114,15 +114,6 @@ void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
    logger_->debug("[WalletsManager::syncWallets] syncing wallet {} ({} {})"
       , info.id, info.name, info.description);
 
-   const auto &sendWalletLoaded = [this, info]
-   {
-      WalletsMessage msg;
-      auto msgWallet = msg.mutable_wallet_loaded();
-      msgWallet->set_wallet_id(info.id);
-      Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
-      pushFill(env);
-   };
-
    switch (info.format) {
    case bs::sync::WalletFormat::HD:
    {
@@ -131,12 +122,18 @@ void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
          hdWallet->setWCT(this);
 
          if (hdWallet) {
-            const auto &cbHDWalletDone = [this, hdWallet, sendWalletLoaded]
+            const auto &cbHDWalletDone = [this, hdWallet]
             {
                logger_->debug("[WalletsAdapter::loadWallet] synced HD wallet {}"
                   , hdWallet->walletId());
                saveWallet(hdWallet);
-               sendWalletLoaded();
+
+               const auto &wi = bs::sync::WalletInfo::fromWallet(hdWallet);
+               WalletsMessage msg;
+               auto msgWallet = msg.mutable_wallet_loaded();
+               wi.toCommonMsg(*msgWallet);
+               Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
+               pushFill(env);
             };
             hdWallet->synchronize(cbHDWalletDone);
          }
@@ -226,8 +223,7 @@ void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
       authAddressWallet_ = wallet;
       logger_->debug("[WalletsAdapter::addWallet] auth leaf {} created", wallet->walletId());
       WalletsMessage msg;
-      auto msgCreated = msg.mutable_auth_leaf_created();
-      msgCreated->set_wallet_id(authAddressWallet_->walletId());
+      msg.set_auth_leaf_created(authAddressWallet_->walletId());
       Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
       pushFill(env);
    }
@@ -273,27 +269,27 @@ void WalletsAdapter::reset()
 
 void WalletsAdapter::balanceUpdated(const std::string &walletId)
 {
+   logger_->debug("[{}] {}", __func__, walletId);
    WalletsMessage msg;
-   auto msgData = msg.mutable_balance_updated();
-   msgData->set_wallet_id(walletId);
+   msg.set_balance_updated(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
 
 void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 {
+   logger_->debug("[{}] {}", __func__, walletId);
    WalletsMessage msg;
-   auto msgData = msg.mutable_wallet_changed();
-   msgData->set_wallet_id(walletId);
+   msg.set_wallet_changed(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
 
 void WalletsAdapter::sendWalletReady(const std::string &walletId)
 {
+   logger_->debug("[{}] {}", __func__, walletId);
    WalletsMessage msg;
-   auto msgReady = msg.mutable_wallet_ready();
-   msgReady->set_wallet_id(walletId);
+   msg.set_wallet_ready(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
@@ -317,8 +313,7 @@ void WalletsAdapter::addressAdded(const std::string &walletId)
 void WalletsAdapter::metadataChanged(const std::string &walletId)
 {
    WalletsMessage msg;
-   auto msgData = msg.mutable_wallet_meta_changed();
-   msgData->set_wallet_id(walletId);
+   msg.set_wallet_meta_changed(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
@@ -564,8 +559,10 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
    msgResp->set_is_primary(hdWallet->isPrimary());
    for (const auto &group : hdWallet->getGroups()) {
       auto msgGroup = msgResp->add_groups();
-      msgGroup->set_type((int)group->index());
+      msgGroup->set_type(group->index());
       msgGroup->set_ext_only(group->extOnly());
+      msgGroup->set_name(group->name());
+      msgGroup->set_desc(group->description());
 
       const auto &authGroup = std::dynamic_pointer_cast<bs::sync::hd::AuthGroup>(group);
       if (authGroup && !authGroup->userId().empty()) {
@@ -576,6 +573,8 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
          auto msgLeaf = msgGroup->add_leaves();
          msgLeaf->set_id(leaf->walletId());
          msgLeaf->set_path(leaf->path().toString());
+         msgLeaf->set_name(leaf->shortName());
+         msgLeaf->set_desc(leaf->description());
          msgLeaf->set_ext_only(leaf->extOnly());
       }
    }

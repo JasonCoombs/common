@@ -18,8 +18,8 @@ message Empty {}
 
 message NewKeyCompare
 {
-   string old_key = 1;
-   string new_key = 2;
+   bytes  old_key = 1;
+   bytes  new_key = 2;
    string server_id = 3;
 }
 
@@ -219,7 +219,7 @@ message ArmoryMessage
 }
 
 
-message ErrorResult
+message ConnectionState
 {
    int32  code = 1;
    string text = 2;
@@ -245,19 +245,44 @@ message WalletSyncInfo
 }
 
 
+message WalletInfo
+{
+   string id = 1;
+   int32  format = 2;
+   string name = 3;
+   string description = 4;
+   int32  network_type = 5;
+   bool   watch_only = 6;
+   repeated int32 encryption_types = 7; 
+   repeated bytes encryption_keys = 8;
+
+   message KeyRank {
+      uint32 m = 1;
+      uint32 n = 2;
+   }
+   KeyRank encryption_rank = 9;
+   int32  wallet_type = 10;
+   uint32 purpose = 11;
+   bool   primary = 12;
+}
+
 message HDWalletData
 {
    message Leaf {
       string id = 1;
       string path = 2;
       bool   ext_only = 3;
-      bytes  extra_data = 4;	// optional
+      string name = 4;
+      string desc = 5;
+      bytes  extra_data = 6;	// optional
    }
    message Group {
-      int32 type = 1;
-      repeated Leaf leaves = 2;
-      bool  ext_only = 3;
-      bytes salt = 4;	// optional - for Auth group
+      uint32 type = 1;
+      string name = 2;
+      string desc = 3;
+      repeated Leaf leaves = 4;
+      bool  ext_only = 5;
+      bytes salt = 6;	// optional - for Auth group
    }
    string wallet_id = 1;
    repeated Group groups = 2;
@@ -361,34 +386,33 @@ message SignerMessage
    {
       NewKeyCompare      new_key_request  = 1;
       bool               new_key_response = 2;
-      ErrorResult        error = 3;
+      ConnectionState    state = 3;
       string             auth_leaf_added = 4;
       Empty              wallets_list_updated = 5;
       Empty              wallet_storage_decrypted = 6;
-      Empty              ready = 7;
-      Empty              need_new_wallet_prompt = 8;
-      Empty              wallets_ready_to_sync = 9;
-      bool               window_visible_changed = 10;
-      Empty              start_wallets_sync = 11;
-      WalletsInfo        wallets_info = 12;
-      SyncAddresses      sync_addresses = 13;
-      SyncAddrResult     sync_addr_result = 14;
-      SyncNewAddresses   sync_new_addresses = 15;
-      NewAddressesSynced new_addresses = 16;
-      ExtendAddrChain    ext_addr_chain = 17;
-      NewAddressesSynced addr_chain_extended = 18;
-      string             sync_wallet = 19;
-      WalletData         wallet_synced = 20;
-      string             sync_hd_wallet = 21;
-      HDWalletData       hd_wallet_synced = 22;
-      SyncAddressComment sync_addr_comment = 23;
-      SyncTxComment      sync_tx_comment = 24;
-      SetSettlementId    set_settl_id = 25;
-      bool               settl_id_set = 26;
-      string             get_root_pubkey = 27;
-      RootPubKey         root_pubkey = 28;
-      string             del_hd_root = 29;
-      string             del_hd_leaf = 30;
+      Empty              need_new_wallet_prompt = 7;
+      Empty              wallets_ready_to_sync = 8;
+      bool               window_visible_changed = 9;
+      Empty              start_wallets_sync = 10;
+      WalletsInfo        wallets_info = 11;
+      SyncAddresses      sync_addresses = 12;
+      SyncAddrResult     sync_addr_result = 13;
+      SyncNewAddresses   sync_new_addresses = 14;
+      NewAddressesSynced new_addresses = 15;
+      ExtendAddrChain    ext_addr_chain = 16;
+      NewAddressesSynced addr_chain_extended = 17;
+      string             sync_wallet = 18;
+      WalletData         wallet_synced = 19;
+      string             sync_hd_wallet = 20;
+      HDWalletData       hd_wallet_synced = 21;
+      SyncAddressComment sync_addr_comment = 22;
+      SyncTxComment      sync_tx_comment = 23;
+      SetSettlementId    set_settl_id = 24;
+      bool               settl_id_set = 25;
+      string             get_root_pubkey = 26;
+      RootPubKey         root_pubkey = 27;
+      string             del_hd_root = 28;
+      string             del_hd_leaf = 29;
    }
 }
 
@@ -399,11 +423,6 @@ message WalletsMessage
    {
       uint32 nb_wallets = 1;
       repeated string wallet_id = 2;
-   }
-
-   message WalletLoaded
-   {
-      string wallet_id = 1;
    }
 
    message WalletError
@@ -454,13 +473,13 @@ message WalletsMessage
       Loading        loading = 1;
       Empty          ready   = 2;
       WalletError    error = 3;
-      WalletLoaded   wallet_loaded = 4;
-      WalletLoaded   auth_leaf_created = 5;
-      WalletLoaded   balance_updated = 6;
-      WalletLoaded   wallet_changed = 7;
-      WalletLoaded   wallet_meta_changed = 8;
-      WalletLoaded   wallet_ready = 9;
-      WalletLoaded   wallet_reset = 10;    
+      WalletInfo     wallet_loaded = 4;
+      string         auth_leaf_created = 5;
+      string         balance_updated = 6;
+      string         wallet_changed = 7;
+      string         wallet_meta_changed = 8;
+      string         wallet_ready = 9;
+      string         wallet_reset = 10;    
       Empty          start_wallets_sync = 11;
       string         hd_wallet_get = 12;
       HDWalletData   hd_wallet = 13;

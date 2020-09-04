@@ -13,6 +13,7 @@
 
 #include "Address.h"
 #include "BtcDefinitions.h"
+#include "CoreWallet.h"
 #include "HDPath.h"
 #include "WalletEncryption.h"
 
@@ -22,6 +23,12 @@ namespace bs {
       class WalletsManager;
       namespace hd {
          class Leaf;
+      }
+   }
+   namespace sync {
+      namespace hd {
+         class Leaf;
+         class Wallet;
       }
    }
 }
@@ -39,6 +46,7 @@ namespace Blocksettle {
 namespace BlockSettle {
    namespace Common {
       class HDWalletData;
+      class WalletInfo;
       class WalletsMessage_WalletData;
    }
 }
@@ -98,7 +106,11 @@ namespace sync {
 
    struct WalletInfo
    {
-      static std::vector<bs::sync::WalletInfo> fromPbMessage(const Blocksettle::Communication::headless::SyncWalletInfoResponse &);
+      static std::vector<WalletInfo> fromPbMessage(const Blocksettle::Communication::headless::SyncWalletInfoResponse &);
+      static WalletInfo fromLeaf(const std::shared_ptr<bs::sync::hd::Leaf> &);
+      static WalletInfo fromWallet(const std::shared_ptr<bs::sync::hd::Wallet> &);
+      void toCommonMsg(BlockSettle::Common::WalletInfo &) const;
+      static WalletInfo fromCommonMsg(const BlockSettle::Common::WalletInfo &);
 
       WalletFormat   format;
       std::string id;
@@ -110,18 +122,36 @@ namespace sync {
       std::vector<bs::wallet::EncryptionType>   encryptionTypes;
       std::vector<BinaryData> encryptionKeys;
       bs::wallet::KeyRank     encryptionRank{ 0,0 };
+
+      bs::core::wallet::Type     type;
+      bs::hd::Purpose            purpose;
+      bool        primary{ false };
+
+      bool operator==(const WalletInfo &other) const
+      {
+         return (id == other.id);
+      }
+
+      bool operator!=(const WalletInfo &other) const
+      {
+         return !operator==(other);
+      }
    };
 
    struct HDWalletData
    {
       struct Leaf {
-         std::string          id;
-         bs::hd::Path         path;
+         std::string    id;
+         bs::hd::Path   path;
+         std::string    name;
+         std::string    description;
          bool extOnly;
          BinaryData  extraData;
       };
       struct Group {
          bs::hd::CoinType  type;
+         std::string       name;
+         std::string       description;
          std::vector<Leaf> leaves;
          bool extOnly;
          BinaryData salt;
