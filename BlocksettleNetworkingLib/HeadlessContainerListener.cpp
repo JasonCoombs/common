@@ -325,7 +325,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
 
    std::vector<std::shared_ptr<bs::core::hd::Leaf>> wallets;
    std::string rootWalletId;
-   uint64_t amount = 0;
 
    for (const auto &walletId : txSignReq.walletIds) {
       const auto wallet = walletsMgr_->getWalletById(walletId);
@@ -342,31 +341,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
          return false;
       }
       rootWalletId = curRootWalletId;
-
-      // get total spent
-      const std::function<bool(const bs::Address &)> &containsAddressCb = [this, walletId]
-         (const bs::Address &address)
-      {
-         const auto &hdWallet = walletsMgr_->getHDWalletById(walletId);
-         if (hdWallet) {
-            for (auto leaf : hdWallet->getLeaves()) {
-               if (leaf->containsAddress(address)) {
-                  return true;
-               }
-            }
-         }
-         else {
-            const auto &wallet = walletsMgr_->getWalletById(walletId);
-            if (wallet) {
-               return wallet->containsAddress(address);
-            }
-         }
-         return false;
-      };
-
-      if (!amount && (wallet->type() == bs::core::wallet::Type::Bitcoin)) {
-         amount = txSignReq.amount(containsAddressCb);
-      }
    }
 
    if (txSignReq.change.value > 0) {
@@ -384,6 +358,14 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
       return false;
    }
+
+   const auto &ownXbtAddressCb = [this](const bs::Address &address) {
+      auto wallet = walletsMgr_->getWalletByAddress(address);
+      return wallet && wallet->type() == bs::core::wallet::Type::Bitcoin;
+   };
+   uint64_t sentAmount = txSignReq.inputAmount(ownXbtAddressCb);
+   uint64_t receivedAmount = txSignReq.amountReceived(ownXbtAddressCb);
+   uint64_t amount = sentAmount < receivedAmount ? 0 : sentAmount - receivedAmount;
 
    auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
    const bool autoSign = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer) && isAutoSignActive(rootWalletId);
