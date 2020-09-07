@@ -191,6 +191,24 @@ namespace sync {
       std::vector<TxCommentData> txComments;
    };
 
+   struct WalletBalanceData
+   {
+      std::string    id;
+      BTCNumericTypes::balance_type balTotal;
+      BTCNumericTypes::balance_type balSpendable;
+      BTCNumericTypes::balance_type balUnconfirmed;
+      uint32_t nbAddresses;
+
+      struct AddressBalance {
+         BinaryData  address;
+         uint32_t    txn;
+         BTCNumericTypes::balance_type balTotal;
+         BTCNumericTypes::balance_type balSpendable;
+         BTCNumericTypes::balance_type balUnconfirmed;
+      };
+      std::vector<AddressBalance>   addrBalances;
+   };
+
    struct WatchingOnlyWallet
    {
       struct Address {

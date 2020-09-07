@@ -263,13 +263,13 @@ void WalletsAdapter::reset()
    hdWallets_.clear();
    wallets_.clear();
    walletNames_.clear();
+   readyWallets_.clear();
    authAddressWallet_.reset();
    startWalletsSync();
 }
 
 void WalletsAdapter::balanceUpdated(const std::string &walletId)
 {
-   logger_->debug("[{}] {}", __func__, walletId);
    WalletsMessage msg;
    msg.set_balance_updated(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -278,7 +278,6 @@ void WalletsAdapter::balanceUpdated(const std::string &walletId)
 
 void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 {
-   logger_->debug("[{}] {}", __func__, walletId);
    WalletsMessage msg;
    msg.set_wallet_changed(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -287,7 +286,7 @@ void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 
 void WalletsAdapter::sendWalletReady(const std::string &walletId)
 {
-   logger_->debug("[{}] {}", __func__, walletId);
+   readyWallets_.insert(walletId);
    WalletsMessage msg;
    msg.set_wallet_ready(walletId);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -540,6 +539,14 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetTxComment(env, msg.tx_comment_get());
    case WalletsMessage::kGetWalletBalances:
       return processGetWalletBalances(env, msg.get_wallet_balances());
+   case WalletsMessage::kGetExtAddresses:
+      return processGetExtAddresses(env, msg.get_ext_addresses());
+   case WalletsMessage::kGetIntAddresses:
+      return processGetIntAddresses(env, msg.get_int_addresses());
+   case WalletsMessage::kGetUsedAddresses:
+      return processGetUsedAddresses(env, msg.get_used_addresses());
+   case WalletsMessage::kGetAddrComments:
+      return processGetAddrComments(env, msg.get_addr_comments());
    default: break;
    }
    return true;
@@ -632,6 +639,9 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
       logger_->error("[{}] wallet {} not found", __func__, walletId);
       return true;
    }
+   if (readyWallets_.find(walletId) == readyWallets_.end()) {
+      return false;  // postpone processing until wallet will become ready
+   }
    WalletsMessage msg;
    auto msgResp = msg.mutable_wallet_balances();
    msgResp->set_wallet_id(walletId);
@@ -662,6 +672,76 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
    msgResp->set_spendable_balance(spendableBalance);
    msgResp->set_unconfirmed_balance(unconfirmedBalance);
    msgResp->set_nb_addresses(addrCount);
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processGetExtAddresses(const bs::message::Envelope &env, const std::string &walletId)
+{
+   const auto &wallet = getWalletById(walletId);
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, walletId);
+      return true;
+   }
+   return sendAddresses(env, walletId, wallet->getExtAddressList());
+}
+
+bool WalletsAdapter::processGetIntAddresses(const bs::message::Envelope &env, const std::string &walletId)
+{
+   const auto &wallet = getWalletById(walletId);
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, walletId);
+      return true;
+   }
+   return sendAddresses(env, walletId, wallet->getIntAddressList());
+}
+
+bool WalletsAdapter::processGetUsedAddresses(const bs::message::Envelope &env, const std::string &walletId)
+{
+   const auto &wallet = getWalletById(walletId);
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, walletId);
+      return true;
+   }
+   return sendAddresses(env, walletId, wallet->getUsedAddressList());
+}
+
+bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env, const std::string &walletId
+   , const std::vector<bs::Address> &addrs)
+{
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_wallet_addresses();
+   msgResp->set_wallet_id(walletId);
+   for (const auto &addr : addrs) {
+      msgResp->add_addresses(addr.display());
+   }
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processGetAddrComments(const bs::message::Envelope &env
+   , const BlockSettle::Common::WalletsMessage_WalletAddresses &request)
+{
+   const auto &wallet = getWalletById(request.wallet_id());
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, request.wallet_id());
+      return true;
+   }
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_addr_comments();
+   msgResp->set_wallet_id(wallet->walletId());
+   for (const auto &addrStr : request.addresses()) {
+      try {
+         const auto &addr = bs::Address::fromAddressString(addrStr);
+         const auto &comment = wallet->getAddressComment(addr);
+         if (!comment.empty()) {
+            auto commentData = msgResp->add_comments();
+            commentData->set_address(addrStr);
+            commentData->set_comment(comment);
+         }
+      }
+      catch (const std::exception &) {}
+   }
    Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
    return pushFill(envResp);
 }

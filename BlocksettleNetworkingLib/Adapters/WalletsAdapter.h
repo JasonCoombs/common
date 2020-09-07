@@ -26,6 +26,7 @@ namespace BlockSettle {
       class ArmoryMessage_AddressTxNsResponse;
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
+      class WalletsMessage_WalletAddresses;
    }
 }
 namespace bs {
@@ -104,6 +105,13 @@ private:
       , const std::string &txBinHash);
    bool processGetWalletBalances(const bs::message::Envelope &
       , const std::string &walletId);
+   bool processGetExtAddresses(const bs::message::Envelope &, const std::string &walletId);
+   bool processGetIntAddresses(const bs::message::Envelope &, const std::string &walletId);
+   bool processGetUsedAddresses(const bs::message::Envelope &, const std::string &walletId);
+   bool sendAddresses(const bs::message::Envelope &, const std::string &walletId
+      , const std::vector<bs::Address> &);
+   bool processGetAddrComments(const bs::message::Envelope &
+      , const BlockSettle::Common::WalletsMessage_WalletAddresses &);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -114,6 +122,7 @@ private:
    std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_;
    std::unordered_map<std::string, std::shared_ptr<bs::sync::Wallet>>   wallets_;
    std::unordered_set<std::string>     walletNames_;
+   std::unordered_set<std::string>     readyWallets_;
    std::shared_ptr<bs::sync::Wallet>   authAddressWallet_;
 
    class CCResolver : public bs::sync::CCDataResolver

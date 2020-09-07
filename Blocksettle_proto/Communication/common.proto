@@ -468,27 +468,49 @@ message WalletsMessage
       string comment = 2;
    }
 
+   message WalletAddresses
+   {
+      string wallet_id = 1;
+      repeated string addresses = 2;
+   }
+
+   message AddressComments
+   {
+      message AddrComment {
+         string address = 1;
+         string comment = 2;
+      }
+      string wallet_id = 1;
+      repeated AddrComment comments = 2;
+   }
+
    oneof data
    {
-      Loading        loading = 1;
-      Empty          ready   = 2;
-      WalletError    error = 3;
-      WalletInfo     wallet_loaded = 4;
-      string         auth_leaf_created = 5;
-      string         balance_updated = 6;
-      string         wallet_changed = 7;
-      string         wallet_meta_changed = 8;
-      string         wallet_ready = 9;
-      string         wallet_reset = 10;    
-      Empty          start_wallets_sync = 11;
-      string         hd_wallet_get = 12;
-      HDWalletData   hd_wallet = 13;
-      string         wallet_get = 14;
-      WalletData     wallet_data = 15;
-      string         get_wallet_balances = 16;
-      WalletBalances wallet_balances = 17;
-      bytes          tx_comment_get = 18;
-      TXComment      tx_comment = 19;
+      Loading         loading = 1;
+      Empty           ready   = 2;
+      WalletError     error = 3;
+      WalletInfo      wallet_loaded = 4;
+      string          auth_leaf_created = 5;
+      string          balance_updated = 6;
+      string          wallet_changed = 7;
+      string          wallet_meta_changed = 8;
+      string          wallet_ready = 9;
+      string          wallet_reset = 10;    
+      Empty           start_wallets_sync = 11;
+      string          hd_wallet_get = 12;
+      HDWalletData    hd_wallet = 13;
+      string          wallet_get = 14;
+      WalletData      wallet_data = 15;
+      string          get_wallet_balances = 16;
+      WalletBalances  wallet_balances = 17;
+      bytes           tx_comment_get = 18;
+      TXComment       tx_comment = 19;
+      string          get_used_addresses = 20;
+      string          get_ext_addresses = 21;
+      string          get_int_addresses = 22;
+      WalletAddresses wallet_addresses = 23;
+      WalletAddresses get_addr_comments = 24;
+      AddressComments addr_comments = 25;
    }
 }
 
