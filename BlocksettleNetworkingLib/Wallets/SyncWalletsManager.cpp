@@ -1902,13 +1902,14 @@ std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEn
    return mergedEntries;
 }
 
+// assumedRecipientCount is not used
 bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t spendVal
    , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress
    , float feePerByte, uint32_t topHeight
    , const RecipientMap &recipients
    , unsigned changeGroup
    , const Codec_SignerState::SignerState &prevPart, bool useAllInputs
-   , unsigned assumedRecipientCount
+   , unsigned /*assumedRecipientCount*/
    , const std::shared_ptr<spdlog::logger> &logger)
 {
    if (inputs.empty()) {
@@ -1923,40 +1924,33 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       spendableVal += input.first.getValue();
    }
 
-   uint64_t prevPartTxSize = 0;
    bs::CheckRecipSigner prevStateSigner;
    if (prevPart.IsInitialized()) {
       prevStateSigner.deserializeState(prevPart);
-      size_t txSize = 0;
-      size_t witnessSize = 0;
-      for (uint32_t i = 0; i < prevStateSigner.getTxInCount(); ++i) {
-         const auto &addr = bs::Address::fromUTXO(prevStateSigner.getSpender(i)->getUtxo());
-         txSize += addr.getInputSize();
-         witnessSize += addr.getWitnessDataSize();
-      }
-      for (const auto &recipients : prevStateSigner.getRecipientMap()) {
-         for (const auto &recipient : recipients.second) {
-            txSize += recipient->getSize();
-         }
-      }
-      auto weight = 4 * txSize + witnessSize;
-      prevPartTxSize = (weight + 3) / 4;
    }
 
    if (feePerByte > 0) {  
+      size_t baseSize = 0;
+      size_t witnessSize = 0;
+      for (uint32_t i = 0; i < prevStateSigner.getTxInCount(); ++i) {
+         const auto &addr = bs::Address::fromUTXO(prevStateSigner.getSpender(i)->getUtxo());
+         baseSize += addr.getInputSize();
+         witnessSize += addr.getWitnessDataSize();
+      }
+      // Optional CC change
+      for (const auto &recipients : prevStateSigner.getRecipientMap()) {
+         for (const auto &recipient : recipients.second) {
+            baseSize += recipient->getSize();
+         }
+      }
+      // CC output
+      auto rec = std::make_shared<Recipient_P2WPKH>(CryptoPRNG::generateRandom(20), 1000);
+      baseSize += rec->getSize();
+      auto weight = 4 * baseSize + witnessSize;
+      uint64_t prevPartTxSize = (weight + 3) / 4;
+
       try {
          RecipientMap recMap = recipients;
-         if (assumedRecipientCount != UINT32_MAX) {
-            for (unsigned i=0; i<assumedRecipientCount; i++) {
-               uint64_t val = 0;
-               if (i==0) {
-                  val = spendVal;
-               }
-               auto rec = std::make_shared<Recipient_P2WPKH>(
-                  CryptoPRNG::generateRandom(20), val);
-               recMap.emplace(i, std::vector<std::shared_ptr<ScriptRecipient>>({rec}));
-            }
-         }
 
          PaymentStruct payment(recMap, 0, feePerByte, ADJUST_FEE);
          for (auto &utxo : utxos) {
