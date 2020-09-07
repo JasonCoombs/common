@@ -336,6 +336,7 @@ namespace bs {
          // Cached CC outpoint maps from CC tracker.
          // Used to detect CC balance changes.
          std::map<std::string, std::map<BinaryData, std::set<unsigned>>> ccOutpointMapsFromTracker_;
+         std::map<std::string, std::map<BinaryData, std::set<unsigned>>> ccOutpointMapsFromTrackerZc_;
          std::mutex ccOutpointMapsFromTrackerMutex_;
 
          ValidityFlag   validityFlag_;

@@ -460,6 +460,7 @@ enum GenoaType
    GenoaMigrateUserIds           = 32;
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
+   GetUserEmail                  = 35;
 }
 
 message GenoaConnectedBroadcast
@@ -744,8 +745,8 @@ message GenoaApiKeyCheckRequest
 
 message GenoaApiKeyCheckResponse
 {
-   string api_key = 1;
-   string email = 2;
+   string api_key             = 1;
+   string entity_name         = 2;
    bs.types.ApiKeyError error = 3;
 }
 
@@ -790,6 +791,7 @@ message GenoaMessage
       GenoaApiKeyCheckResponse         api_key_response           = 34;
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
+      string                           entity_name                = 37;
    }
 }
 

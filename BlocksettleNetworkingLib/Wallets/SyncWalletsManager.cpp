@@ -1736,21 +1736,22 @@ void WalletsManager::updateTracker(const std::shared_ptr<hd::CCLeaf> &ccLeaf)
 
 void WalletsManager::checkTrackerUpdate(const std::string &cc)
 {
-   QMetaObject::invokeMethod(this, [this, cc] {
-      for (const auto &wallet : getAllWallets()) {
-         auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
-         if (ccLeaf && ccLeaf->displaySymbol().toStdString() == cc) {
-            auto newOutpointMap = ccLeaf->getOutpointMapFromTracker(true);
-            std::lock_guard<std::mutex> lock(ccOutpointMapsFromTrackerMutex_);
-            auto &outpointMap = ccOutpointMapsFromTracker_[ccLeaf->walletId()];
-            if (outpointMap != newOutpointMap) {
-               outpointMap = std::move(newOutpointMap);
-               emit walletBalanceUpdated(wallet->walletId());
-            }
-            break;
+   for (const auto &wallet : getAllWallets()) {
+      auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
+      if (ccLeaf && ccLeaf->displaySymbol().toStdString() == cc) {
+         auto newOutpointMap = ccLeaf->getOutpointMapFromTracker(false);
+         auto newOutpointMapZc = ccLeaf->getOutpointMapFromTracker(true);
+         std::lock_guard<std::mutex> lock(ccOutpointMapsFromTrackerMutex_);
+         auto &outpointMap = ccOutpointMapsFromTracker_[ccLeaf->walletId()];
+         auto &outpointMapZc = ccOutpointMapsFromTrackerZc_[ccLeaf->walletId()];
+         if (outpointMap != newOutpointMap || outpointMapZc != newOutpointMapZc) {
+            outpointMap = std::move(newOutpointMap);
+            outpointMapZc = std::move(newOutpointMapZc);
+            emit walletBalanceUpdated(wallet->walletId());
          }
+         break;
       }
-   });
+   }
 }
 
 bool WalletsManager::createAuthLeaf(const std::function<void()> &cb)
@@ -1922,14 +1923,24 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       spendableVal += input.first.getValue();
    }
 
-   uint64_t prevPartFee = 0;
+   uint64_t prevPartTxSize = 0;
    bs::CheckRecipSigner prevStateSigner;
    if (prevPart.IsInitialized()) {
       prevStateSigner.deserializeState(prevPart);
-      if (feePerByte > 0) {
-         prevPartFee = prevStateSigner.estimateFee(feePerByte);
-         prevPartFee -= 10 * feePerByte;    // subtract TX header size as it's counted twice
+      size_t txSize = 0;
+      size_t witnessSize = 0;
+      for (uint32_t i = 0; i < prevStateSigner.getTxInCount(); ++i) {
+         const auto &addr = bs::Address::fromUTXO(prevStateSigner.getSpender(i)->getUtxo());
+         txSize += addr.getInputSize();
+         witnessSize += addr.getWitnessDataSize();
       }
+      for (const auto &recipients : prevStateSigner.getRecipientMap()) {
+         for (const auto &recipient : recipients.second) {
+            txSize += recipient->getSize();
+         }
+      }
+      auto weight = 4 * txSize + witnessSize;
+      prevPartTxSize = (weight + 3) / 4;
    }
 
    if (feePerByte > 0) {  
@@ -1954,7 +1965,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
             utxo.witnessDataSizeBytes_ = unsigned(scrAddr.getWitnessDataSize());
             utxo.isInputSW_ = (scrAddr.getWitnessDataSize() != UINT32_MAX);
          }
-         payment.addToSize(static_cast<uint64_t>(std::llround(prevPartFee / feePerByte)));
+         payment.addToSize(prevPartTxSize);
 
          auto coinSelection = CoinSelection(nullptr, {}, UINT64_MAX, topHeight);
 
