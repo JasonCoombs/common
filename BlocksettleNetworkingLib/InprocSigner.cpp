@@ -396,7 +396,7 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
                extraData = BtcUtils::getHash160(rootSingle->getPubKey()->getCompressedKey());
             }
             groupData.leaves.push_back({ leaf->walletId(), leaf->path()
-               , leaf->hasExtOnlyAddresses(), std::move(extraData) });
+               , leaf->shortName(), std::string{}, leaf->hasExtOnlyAddresses(), std::move(extraData) });
          }
 
          result.groups.push_back(groupData);
