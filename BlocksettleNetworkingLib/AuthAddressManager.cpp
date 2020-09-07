@@ -597,7 +597,14 @@ bs::Address AuthAddressManager::getDefault() const
    if (defaultAddr_.empty()) {
       const auto &defaultAuthAddrStr = settings_->get<std::string>(ApplicationSettings::defaultAuthAddr);
       if (!defaultAuthAddrStr.empty()) {
-         defaultAddr_ = bs::Address::fromAddressString(defaultAuthAddrStr);
+         try {
+            defaultAddr_ = bs::Address::fromAddressString(defaultAuthAddrStr);
+         }
+         catch (const std::exception &e) {
+            logger_->error("[AuthAddressManager::getDefault] invalid default address: {}"
+               , e.what());
+            return {};
+         }
       }
       auto verifAddresses = GetVerifiedAddressList();
       if (verifAddresses.empty()) {
