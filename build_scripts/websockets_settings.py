@@ -49,7 +49,8 @@ class WebsocketsSettings(Configurator):
         # Here is workaround (disable changing variables in LWS code and register them manually once, see ws::globalInit).
         patch_path = os.path.join(self._project_settings._build_scripts_root, 'websockets.patch')
         print(self.get_unpacked_sources_dir())
-        subprocess.check_call(['patch', '--quiet', '-p1', '-i', patch_path], cwd=self.get_unpacked_sources_dir())
+        subprocess.check_call(['git', 'apply', '--ignore-space-change', '--ignore-whitespace', '--whitespace=nowarn', patch_path],
+            cwd=self.get_unpacked_sources_dir())
 
         # LWS_SSL_CLIENT_USE_OS_CA_CERTS is off because it only tries to load CA bundle from OpenSSL build dir (useless feature for us).
         # As a workaround we embed CA bundle in terminal binary itself.
