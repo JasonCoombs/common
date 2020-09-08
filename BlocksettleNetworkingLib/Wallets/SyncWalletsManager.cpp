@@ -1902,14 +1902,14 @@ std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEn
    return mergedEntries;
 }
 
-// assumedRecipientCount is not used
+// assumedRecipientCount is used with CC tests only
 bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t spendVal
    , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress
    , float feePerByte, uint32_t topHeight
    , const RecipientMap &recipients
    , unsigned changeGroup
    , const Codec_SignerState::SignerState &prevPart, bool useAllInputs
-   , unsigned /*assumedRecipientCount*/
+   , unsigned assumedRecipientCount
    , const std::shared_ptr<spdlog::logger> &logger)
 {
    if (inputs.empty()) {
@@ -1951,6 +1951,18 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
 
       try {
          RecipientMap recMap = recipients;
+
+         if (assumedRecipientCount != UINT32_MAX) {
+            for (unsigned i=0; i<assumedRecipientCount; i++) {
+               uint64_t val = 0;
+               if (i==0) {
+                  val = spendVal;
+               }
+               auto rec = std::make_shared<Recipient_P2WPKH>(
+                  CryptoPRNG::generateRandom(20), val);
+               recMap.emplace(i, std::vector<std::shared_ptr<ScriptRecipient>>({rec}));
+            }
+         }
 
          PaymentStruct payment(recMap, 0, feePerByte, ADJUST_FEE);
          for (auto &utxo : utxos) {
