@@ -202,9 +202,9 @@ namespace sync {
       struct AddressBalance {
          BinaryData  address;
          uint32_t    txn;
-         BTCNumericTypes::balance_type balTotal;
-         BTCNumericTypes::balance_type balSpendable;
-         BTCNumericTypes::balance_type balUnconfirmed;
+         BTCNumericTypes::satoshi_type balTotal;
+         BTCNumericTypes::satoshi_type balSpendable;
+         BTCNumericTypes::satoshi_type balUnconfirmed;
       };
       std::vector<AddressBalance>   addrBalances;
    };

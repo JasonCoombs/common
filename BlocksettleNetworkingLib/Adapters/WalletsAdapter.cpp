@@ -372,17 +372,17 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
 {
    for (const auto &byWallet : response.balances()) {
       auto &balanceData = walletBalances_[byWallet.wallet_id()];
-      balanceData.walletBalance.totalBalance = byWallet.full_balance() / BTCNumericTypes::BalanceDivider;
-      balanceData.walletBalance.unconfirmedBalance = byWallet.unconfirmed_balance() / BTCNumericTypes::BalanceDivider;
-//      balanceData.walletBalance.spendableBalance = byWallet.spendable_balance() / BTCNumericTypes::BalanceDivider;
+      balanceData.walletBalance.totalBalance = byWallet.full_balance();
+      balanceData.walletBalance.unconfirmedBalance = byWallet.unconfirmed_balance();
+//      balanceData.walletBalance.spendableBalance = byWallet.spendable_balance();
       balanceData.walletBalance.spendableBalance = balanceData.walletBalance.totalBalance - balanceData.walletBalance.unconfirmedBalance;
       balanceData.addrCount = byWallet.address_count();
       balanceData.addrBalanceUpdated = true;
       for (const auto &addrBal : byWallet.addr_balances()) {
          auto &addrBalance = balanceData.addressBalanceMap[BinaryData::fromString(addrBal.address())];
-         addrBalance.totalBalance = addrBal.full_balance() / BTCNumericTypes::BalanceDivider;
-         addrBalance.spendableBalance = addrBal.spendable_balance() / BTCNumericTypes::BalanceDivider;
-         addrBalance.unconfirmedBalance = addrBal.unconfirmed_balance() / BTCNumericTypes::BalanceDivider;
+         addrBalance.totalBalance = addrBal.full_balance();
+         addrBalance.spendableBalance = addrBal.spendable_balance();
+         addrBalance.unconfirmedBalance = addrBal.unconfirmed_balance();
       }
 
       if (trackLiveAddresses()) {
@@ -436,7 +436,7 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
       if (usedAddrSet.find(addrPair.first) != usedAddrSet.end()) {
          continue;   // skip already added addresses
       }
-      if (std::fpclassify(addrPair.second.totalBalance) != FP_ZERO) {
+      if (addrPair.second.totalBalance) {
          usedAddrSet.insert(addrPair.first);
       }
    }
@@ -547,6 +547,8 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetUsedAddresses(env, msg.get_used_addresses());
    case WalletsMessage::kGetAddrComments:
       return processGetAddrComments(env, msg.get_addr_comments());
+   case WalletsMessage::kSetAddrComments:
+      return processSetAddrComments(env, msg.set_addr_comments());
    default: break;
    }
    return true;
@@ -652,9 +654,9 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
       if (itBal == walletBalances_.end()) {
          continue;
       }
-      totalBalance += itBal->second.walletBalance.totalBalance;
-      spendableBalance += itBal->second.walletBalance.spendableBalance;
-      unconfirmedBalance += itBal->second.walletBalance.unconfirmedBalance;
+      totalBalance += itBal->second.walletBalance.totalBalance / BTCNumericTypes::BalanceDivider;
+      spendableBalance += itBal->second.walletBalance.spendableBalance / BTCNumericTypes::BalanceDivider;
+      unconfirmedBalance += itBal->second.walletBalance.unconfirmedBalance / BTCNumericTypes::BalanceDivider;
       addrCount += itBal->second.addrCount;
       for (const auto &addrTxN : itBal->second.addressTxNMap) {
          auto msgAddr = msgResp->add_address_balances();
@@ -738,6 +740,32 @@ bool WalletsAdapter::processGetAddrComments(const bs::message::Envelope &env
             auto commentData = msgResp->add_comments();
             commentData->set_address(addrStr);
             commentData->set_comment(comment);
+         }
+      }
+      catch (const std::exception &) {}
+   }
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processSetAddrComments(const bs::message::Envelope &env
+   , const BlockSettle::Common::WalletsMessage_AddressComments &request)
+{
+   const auto &wallet = getWalletById(request.wallet_id());
+   if (!wallet) {
+      logger_->error("[{}] wallet {} not found", __func__, request.wallet_id());
+      return true;
+   }
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_addr_comments();
+   msgResp->set_wallet_id(request.wallet_id());
+   for (const auto &comm : request.comments()) {
+      try {
+         const auto &addr = bs::Address::fromAddressString(comm.address());
+         if (wallet->setAddressComment(addr, comm.comment())) {
+            auto commData = msgResp->add_comments();
+            commData->set_address(comm.address());
+            commData->set_comment(comm.comment());
          }
       }
       catch (const std::exception &) {}

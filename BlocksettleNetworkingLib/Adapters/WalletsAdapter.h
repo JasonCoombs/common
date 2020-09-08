@@ -26,6 +26,7 @@ namespace BlockSettle {
       class ArmoryMessage_AddressTxNsResponse;
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
+      class WalletsMessage_AddressComments;
       class WalletsMessage_WalletAddresses;
    }
 }
@@ -112,6 +113,8 @@ private:
       , const std::vector<bs::Address> &);
    bool processGetAddrComments(const bs::message::Envelope &
       , const BlockSettle::Common::WalletsMessage_WalletAddresses &);
+   bool processSetAddrComments(const bs::message::Envelope &
+      , const BlockSettle::Common::WalletsMessage_AddressComments &);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -147,9 +150,9 @@ private:
 
    struct BalanceData {
       struct BalanceBreakdown {
-         BTCNumericTypes::balance_type spendableBalance{ 0 };
-         BTCNumericTypes::balance_type unconfirmedBalance{ 0 };
-         BTCNumericTypes::balance_type totalBalance{ 0 };
+         BTCNumericTypes::satoshi_type spendableBalance{ 0 };
+         BTCNumericTypes::satoshi_type unconfirmedBalance{ 0 };
+         BTCNumericTypes::satoshi_type totalBalance{ 0 };
       };
       BalanceBreakdown  walletBalance;
       size_t   addrCount = 0;

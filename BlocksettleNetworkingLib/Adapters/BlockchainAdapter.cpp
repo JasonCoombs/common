@@ -257,9 +257,11 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
       const auto &idStr = id.toBinStr();
       const auto &itReg = regMap_.find(idStr);
       if (itReg != regMap_.end()) {
+         wallets_[itReg->second].registered = true;
          ArmoryMessage msgReg;
          auto msgWalletRegged = msgReg.mutable_wallet_registered();
          msgWalletRegged->set_wallet_id(itReg->second);
+         msgWalletRegged->set_success(true);
          const auto &itRegReq = reqByRegId_.find(idStr);
          Envelope env;
          if (itRegReq == reqByRegId_.end()) {

@@ -122,7 +122,7 @@ std::vector<std::string> hd::Leaf::internalIds() const
    if (!isExtOnly_) {
       result.push_back(walletIdInt());
    }
-   return internalIds();
+   return result;
 }
 
 void hd::Leaf::onRefresh(const std::vector<BinaryData> &ids, bool online)
@@ -524,7 +524,8 @@ Wallet::WalletRegData hd::Leaf::regData() const
 
 Wallet::UnconfTgtData hd::Leaf::unconfTargets() const
 {
-   return { { walletId(), 1 }, { walletIdInt(), 1 } };
+   return isExtOnly_ ? Wallet::UnconfTgtData{ { walletId(), 1 } }
+      : Wallet::UnconfTgtData{ { walletId(), 1 }, { walletIdInt(), 1 } };
 }
 
 void hd::Leaf::unregisterWallet()

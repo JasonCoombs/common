@@ -455,9 +455,9 @@ message WalletsMessage
       message AddressData {
          bytes  address = 1;
          uint32 txn = 2;
-         double total_balance = 3;
-         double spendable_balance = 4;
-         double unconfirmed_balance = 5;
+         uint64 total_balance = 3;
+         uint64 spendable_balance = 4;
+         uint64 unconfirmed_balance = 5;
       }
       repeated AddressData address_balances = 6;
    }
@@ -466,6 +466,7 @@ message WalletsMessage
    {
       bytes  tx_hash = 1;
       string comment = 2;
+      string wallet_id = 3;
    }
 
    message WalletAddresses
@@ -511,6 +512,9 @@ message WalletsMessage
       WalletAddresses wallet_addresses = 23;
       WalletAddresses get_addr_comments = 24;
       AddressComments addr_comments = 25;
+      AddressComments set_addr_comments = 26;
+      TXComment       set_tx_comment = 27;
+      string          get_spendable_utxos = 28;
    }
 }
 
