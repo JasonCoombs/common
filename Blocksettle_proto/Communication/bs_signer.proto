@@ -336,13 +336,14 @@ message NewHDLeaf
 
 message NewHDWallet
 {
-   string   name = 1;
-   string   description = 2;
-   bool     primary = 3;
-   bytes    privateKey = 4;
-   bool     testnet = 5;
-   bytes    seed = 6;
-   bytes    chainCode = 7;
+   string   name                 = 1;
+   string   description          = 2;
+   bool     primary              = 3;
+   bytes    privateKey           = 4;
+   bool     testnet              = 5;
+   bytes    seed                 = 6;
+   bytes    chainCode            = 7;
+   bool     create_legacy_leaf   = 8;
 }
 
 message CreateHDWalletRequest

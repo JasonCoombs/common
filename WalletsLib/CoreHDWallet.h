@@ -30,7 +30,7 @@ namespace bs {
          {
          private:
             Wallet(void) {}
-            
+
             std::shared_ptr<AddressEntry_P2WSH> getAddressPtrForSettlement(
                const SecureBinaryData& settlementID,
                const SecureBinaryData& counterPartyPubKey,
@@ -100,7 +100,7 @@ namespace bs {
 
             void changeControlPassword(const SecureBinaryData &oldPass, const SecureBinaryData &newPass);
             void eraseControlPassword(const SecureBinaryData &oldPass);
-            void createStructure(unsigned lookup = UINT32_MAX);
+            void createStructure(bool createLegacyLeaf = false, unsigned lookup = UINT32_MAX);
             void createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup = UINT32_MAX);
             void createChatPrivKey();
             void convertHardwareToWo();
@@ -118,9 +118,9 @@ namespace bs {
             void popPasswordPrompt();
 
             static std::string fileNamePrefix(bool watchingOnly);
-            bs::hd::CoinType getXBTGroupType() const { 
+            bs::hd::CoinType getXBTGroupType() const {
                return ((netType_ == NetworkType::MainNet)
-               ? bs::hd::CoinType::Bitcoin_main : bs::hd::CoinType::Bitcoin_test); 
+               ? bs::hd::CoinType::Bitcoin_main : bs::hd::CoinType::Bitcoin_test);
             }
 
             bs::core::wallet::Seed getDecryptedSeed(void) const;
