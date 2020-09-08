@@ -420,7 +420,7 @@ NetworkType getNetworkType()
 
 uint64_t bs::estimateVSize(const Signer &signer)
 {
-   size_t baseSize = 0;
+   size_t baseSize = 10;
    size_t witnessSize = 0;
    for (uint32_t i = 0; i < signer.getTxInCount(); ++i) {
       const auto &addr = bs::Address::fromUTXO(signer.getSpender(i)->getUtxo());
