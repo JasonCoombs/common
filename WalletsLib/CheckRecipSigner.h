@@ -112,6 +112,9 @@ namespace bs {
       const Tx tx_;
    };
 
+   uint64_t estimateVSize(const ArmorySigner::Signer &signer);
+
+
 }  //namespace bs
 
 NetworkType getNetworkType();
