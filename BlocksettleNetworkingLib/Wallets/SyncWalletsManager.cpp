@@ -1943,9 +1943,8 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
             baseSize += recipient->getSize();
          }
       }
-      // CC output
-      auto rec = std::make_shared<Recipient_P2WPKH>(CryptoPRNG::generateRandom(20), 1000);
-      baseSize += rec->getSize();
+      // CC output, see Recipient_P2WPKH::getSize
+      baseSize += 31;
       auto weight = 4 * baseSize + witnessSize;
       uint64_t prevPartTxSize = (weight + 3) / 4;
 
