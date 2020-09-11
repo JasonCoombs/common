@@ -54,6 +54,7 @@ namespace bs {
       bool        merged{};
       std::chrono::time_point<std::chrono::steady_clock> recvTime{};
       std::vector<bs::Address>   addresses;
+      uint32_t    nbConf{};
 
       bool operator==(const TXEntry &other) const { return (txHash == other.txHash); }
       void merge(const TXEntry &);

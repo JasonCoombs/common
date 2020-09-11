@@ -69,7 +69,7 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
       processZCReceived(msg.zc_received());
       break;
    case ArmoryMessage::kWalletRegistered:
-      if (msg.wallet_registered().success()) {
+      if (msg.wallet_registered().success() && !msg.wallet_registered().wallet_id().empty()) {
          processWalletRegistered(msg.wallet_registered().wallet_id());
       }
       else {
@@ -84,6 +84,9 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
       break;
    case ArmoryMessage::kWalletBalanceResponse:
       processWalletBal(msg.wallet_balance_response());
+      break;
+   case ArmoryMessage::kTransactions:
+      processTransactions(env.id, msg.transactions());
       break;
    default: break;
    }
@@ -102,6 +105,9 @@ void WalletsAdapter::startWalletsSync()
 {
    const auto &cbWalletsReceived = [this](const std::vector<bs::sync::WalletInfo> &wallets)
    {
+      for (const auto &wallet : wallets) {
+         loadingWallets_.insert(wallet.id);
+      }
       for (const auto &wallet : wallets) {
          loadWallet(wallet);
       }
@@ -134,6 +140,15 @@ void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
                wi.toCommonMsg(*msgWallet);
                Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
                pushFill(env);
+
+               loadingWallets_.erase(hdWallet->walletId());
+               if (loadingWallets_.empty()) {
+                  ArmoryMessage msg;
+                  auto msgReq = msg.mutable_register_wallet();
+                  msgReq->set_wallet_id("");
+                  Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+                  pushFill(env);
+               }
             };
             hdWallet->synchronize(cbHDWalletDone);
          }
@@ -172,6 +187,50 @@ std::shared_ptr<Wallet> WalletsAdapter::getWalletById(const std::string &walletI
    for (const auto &wallet : wallets_) {
       if (wallet.second->hasId(walletId)) {
          return wallet.second;
+      }
+   }
+   return nullptr;
+}
+
+std::shared_ptr<Wallet> WalletsAdapter::getWalletByAddress(const bs::Address &address) const
+{
+   for (const auto &wallet : wallets_) {
+      if (wallet.second && (wallet.second->containsAddress(address)
+         || wallet.second->containsHiddenAddress(address))) {
+         return wallet.second;
+      }
+   }
+   return nullptr;
+}
+
+std::shared_ptr<hd::Group> WalletsAdapter::getGroupByWalletId(const std::string &walletId) const
+{
+   const auto itGroup = groupsByWalletId_.find(walletId);
+   if (itGroup == groupsByWalletId_.end()) {
+      const auto hdWallet = getHDRootForLeaf(walletId);
+      if (hdWallet) {
+         for (const auto &group : hdWallet->getGroups()) {
+            for (const auto &leaf : group->getLeaves()) {
+               if (leaf->hasId(walletId)) {
+                  groupsByWalletId_[walletId] = group;
+                  return group;
+               }
+            }
+         }
+      }
+      groupsByWalletId_[walletId] = nullptr;
+      return nullptr;
+   }
+   return itGroup->second;
+}
+
+std::shared_ptr<hd::Wallet> WalletsAdapter::getHDRootForLeaf(const std::string &walletId) const
+{
+   for (const auto &hdWallet : hdWallets_) {
+      for (const auto &leaf : hdWallet->getLeaves()) {
+         if (leaf->hasId(walletId)) {
+            return hdWallet;
+         }
       }
    }
    return nullptr;
@@ -514,7 +573,7 @@ void WalletsAdapter::processZCReceived(const ArmoryMessage_ZCReceived &event)
 
    std::unordered_set<std::string> participatingWalletIds;
    for (const auto &entry : event.tx_entries()) {
-      for (const auto &walletId : entry.wallets_id()) {
+      for (const auto &walletId : entry.wallet_ids()) {
          participatingWalletIds.insert(walletId);
       }
    }
@@ -549,6 +608,8 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetAddrComments(env, msg.get_addr_comments());
    case WalletsMessage::kSetAddrComments:
       return processSetAddrComments(env, msg.set_addr_comments());
+   case WalletsMessage::kTxDetailsRequest:
+      return processTXDetails(env, msg.tx_details_request());
    default: break;
    }
    return true;
@@ -772,4 +833,221 @@ bool WalletsAdapter::processSetAddrComments(const bs::message::Envelope &env
    }
    Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
    return pushFill(envResp);
+}
+
+bool WalletsAdapter::processTXDetails(const bs::message::Envelope &env
+   , const BlockSettle::Common::WalletsMessage_TXDetailsRequest &request)
+{
+   std::set<BinaryData> initialHashes;
+   std::vector<bs::sync::TXWallet>  requests;
+   for (const auto &req : request.requests()) {
+      const auto &txHash = BinaryData::fromString(req.tx_hash());
+      requests.push_back({ txHash, req.wallet_id(), req.value() });
+      initialHashes.insert(txHash);
+   }
+   ArmoryMessage msg;
+   auto msgReq = msg.mutable_get_txs_by_hash();
+   for (const auto &txHash : initialHashes) {
+      msgReq->add_tx_hashes(txHash.toBinStr());
+   }
+   Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+   if (pushFill(envReq)) {
+      initialHashes_[envReq.id] = { env, std::map<BinaryData, Tx>{}, requests };
+      return true;
+   }
+   return false;
+}
+
+void WalletsAdapter::processTransactions(uint64_t msgId
+   , const ArmoryMessage_Transactions &response)
+{
+   const auto &convertTXs = [response]() -> std::vector<Tx>
+   {
+      std::vector<Tx> result;
+      for (const auto &txSer : response.transactions()) {
+         const Tx tx(BinaryData::fromString(txSer));
+         result.emplace_back(std::move(tx));
+      }
+      return result;
+   };
+
+   auto itId = initialHashes_.find(msgId);
+   if (itId != initialHashes_.end()) {
+      auto data = itId->second;
+      initialHashes_.erase(itId);
+      const auto &initialTXs = convertTXs();
+      for (const auto &tx : initialTXs) {
+         data.allTXs[tx.getThisHash()] = tx;
+      }
+      std::set<BinaryData> prevHashes;
+      for (const auto &tx : initialTXs) {
+         for (size_t i = 0; i < tx.getNumTxIn(); i++) {
+            TxIn in = tx.getTxInCopy(i);
+            OutPoint op = in.getOutPoint();
+            if (data.allTXs.find(op.getTxHash()) == data.allTXs.end()) {
+               prevHashes.insert(op.getTxHash());
+            }
+         }
+      }
+      ArmoryMessage msg;
+      auto msgReq = msg.mutable_get_txs_by_hash();
+      for (const auto &txHash : prevHashes) {
+         msgReq->add_tx_hashes(txHash.toBinStr());
+      }
+      Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+      if (pushFill(envReq)) {
+         prevHashes_[envReq.id] = data;
+      }
+      return;
+   }
+
+   itId = prevHashes_.find(msgId);
+   if (itId != prevHashes_.end()) {
+      for (const auto &tx : convertTXs()) {
+         itId->second.allTXs[tx.getThisHash()] = tx;
+      }
+      
+      WalletsMessage msg;
+      auto msgResp = msg.mutable_tx_details_response();
+      for (const auto &req : itId->second.requests) {
+         auto resp = msgResp->add_responses();
+         resp->set_tx_hash(req.txHash.toBinStr());
+         resp->set_wallet_id(req.walletId);
+         const auto &wallet = getWalletById(req.walletId);
+         if (wallet) {
+            resp->set_wallet_name(wallet->name());
+            resp->set_wallet_type((int)wallet->type());
+            resp->set_comment(wallet->getTransactionComment(req.txHash));
+            resp->set_valid(wallet->isTxValid(req.txHash) == bs::sync::TxValidity::Valid);
+            resp->set_amount(wallet->displayTxValue(req.value).toStdString());
+            resp->set_direction((int)getDirection(req.txHash, wallet
+               , itId->second.allTXs));
+
+            const auto &itTx = itId->second.allTXs.find(req.txHash);
+            if (itTx != itId->second.allTXs.end()) {
+               const bool isReceiving = (req.value > 0);
+               std::set<bs::Address> ownAddresses, foreignAddresses;
+               for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+                  const TxOut &out = itTx->second.getTxOutCopy((int)i);
+                  try {
+                     const auto &addr = bs::Address::fromTxOut(out);
+                     const auto &addrWallet = getWalletByAddress(addr);
+                     if (addrWallet == wallet) {
+                        ownAddresses.insert(addr);
+                     } else {
+                        foreignAddresses.insert(addr);
+                     }
+                  } catch (const std::exception &) {
+                     // address conversion failure - likely OP_RETURN - do nothing
+                  }
+               }
+               if (!isReceiving && (ownAddresses.size() == 1) && !foreignAddresses.empty()) {
+                  if (!wallet->isExternalAddress(*ownAddresses.cbegin())) {
+                     ownAddresses.clear();   // treat the only own internal address as change and throw away
+                  }
+               }
+               const auto &setAddresses = [&resp](const std::set<bs::Address> &addrs)
+               {
+                  for (const auto &addr : addrs) {
+                     resp->add_out_addresses(addr.display());
+                  }
+               };
+               if (!ownAddresses.empty()) {
+                  setAddresses(ownAddresses);
+               } else {
+                  setAddresses(foreignAddresses);
+               }
+            }
+         }
+      }
+      Envelope envResp{ itId->second.env.id, ownUser_, itId->second.env.sender
+         , {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+      prevHashes_.erase(itId);
+   }
+}
+
+Transaction::Direction WalletsAdapter::getDirection(const BinaryData &txHash
+   , const std::shared_ptr<Wallet> &wallet, const std::map<BinaryData, Tx> &allTXs) const
+{
+   const auto &itTx = allTXs.find(txHash);
+   if (itTx == allTXs.end()) {
+      return Transaction::Direction::Unknown;
+   }
+   if (wallet->type() == bs::core::wallet::Type::Authentication) {
+      return Transaction::Auth;
+   } else if (wallet->type() == bs::core::wallet::Type::ColorCoin) {
+      return Transaction::Delivery;
+   }
+   const auto &group = getGroupByWalletId(wallet->walletId());
+   bool ourOuts = false;
+   bool otherOuts = false;
+   bool ourIns = false;
+   bool otherIns = false;
+   bool ccTx = false;
+
+   for (size_t i = 0; i < itTx->second.getNumTxIn(); ++i) {
+      const TxIn &in = itTx->second.getTxInCopy((int)i);
+      const OutPoint &op = in.getOutPoint();
+      const auto &itPrevTx = allTXs.find(op.getTxHash());
+      if (itPrevTx == allTXs.end()) {
+         continue;
+      }
+      const auto &prevOut = itPrevTx->second.getTxOutCopy(op.getTxOutIndex());
+      const auto &addr = bs::Address::fromTxOut(prevOut);
+      const auto &addrWallet = getWalletByAddress(addr);
+      const auto &addrGroup = addrWallet ? getGroupByWalletId(addrWallet->walletId())
+         : nullptr;
+      if ((addrWallet && (addrWallet == wallet)) || (group && (group == addrGroup))) {
+         ourIns = true;
+      }
+      else {
+         otherIns = true;
+      }
+      if (addrWallet && (addrWallet->type() == bs::core::wallet::Type::ColorCoin)) {
+         ccTx = true;
+      }
+   }
+   for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+      const TxOut &out = itTx->second.getTxOutCopy((int)i);
+      const auto &addr = bs::Address::fromTxOut(out);
+      const auto &addrWallet = getWalletByAddress(addr);
+      const auto &addrGroup = addrWallet ? getGroupByWalletId(addrWallet->walletId())
+         : nullptr;
+      if ((addrWallet && (addrWallet == wallet)) || (group && (group == addrGroup))) {
+         ourOuts = true;
+      }
+      else {
+         otherOuts = true;
+      }
+      if (addrWallet && (addrWallet->type() == bs::core::wallet::Type::ColorCoin)) {
+         ccTx = true;
+         break;
+      }
+      else if (!ourOuts) {
+         if ((group && addrGroup) && (group == addrGroup)) {
+            ourOuts = true;
+            otherOuts = false;
+         }
+      }
+   }
+   if (wallet->type() == bs::core::wallet::Type::Settlement) {
+      if (ourOuts) {
+         return Transaction::PayIn;
+      }
+      return Transaction::PayOut;
+   }
+   if (ccTx) {
+      return Transaction::Payment;
+   }
+   if (ourOuts && ourIns && !otherOuts && !otherIns) {
+      return Transaction::Internal;
+   }
+   if (!ourIns) {
+      return Transaction::Received;
+   }
+   if (otherOuts) {
+      return Transaction::Sent;
+   }
+   return Transaction::Direction::Unknown;
 }

@@ -201,9 +201,9 @@ namespace bs {
             , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &);
 
          virtual BTCNumericTypes::balance_type getTxBalance(int64_t val) const { return val / BTCNumericTypes::BalanceDivider; }
-         [[deprecated]] virtual QString displayTxValue(int64_t val) const;
-         [[deprecated]] virtual QString displaySymbol() const { return QLatin1String("XBT"); }
-         [[deprecated]] virtual TxValidity isTxValid(const BinaryData &) const { return TxValidity::Valid; }
+         virtual QString displayTxValue(int64_t val) const;
+         virtual QString displaySymbol() const { return QLatin1String("XBT"); }
+         virtual TxValidity isTxValid(const BinaryData &) const { return TxValidity::Valid; }
 
          // changeAddress must be set if there is change
          virtual core::wallet::TXSignRequest createTXRequest(const std::vector<UTXO> &

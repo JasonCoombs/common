@@ -16,6 +16,7 @@
 #include "CoreWallet.h"
 #include "HDPath.h"
 #include "WalletEncryption.h"
+#include "Wallets/SyncWallet.h"
 
 
 namespace bs {
@@ -232,6 +233,26 @@ namespace sync {
       std::string name;
       std::string description;
       std::vector<Group>   groups;
+   };
+
+   struct TXWallet
+   {
+      BinaryData  txHash;
+      std::string walletId;
+      int64_t     value;
+   };
+
+   struct TXWalletDetails
+   {
+      BinaryData  txHash;
+      std::string walletId;
+      std::string walletName;
+      bs::core::wallet::Type  walletType;
+      Transaction::Direction  direction;
+      std::string comment;
+      bool        isValid;
+      std::string amount;
+      std::vector<bs::Address>   outAddresses;
    };
 
    Blocksettle::Communication::headless::SyncWalletInfoResponse

@@ -24,15 +24,18 @@ namespace spdlog {
 namespace BlockSettle {
    namespace Common {
       class ArmoryMessage_AddressTxNsResponse;
+      class ArmoryMessage_Transactions;
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
       class WalletsMessage_AddressComments;
+      class WalletsMessage_TXDetailsRequest;
       class WalletsMessage_WalletAddresses;
    }
 }
 namespace bs {
    namespace sync {
       namespace hd {
+         class Group;
          class Wallet;
       }
       class Wallet;
@@ -84,6 +87,9 @@ private:
    std::shared_ptr<bs::sync::hd::Wallet> getHDWalletById(
       const std::string &walletId) const;
    std::shared_ptr<bs::sync::Wallet> getWalletById(const std::string& walletId) const;
+   std::shared_ptr<bs::sync::Wallet> getWalletByAddress(const bs::Address &) const;
+   std::shared_ptr<bs::sync::hd::Group> getGroupByWalletId(const std::string &) const;
+   std::shared_ptr<bs::sync::hd::Wallet> getHDRootForLeaf(const std::string &walletId) const;
    void eraseWallet(const std::shared_ptr<bs::sync::Wallet> &);
 
    void addWallet(const std::shared_ptr<bs::sync::Wallet> &);
@@ -115,6 +121,13 @@ private:
       , const BlockSettle::Common::WalletsMessage_WalletAddresses &);
    bool processSetAddrComments(const bs::message::Envelope &
       , const BlockSettle::Common::WalletsMessage_AddressComments &);
+   bool processTXDetails(const bs::message::Envelope &
+      , const BlockSettle::Common::WalletsMessage_TXDetailsRequest &);
+
+   void processTransactions(uint64_t msgId
+      , const BlockSettle::Common::ArmoryMessage_Transactions &);
+   bs::sync::Transaction::Direction getDirection(const BinaryData &txHash
+      , const std::shared_ptr<bs::sync::Wallet> &, const std::map<BinaryData, Tx> &) const;
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -126,7 +139,9 @@ private:
    std::unordered_map<std::string, std::shared_ptr<bs::sync::Wallet>>   wallets_;
    std::unordered_set<std::string>     walletNames_;
    std::unordered_set<std::string>     readyWallets_;
+   std::unordered_set<std::string>     loadingWallets_;
    std::shared_ptr<bs::sync::Wallet>   authAddressWallet_;
+   mutable std::unordered_map<std::string, std::shared_ptr<bs::sync::hd::Group>> groupsByWalletId_;
 
    class CCResolver : public bs::sync::CCDataResolver
    {
@@ -162,6 +177,14 @@ private:
       bool  addrTxNUpdated{ false };
    };
    std::unordered_map<std::string, BalanceData> walletBalances_;
+
+   struct TXDetailData {
+      bs::message::Envelope      env;
+      std::map<BinaryData, Tx>   allTXs;
+      std::vector<bs::sync::TXWallet>  requests;
+   };
+   std::map<uint64_t, TXDetailData> initialHashes_;
+   std::map<uint64_t, TXDetailData> prevHashes_;
 };
 
 

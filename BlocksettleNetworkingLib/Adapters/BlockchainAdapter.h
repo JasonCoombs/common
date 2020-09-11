@@ -103,6 +103,7 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_WalletIDs &);
    bool processGetTXsByHash(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_TXHashes &);
+   bool processLedgerEntries(const bs::message::Envelope &, const std::string &filter);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -121,6 +122,8 @@ protected:
    std::unordered_map<std::string, bs::message::Envelope>   reqByRegId_;
    std::unordered_map<std::string, std::pair<std::string, bs::message::Envelope>>   unconfTgtMap_;
 
+   bool walletsReady_{ false };
+   bool registrationComplete_{ false };
    std::atomic_bool  suspended_{ true };
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;
    std::map<uint64_t, bs::message::Envelope> requestsPool_;

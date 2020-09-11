@@ -88,6 +88,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processBalance(env, msg.wallet_balance_request());
       case ArmoryMessage::kGetTxsByHash:
          return processGetTXsByHash(env, msg.get_txs_by_hash());
+      case ArmoryMessage::kGetLedgerEntries:
+         return processLedgerEntries(env, msg.get_ledger_entries());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -290,7 +292,26 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
       }
       msgRefresh->add_ids(id.toBinStr());
    }
-   //TODO: resume all pending requests if all wallets registered
+   if (registrationComplete_ && !walletsReady_ && regMap_.empty()) {
+      bool allWalletsRegged = true;
+      for (const auto &wallet : wallets_) {
+         if (!wallet.second.registered) {
+            allWalletsRegged = false;
+            break;
+         }
+      }
+      if (allWalletsRegged) {
+         logger_->debug("[{}] all wallets regged", __func__);
+         walletsReady_ = true;
+         //TODO: resume all pending requests if all wallets registered
+         ArmoryMessage msgReg;
+         auto msgWalletRegged = msgReg.mutable_wallet_registered();
+         msgWalletRegged->set_wallet_id("");
+         msgWalletRegged->set_success(true);
+         bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msgReg.SerializeAsString() };
+         pushFill(env);
+      }
+   }
    if (msgRefresh->ids_size() > 0) {
       msgRefresh->set_online(online);
       bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -440,6 +461,7 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
 void BlockchainAdapter::suspend()
 {
    suspended_ = true;
+   walletsReady_ = false;
 
    for (auto &wallet : wallets_) {
       wallet.second.registered = false;
@@ -459,6 +481,10 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
 {
    if (suspended_) {
       return false;  // postpone until Armory will become ready
+   }
+   if (request.wallet_id().empty()) {
+      registrationComplete_ = true;
+      return true;
    }
    const auto &sendError = [this, env, request]
    {
@@ -495,6 +521,7 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
 std::string BlockchainAdapter::registerWallet(const std::string &walletId
    , const Wallet &wallet)
 {
+   registrationComplete_ = false;
    auto &newWallet = wallets_[walletId];
    if (!newWallet.wallet) {
       newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
@@ -693,4 +720,72 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
       hashes.insert(BinaryData::fromString(hash));
    }
    return armoryPtr_->getTXsByHash(hashes, cb, !request.disable_cache());
+}
+
+bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
+   , const std::string &filter)
+{
+   const auto &cbLedger = [this, env, filter]
+      (const std::shared_ptr<AsyncClient::LedgerDelegate> &delegate)
+   {
+      const auto &cbPage = [this, delegate, env, filter]
+         (ReturnMessage<uint64_t> pageCntReturn)
+      {
+         uint32_t pageCnt = 0;
+         try {
+            pageCnt = (uint32_t)pageCntReturn.get();
+         }
+         catch (const std::exception &) {
+            return;
+         }
+         for (uint32_t page = 0; page < pageCnt; ++page) {
+            if (suspended_) {
+               return;
+            }
+            const auto &cbEntries = [this, env, filter, page, pageCnt]
+               (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
+            {
+               try {
+                  auto le = entriesRet.get();
+                  auto entries = bs::TXEntry::fromLedgerEntries(le);
+                  for (auto &entry : entries) {
+                     entry.nbConf = armory_->getConfirmationsNumber(entry.blockNum);
+                  }
+                  ArmoryMessage msg;
+                  auto msgResp = msg.mutable_ledger_entries();
+                  msgResp->set_filter(filter);
+                  msgResp->set_total_pages(pageCnt);
+                  msgResp->set_cur_page(page);
+                  msgResp->set_cur_block(armory_->topBlock());
+                  for (const auto &entry : entries) {
+                     auto msgEntry = msgResp->add_entries();
+                     msgEntry->set_tx_hash(entry.txHash.toBinStr());
+                     msgEntry->set_value(entry.value);
+                     msgEntry->set_block_num(entry.blockNum);
+                     msgEntry->set_tx_time(entry.txTime);
+                     msgEntry->set_rbf(entry.isRBF);
+                     msgEntry->set_chained_zc(entry.isChainedZC);
+                     msgEntry->set_recv_time(entry.recvTime.time_since_epoch().count());
+                     msgEntry->set_nb_conf(entry.nbConf);
+                     for (const auto &walletId : entry.walletIds) {
+                        msgEntry->add_wallet_ids(walletId);
+                     }
+                     for (const auto &addr : entry.addresses) {
+                        msgEntry->add_addresses(addr.display());
+                     }
+                  }
+                  Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+                  pushFill(envResp);
+               }
+               catch (const std::exception &) {}
+            };
+            delegate->getHistoryPage(uint32_t(page), cbEntries);
+         }
+      };
+      delegate->getPageCount(cbPage);
+   };
+   if (filter.empty()) {
+      return armory_->getWalletsLedgerDelegate(cbLedger);
+   }
+   return true;
 }
