@@ -9,10 +9,16 @@
 
 */
 #include "BIP15xMessage.h"
+#include "BIP15x_Handshake.h"
 
 using namespace bs::network::bip15x;
 
 void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, MsgType type)
+{
+   construct(data, dataSize, (uint8_t)type);
+}
+
+void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, uint8_t type)
 {
    BinaryWriter writer;
    // Store packet length, will be used in chacha20poly1305_get_length later
@@ -24,12 +30,12 @@ void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, MsgType t
    std::memcpy(packet_.getPtr(), &packetSize, sizeof(packetSize));
 }
 
-MessageBuilder::MessageBuilder(const uint8_t *data, uint32_t dataSize, MsgType type)
+MessageBuilder::MessageBuilder(const uint8_t *data, uint32_t dataSize, uint8_t type)
 {
    construct(data, dataSize, type);
 }
 
-MessageBuilder::MessageBuilder(const std::vector<uint8_t> &data, MsgType type)
+MessageBuilder::MessageBuilder(const std::vector<uint8_t> &data, uint8_t type)
 {
    construct(data.data(), data.size(), type);
 }
@@ -39,12 +45,17 @@ MessageBuilder::MessageBuilder(const BinaryDataRef &data, MsgType type)
    construct(data.getPtr(), data.getSize(), type);
 }
 
-MessageBuilder::MessageBuilder(const std::string &data, MsgType type)
+MessageBuilder::MessageBuilder(const BinaryDataRef &data, uint8_t type)
+{
+   construct(data.getPtr(), data.getSize(), type);
+}
+
+MessageBuilder::MessageBuilder(const std::string &data, uint8_t type)
 {
    construct(reinterpret_cast<const uint8_t*>(data.data()), data.size(), type);
 }
 
-MessageBuilder::MessageBuilder(MsgType type)
+MessageBuilder::MessageBuilder(uint8_t type)
 {
    construct(nullptr, 0, type);
 }
@@ -82,18 +93,21 @@ Message Message::parse(const BinaryDataRef &packet)
       if (packetLen != reader.getSizeRemaining()) {
          return {};
       }
-      const auto type = static_cast<MsgType>(reader.get_uint8_t());
+      const uint8_t type = reader.get_uint8_t();
       switch (type)
       {
-      case MsgType::SinglePacket:
-      case MsgType::AEAD_Setup:
-      case MsgType::AEAD_PresentPubkey:
-      case MsgType::AEAD_EncInit:
-      case MsgType::AEAD_EncAck:
-      case MsgType::AEAD_Rekey:
-      case MsgType::AuthChallenge:
-      case MsgType::AuthReply:
-      case MsgType::AuthPropose:
+      case (uint8_t)MsgType::SinglePacket:
+         break;
+
+      case ArmoryAEAD::HandshakeSequence::Start:
+      case ArmoryAEAD::HandshakeSequence::PresentPubKey:
+      case ArmoryAEAD::HandshakeSequence::PresentPubKeyChild:
+      case ArmoryAEAD::HandshakeSequence::EncInit:
+      case ArmoryAEAD::HandshakeSequence::EncAck:
+      case ArmoryAEAD::HandshakeSequence::Rekey:
+      case ArmoryAEAD::HandshakeSequence::Challenge:
+      case ArmoryAEAD::HandshakeSequence::Reply:
+      case ArmoryAEAD::HandshakeSequence::Propose:
          break;
 
       default:
@@ -107,4 +121,26 @@ Message Message::parse(const BinaryDataRef &packet)
    } catch (...) {
       return {};
    }
+}
+
+bool Message::isForAEADHandshake() const
+{
+   return (type_ > ArmoryAEAD::HandshakeSequence::Threshold_Begin)
+      && (type_ < ArmoryAEAD::HandshakeSequence::Threshold_End);
+}
+
+MsgType Message::getMsgType() const
+{
+   if (isForAEADHandshake())
+      throw std::runtime_error("msg is for AEAD sequence");
+
+   return MsgType(type_);
+}
+
+ArmoryAEAD::HandshakeSequence Message::getAEADType() const
+{
+   if (!isForAEADHandshake())
+      throw std::runtime_error("msg is not for AEAD sequence");
+
+   return ArmoryAEAD::HandshakeSequence(type_);
 }
