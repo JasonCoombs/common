@@ -104,6 +104,7 @@ protected:
    bool processGetTXsByHash(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_TXHashes &);
    bool processLedgerEntries(const bs::message::Envelope &, const std::string &filter);
+   bool processLedgerUnsubscribe(const bs::message::Envelope &, const std::string &filter);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -130,6 +131,7 @@ protected:
    std::mutex                                mtxReqPool_;
 
    std::shared_ptr< std::promise<bool>>   connKeyProm_;
+   std::unordered_map<std::string, std::vector<std::shared_ptr<bs::message::User>>> ledgerSubscriptions_;
 
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);

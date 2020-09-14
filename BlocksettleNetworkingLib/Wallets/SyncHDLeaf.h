@@ -78,11 +78,12 @@ namespace bs {
             size_t getIntAddressCount() const override { return intAddresses_.size(); }
             size_t getAddressPoolSize() const;
 
-            bool isExternalAddress(const Address &) const override;
+            bool isExternalAddress(const bs::Address &) const override;
             void getNewExtAddress(const CbAddress &) override;
             void getNewIntAddress(const CbAddress &) override;
             void getNewChangeAddress(const CbAddress &) override;
             std::string getAddressIndex(const bs::Address &) override;
+            std::string getWalletIdForAddress(const bs::Address &) const override;
             bool getLedgerDelegateForAddress(const bs::Address &
                , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &) override;
 

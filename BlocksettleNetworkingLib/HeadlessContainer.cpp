@@ -1263,9 +1263,9 @@ void HeadlessContainer::ProcessSyncWalletInfo(unsigned int id, const std::string
    for (size_t i = 0; i < result.size(); ++i) {
       const auto &walletInfo = result.at(i);
       if (walletInfo.watchOnly) {
-         woWallets_.insert(walletInfo.id);
+         woWallets_.insert(*walletInfo.ids.cbegin());
       } else {
-         woWallets_.erase(walletInfo.id);
+         woWallets_.erase(*walletInfo.ids.cbegin());
       }
    }
    itCb->second(result);
@@ -1296,7 +1296,7 @@ void HeadlessContainer::ProcessSyncHDWallet(unsigned int id, const std::string &
          if (isWoRoot) {
             woWallets_.insert(leafInfo.id());
          }
-         group.leaves.push_back({ leafInfo.id(), bs::hd::Path::fromString(leafInfo.path())
+         group.leaves.push_back({ { leafInfo.id() }, bs::hd::Path::fromString(leafInfo.path())
             , std::string{}, std::string{}, group.extOnly
             , BinaryData::fromString(leafInfo.extra_data()) });
       }

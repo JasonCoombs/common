@@ -188,6 +188,8 @@ public:
       , const std::function<void(const std::map<std::string, CombinedCounts> &)> &);
 
    bool getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &); // result to ACT
+   bool getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &
+      , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &);
    virtual bool getWalletsLedgerDelegate(const LedgerDelegateCb &);
 
    bool getSpendableTxOutListForValue(const std::vector<std::string> &walletIds, uint64_t

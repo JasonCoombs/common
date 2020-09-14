@@ -950,6 +950,17 @@ std::string hd::Leaf::getAddressIndex(const bs::Address &addr)
    return {};
 }
 
+std::string hd::Leaf::getWalletIdForAddress(const bs::Address &addr) const
+{
+   if (isExternalAddress(addr)) {
+      return walletId();
+   }
+   else if (!isExtOnly_) {
+      return walletIdInt();
+   }
+   return {};
+}
+
 bool hd::Leaf::isExternalAddress(const bs::Address &addr) const
 {
    const auto &path = getPathForAddress(addr);

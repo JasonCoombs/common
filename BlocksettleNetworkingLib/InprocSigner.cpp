@@ -345,7 +345,7 @@ void InprocSigner::syncWalletInfo(const std::function<void(std::vector<bs::sync:
       bs::sync::WalletInfo walletInfo;
 
       walletInfo.format = bs::sync::WalletFormat::HD;
-      walletInfo.id = hdWallet->walletId();
+      walletInfo.ids.push_back(hdWallet->walletId());
       walletInfo.name = hdWallet->name();
       walletInfo.description = hdWallet->description();
       walletInfo.netType = hdWallet->networkType();
@@ -395,7 +395,7 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
                }
                extraData = BtcUtils::getHash160(rootSingle->getPubKey()->getCompressedKey());
             }
-            groupData.leaves.push_back({ leaf->walletId(), leaf->path()
+            groupData.leaves.push_back({ { leaf->walletId() }, leaf->path()
                , leaf->shortName(), std::string{}, leaf->hasExtOnlyAddresses(), std::move(extraData) });
          }
 

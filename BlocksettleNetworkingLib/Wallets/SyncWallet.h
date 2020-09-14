@@ -178,7 +178,7 @@ namespace bs {
          virtual std::vector<bs::Address> getUsedAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getExtAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getIntAddressList() const { return usedAddresses_; }
-         virtual bool isExternalAddress(const Address &) const { return true; }
+         virtual bool isExternalAddress(const bs::Address &) const { return true; }
          virtual size_t getUsedAddressCount() const { return usedAddresses_.size(); }
          virtual size_t getExtAddressCount() const { return usedAddresses_.size(); }
          virtual size_t getIntAddressCount() const { return usedAddresses_.size(); }
@@ -189,6 +189,7 @@ namespace bs {
          virtual void getNewChangeAddress(const CbAddress &cb) { getNewExtAddress(cb); }
 
          virtual std::string getAddressIndex(const bs::Address &) = 0;
+         virtual std::string getWalletIdForAddress(const bs::Address &) const { return walletId(); }
 
          virtual std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const = 0;
 

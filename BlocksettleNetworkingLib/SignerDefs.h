@@ -114,7 +114,7 @@ namespace sync {
       static WalletInfo fromCommonMsg(const BlockSettle::Common::WalletInfo &);
 
       WalletFormat   format;
-      std::string id;
+      std::vector<std::string>   ids;
       std::string name;
       std::string description;
       NetworkType netType;
@@ -128,11 +128,14 @@ namespace sync {
       bs::hd::Purpose            purpose;
       bool        primary{ false };
 
+      bool operator<(const WalletInfo &other) const
+      {
+         return (ids < other.ids);
+      }
       bool operator==(const WalletInfo &other) const
       {
-         return (id == other.id);
+         return (ids == other.ids);
       }
-
       bool operator!=(const WalletInfo &other) const
       {
          return !operator==(other);
@@ -142,7 +145,7 @@ namespace sync {
    struct HDWalletData
    {
       struct Leaf {
-         std::string    id;
+         std::vector<std::string>   ids;
          bs::hd::Path   path;
          std::string    name;
          std::string    description;
@@ -242,6 +245,24 @@ namespace sync {
       int64_t     value;
    };
 
+   struct Address
+   {
+      bs::Address address;
+      std::string index;
+      std::string walletId;
+   };
+
+   struct AddressDetails
+   {
+      bs::Address address;
+      uint64_t    value;
+      std::string valueStr;
+      std::string walletName;
+      TXOUT_SCRIPT_TYPE type;
+      BinaryData  outHash;
+      int         outIndex;
+   };
+
    struct TXWalletDetails
    {
       BinaryData  txHash;
@@ -253,6 +274,10 @@ namespace sync {
       bool        isValid;
       std::string amount;
       std::vector<bs::Address>   outAddresses;
+      std::vector<AddressDetails>   inputAddresses;
+      std::vector<AddressDetails>   outputAddresses;
+      AddressDetails changeAddress;
+      Tx    tx;
    };
 
    Blocksettle::Communication::headless::SyncWalletInfoResponse

@@ -92,7 +92,9 @@ bool SignerClient::processWalletsInfo(uint64_t msgId, const SignerMessage_Wallet
    for (const auto &wallet : response.wallets()) {
       bs::sync::WalletInfo entry;
       entry.format = static_cast<bs::sync::WalletFormat>(wallet.format());
-      entry.id = wallet.id();
+      for (const auto &id : wallet.ids()) {
+         entry.ids.push_back(id);
+      }
       entry.name = wallet.name();
       entry.description = wallet.description();
       entry.netType = static_cast<NetworkType>(wallet.network_type());

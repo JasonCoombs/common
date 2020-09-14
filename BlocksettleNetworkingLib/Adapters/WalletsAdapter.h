@@ -115,8 +115,8 @@ private:
    bool processGetExtAddresses(const bs::message::Envelope &, const std::string &walletId);
    bool processGetIntAddresses(const bs::message::Envelope &, const std::string &walletId);
    bool processGetUsedAddresses(const bs::message::Envelope &, const std::string &walletId);
-   bool sendAddresses(const bs::message::Envelope &, const std::string &walletId
-      , const std::vector<bs::Address> &);
+   bool sendAddresses(const bs::message::Envelope &
+      , const std::vector<bs::sync::Address> &);
    bool processGetAddrComments(const bs::message::Envelope &
       , const BlockSettle::Common::WalletsMessage_WalletAddresses &);
    bool processSetAddrComments(const bs::message::Envelope &

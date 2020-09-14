@@ -109,7 +109,7 @@ std::vector<bs::sync::WalletInfo> bs::sync::WalletInfo::fromPbMessage(const head
       bs::sync::WalletInfo walletInfo;
 
       walletInfo.format = mapFrom(walletInfoPb.format());
-      walletInfo.id = walletInfoPb.id();
+      walletInfo.ids.push_back(walletInfoPb.id());
       walletInfo.name = walletInfoPb.name();
       walletInfo.description = walletInfoPb.description();
       walletInfo.netType = mapFrom(walletInfoPb.nettype());
@@ -134,7 +134,7 @@ bs::sync::WalletInfo bs::sync::WalletInfo::fromLeaf(const std::shared_ptr<bs::sy
 {
    bs::sync::WalletInfo result;
    result.format = bs::sync::WalletFormat::Plain;
-   result.id = leaf->walletId();
+   result.ids = leaf->internalIds();
    result.type = leaf->type();
    result.purpose = leaf->purpose();
    result.name = leaf->shortName();
@@ -150,7 +150,7 @@ bs::sync::WalletInfo bs::sync::WalletInfo::fromWallet(const std::shared_ptr<bs::
 {
    bs::sync::WalletInfo result;
    result.format = bs::sync::WalletFormat::HD;
-   result.id = wallet->walletId();
+   result.ids.push_back(wallet->walletId());
    result.netType = wallet->networkType();
    result.name = wallet->name();
    result.description = wallet->description();
@@ -163,7 +163,9 @@ bs::sync::WalletInfo bs::sync::WalletInfo::fromWallet(const std::shared_ptr<bs::
 void bs::sync::WalletInfo::toCommonMsg(BlockSettle::Common::WalletInfo &msg) const
 {
    msg.set_format((int)format);
-   msg.set_id(id);
+   for (const auto &id : ids) {
+      msg.add_id(id);
+   }
    msg.set_name(name);
    msg.set_description(description);
    msg.set_network_type((int)netType);
@@ -186,7 +188,9 @@ bs::sync::WalletInfo bs::sync::WalletInfo::fromCommonMsg(const BlockSettle::Comm
 {
    bs::sync::WalletInfo result;
    result.format = static_cast<bs::sync::WalletFormat>(msg.format());
-   result.id = msg.id();
+   for (const auto &id : msg.id()) {
+      result.ids.push_back(id);
+   }
    result.name = msg.name();
    result.description = msg.description();
    result.netType = static_cast<NetworkType>(msg.network_type());
@@ -317,7 +321,9 @@ BlockSettle::Common::HDWalletData bs::sync::HDWalletData::toCommonMessage() cons
       }
       for (const auto &leaf : group.leaves) {
          auto msgLeaf = msgGroup->add_leaves();
-         msgLeaf->set_id(leaf.id);
+         for (const auto &id : leaf.ids) {
+            msgLeaf->add_ids(id);
+         }
          msgLeaf->set_path(leaf.path.toString());
          msgLeaf->set_name(leaf.name);
          msgLeaf->set_desc(leaf.description);
@@ -345,7 +351,9 @@ bs::sync::HDWalletData bs::sync::HDWalletData::fromCommonMessage(
 
       for (const auto &msgLeaf : msgGroup.leaves()) {
          HDWalletData::Leaf leaf;
-         leaf.id = msgLeaf.id();
+         for (const auto &id : msgLeaf.ids()) {
+            leaf.ids.push_back(id);
+         }
          leaf.path = bs::hd::Path::fromString(msgLeaf.path());
          leaf.name = msgLeaf.name();
          leaf.description = msgLeaf.desc();

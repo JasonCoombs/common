@@ -90,6 +90,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processGetTXsByHash(env, msg.get_txs_by_hash());
       case ArmoryMessage::kGetLedgerEntries:
          return processLedgerEntries(env, msg.get_ledger_entries());
+      case ArmoryMessage::kLedgerUnsubscribe:
+         return processLedgerUnsubscribe(env, msg.ledger_unsubscribe());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -352,6 +354,36 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
    }
    bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
+
+   const auto &itLedgerSub = ledgerSubscriptions_.find({});
+   if (itLedgerSub != ledgerSubscriptions_.end()) {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_ledger_entries();
+      msgResp->set_filter("");
+      msgResp->set_total_pages(0);
+      msgResp->set_cur_block(armory_->topBlock());
+      for (const auto &entry : entries) {
+         auto msgEntry = msgResp->add_entries();
+         msgEntry->set_tx_hash(entry.txHash.toBinStr());
+         msgEntry->set_value(entry.value);
+         msgEntry->set_block_num(entry.blockNum);
+         msgEntry->set_tx_time(entry.txTime);
+         msgEntry->set_rbf(entry.isRBF);
+         msgEntry->set_chained_zc(entry.isChainedZC);
+         msgEntry->set_recv_time(entry.recvTime.time_since_epoch().count());
+         msgEntry->set_nb_conf(entry.nbConf);
+         for (const auto &walletId : entry.walletIds) {
+            msgEntry->add_wallet_ids(walletId);
+         }
+         for (const auto &addr : entry.addresses) {
+            msgEntry->add_addresses(addr.display());
+         }
+      }
+      for (const auto &recv : itLedgerSub->second) {
+         Envelope envResp{ 0, user_, recv, {}, {}, msg.SerializeAsString() };
+         pushFill(envResp);
+      }
+   }
 }
 
 // Unused code to save from PB's ArmoryWalletAdapter
@@ -725,10 +757,17 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
 bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
    , const std::string &filter)
 {
-   const auto &cbLedger = [this, env, filter]
+   ledgerSubscriptions_[filter].push_back(env.sender);
+   std::string walletId, addrStr;
+   const auto posDot = filter.find('.');
+   if (posDot != std::string::npos) {
+      walletId = filter.substr(0, posDot);
+      addrStr = filter.substr(posDot + 1);
+   }
+   const auto &cbLedger = [this, env, filter, walletId]
       (const std::shared_ptr<AsyncClient::LedgerDelegate> &delegate)
    {
-      const auto &cbPage = [this, delegate, env, filter]
+      const auto &cbPage = [this, delegate, env, filter, walletId]
          (ReturnMessage<uint64_t> pageCntReturn)
       {
          uint32_t pageCnt = 0;
@@ -742,7 +781,7 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
             if (suspended_) {
                return;
             }
-            const auto &cbEntries = [this, env, filter, page, pageCnt]
+            const auto &cbEntries = [this, env, filter, page, pageCnt, walletId]
                (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
             {
                try {
@@ -767,8 +806,13 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
                      msgEntry->set_chained_zc(entry.isChainedZC);
                      msgEntry->set_recv_time(entry.recvTime.time_since_epoch().count());
                      msgEntry->set_nb_conf(entry.nbConf);
-                     for (const auto &walletId : entry.walletIds) {
+                     if ((entry.walletIds.size() == 1) && entry.walletIds.cbegin()->empty()) {
                         msgEntry->add_wallet_ids(walletId);
+                     }
+                     else {
+                        for (const auto &walletId : entry.walletIds) {
+                           msgEntry->add_wallet_ids(walletId);
+                        }
                      }
                      for (const auto &addr : entry.addresses) {
                         msgEntry->add_addresses(addr.display());
@@ -782,10 +826,45 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
             delegate->getHistoryPage(uint32_t(page), cbEntries);
          }
       };
+      if (!delegate) {
+         logger_->error("[BlockchainAdapter::processLedgerEntries] invalid ledger for {}", filter);
+         return;
+      }
       delegate->getPageCount(cbPage);
    };
    if (filter.empty()) {
       return armory_->getWalletsLedgerDelegate(cbLedger);
    }
+   else {
+      if (!addrStr.empty()) {
+         try {
+            const auto &addr = bs::Address::fromAddressString(addrStr);
+            armory_->getLedgerDelegateForAddress(walletId, addr, cbLedger);
+         }
+         catch (const std::exception &e) {
+            logger_->error("[{}] invalid address {} in filter: {}", __func__
+               , addrStr, e.what());
+            return true;
+         }
+      }
+   }
    return true;
+}
+
+bool BlockchainAdapter::processLedgerUnsubscribe(const bs::message::Envelope &env
+   , const std::string &filter)
+{
+   const auto &itSub = ledgerSubscriptions_.find(filter);
+   if (itSub == ledgerSubscriptions_.end()) {
+      return true;
+   }
+   const auto &itUser = std::find_if(itSub->second.cbegin(), itSub->second.cend()
+      , [u=env.sender](const std::shared_ptr<bs::message::User> &user) {
+      return (user->value() == u->value()); });
+   if (itUser != itSub->second.end()) {
+      itSub->second.erase(itUser);
+      if (itSub->second.empty()) {
+         ledgerSubscriptions_.erase(itSub);
+      }
+   }
 }

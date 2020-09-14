@@ -394,27 +394,42 @@ bool ArmoryConnection::getWalletsHistory(const std::vector<std::string> &walletI
 
 bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &addr)
 {
+   const auto &cbWrap = [this, walletId, addr]
+      (const std::shared_ptr<AsyncClient::LedgerDelegate> &delegate)
+   {
+      addToQueue([addr, delegate] (ArmoryCallbackTarget *tgt) {
+         tgt->onLedgerForAddress(addr, delegate);
+      });
+   };
+   return getLedgerDelegateForAddress(walletId, addr, cbWrap);
+}
+
+bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId
+   , const bs::Address &addr
+   , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &cb)
+{
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::getLedgerDelegateForAddress] invalid state: {}", (int)state_.load());
       return false;
    }
-   const auto &cbWrap = [this, walletId, addr]
-                        (ReturnMessage<AsyncClient::LedgerDelegate> delegate) {
+   const auto &cbWrap = [this, cb, walletId, addr]
+      (ReturnMessage<AsyncClient::LedgerDelegate> delegate)
+   {
       try {
          auto ld = std::make_shared<AsyncClient::LedgerDelegate>(delegate.get());
-         addToQueue([addr, ld] (ArmoryCallbackTarget *tgt) {
-            tgt->onLedgerForAddress(addr, ld);
-         });
-      }
-      catch (const std::exception &e) {
+         if (cb) {
+            cb(ld);
+         }
+      } catch (const std::exception &e) {
          logger_->error("[ArmoryConnection::getLedgerDelegateForAddress (cbWrap)] Return data "
             "error - {} - Wallet {} - Address {}", e.what(), walletId
             , addr.empty() ? "<empty>" : addr.display());
-         addToQueue([addr](ArmoryCallbackTarget *tgt) {
-            tgt->onLedgerForAddress(addr, nullptr);
-         });
+         if (cb) {
+            cb(nullptr);
+         }
       }
    };
+   logger_->debug("[{}] {}.{} ({})", __func__, walletId, addr.display(), addr.id().toHexStr());
    bdv_->getLedgerDelegateForScrAddr(walletId, addr.id(), cbWrap);
    return true;
 }

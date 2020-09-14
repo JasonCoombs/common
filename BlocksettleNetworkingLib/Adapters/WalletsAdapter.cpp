@@ -106,7 +106,7 @@ void WalletsAdapter::startWalletsSync()
    const auto &cbWalletsReceived = [this](const std::vector<bs::sync::WalletInfo> &wallets)
    {
       for (const auto &wallet : wallets) {
-         loadingWallets_.insert(wallet.id);
+         loadingWallets_.insert(*wallet.ids.cbegin());
       }
       for (const auto &wallet : wallets) {
          loadWallet(wallet);
@@ -118,7 +118,7 @@ void WalletsAdapter::startWalletsSync()
 void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
 {
    logger_->debug("[WalletsManager::syncWallets] syncing wallet {} ({} {})"
-      , info.id, info.name, info.description);
+      , *info.ids.cbegin(), info.name, info.description);
 
    switch (info.format) {
    case bs::sync::WalletFormat::HD:
@@ -154,7 +154,7 @@ void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
          }
       } catch (const std::exception &e) {
          logger_->error("[WalletsAdapter::loadWallet] failed to create HD wallet "
-            "{}: {}", info.id, e.what());
+            "{}: {}", *info.ids.cbegin(), e.what());
       }
       break;
    }
@@ -641,7 +641,9 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
 
       for (const auto &leaf : group->getLeaves()) {
          auto msgLeaf = msgGroup->add_leaves();
-         msgLeaf->set_id(leaf->walletId());
+         for (const auto &id : leaf->internalIds()) {
+            msgLeaf->add_ids(id);
+         }
          msgLeaf->set_path(leaf->path().toString());
          msgLeaf->set_name(leaf->shortName());
          msgLeaf->set_desc(leaf->description());
@@ -746,7 +748,12 @@ bool WalletsAdapter::processGetExtAddresses(const bs::message::Envelope &env, co
       logger_->error("[{}] wallet {} not found", __func__, walletId);
       return true;
    }
-   return sendAddresses(env, walletId, wallet->getExtAddressList());
+   std::vector<bs::sync::Address> addresses;
+   for (const auto &addr : wallet->getExtAddressList()) {
+      const auto &index = wallet->getAddressIndex(addr);
+      addresses.push_back({ addr, index, wallet->getWalletIdForAddress(addr) });
+   }
+   return sendAddresses(env, addresses);
 }
 
 bool WalletsAdapter::processGetIntAddresses(const bs::message::Envelope &env, const std::string &walletId)
@@ -756,7 +763,12 @@ bool WalletsAdapter::processGetIntAddresses(const bs::message::Envelope &env, co
       logger_->error("[{}] wallet {} not found", __func__, walletId);
       return true;
    }
-   return sendAddresses(env, walletId, wallet->getIntAddressList());
+   std::vector<bs::sync::Address> addresses;
+   for (const auto &addr : wallet->getIntAddressList()) {
+      const auto &index = wallet->getAddressIndex(addr);
+      addresses.push_back({ addr, index, wallet->getWalletIdForAddress(addr) });
+   }
+   return sendAddresses(env, addresses);
 }
 
 bool WalletsAdapter::processGetUsedAddresses(const bs::message::Envelope &env, const std::string &walletId)
@@ -766,17 +778,24 @@ bool WalletsAdapter::processGetUsedAddresses(const bs::message::Envelope &env, c
       logger_->error("[{}] wallet {} not found", __func__, walletId);
       return true;
    }
-   return sendAddresses(env, walletId, wallet->getUsedAddressList());
+   std::vector<bs::sync::Address> addresses;
+   for (const auto &addr : wallet->getUsedAddressList()) {
+      const auto &index = wallet->getAddressIndex(addr);
+      addresses.push_back({addr, index, wallet->getWalletIdForAddress(addr) });
+   }
+   return sendAddresses(env, addresses);
 }
 
-bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env, const std::string &walletId
-   , const std::vector<bs::Address> &addrs)
+bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env
+   , const std::vector<bs::sync::Address> &addrs)
 {
    WalletsMessage msg;
    auto msgResp = msg.mutable_wallet_addresses();
-   msgResp->set_wallet_id(walletId);
    for (const auto &addr : addrs) {
-      msgResp->add_addresses(addr.display());
+      auto addrResp = msgResp->add_addresses();
+      addrResp->set_address(addr.address.display());
+      addrResp->set_index(addr.index);
+      addrResp->set_wallet_id(addr.walletId);
    }
    Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
    return pushFill(envResp);
@@ -793,13 +812,13 @@ bool WalletsAdapter::processGetAddrComments(const bs::message::Envelope &env
    WalletsMessage msg;
    auto msgResp = msg.mutable_addr_comments();
    msgResp->set_wallet_id(wallet->walletId());
-   for (const auto &addrStr : request.addresses()) {
+   for (const auto &addrPair : request.addresses()) {
       try {
-         const auto &addr = bs::Address::fromAddressString(addrStr);
+         const auto &addr = bs::Address::fromAddressString(addrPair.address());
          const auto &comment = wallet->getAddressComment(addr);
          if (!comment.empty()) {
             auto commentData = msgResp->add_comments();
-            commentData->set_address(addrStr);
+            commentData->set_address(addrPair.address());
             commentData->set_comment(comment);
          }
       }
@@ -913,6 +932,11 @@ void WalletsAdapter::processTransactions(uint64_t msgId
          auto resp = msgResp->add_responses();
          resp->set_tx_hash(req.txHash.toBinStr());
          resp->set_wallet_id(req.walletId);
+         const auto &itTx = itId->second.allTXs.find(req.txHash);
+         if (itTx == itId->second.allTXs.end()) {
+            logger_->warn("[{}] failed to find TX hash {}", __func__, req.txHash.toHexStr(true));
+            continue;
+         }
          const auto &wallet = getWalletById(req.walletId);
          if (wallet) {
             resp->set_wallet_name(wallet->name());
@@ -923,46 +947,146 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             resp->set_direction((int)getDirection(req.txHash, wallet
                , itId->second.allTXs));
 
-            const auto &itTx = itId->second.allTXs.find(req.txHash);
-            if (itTx != itId->second.allTXs.end()) {
-               const bool isReceiving = (req.value > 0);
-               std::set<bs::Address> ownAddresses, foreignAddresses;
-               for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
-                  const TxOut &out = itTx->second.getTxOutCopy((int)i);
-                  try {
-                     const auto &addr = bs::Address::fromTxOut(out);
-                     const auto &addrWallet = getWalletByAddress(addr);
-                     if (addrWallet == wallet) {
-                        ownAddresses.insert(addr);
-                     } else {
-                        foreignAddresses.insert(addr);
-                     }
-                  } catch (const std::exception &) {
-                     // address conversion failure - likely OP_RETURN - do nothing
+            resp->set_tx(itTx->second.serialize().toBinStr());
+            const bool isReceiving = (req.value > 0);
+            std::set<bs::Address> ownAddresses, foreignAddresses;
+            for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+               const TxOut &out = itTx->second.getTxOutCopy((int)i);
+               try {
+                  const auto &addr = bs::Address::fromTxOut(out);
+                  const auto &addrWallet = getWalletByAddress(addr);
+                  if (addrWallet == wallet) {
+                     ownAddresses.insert(addr);
+                  } else {
+                     foreignAddresses.insert(addr);
                   }
-               }
-               if (!isReceiving && (ownAddresses.size() == 1) && !foreignAddresses.empty()) {
-                  if (!wallet->isExternalAddress(*ownAddresses.cbegin())) {
-                     ownAddresses.clear();   // treat the only own internal address as change and throw away
-                  }
-               }
-               const auto &setAddresses = [&resp](const std::set<bs::Address> &addrs)
-               {
-                  for (const auto &addr : addrs) {
-                     resp->add_out_addresses(addr.display());
-                  }
-               };
-               if (!ownAddresses.empty()) {
-                  setAddresses(ownAddresses);
-               } else {
-                  setAddresses(foreignAddresses);
+               } catch (const std::exception &) {
+                  // address conversion failure - likely OP_RETURN - do nothing
                }
             }
+            if (!isReceiving && (ownAddresses.size() == 1) && !foreignAddresses.empty()) {
+               if (!wallet->isExternalAddress(*ownAddresses.cbegin())) {
+                  ownAddresses.clear();   // treat the only own internal address as change and throw away
+               }
+            }
+            const auto &setOutAddresses = [&resp](const std::set<bs::Address> &addrs)
+            {
+               for (const auto &addr : addrs) {
+                  resp->add_out_addresses(addr.display());
+               }
+            };
+            if (!ownAddresses.empty()) {
+               setOutAddresses(ownAddresses);
+            } else {
+               setOutAddresses(foreignAddresses);
+            }
+         }
+         else {
+            logger_->warn("[{}] failed to find wallet {}", __func__, req.walletId);
+         }
+         std::set<std::shared_ptr<bs::sync::Wallet>> inputWallets;
+         for (int i = 0; i < itTx->second.getNumTxIn(); ++i) {
+            bs::sync::AddressDetails addrDet;
+            const auto &in = itTx->second.getTxInCopy(i);
+            const auto &op = in.getOutPoint();
+            const auto &itPrev = itId->second.allTXs.find(op.getTxHash());
+            if (itPrev == itId->second.allTXs.end()) {
+               continue;
+            }
+            const TxOut &prevOut = itPrev->second.getTxOutCopy(op.getTxOutIndex());
+            addrDet.address = bs::Address::fromTxOut(prevOut);
+            addrDet.value = prevOut.getValue();
+            addrDet.type = prevOut.getScriptType();
+            addrDet.outHash = op.getTxHash();
+            addrDet.outIndex = op.getTxOutIndex();
+            const auto &addressWallet = getWalletByAddress(addrDet.address);
+            if (addressWallet) {
+               addrDet.walletName = addressWallet->name();
+               addrDet.valueStr = "-" + addressWallet->displayTxValue(prevOut.getValue()).toStdString();
+               const auto &rootWallet = getHDRootForLeaf(addressWallet->walletId());
+               if (rootWallet) {
+                  const auto &xbtLeaves = rootWallet->getGroup(rootWallet->getXBTGroupType())->getLeaves();
+                  bool isXbtLeaf = false;
+                  for (const auto &leaf : xbtLeaves) {
+                     if (*leaf == *addressWallet) {
+                        isXbtLeaf = true;
+                        break;
+                     }
+                  }
+                  if (isXbtLeaf) {
+                     inputWallets.insert(xbtLeaves.cbegin(), xbtLeaves.cend());
+                  } else {
+                     inputWallets.insert(addressWallet);
+                  }
+               } else {
+                  inputWallets.insert(addressWallet);
+               }
+            }
+            else {
+               addrDet.valueStr = fmt::format("-{:.8f}", prevOut.getValue() / BTCNumericTypes::BalanceDivider);
+            }
+            auto inAddr = resp->add_input_addresses();
+            inAddr->set_address(addrDet.address.display());
+            inAddr->set_value(addrDet.value);
+            inAddr->set_value_string(addrDet.valueStr);
+            inAddr->set_wallet_name(addrDet.walletName);
+            inAddr->set_script_type((int)addrDet.type);
+         }
+
+         std::vector<TxOut> allOutputs;
+         for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+            const TxOut out = itTx->second.getTxOutCopy(i);
+            allOutputs.push_back(out);
+         }
+         bs::sync::AddressDetails lastChange;
+         std::vector<bs::sync::AddressDetails> outputAddrs;
+         for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+            bs::sync::AddressDetails addrDet;
+            TxOut out = itTx->second.getTxOutCopy(i);
+            addrDet.address = bs::Address::fromTxOut(out);
+            addrDet.value = out.getValue();
+            addrDet.type = out.getScriptType();
+            addrDet.outIndex = (int)out.getIndex();
+            const auto &addrWallet = getWalletByAddress(addrDet.address);
+            if (addrWallet) {
+               addrDet.valueStr = addrWallet->displayTxValue(out.getValue()).toStdString();
+               addrDet.walletName = addrWallet->name();
+               if ((allOutputs.size() > 1) && (inputWallets.find(addrWallet) != inputWallets.end())) {
+                  lastChange = addrDet;
+               }
+            }
+            else {
+               addrDet.valueStr = fmt::format("{:.8f}", out.getValue() / BTCNumericTypes::BalanceDivider);
+            }
+            outputAddrs.push_back(addrDet);
+         }
+         if (!lastChange.address.empty()) {
+            auto chgAddr = resp->mutable_change_address();
+            chgAddr->set_address(lastChange.address.display());
+            chgAddr->set_wallet_name(lastChange.walletName);
+            chgAddr->set_value(lastChange.value);
+            chgAddr->set_value_string(lastChange.valueStr);
+            chgAddr->set_script_type((int)lastChange.type);
+            const auto &itOut = std::find_if(outputAddrs.cbegin(), outputAddrs.cend()
+               , [addr = lastChange.address](const bs::sync::AddressDetails &addrDet){
+               return (addrDet.address == addr);
+            });
+            if (itOut != outputAddrs.end()) {
+               outputAddrs.erase(itOut);
+            }
+         }
+         for (const auto &addrDet : outputAddrs) {
+            auto outAddr = resp->add_output_addresses();
+            outAddr->set_address(addrDet.address.display());
+            outAddr->set_wallet_name(addrDet.walletName);
+            outAddr->set_value(addrDet.value);
+            outAddr->set_value_string(addrDet.valueStr);
+            outAddr->set_script_type((int)addrDet.type);
          }
       }
       Envelope envResp{ itId->second.env.id, ownUser_, itId->second.env.sender
          , {}, {}, msg.SerializeAsString() };
-      pushFill(envResp);
+      pushFill(envResp);   //TODO: send TX details in portions to allow faster UI response
       prevHashes_.erase(itId);
    }
 }
