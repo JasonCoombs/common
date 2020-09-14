@@ -22,7 +22,7 @@ QNetworkRequest getPaymentOptionsRequest(const QString& url)
    return request;
 }
 
-QNetworkRequest getPaymentRequest(const QString& url)
+QNetworkRequest getBTCPaymentRequest(const QString& url)
 {
    QNetworkRequest request;
    request.setUrl(QUrl(url));
