@@ -85,6 +85,9 @@ namespace bs {
          BinaryData serverPublicKey;
          BIP15xCookie cookie{ BIP15xCookie::NotUsed };
 
+         //2-way auth by default
+         bool oneWayAuth = false;
+
          std::chrono::milliseconds connectionTimeout{ std::chrono::seconds(10) };
       };
 
@@ -104,17 +107,24 @@ namespace bs {
          BinaryData getOwnPubKey() const;
          void addAuthPeer(const BIP15xPeer &);
          void updatePeerKeys(const BIP15xPeers &);
+         virtual bool areAuthKeysEphemeral(void) const = 0;
 
-         static BinaryData getOwnPubKey(const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
-         static BinaryData getOwnPubKey(const AuthorizedPeers &authPeers);
+         static BinaryData getOwnPubKey_FromKeyFile(
+            const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
+         static BinaryData getOwnPubKey_FromAuthPeers(
+            const AuthorizedPeers &authPeers);
+
+         static bool handshakeCompleted(const BIP151Connection* connPtr)
+         {
+            if (connPtr == nullptr)
+               return false;
+
+            return (connPtr->getBIP150State() == BIP150State::SUCCESS);
+         }
 
       protected:
-         virtual bool getCookie(BinaryData &cookieBuf);
-         virtual bool createCookie();  // Cookie file is held opened for writing
-                                       // for the whole object lifetime
-         bool rmCookieFile();
+         virtual bool usesCookie(void) const = 0;
 
-         bool addCookieToPeers(const std::string &id, const BinaryData &pubKey = {});
          AuthPeersLambdas getAuthPeerLambda();
 
          using WriteDataCb = std::function<bool(bip15x::MsgType, const BinaryData &
@@ -133,7 +143,6 @@ namespace bs {
 
       private:
          bool isValid_{ true };
-         std::unique_ptr<std::ofstream>   cookieFile_;   //Need to keep opened for the whole object lifetime
       };
 
 
@@ -149,7 +158,10 @@ namespace bs {
          TransportBIP15xClient& operator= (TransportBIP15xClient&&) = delete;
 
          void setKeyCb(const BIP15xNewKeyCb &);
-         bool getCookie(BinaryData &cookieBuf) override;
+         bool getCookie(BinaryData &cookieBuf);
+         bool areAuthKeysEphemeral(void) const override;
+         bool usesCookie(void) const override;
+         bool addCookieToPeers(const std::string &id);
 
          std::string listenThreadName() const override { return "listenBIP15x"; }
 
@@ -162,24 +174,15 @@ namespace bs {
 
          bool sendData(const std::string &data) override;
 
-         void startHandshake() override
-         {
-            startBIP151Handshake();
-         }
-
-         // Is public only for tests
          void rekey();
 
       private:
-         bool createCookie() override;
-         bool startBIP151Handshake();
-
          void processIncomingData(const BinaryData &payload);
          bool processAEADHandshake(const bip15x::Message &);
          bool verifyNewIDKey(const BinaryDataRef &newKey, const std::string &srvId);
          void rekeyIfNeeded(size_t dataSize);
          bool sendPacket(const BinaryData &, bool encrypted = true);
-
+         
       private:
          const BIP15xParams   params_;
 
@@ -187,10 +190,6 @@ namespace bs {
          std::string host_, port_;
          std::unique_ptr<BIP151Connection> bip151Connection_;
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
-         uint32_t outerRekeyCount_ = 0;
-         uint32_t innerRekeyCount_ = 0;
-         bool bip150HandshakeCompleted_ = false;
-         bool bip151HandshakeCompleted_ = false;
 
          BIP15xNewKeyCb cbNewKey_;
       };

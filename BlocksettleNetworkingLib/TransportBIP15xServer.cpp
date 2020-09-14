@@ -14,6 +14,7 @@
 #include "MessageHolder.h"
 #include "StringUtils.h"
 #include "SystemFileUtils.h"
+#include "BIP15x_Handshake.h"
 
 #include <chrono>
 
@@ -27,16 +28,12 @@ using namespace bs::network;
 void BIP15xPerConnData::reset()
 {
    encData_.reset();
-   bip150HandshakeCompleted_ = false;
-   bip151HandshakeCompleted_ = false;
    outKeyTimePoint_ = std::chrono::steady_clock::now();
 }
 
 // The constructor to use.
 //
 // INPUT:  Logger object. (const shared_ptr<spdlog::logger>&)
-//         ZMQ context. (const std::shared_ptr<ZmqContext>&)
-//         Per-connection ID. (const uint64_t&)
 //         Callback for getting a list of trusted clients. (function<vector<string>()>)
 //         Ephemeral peer usage. Not recommended. (const bool&)
 //         The directory containing the file with the non-ephemeral key. (const std::string)
@@ -48,10 +45,12 @@ void BIP15xPerConnData::reset()
 TransportBIP15xServer::TransportBIP15xServer(
    const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback& cbTrustedClients
-   , const bool& ephemeralPeers, const std::string& ownKeyFileDir
-   , const std::string& ownKeyFileName, const bool& makeServerCookie
-   , const bool& readClientCookie, const std::string& cookiePath)
+   , bool ephemeralPeers, bool oneWayAuth
+   , const std::string& ownKeyFileDir
+   , const std::string& ownKeyFileName, bool makeServerCookie
+   , bool readClientCookie, const std::string& cookiePath)
    : TransportBIP15x(logger, cookiePath)
+   , ephemeralPeers_(ephemeralPeers), oneWayAuth_(oneWayAuth)
    , cbTrustedClients_(cbTrustedClients)
    , useClientIDCookie_(readClientCookie)
    , makeServerIDCookie_(makeServerCookie)
@@ -84,21 +83,47 @@ TransportBIP15xServer::TransportBIP15xServer(
 
    // In general, load the client key from a special Armory wallet file.
    if (!ephemeralPeers) {
-      authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
-         , [] (const std::set<BinaryData> &) { return SecureBinaryData(); });
+      /*
+      TODO:
+      Trusted key store conflicts with on disk peer wallet key store. Fail
+      server object construction if ephemeral isn't set. Reassess key storage 
+      at a later time.
+      */
+
+      SPDLOG_LOGGER_ERROR(logger_, "server is using on disk key store, cannot"
+         " rely on trusted peer set. Aborting!");
+      throw std::runtime_error("server needs to be ephemeral");
+
+      /*authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
+         , [] (const std::set<BinaryData> &) { return SecureBinaryData(); });*/
+   }
+   else
+   {
+      /*
+      Updating auth peer object with trusted keys during ctor prevents 
+      auth peer overwriting. This should only be done with ephemeral 
+      servers.
+      */
+      assert(cbTrustedClients_);
+      auto trustedClients = cbTrustedClients_();
+      {  std::lock_guard<std::mutex> lock(authPeersMutex_);
+         bip15x::updatePeerKeys(authPeers_.get(), trustedClients);
+      }
    }
 
    if (makeServerIDCookie_) {
-      createCookie();
+      if (!createCookie()) {
+         SPDLOG_LOGGER_ERROR(logger_, "server could not acquire cookie"
+            " file. Aborting!");
+         throw std::runtime_error("cannot create cookie file");
+      }
    }
 }
 
 // A specialized server connection constructor with limited options. Used only
-// for connections with ephemeral keys that use one-way verification (i.e.,
-// clients aren't verified).
+// for connections with ephemeral keys 
 //
 // INPUT:  Logger object. (const shared_ptr<spdlog::logger>&)
-//         ZMQ context. (const std::shared_ptr<ZmqContext>&)
 //         Callback for getting a list of trusted clients. (function<vector<string>()>)
 //         A flag indicating if the connection will make a key cookie. (bool)
 //         A flag indicating if the connection will read a key cookie. (bool)
@@ -106,44 +131,14 @@ TransportBIP15xServer::TransportBIP15xServer(
 // OUTPUT: None
 TransportBIP15xServer::TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback &cbTrustedClients
+   , bool oneWayAuth
    , const std::string& ownKeyFileDir, const std::string& ownKeyFileName
-   , const bool& makeServerCookie, const bool& readClientCookie
-   , const std::string& cookiePath)
-   : TransportBIP15x(logger, cookiePath)
-   , cbTrustedClients_(cbTrustedClients)
-   , useClientIDCookie_(readClientCookie)
-   , makeServerIDCookie_(makeServerCookie)
-{
-   if (ownKeyFileDir.empty() != ownKeyFileName.empty()) {
-      throw std::runtime_error("ownKeyFileDir and ownKeyFileName must be set/unset at the same time");
-   }
-
-   if (makeServerIDCookie_ && readClientCookie) {
-      throw std::runtime_error("Cannot read client ID cookie and create ID " \
-         "cookie at the same time. Connection is incomplete.");
-   }
-
-   if (makeServerIDCookie_ && cookiePath.empty()) {
-      throw std::runtime_error("ID cookie creation requested but no name " \
-         "supplied. Connection is incomplete.");
-   }
-
-   if (readClientCookie && cookiePath.empty()) {
-      throw std::runtime_error("ID cookie reading requested but no name " \
-         "supplied. Connection is incomplete.");
-   }
-
-   if (!ownKeyFileDir.empty() && !ownKeyFileName.empty()) {
-      logger_->debug("[TransportBIP15xServer] creating/reading static key in {}/{}"
-         , ownKeyFileDir, ownKeyFileName);
-      authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
-         , [](const std::set<BinaryData> &) { return SecureBinaryData{}; });
-   }
-
-   if (makeServerIDCookie_) {
-      createCookie();
-   }
-}
+   , bool makeServerCookie, bool readClientCookie
+   , const std::string& cookiePath) : 
+   TransportBIP15xServer(logger, cbTrustedClients, true, oneWayAuth
+      , ownKeyFileDir, ownKeyFileName, makeServerCookie, readClientCookie,
+      cookiePath)
+{}
 
 TransportBIP15xServer::~TransportBIP15xServer() noexcept
 {
@@ -163,7 +158,7 @@ void TransportBIP15xServer::rekey(const std::string &clientId)
       return;
    }
 
-   if (!connection->bip151HandshakeCompleted_) {
+   if (!handshakeCompleted(connection->encData_.get())) {
       logger_->error("[TransportBIP15xServer::rekey] can't rekey {} without BIP151"
          " handshaked completed", BinaryData::fromString(clientId).toHexStr());
       connection->isValid = false;
@@ -174,7 +169,7 @@ void TransportBIP15xServer::rekey(const std::string &clientId)
    BinaryData rekeyData(BIP151PUBKEYSIZE);
    std::memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
-   auto packet = bip15x::MessageBuilder(rekeyData, bip15x::MsgType::AEAD_Rekey)
+   auto packet = bip15x::MessageBuilder(rekeyData, ArmoryAEAD::HandshakeSequence::Rekey)
       .encryptIfNeeded(conn).build();
 
    logger_->debug("[TransportBIP15xServer::rekey] rekeying session for {} ({} {})"
@@ -185,7 +180,6 @@ void TransportBIP15xServer::rekey(const std::string &clientId)
    }
 
    connection->encData_->rekeyOuterSession();
-   ++connection->outerRekeyCount_;
 }
 
 void TransportBIP15xServer::forceTrustedClients(const BIP15xPeers &peers)
@@ -196,16 +190,26 @@ void TransportBIP15xServer::forceTrustedClients(const BIP15xPeers &peers)
 std::unique_ptr<BIP15xPeer> TransportBIP15xServer::getClientKey(const std::string &clientId) const
 {
    auto it = socketConnMap_.find(clientId);
-   if (it == socketConnMap_.end() || !it->second->bip150HandshakeCompleted_ || !it->second->bip151HandshakeCompleted_) {
+   if (it == socketConnMap_.end() || !handshakeCompleted(it->second->encData_.get())) {
       return nullptr;
    }
 
    const auto &pubKey = bip15x::convertCompressedKey(it->second->encData_->getChosenAuthPeerKey());
    if (pubKey.empty()) {
-      SPDLOG_LOGGER_ERROR(logger_, "ZmqBIP15XUtils::convertCompressedKey failed");
+      SPDLOG_LOGGER_ERROR(logger_, "BIP15XUtils::convertCompressedKey failed");
       return nullptr;
    }
    return std::make_unique<BIP15xPeer>("", pubKey);
+}
+
+void TransportBIP15xServer::startHandshake(const std::string &clientID)
+{
+   bip15x::MessageBuilder payload(ArmoryAEAD::HandshakeSequence::Start);
+   const auto &msg = bip15x::Message::parse(payload.build());
+   if (!processAEADHandshake(msg, clientID)) {
+      SPDLOG_LOGGER_ERROR(logger_, "failed to start AEAD handshake");
+      throw std::runtime_error("failed to start AEAD handshake");
+   }
 }
 
 // The function that processes raw ZMQ connection data. It processes the BIP
@@ -226,7 +230,7 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
    auto payload = BinaryData::fromString(encData);
 
    // Decrypt only if the BIP 151 handshake is complete.
-   if (connData->bip151HandshakeCompleted_) {
+   if (connData->encData_->connectionComplete()) {
       //decrypt packet
       auto result = connData->encData_->decryptPacket(
          payload.getPtr(), payload.getSize(),
@@ -253,7 +257,7 @@ void TransportBIP15xServer::processIncomingData(const std::string &encData
       return;
    }
 
-   if (msg.getType() > bip15x::MsgType::AEAD_Threshold) {
+   if (msg.isForAEADHandshake()) {
       if (!processAEADHandshake(msg, clientID)) {
          reportFatalError(connData);
       }
@@ -288,7 +292,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
 {
    // Function used to actually send data to the client.
    auto writeToClient = [this, clientId]
-      (bip15x::MsgType type, const BinaryData &msg, bool encrypt) -> bool
+      (const BinaryData &msg, uint8_t type, bool encrypt) -> bool
    {
       BIP151Connection* conn = nullptr;
       if (encrypt) {
@@ -317,104 +321,49 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
       return false;
    }
 
-   if (!processAEAD(msgObj, connection->encData_, writeToClient, true)) {
-      logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
-         " handshake process failed");
-      reportFatalError(connection);
+   switch (msgObj.getAEADType())
+   {
+   case ArmoryAEAD::HandshakeSequence::Start:
+   {
+      if (connection->encData_->isOneWayAuth())
+      {
+         writeToClient(
+            connection->encData_->getOwnPubKey(), 
+            ArmoryAEAD::HandshakeSequence::PresentPubKey,
+            false);
+      }
+
+      break;
+   }
+
+   default:
+      break;
+   }
+
+   auto status = ArmoryAEAD::BIP15x_Handshake::serverSideHandshake(
+      connection->encData_.get(), 
+      msgObj.getAEADType(), msgObj.getData(),
+      writeToClient);
+
+   switch (status)
+   {
+   case ArmoryAEAD::HandshakeState::StepSuccessful:
+      return true;
+
+   case ArmoryAEAD::HandshakeState::Completed:
+   {
+      connection->outKeyTimePoint_ = std::chrono::steady_clock::now();
+      connCb_(clientId, connection->details);
+      logger_->info("[TransportBIP15xServer::processAEADHandshake] BIP 150 handshake"
+         " with client complete - connection with {} is ready and fully secured"
+         , BinaryData::fromString(clientId).toHexStr());
+
+      return true;
+   }
+
+   default:
       return false;
    }
-
-   switch (msgObj.getType())
-   {
-      case bip15x::MsgType::AEAD_Setup:
-      {  // Not handled by common AEAD code
-         // If it's a local connection, get a cookie with the client's key.
-         if (useClientIDCookie_) {
-            // Read the cookie with the key to check.
-            if (!addCookieToPeers(clientId)) {
-               SPDLOG_LOGGER_ERROR(logger_, "adding cookie to peers file failed");
-               reportFatalError(connection);
-               return false;
-            }
-         }
-
-         //send pubkey message
-         if (!writeToClient(bip15x::MsgType::AEAD_PresentPubkey,
-            connection->encData_->getOwnPubKey(), false)) {
-            logger_->error("[TransportBIP15xServer::processAEADHandshake] AEAD_SETUP: "
-               "Response 1 not sent");
-            reportFatalError(connection);
-            return false;
-         }
-
-         //init bip151 handshake
-         BinaryData encinitData(ENCINITMSGSIZE);
-         if (connection->encData_->getEncinitData(encinitData.getPtr()
-            , ENCINITMSGSIZE, BIP151SymCiphers::CHACHA20POLY1305_OPENSSH) != 0) {
-            logger_->error("[TransportBIP15xServer::processAEADHandshake] BIP 150/151"
-               " handshake process failed - AEAD_ENCINIT data not obtained");
-            reportFatalError(connection);
-            return false;
-         }
-
-         if (!writeToClient(bip15x::MsgType::AEAD_EncInit, encinitData.getRef(), false)) {
-            logger_->error("[TransportBIP15xServer::processAEADHandshake] AEAD_SETUP: "
-               "Response 2 not sent");
-         }
-      }
-      break;
-
-      case bip15x::MsgType::AEAD_Rekey:
-         // Continue after common AEAD handling
-         connection->innerRekeyCount_++;
-         break;
-
-      case bip15x::MsgType::AEAD_EncInit:
-         // Continue after common AEAD handling
-         connection->bip151HandshakeCompleted_ = true;
-         break;
-
-      case bip15x::MsgType::AuthReply: {
-         // Continue after common AEAD handling
-         const auto publicKey = bip15x::convertCompressedKey(connection->encData_->getChosenAuthPeerKey());
-         connection->details[ServerConnectionListener::Detail::PublicKey] = publicKey.toHexStr();
-         if (publicKey.empty()) {
-            SPDLOG_LOGGER_ERROR(logger_, "invalid choosed public key for forced trusted clients");
-            reportFatalError(connection);
-            return false;
-         }
-         if (!forcedTrustedClients_.empty()) {
-            bool isValid = false;
-            for (const auto &client : forcedTrustedClients_) {
-               if (client.pubKey() == publicKey) {
-                  isValid = true;
-                  break;
-               }
-            }
-            if (!isValid) {
-               SPDLOG_LOGGER_ERROR(logger_, "drop connection from unknown client, unexpected public key: {}"
-                  , publicKey.toHexStr());
-               reportFatalError(connection);
-               return false;
-            }
-         }
-
-         //rekey after succesful BIP150 handshake
-         connection->encData_->bip150HandshakeRekey();
-         connection->bip150HandshakeCompleted_ = true;
-         connCb_(clientId, connection->details);
-
-         logger_->info("[TransportBIP15xServer::processAEADHandshake] BIP 150 handshake"
-            " with client complete - connection with {} is ready and fully secured"
-            , BinaryData::fromString(clientId).toHexStr());
-         break;
-      }
-
-      default:
-         break;
-   }
-
-   return true;
 }
 
 
@@ -438,12 +387,12 @@ bool TransportBIP15xServer::sendData(const std::string &clientId, const std::str
       return false;
    }
 
-   if (connection->bip151HandshakeCompleted_) {
+   if (connection->encData_->connectionComplete()) {
       connPtr = connection->encData_.get();
    }
 
    // Check if we need to do a rekey before sending the data.
-   if (connection->bip150HandshakeCompleted_) {
+   if (handshakeCompleted(connection->encData_.get())) {
       bool needsRekey = false;
       auto rightNow = std::chrono::steady_clock::now();
 
@@ -472,8 +421,8 @@ bool TransportBIP15xServer::sendData(const std::string &clientId, const std::str
       return sendDataCb_(clientId, packet.toBinStr());
    }
 
-   // Send untouched data for straight transmission
-   return sendDataCb_(clientId, data);
+   logger_->error("[TransportBIP15xServer::sendData] tried to send unencrypted data");
+   throw std::runtime_error("trying to send unencrypted data");
 }
 
 void TransportBIP15xServer::closeClient(const std::string &clientId)
@@ -484,7 +433,7 @@ void TransportBIP15xServer::closeClient(const std::string &clientId)
       return;
    }
 
-   const bool wasConnected = it->second->bip150HandshakeCompleted_ && it->second->bip151HandshakeCompleted_;
+   const bool wasConnected = handshakeCompleted(it->second->encData_.get());
    socketConnMap_.erase(it);
 
    SPDLOG_LOGGER_DEBUG(logger_, "connection {} erased, wasConnected: {}", bs::toHex(clientId), wasConnected);
@@ -506,19 +455,15 @@ void TransportBIP15xServer::addClient(const std::string &clientId, const ServerC
       , BinaryData::fromString(clientId).toHexStr());
    auto &connection = socketConnMap_[clientId];
    assert(!connection);
-
-   assert(cbTrustedClients_);
-   auto trustedClients = cbTrustedClients_();
-   {  std::lock_guard<std::mutex> lock(authPeersMutex_);
-      bip15x::updatePeerKeys(authPeers_.get(), trustedClients);
-   }
-
+   
    auto lbds = getAuthPeerLambda();
    connection = std::make_shared<BIP15xPerConnData>();
-   connection->encData_ = std::make_unique<BIP151Connection>(lbds);
+   connection->encData_ = std::make_unique<BIP151Connection>(lbds, oneWayAuth_);
    connection->outKeyTimePoint_ = std::chrono::steady_clock::now();
    connection->details = details;
    connection->clientId = clientId;
+
+   startHandshake(clientId);
 }
 
 void TransportBIP15xServer::reportFatalError(const std::shared_ptr<BIP15xPerConnData> &conn)
@@ -529,12 +474,87 @@ void TransportBIP15xServer::reportFatalError(const std::shared_ptr<BIP15xPerConn
    }
 }
 
-bool TransportBIP15xServer::getCookie(BinaryData& cookieBuf)
+BIP15xServerParams TransportBIP15xServer::getParams(unsigned port) const
 {
-   if (!useClientIDCookie_) {
-      logger_->error("[TransportBIP15xServer::getClientIDCookie] client identity"
-         " cookie requested despite not being available.");
+   auto addPeersLbd = [this](const BIP15xPeer& peer)
+   {
+      bip15x::addAuthPeer(authPeers_.get(), peer);
+   };
+
+   const auto& pubkey = authPeers_->getOwnPublicKey();
+   BinaryData pubkeyBD(pubkey.pubkey, BIP151PUBKEYSIZE);
+   return BIP15xServerParams(port, pubkeyBD, addPeersLbd);
+}
+
+// Generate a cookie with the server's identity public key.
+//
+// INPUT:  N/A
+// OUTPUT: N/A
+// RETURN: True if success, false if failure.
+bool TransportBIP15xServer::createCookie()
+{
+   /*
+   We hold the cookie file open with write privileges for the lifetime of 
+   the server process.
+   */
+
+   if (SystemFileUtils::fileExist(cookiePath_)) {
+      if (!SystemFileUtils::rmFile(cookiePath_)) {
+         logger_->error("[TransportBIP15x::genBIPIDCookie] unable to delete"
+            " identity cookie {} - will not write a new one", cookiePath_);
+         return false;
+      }
+   }
+
+   if (cookieFile_ != nullptr) {
+      logger_->error("[TransportBIP15x::genBIPIDCookie] identity key file stream"
+         " {} is already opened - aborting", cookiePath_);
       return false;
    }
-   return TransportBIP15x::getCookie(cookieBuf);
+
+   // Ensure that we only write the compressed key.
+   cookieFile_ = std::make_unique<std::ofstream>(cookiePath_, std::ios::out | std::ios::binary);
+   if (!cookieFile_->is_open()) {
+      logger_->error("[TransportBIP15x::genBIPIDCookie] can't open identity key"
+         " {} for writing", cookiePath_);
+      cookieFile_.reset();
+      return false;
+   }
+   const BinaryData ourIDKey = getOwnPubKey();
+   if (ourIDKey.getSize() != BTC_ECKEY_COMPRESSED_LENGTH) {
+      logger_->error("[TransportBIP15x::genBIPIDCookie] server identity key {}"
+         " is uncompressed - will not write the identity cookie", cookiePath_);
+      cookieFile_.reset();
+      return false;
+   }
+
+   logger_->debug("[TransportBIP15x::genBIPIDCookie] writing a new identity "
+      "cookie {}", cookiePath_);
+   cookieFile_->write(getOwnPubKey().getCharPtr(), BTC_ECKEY_COMPRESSED_LENGTH);
+   cookieFile_->flush();
+
+   return true;
+}
+
+bool TransportBIP15xServer::rmCookieFile()
+{
+   cookieFile_.reset();
+   if (SystemFileUtils::fileExist(cookiePath_)) {
+      if (!SystemFileUtils::rmFile(cookiePath_)) {
+         logger_->error("[TransportBIP15x::rmCookieFile] unable to delete "
+            "identity cookie {}", cookiePath_);
+         return false;
+      }
+   }
+   return true;
+}
+
+bool TransportBIP15xServer::usesCookie() const
+{
+   return makeServerIDCookie_;
+}
+
+bool TransportBIP15xServer::areAuthKeysEphemeral() const
+{
+   return ephemeralPeers_;
 }

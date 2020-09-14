@@ -243,9 +243,10 @@ int WsDataConnection::callback(lws *wsi, int reason, void *user, void *in, size_
                   return -1;
                }
                SPDLOG_LOGGER_DEBUG(logger_, "connected");
-               cookie_ = packet.payload;
+               //TODO: this blindly takes in the first packet as the session cookie, redo this.
+               cookie_ = packet.payload; 
                state_ = State::Connected;
-               listener_->OnConnected();
+               //listener_->OnConnected();
                requestWriteIfNeeded();
                break;
             }
