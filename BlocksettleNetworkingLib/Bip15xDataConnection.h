@@ -27,6 +27,7 @@ namespace bs {
    }
 }
 
+class BinaryData;
 class Bip15xDataListener;
 
 class Bip15xDataConnection : public DataConnection
@@ -48,6 +49,10 @@ public:
 
    bool send(const std::string& data) override;
    bool isActive() const override { return conn_->isActive(); }
+   BinaryData getOwnPublicKey(void) const;
+
+   bool usesCookie(void) const;
+   bool addCookieKeyToKeyStore(const std::string&);
 
 private:
    friend class Bip15xDataListener;
