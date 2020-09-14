@@ -168,6 +168,16 @@ bool ArmoryObject::getTxByHash(const BinaryData &hash, const TxCb &cb, bool allo
 
 bool ArmoryObject::getTXsByHash(const std::set<BinaryData> &hashes, const TXsCb &cb, bool allowCachedResult)
 {
+   auto cbInvokeWrap = [this, cb](const AsyncClient::TxBatchResult &result, std::exception_ptr exc) {
+      if (needInvokeCb()) {
+         QMetaObject::invokeMethod(this, [cb, result, exc] {
+            cb(result, exc);
+         });
+      } else {
+         cb(result, exc);
+      }
+   };
+
    auto result = std::make_shared<AsyncClient::TxBatchResult>();
 
    std::set<BinaryData> missedHashes;
@@ -186,32 +196,21 @@ bool ArmoryObject::getTXsByHash(const std::set<BinaryData> &hashes, const TXsCb 
    }
 
    if (missedHashes.empty()) {
-      if (needInvokeCb()) {
-         QMetaObject::invokeMethod(this, [cb, result] {
-            cb(*result, nullptr);
-         });
-      } else {
-         cb(*result, nullptr);
-      }
+      cbInvokeWrap(*result, nullptr);
       return true;
    }
-   const auto &cbWrap = [this, cb, result]
+   const auto &cbWrap = [this, cbInvokeWrap, result]
       (const AsyncClient::TxBatchResult &txs, std::exception_ptr exPtr)
    {
       if (exPtr != nullptr) {
-         cb({}, exPtr);
+         cbInvokeWrap({}, exPtr);
          return;
       }
       for (const auto &tx : txs) {
          putToCacheIfNeeded(tx.first, tx.second);
          (*result)[tx.first] = tx.second;
       }
-      if (needInvokeCb()) {
-         QMetaObject::invokeMethod(this, [cb, result] { cb(*result, nullptr); });
-      }
-      else {
-         cb(*result, nullptr);
-      }
+      cbInvokeWrap(*result, nullptr);
    };
    return ArmoryConnection::getTXsByHash(missedHashes, cbWrap, allowCachedResult);
 }
