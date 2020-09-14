@@ -249,6 +249,7 @@ public:
 
    using BIP151Cb = std::function<bool(const BinaryData&, const std::string&)>;
    void setupConnection(NetworkType, const std::string &host, const std::string &port
+      , bool oneWayAuth
       //lambda deals with server key ACK/nACK
       , const BIP151Cb &cbBIP151);
 

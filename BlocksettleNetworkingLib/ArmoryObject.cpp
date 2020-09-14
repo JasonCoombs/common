@@ -101,7 +101,7 @@ void ArmoryObject::setupConnection(const ArmorySettings &settings, const BIP151C
    }
    
    ArmoryConnection::setupConnection(settings.netType, settings.armoryDBIp.toStdString()
-      , std::to_string(settings.armoryDBPort), bip150PromptUserCb);
+      , std::to_string(settings.armoryDBPort), settings.oneWayAuth_, bip150PromptUserCb);
 }
 
 bool ArmoryObject::getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &cb)

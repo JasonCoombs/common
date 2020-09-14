@@ -187,7 +187,7 @@ void ArmoryConnection::stopServiceThreads()
 }
 
 void ArmoryConnection::setupConnection(NetworkType netType, const std::string &host
-   , const std::string &port, const BIP151Cb &cbBIP151)
+   , const std::string &port, bool oneWayAuth, const BIP151Cb &cbBIP151)
 {
    addToQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
       tgt->onPrepareConnection(netType, host, port);
@@ -232,7 +232,7 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       logger_->debug("[ArmoryConnection::setupConnection] completed");
    };
 
-   const auto &connectRoutine = [this, registerRoutine, cbBIP151, host, port] {
+   const auto &connectRoutine = [this, registerRoutine, oneWayAuth, cbBIP151, host, port] {
       if (connThreadRunning_) {
          return;
       }
@@ -263,6 +263,7 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
          , "" //ephemeral peers means key store isn't loaded, don't need its path
          , nullptr //don't need a key store passphrase, it's not loaded
          , true // enable ephemeralPeers, we will manage server keys ourselves (through cpBIP151)
+         , oneWayAuth
          , cbRemote_);
       if (!bdv_) {
          logger_->error("[setupConnection (connectRoutine)] failed to "
