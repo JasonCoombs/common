@@ -51,7 +51,7 @@ QNetworkRequest getBTCPaymentVerificationRequest(const QString& url)
 
 QByteArray getBTCPaymentVerificationPayload(const std::string& serializedHexTx, uint64_t weightedSize)
 {
-   const auto payloadStr = fmt::format("{\"chain\":\"BTC\",\"transactions\":[{\"tx\":\"{}\",\"weightedSize\":{}}]}", serializedHexTx, weightedSize);
+   const auto payloadStr = fmt::format("{{\"chain\":\"BTC\",\"transactions\":[{{\"tx\":\"{}\",\"weightedSize\":{} }}]}}", serializedHexTx, weightedSize);
    return QByteArray::fromStdString(payloadStr);
 }
 
