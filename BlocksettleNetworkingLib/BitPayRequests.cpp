@@ -10,6 +10,8 @@
 */
 #include "BitPayRequests.h"
 
+#include <spdlog/spdlog.h>
+
 namespace BitPay {
 
 QNetworkRequest getPaymentOptionsRequest(const QString& url)
@@ -36,4 +38,21 @@ QByteArray getBTCPaymentRequestPayload()
 {
    return QByteArray::fromStdString("{\"chain\":\"BTC\"}");
 }
+
+QNetworkRequest getBTCPaymentVerificationRequest(const QString& url)
+{
+   QNetworkRequest request;
+   request.setUrl(QUrl(url));
+   request.setRawHeader("Content-Type", "application/payment-verification");
+   request.setRawHeader("x-paypro-version", "2");
+
+   return request;
+}
+
+QByteArray getBTCPaymentVerificationPayload(const std::string& serializedHexTx, uint64_t weightedSize)
+{
+   const auto payloadStr = fmt::format("{\"chain\":\"BTC\",\"transactions\":[{\"tx\":\"{}\",\"weightedSize\":{}}]}", serializedHexTx, weightedSize);
+   return QByteArray::fromStdString(payloadStr);
+}
+
 };
