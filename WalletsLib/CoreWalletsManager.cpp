@@ -369,7 +369,7 @@ bool WalletsManager::deleteWalletFile(const HDWalletPtr &wallet)
 WalletsManager::HDWalletPtr WalletsManager::createWallet(
    const std::string& name, const std::string& description
    , wallet::Seed seed, const std::string &folder
-   , const bs::wallet::PasswordData &pd, bool primary)
+   , const bs::wallet::PasswordData &pd, bool primary, bool createLegacyLeaf)
 {
    if (hdWallets_.find(seed.getWalletId()) != hdWallets_.end()) {
       throw std::runtime_error("HD wallet with id " + seed.getWalletId() + " already exists");
@@ -381,7 +381,8 @@ WalletsManager::HDWalletPtr WalletsManager::createWallet(
 
    {
       const bs::core::WalletPasswordScoped lock(newWallet, pd.password);
-      newWallet->createStructure();
+      newWallet->createStructure(createLegacyLeaf);
+
       if (primary) {
          newWallet->createChatPrivKey();
          auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_Auth);

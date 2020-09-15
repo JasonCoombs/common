@@ -95,7 +95,7 @@ void hd::Wallet::initNew(const wallet::Seed &seed
    catch (const WalletException &) {
       //empty account structure, will be set at group creation
       std::set<std::shared_ptr<AccountType_BIP32>> accountTypes;
-      
+
       auto& node = seed.getNode();
       if (node.getPrivateKey().getSize() != 32 &&
          node.getPublicKey().getSize() != 33)
@@ -176,8 +176,9 @@ std::vector<std::shared_ptr<hd::Leaf>> hd::Wallet::getLeaves() const
    std::vector<std::shared_ptr<hd::Leaf>> leaves;
    for (const auto &group : groups_) {
       const auto &groupLeaves = group.second->getAllLeaves();
-      for (const auto &leaf : groupLeaves) 
+      for (const auto &leaf : groupLeaves) {
          leaves.push_back(leaf);
+      }
    }
 
    return leaves;
@@ -187,8 +188,9 @@ std::shared_ptr<hd::Leaf> hd::Wallet::getLeaf(const std::string &id) const
 {
    for (const auto &group : groups_) {
       auto leafPtr = group.second->getLeafById(id);
-      if (leafPtr != nullptr)
+      if (leafPtr != nullptr) {
          return leafPtr;
+      }
    }
 
    return nullptr;
@@ -245,8 +247,7 @@ std::shared_ptr<hd::Group> hd::Wallet::createGroup(bs::hd::CoinType ct)
             walletPtr_, ct, netType_, extOnlyFlag_, logger_);
          break;
       }
-   }
-   else {
+   } else {
       if (ct != bs::hd::CoinType::Bitcoin_main && ct != bs::hd::CoinType::Bitcoin_test) {
          throw std::logic_error("Incorrect HW coin type");
       }
@@ -403,13 +404,20 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
    return signedTx;
 }
 
-void hd::Wallet::createStructure(unsigned lookup)
+void hd::Wallet::createStructure(bool createLegacyLeaf, unsigned lookup)
 {
    const auto groupXBT = createGroup(getXBTGroupType());
    assert(groupXBT);
-   for (const auto &aet : groupXBT->getAddressTypeSet()) {
+
+   auto addressTypes = groupXBT->getAddressTypeSet();
+   if (createLegacyLeaf) {
+      addressTypes.emplace(AddressEntryType_P2PKH);
+   }
+
+   for (const auto &aet : addressTypes) {
       groupXBT->createLeaf(aet, 0u, lookup);
    }
+
    writeToDB();
 }
 
@@ -488,16 +496,19 @@ bool hd::Wallet::eraseFile()
    auto fname = getFileName();
    shutdown();
 
-   if (fname.size() == 0)
+   if (fname.size() == 0) {
       return true;
+   }
 
    bool rc = true;
-   if (std::remove(fname.c_str()) != 0)
+   if (std::remove(fname.c_str()) != 0) {
       rc = false;
+   }
 
    fname.append("-lock");
-   if (std::remove(fname.c_str()) != 0)
+   if (std::remove(fname.c_str()) != 0) {
       rc = false;
+   }
 
    return rc;
 }
@@ -693,8 +704,7 @@ std::shared_ptr<hd::Wallet> hd::Wallet::createWatchingOnly() const
    woCopy->initializeDB();
 
    //copy group and leaf structure
-   for (auto& groupPair : groups_)
-   {
+   for (auto& groupPair : groups_) {
       auto newGroup = groupPair.second->getCopy(woCopy->walletPtr_);
       woCopy->addGroup(newGroup);
    }
@@ -845,11 +855,12 @@ void hd::Wallet::setExtOnly()
       return;
 
    //cannot flag for ext only if the wallet already has a structure
-   if (getNumLeaves() > 0)
+   if (getNumLeaves() > 0) {
       throw WalletException("cannot flag initialized wallet for ext only");
-   
+   }
+
    extOnlyFlag_ = true;
-   
+
    //update flag on disk
    const auto tx = walletPtr_->beginSubDBTransaction(BS_WALLET_DBNAME, true);
 
@@ -884,23 +895,27 @@ SecureBinaryData hd::Wallet::getDecryptedRootXpriv(void) const
    Expects wallet to be locked and passphrase lambda set
    ***/
 
-   if (walletPtr_ == nullptr)
+   if (walletPtr_ == nullptr) {
       throw WalletException("uninitialized armory wallet");
+   }
 
-   if(walletPtr_->isWatchingOnly())
+   if (walletPtr_->isWatchingOnly()) {
       throw WalletException("wallet is watching only");
+   }
 
    auto root = walletPtr_->getRoot();
-   if(!root->hasPrivateKey())
+   if(!root->hasPrivateKey()) {
       throw WalletException("wallet is missing root private key, this shouldnt happen");
+   }
 
    auto rootBip32 = std::dynamic_pointer_cast<AssetEntry_BIP32Root>(root);
-   if (rootBip32 == nullptr)
+   if (rootBip32 == nullptr) {
       throw WalletException("unexpected wallet root type");
+   }
 
    auto lock = walletPtr_->lockDecryptedContainer();
    auto decryptedRootPrivKey = walletPtr_->getDecryptedPrivateKeyForAsset(root);
-   
+
    BIP32_Node node;
    node.initFromPrivateKey(
       rootBip32->getDepth(), rootBip32->getLeafID(), rootBip32->getParentFingerprint(),
@@ -924,7 +939,7 @@ bs::hd::Path hd::Wallet::getPathForAddress(const bs::Address &addr)
 std::shared_ptr<hd::Leaf> hd::Wallet::createSettlementLeaf(
    const bs::Address& addr)
 {  /*
-   This method expects the wallet locked and passprhase lambda set 
+   This method expects the wallet locked and passprhase lambda set
    for a full wallet.
    */
 
@@ -1069,7 +1084,7 @@ BinaryData hd::Wallet::signSettlementTXRequest(const wallet::TXSignRequest &txRe
       sd.settlementId, sd.cpPublicKey, sd.ownKeyFirst);
 
    //grab wallet resolver, seed it with p2wsh script
-   auto resolver = 
+   auto resolver =
       std::make_shared<ResolverFeed_AssetWalletSingle>(walletPtr_);
    resolver->seedFromAddressEntry(addrP2wsh);
 

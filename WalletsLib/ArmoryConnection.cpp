@@ -262,7 +262,7 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       bdv_ = AsyncClient::BlockDataViewer::getNewBDV(host, port
          , "" //ephemeral peers means key store isn't loaded, don't need its path
          , nullptr //don't need a key store passphrase, it's not loaded
-         , true // enable ephemeralPeers, we will manage server keys ourselves (through cpBIP151)
+         , true // enable ephemeralPeers, we will manage server keys ourselves (through cbBIP151)
          , oneWayAuth
          , cbRemote_);
       if (!bdv_) {

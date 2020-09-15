@@ -55,6 +55,8 @@ WsDataConnection::WsDataConnection(const std::shared_ptr<spdlog::logger> &logger
 
    std::memset(reconnectTimer_.get(), 0, sizeof(*reconnectTimer_));
    reconnectTimer_->owner_ = this;
+
+   ws::globalInit(params_.useSsl);
 }
 
 WsDataConnection::~WsDataConnection()

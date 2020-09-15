@@ -45,6 +45,8 @@ SslServerConnection::SslServerConnection(const std::shared_ptr<spdlog::logger>& 
    assert(params_.useSsl || !params_.requireClientCert);
    assert(params_.useSsl || !params_.verifyCallback);
    assert(bool(params_.verifyCallback) == params_.requireClientCert);
+
+   ws::globalInit(params_.useSsl);
 }
 
 SslServerConnection::~SslServerConnection()

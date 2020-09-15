@@ -313,13 +313,7 @@ uint64_t wallet::TXSignRequest::changeAmount(const wallet::TXSignRequest::Contai
 
 uint64_t wallet::TXSignRequest::amountReceived(const wallet::TXSignRequest::ContainsAddressCb &containsAddressCb) const
 {
-   // calculate received amount based on recipients
-   // containsAddressCb should return true if address is our
-   // prevStates recipients parsed first
-   // duplicated recipients skipped
-
-   std::set<BinaryData> txSet;
-   uint64_t amount = UINT64_MAX;
+   uint64_t amount = 0;
 
    if (containsAddressCb != nullptr) {
       for (unsigned i=0; i<armorySigner_.getTxOutCount(); i++) {
