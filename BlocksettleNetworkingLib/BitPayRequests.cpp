@@ -26,7 +26,7 @@ QNetworkRequest getBTCPaymentRequest(const QString& url)
 {
    QNetworkRequest request;
    request.setUrl(QUrl(url));
-   request.setRawHeader("Content-Type", "application/payment-options");
+   request.setRawHeader("Content-Type", "application/payment-request");
    request.setRawHeader("x-paypro-version", "2");
 
    return request;
