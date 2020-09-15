@@ -51,6 +51,19 @@ namespace JsonTools
       return it->toDouble(converted);
    }
 
+   uint64_t GetUIntProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted)
+   {
+      auto it = settingsMap.constFind(propertyName);
+      if (it == settingsMap.constEnd()) {
+         if (converted != nullptr) {
+            *converted = false;
+         }
+         return 0;
+      }
+
+      return it->toULongLong(converted);
+   }
+
    bool LoadStringFields(const QVariantMap& data, std::vector<std::pair<QString, std::string*>>& fields
                          , std::string &errorMessage, const FieldsLoadingRule loadingRule)
    {
