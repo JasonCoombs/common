@@ -74,7 +74,7 @@ namespace bs {
 
          HDWalletPtr createWallet(const std::string& name, const std::string& description
             , bs::core::wallet::Seed, const std::string &folder
-            , const bs::wallet::PasswordData &, bool primary);
+            , const bs::wallet::PasswordData &, bool primary, bool createLegacyLeaf);
          void addWallet(const HDWalletPtr &);
 
          std::vector<std::string> ccLeaves() const { return ccLeaves_; }

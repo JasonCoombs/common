@@ -471,13 +471,16 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
                const auto addr = bs::Address::fromUTXO(utxo);
                const auto wallet = walletsMgr_->getWalletByAddress(addr);
                if (!wallet) {
-                  logger_->error("[{}] failed to find wallet for input address {}"
-                     , __func__, addr.display());
-                  SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
-                  return;
+                  if (!partial) {
+                     logger_->error("[{}] failed to find wallet for input address {}"
+                        , __func__, addr.display());
+                     SignTXResponse(clientId, id, reqType, ErrorCode::WalletNotFound);
+                     return;
+                  }
+               } else {
+                  multiReq.addWalletId(wallet->walletId());
+                  wallets[wallet->walletId()] = wallet;
                }
-               multiReq.addWalletId(wallet->walletId());
-               wallets[wallet->walletId()] = wallet;
             }
 
             const auto hdWallet = walletsMgr_->getHDWalletById(rootWalletId);

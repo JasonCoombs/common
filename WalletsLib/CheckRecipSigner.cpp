@@ -417,3 +417,22 @@ NetworkType getNetworkType()
    default:       return NetworkType::RegTest;
    }
 }
+
+uint64_t bs::estimateVSize(const Signer &signer)
+{
+   size_t baseSize = 10;
+   size_t witnessSize = 0;
+   for (uint32_t i = 0; i < signer.getTxInCount(); ++i) {
+      const auto &addr = bs::Address::fromUTXO(signer.getSpender(i)->getUtxo());
+      baseSize += addr.getInputSize();
+      witnessSize += addr.getWitnessDataSize();
+   }
+   for (const auto &recipients : signer.getRecipientMap()) {
+      for (const auto &recipient : recipients.second) {
+         baseSize += recipient->getSize();
+      }
+   }
+   auto weight = 4 * baseSize + witnessSize;
+   uint64_t vsize = (weight + 3) / 4;
+   return vsize;
+}
