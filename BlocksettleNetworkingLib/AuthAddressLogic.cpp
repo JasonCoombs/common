@@ -367,6 +367,7 @@ bool AuthAddressValidator::goOnline(const ResultCb &cb)
 
    //pthread_once behavior
    if (ready_.load(std::memory_order_relaxed)) {
+      cb(true);
       return true;
    }
    prepareCallbacks();
