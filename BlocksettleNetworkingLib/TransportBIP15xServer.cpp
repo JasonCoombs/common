@@ -91,10 +91,9 @@ TransportBIP15xServer::TransportBIP15xServer(
    }
 
    /*
-   Updating auth peer object with trusted keys during ctor prevents 
-   auth peer overwriting. This procedure overwrites all authpeers keys
-   but our own. This means the authpeers file effectively only carries
-   our own keypair.
+   This procedure overwrites all authpeers keys but our own. 
+   This means the authpeers file effectively only carries our 
+   own keypair.
    */
    assert(cbTrustedClients_);
    auto trustedClients = cbTrustedClients_();
