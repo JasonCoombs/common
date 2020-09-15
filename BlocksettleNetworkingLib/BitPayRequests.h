@@ -22,6 +22,9 @@ namespace BitPay
    QNetworkRequest   getBTCPaymentRequest(const QString& url);
    QByteArray        getBTCPaymentRequestPayload();
 
+   QNetworkRequest   getBTCPaymentVerificationRequest(const QString& url);
+   QByteArray        getBTCPaymentVerificationPayload(const std::string& serializedHexTx, uint64_t weightedSize);
+
 };
 
 #endif // __BITPAY_REQUESTS_H__
