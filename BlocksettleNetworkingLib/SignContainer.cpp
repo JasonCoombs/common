@@ -11,7 +11,6 @@
 #include "SignContainer.h"
 
 #include "ApplicationSettings.h"
-#include "ConnectionManager.h"
 
 #include <QTcpSocket>
 #include <spdlog/spdlog.h>
