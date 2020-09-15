@@ -59,9 +59,6 @@ TransportBIP15xServer::TransportBIP15xServer(
       throw std::runtime_error("ownKeyFileDir and ownKeyFileName must be set/unset at the same time");
    }
 
-   if (ephemeralPeers && !ownKeyFileName.empty()) {
-      throw std::runtime_error("ownKeyFileName must be empty when ephemeralPeers is used");
-   }
    if (!ephemeralPeers && ownKeyFileName.empty()) {
       throw std::runtime_error("ownKeyFileName must be set when ephemeralPeers is not used");
    }
@@ -85,30 +82,24 @@ TransportBIP15xServer::TransportBIP15xServer(
    if (!ephemeralPeers) {
       /*
       TODO:
-      Trusted key store conflicts with on disk peer wallet key store. Fail
-      server object construction if ephemeral isn't set. Reassess key storage 
-      at a later time.
+      Trusted key store conflicts with on disk peer wallet key store. 
+      Reassess key storage strategy.
       */
 
-      SPDLOG_LOGGER_ERROR(logger_, "server is using on disk key store, cannot"
-         " rely on trusted peer set. Aborting!");
-      throw std::runtime_error("server needs to be ephemeral");
-
-      /*authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
-         , [] (const std::set<BinaryData> &) { return SecureBinaryData(); });*/
+      authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
+         , [] (const std::set<BinaryData> &) { return SecureBinaryData(); });
    }
-   else
-   {
-      /*
-      Updating auth peer object with trusted keys during ctor prevents 
-      auth peer overwriting. This should only be done with ephemeral 
-      servers.
-      */
-      assert(cbTrustedClients_);
-      auto trustedClients = cbTrustedClients_();
-      {  std::lock_guard<std::mutex> lock(authPeersMutex_);
-         bip15x::updatePeerKeys(authPeers_.get(), trustedClients);
-      }
+
+   /*
+   Updating auth peer object with trusted keys during ctor prevents 
+   auth peer overwriting. This procedure overwrites all authpeers keys
+   but our own. This means the authpeers file effectively only carries
+   our own keypair.
+   */
+   assert(cbTrustedClients_);
+   auto trustedClients = cbTrustedClients_();
+   {  std::lock_guard<std::mutex> lock(authPeersMutex_);
+      bip15x::updatePeerKeys(authPeers_.get(), trustedClients);
    }
 
    if (makeServerIDCookie_) {
