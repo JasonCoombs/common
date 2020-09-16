@@ -285,7 +285,7 @@ public:
       , bool updateId = true);
 
    bool isReady() const { return isReady_; }
-   bool addCookieKeyToKeyStore(const std::string&);
+   bool addCookieKeyToKeyStore(const std::string&, const std::string&);
 
 signals:
    void authenticated();

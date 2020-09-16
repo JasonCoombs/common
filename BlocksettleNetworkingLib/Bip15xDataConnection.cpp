@@ -126,7 +126,8 @@ BinaryData Bip15xDataConnection::getOwnPublicKey() const
    return transportBIP15x->getOwnPubKey();
 }
 
-bool Bip15xDataConnection::addCookieKeyToKeyStore(const std::string& name)
+bool Bip15xDataConnection::addCookieKeyToKeyStore(
+   const std::string& path, const std::string& name)
 {
    auto bip15xClient = std::dynamic_pointer_cast<
       bs::network::TransportBIP15xClient>(transport_);
@@ -139,7 +140,7 @@ bool Bip15xDataConnection::addCookieKeyToKeyStore(const std::string& name)
       return false;
    }
 
-   return bip15xClient->addCookieToPeers(name);
+   return bip15xClient->addCookieToPeers(path, name);
 }
 
 bool Bip15xDataConnection::usesCookie() const

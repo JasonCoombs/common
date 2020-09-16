@@ -149,6 +149,7 @@ namespace bs {
 
          //Need to be kept opened for the whole object lifetime         
          std::unique_ptr<std::ofstream>   cookieFile_;   
+         const std::string cookiePath_;
       };
 
    }  // namespace network

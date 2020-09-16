@@ -26,9 +26,8 @@
 using namespace bs::network;
 
 
-TransportBIP15x::TransportBIP15x(const std::shared_ptr<spdlog::logger> &logger
-   , const std::string &cookiePath)
-   : logger_(logger), cookiePath_(cookiePath)
+TransportBIP15x::TransportBIP15x(const std::shared_ptr<spdlog::logger> &logger)
+   : logger_(logger)
 {
    assert(logger_);
    authPeers_ = std::make_unique<AuthorizedPeers>();
@@ -129,8 +128,7 @@ bool TransportBIP15x::handshakeCompleted(const BIP151Connection* connPtr)
 /////////////////////////////////////////////////////////////////////////////////////////////////
 TransportBIP15xClient::TransportBIP15xClient(const std::shared_ptr<spdlog::logger> &logger
    , const BIP15xParams &params)
-   : TransportBIP15x(logger, params.cookiePath)
-   , params_(params)
+   : TransportBIP15x(logger), params_(params)
 {
    assert(logger_);
 
@@ -378,27 +376,12 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
    };
 
    const std::string &srvId = host_ + ":" + port_;
-
-   if (serverPubkeyProm_ != nullptr) {
-      /*
-      server ACK promise is set, let's check the result before moving forward
-      */
-      if (serverPubkeyProm_->waitValue() == false) {
-         logger_->error("[TransportBIP15xClient::processAEADHandshake] BIP 150/151"
-            " handshake process failed - AEAD_ENCACK - Server public key not verified");
-         
-         return false;
-      }
-
-      serverPubkeyProm_.reset();
-   }
-
    switch (msgObj.getAEADType())
    {
    case ArmoryAEAD::HandshakeSequence::PresentPubKey:
    {
       /*
-      Packet is server's pubkey, do we have it?
+      Packet is the server's pubkey, do we have it?
       This message type isn't handled in the core client AEAD handshake.
       */
       if (!bip151Connection_->isOneWayAuth()) {
@@ -423,8 +406,6 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
             authPeers_->eraseName(srvId);
             authPeers_->addPeer(msgObj.getData().copy(), std::vector<std::string>{ srvId });
          }
-
-         serverPubkeyProm_->setValue(result);
       } else {
          logger_->warn("[TransportBIP15xClient::processAEADHandshake] server public key was already set");
       }
@@ -499,17 +480,6 @@ void TransportBIP15xClient::setKeyCb(const BIP15xNewKeyCb &cb)
 // RETURN: N/A
 bool TransportBIP15xClient::verifyNewIDKey(const BinaryDataRef &key, const std::string &srvId)
 {
-   if (params_.cookie == BIP15xCookie::ReadServer) {
-      // If we get here, it's because the cookie add failed or the cookie was
-      // incorrect. Satisfy the promise to prevent lockup.
-      logger_->error("[TransportBIP15xClient::verifyNewIDKey] Server ID key cookie could not be verified", __func__);
-      serverPubkeyProm_->setValue(false);
-      if (socketErrorCb_) {
-         socketErrorCb_(DataConnectionListener::HandshakeFailed);
-      }
-      return false;
-   }
-
    logger_->debug("[TransportBIP15xClient::verifyNewIDKey] new key ({}) for server {}"
       " has arrived", key.toHexStr(), srvId);
 
@@ -550,7 +520,7 @@ bool TransportBIP15xClient::verifyNewIDKey(const BinaryDataRef &key, const std::
 // INPUT:  The accompanying key IP:Port or name. (const string)
 // OUTPUT: The buffer that will hold the compressed ID key. (BinaryData)
 // RETURN: True if success, false if failure.
-bool TransportBIP15xClient::getCookie(BinaryData& cookieBuf)
+bool TransportBIP15xClient::getCookie(const std::string& path, BinaryData& cookieBuf)
 {
    if (!usesCookie()) {
       logger_->warn("[TransportBIP15xClient::getCookie] "
@@ -558,14 +528,14 @@ bool TransportBIP15xClient::getCookie(BinaryData& cookieBuf)
       return false;
    }
 
-   if (!SystemFileUtils::fileExist(cookiePath_)) {
+   if (!SystemFileUtils::fileExist(path)) {
       logger_->error("[TransportBIP15x::getCookie] client identity cookie {} "
-         "doesn't exist - unable to verify server identity", cookiePath_);
+         "doesn't exist - unable to verify server identity", path);
       return false;
    }
 
    // Ensure that we only read a compressed key.
-   std::ifstream cookieFile(cookiePath_, std::ios::in | std::ios::binary);
+   std::ifstream cookieFile(path, std::ios::in | std::ios::binary);
    cookieFile.read(cookieBuf.getCharPtr(), BIP151PUBKEYSIZE);
    cookieFile.close();
    if (!(CryptoECDSA().VerifyPublicKeyValid(cookieBuf))) {
@@ -576,12 +546,14 @@ bool TransportBIP15xClient::getCookie(BinaryData& cookieBuf)
    return true;
 }
 
-bool TransportBIP15xClient::addCookieToPeers(const std::string& id)
+bool TransportBIP15xClient::addCookieToPeers(
+   const std::string& path, const std::string& id)
 {
-   auto getCookieLbd = [this](const std::string& id)->bool
+   auto getCookieLbd = [this](const std::string& path
+                              , const std::string& id)->bool
    {
       BinaryData cookieKey(static_cast<size_t>(BTC_ECKEY_COMPRESSED_LENGTH));
-      if (!getCookie(cookieKey)) {
+      if (!getCookie(path, cookieKey)) {
          return false;
       }
 
@@ -593,7 +565,7 @@ bool TransportBIP15xClient::addCookieToPeers(const std::string& id)
       return true;
    };
 
-   auto result = getCookieLbd(id);
+   auto result = getCookieLbd(path, id);
    return result;
 }
 
@@ -605,10 +577,6 @@ bool TransportBIP15xClient::areAuthKeysEphemeral() const
 bool TransportBIP15xClient::usesCookie() const
 {
    if (!areAuthKeysEphemeral()) {
-      return false;
-   }
-
-   if (cookiePath_.empty()) {
       return false;
    }
 

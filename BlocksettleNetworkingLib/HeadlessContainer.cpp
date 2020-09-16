@@ -1400,7 +1400,8 @@ void RemoteSigner::Connect()
       //try to read cookie file
       bool haveCookie = false;
       while (std::chrono::steady_clock::now() - now < std::chrono::seconds(5)) {
-         if (bip15xConn->addCookieKeyToKeyStore(serverName)) {
+         std::string cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
+         if (bip15xConn->addCookieKeyToKeyStore(cookiePath, serverName)) {
             haveCookie = true;
             break;
          }
@@ -1469,7 +1470,6 @@ void RemoteSigner::RecreateConnection()
    // Server's cookies are not available in remote mode
    if (opMode() == OpMode::Local || opMode() == OpMode::LocalInproc) {
       params.cookie = bs::network::BIP15xCookie::ReadServer;
-      params.cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
    }
 
    try {
@@ -1816,7 +1816,8 @@ bs::signer::RequestId HeadlessListener::newRequestId()
    return ++id_;
 }
 
-bool HeadlessListener::addCookieKeyToKeyStore(const std::string& name)
+bool HeadlessListener::addCookieKeyToKeyStore(
+   const std::string& path, const std::string& name)
 {
    auto bip15xConnection = 
       std::dynamic_pointer_cast<Bip15xDataConnection>(connection_);
@@ -1825,5 +1826,5 @@ bool HeadlessListener::addCookieKeyToKeyStore(const std::string& name)
       return false;
    }
 
-   return bip15xConnection->addCookieKeyToKeyStore(name);
+   return bip15xConnection->addCookieKeyToKeyStore(path, name);
 }

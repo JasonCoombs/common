@@ -52,7 +52,7 @@ public:
    BinaryData getOwnPublicKey(void) const;
 
    bool usesCookie(void) const;
-   bool addCookieKeyToKeyStore(const std::string&);
+   bool addCookieKeyToKeyStore(const std::string&, const std::string&);
    bool isHandshakeCompleted(void) const;
 
 private:

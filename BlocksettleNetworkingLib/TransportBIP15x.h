@@ -75,10 +75,6 @@ namespace bs {
          // The file name with the non-ephemeral key
          std::string ownKeyFileName;
 
-         // File where cookie will be stored or read from.
-         // Must be set cookie is used.
-         std::string cookiePath{};
-
          // Ephemeral peer usage. Not recommended
          bool ephemeralPeers{ false };
 
@@ -95,8 +91,7 @@ namespace bs {
       class TransportBIP15x
       {
       public:
-         TransportBIP15x(const std::shared_ptr<spdlog::logger> &
-            , const std::string &cookiePath);
+         TransportBIP15x(const std::shared_ptr<spdlog::logger>&);
          virtual ~TransportBIP15x() noexcept = default;
 
          TransportBIP15x(const TransportBIP15x&) = delete;
@@ -133,7 +128,6 @@ namespace bs {
          std::shared_ptr<spdlog::logger>  logger_;
          std::unique_ptr<AuthorizedPeers> authPeers_;
          mutable std::mutex authPeersMutex_;
-         std::string cookiePath_;
 
       private:
          bool isValid_{ true };
@@ -152,10 +146,10 @@ namespace bs {
          TransportBIP15xClient& operator= (TransportBIP15xClient&&) = delete;
 
          void setKeyCb(const BIP15xNewKeyCb &);
-         bool getCookie(BinaryData &cookieBuf);
+         bool getCookie(const std::string& path, BinaryData &cookieBuf);
          bool areAuthKeysEphemeral(void) const override;
          bool usesCookie(void) const override;
-         bool addCookieToPeers(const std::string &id);
+         bool addCookieToPeers(const std::string& path, const std::string &id);
 
          std::string listenThreadName() const override { return "listenBIP15x"; }
 

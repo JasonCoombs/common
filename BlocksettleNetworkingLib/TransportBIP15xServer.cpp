@@ -49,11 +49,12 @@ TransportBIP15xServer::TransportBIP15xServer(
    , const std::string& ownKeyFileDir
    , const std::string& ownKeyFileName, bool makeServerCookie
    , bool readClientCookie, const std::string& cookiePath)
-   : TransportBIP15x(logger, cookiePath)
+   : TransportBIP15x(logger)
    , ephemeralPeers_(ephemeralPeers), oneWayAuth_(oneWayAuth)
    , cbTrustedClients_(cbTrustedClients)
    , useClientIDCookie_(readClientCookie)
    , makeServerIDCookie_(makeServerCookie)
+   , cookiePath_(cookiePath)
 {
    if (ownKeyFileDir.empty() != ownKeyFileName.empty()) {
       throw std::runtime_error("ownKeyFileDir and ownKeyFileName must be set/unset at the same time");
