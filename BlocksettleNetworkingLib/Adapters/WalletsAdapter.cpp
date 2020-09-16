@@ -292,10 +292,12 @@ void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
 void WalletsAdapter::registerWallet(const std::shared_ptr<Wallet> &wallet)
 {
    const auto &regData = wallet->regData();
+   auto &pendingReg = pendingRegistrations_[wallet->walletId()];
    for (const auto &reg : regData) {
       ArmoryMessage msg;
       auto msgReq = msg.mutable_register_wallet();
       msgReq->set_wallet_id(reg.first);
+      pendingReg.insert(reg.first);
       msgReq->set_as_new(false);
       for (const auto &addr : reg.second) {
          msgReq->add_addresses(addr.toBinStr());
@@ -378,33 +380,50 @@ void WalletsAdapter::metadataChanged(const std::string &walletId)
 
 void WalletsAdapter::processWalletRegistered(const std::string &walletId)
 {
+   logger_->debug("[{}] {}", __func__, walletId);
    for (const auto &wallet : wallets_) {
-      if (wallet.second->hasId(walletId)) {
-         wallet.second->onRegistered();
-
-         const auto &unconfTgts = wallet.second->unconfTargets();
-         const auto &itUnconfTgt = unconfTgts.find(walletId);
-         if (!balanceEnabled() || (itUnconfTgt == unconfTgts.end())) {
-            sendWalletReady(wallet.second->walletId());
-         }
-         else {
-            ArmoryMessage msg;
-            auto msgUnconfTgt = msg.mutable_set_unconf_target();
-            msgUnconfTgt->set_wallet_id(walletId);
-            msgUnconfTgt->set_conf_count(itUnconfTgt->second);
-            Envelope env{ 0, ownUser_, blockchainUser_, {}, {}
-               , msg.SerializeAsString(), true };
-            pushFill(env);
-         }
+      if (!wallet.second->hasId(walletId)) {
+         continue;
+      }
+      auto &pendingReg = pendingRegistrations_[wallet.first];
+      pendingReg.erase(walletId);
+      if (!pendingReg.empty()) {
          break;
       }
+      pendingRegistrations_.erase(wallet.first);
+      logger_->debug("[{}] continue after reg {} ({})", __func__, wallet.second->walletId(), walletId);
+      wallet.second->onRegistered();
+
+      const auto &unconfTgts = wallet.second->unconfTargets();
+      const auto &itUnconfTgt = unconfTgts.find(walletId);
+      if (!balanceEnabled() || (itUnconfTgt == unconfTgts.end())) {
+         sendWalletReady(wallet.second->walletId());
+      }
+      else {
+         ArmoryMessage msg;
+         auto msgUnconfTgt = msg.mutable_set_unconf_target();
+         msgUnconfTgt->set_wallet_id(wallet.second->walletId());
+         msgUnconfTgt->set_conf_count(itUnconfTgt->second);
+         Envelope env{ 0, ownUser_, blockchainUser_, {}, {}
+            , msg.SerializeAsString(), true };
+         pushFill(env);
+      }
+      break;
    }
 }
 
 void WalletsAdapter::processUnconfTgtSet(const std::string &walletId)
 {
-   sendTxNRequest(walletId);
-   sendBalanceRequest(walletId);
+   const auto &itWallet = wallets_.find(walletId);
+   if (itWallet == wallets_.end()) {
+      return;
+   }
+   auto &pendingReg = pendingRegistrations_[itWallet->second->walletId()];
+   for (const auto &id : itWallet->second->internalIds()) {
+      pendingReg.insert(id);
+      sendTxNRequest(id);
+      sendBalanceRequest(id);
+   }
 }
 
 void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &response)

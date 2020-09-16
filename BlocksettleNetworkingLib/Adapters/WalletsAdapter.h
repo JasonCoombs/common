@@ -137,6 +137,7 @@ private:
    BinaryData                          userId_;
    std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_;
    std::unordered_map<std::string, std::shared_ptr<bs::sync::Wallet>>   wallets_;
+   std::unordered_map<std::string, std::unordered_set<std::string>>  pendingRegistrations_;
    std::unordered_set<std::string>     walletNames_;
    std::unordered_set<std::string>     readyWallets_;
    std::unordered_set<std::string>     loadingWallets_;

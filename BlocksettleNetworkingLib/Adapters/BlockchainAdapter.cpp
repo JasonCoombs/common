@@ -559,7 +559,7 @@ std::string BlockchainAdapter::registerWallet(const std::string &walletId
       newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
    }
    newWallet.asNew = wallet.asNew;
-   newWallet.addresses = std::move(wallet.addresses);
+   newWallet.addresses = wallet.addresses;
 
    const auto &regId = newWallet.wallet->registerAddresses(newWallet.addresses
       , wallet.asNew);
