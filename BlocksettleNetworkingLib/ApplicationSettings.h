@@ -76,7 +76,6 @@ public:
       chatServerPubKey,
       chatDbFile,
       celerUsername,
-      localSignerPort,
       signerIndex,
       signerOfflineDir,
       autoSignSpendLimit,
