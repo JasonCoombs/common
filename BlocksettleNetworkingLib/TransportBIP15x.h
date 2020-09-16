@@ -114,13 +114,7 @@ namespace bs {
          static BinaryData getOwnPubKey_FromAuthPeers(
             const AuthorizedPeers &authPeers);
 
-         static bool handshakeCompleted(const BIP151Connection* connPtr)
-         {
-            if (connPtr == nullptr)
-               return false;
-
-            return (connPtr->getBIP150State() == BIP150State::SUCCESS);
-         }
+         static bool handshakeCompleted(const BIP151Connection*);
 
       protected:
          virtual bool usesCookie(void) const = 0;
@@ -167,13 +161,11 @@ namespace bs {
 
          // thread-safe (could be called from callbacks too)
          void onRawDataReceived(const std::string &) override;
-
          void openConnection(const std::string &host, const std::string &port) override;
-
          void closeConnection() override;
-
          bool sendData(const std::string &data) override;
 
+         bool handshakeCompleted(void) const;
          void rekey();
 
       private:

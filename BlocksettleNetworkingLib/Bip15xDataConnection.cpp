@@ -27,7 +27,7 @@ public:
 
    void OnConnected() override
    {
-      if (owner_ != nullptr) {
+      if (owner_ != nullptr && owner_->isHandshakeCompleted()) {
          owner_->listener_->OnConnected();
       }
    }
@@ -151,4 +151,21 @@ bool Bip15xDataConnection::usesCookie() const
       return false;
    }
    return bip15xClient->usesCookie();
+}
+
+bool Bip15xDataConnection::isHandshakeCompleted() const
+{
+   auto bip15xClient = std::dynamic_pointer_cast<
+      bs::network::TransportBIP15xClient>(transport_);
+   
+   if (bip15xClient == nullptr) {
+      if (logger_) {
+         logger_->warn("[Bip15xDataConnection::isHandshakeCompleted] "
+            "unexpected transport ptr type");
+      }
+      return false;
+   }
+
+   return bip15xClient->handshakeCompleted();
+ 
 }

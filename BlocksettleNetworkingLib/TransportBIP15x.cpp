@@ -118,6 +118,14 @@ bool TransportBIP15x::fail()
    return false;
 };
 
+bool TransportBIP15x::handshakeCompleted(const BIP151Connection* connPtr)
+{
+   if (connPtr == nullptr)
+      return false;
+
+   return (connPtr->getBIP150State() == BIP150State::SUCCESS);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 TransportBIP15xClient::TransportBIP15xClient(const std::shared_ptr<spdlog::logger> &logger
    , const BIP15xParams &params)
@@ -162,7 +170,7 @@ void TransportBIP15xClient::rekeyIfNeeded(size_t dataSize)
    bool needsRekey = false;
    const auto rightNow = std::chrono::steady_clock::now();
 
-   if (handshakeCompleted(bip151Connection_.get())) {
+   if (handshakeCompleted()) {
       // Rekey off # of bytes sent or length of time since last rekey.
       if (bip151Connection_->rekeyNeeded(dataSize)) {
          needsRekey = true;
@@ -224,7 +232,7 @@ void TransportBIP15xClient::rekey()
 {
    logger_->debug("[TransportBIP15xClient::rekey] rekeying");
 
-   if (!handshakeCompleted(bip151Connection_.get())) {
+   if (!handshakeCompleted()) {
       logger_->error("[TransportBIP15xClient::rekey] Can't rekey before BIP150 "
          "handshake is complete", __func__);
       fail();
@@ -609,4 +617,12 @@ bool TransportBIP15xClient::usesCookie() const
    }
 
    return true;
+}
+
+bool TransportBIP15xClient::handshakeCompleted() const
+{
+   if (bip151Connection_ == nullptr)
+      return false;
+
+   return (bip151Connection_->getBIP150State() == BIP150State::SUCCESS);
 }

@@ -53,6 +53,7 @@ public:
 
    bool usesCookie(void) const;
    bool addCookieKeyToKeyStore(const std::string&);
+   bool isHandshakeCompleted(void) const;
 
 private:
    friend class Bip15xDataListener;
