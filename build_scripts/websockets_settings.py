@@ -94,7 +94,8 @@ class WebsocketsSettings(Configurator):
 
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
-        command.append('-A x64 ')
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
 
         command.append('-DCMAKE_INSTALL_PREFIX=' + self.get_install_dir())
 
@@ -110,9 +111,12 @@ class WebsocketsSettings(Configurator):
         # Workaround for data race: https://github.com/warmcat/libwebsockets/issues/1836
         env_vars['CFLAGS'] = "-Dmalloc_usable_size=INVALID_DEFINE_TO_DISABLE_FLAG"
 
-        #result = subprocess.call(command, env=env_vars)
-        cmdStr = r' '.join(command)
-        result = subprocess.call(cmdStr, env=env_vars)
+        result = subprocess.call(command, env=env_vars)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr, env=env_vars)
+        else:
+           result = subprocess.call(command, env=env_vars)
         return result == 0
 
     def make_windows(self):
