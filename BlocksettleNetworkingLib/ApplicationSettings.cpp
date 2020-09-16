@@ -82,9 +82,6 @@ static const QString chatServerIPName = QLatin1String("chatserver-ip");
 static const QString chatServerIPHelp = QLatin1String("Chat servcer host ip");
 static const QString chatServerPortName = QLatin1String("chatserver-port");
 static const QString chatServerPortHelp = QLatin1String("Chat server port");
-
-static const QString localSignerPortName = QLatin1String("local-signer-port");
-static const QString localSignerPortHelp = QLatin1String("Local signer port");
 #endif // NDEBUG
 
 namespace {
@@ -124,7 +121,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString(), true) },
       { chatDbFile,              SettingDef(QString(), AppendToWritableDir(QLatin1String("chat2.db"))) },
       { celerUsername,           SettingDef(QLatin1String("MatchSystemUsername")) },
-      { localSignerPort,         SettingDef(QLatin1String("SignerPort"), 23456) },
       { signerIndex,             SettingDef(QLatin1String("SignerIndex"), 0) },
       { signerOfflineDir,        SettingDef(QLatin1String("SignerOfflineDir"), QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)) },
       { autoSignSpendLimit,      SettingDef(QLatin1String("AutoSignSpendLimit"), 0.0) },
@@ -393,7 +389,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
 #ifndef NDEBUG
    parser.addOption({ chatServerIPName, chatServerIPHelp,  QLatin1String("chatip") });
    parser.addOption({ chatServerPortName, chatServerPortHelp, QLatin1String("chatport") });
-   parser.addOption({ localSignerPortName, localSignerPortHelp, QLatin1String("localsignerport") });
 #endif // NDEBUG
 
 
@@ -419,14 +414,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
    if (parser.isSet(armoryDBPortName)) {
       set(armoryDbPort, parser.value(armoryDBPortName).toInt());
    }
-
-#ifndef NDEBUG
-   if (parser.isSet(localSignerPortName)) {
-      int value = parser.value(localSignerPortName).toInt();
-      set(localSignerPort, value);
-   }
-#endif // NDEBUG
-
 
    settings_.sync();
 
