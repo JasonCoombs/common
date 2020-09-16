@@ -50,8 +50,9 @@ class GtestSettings(Configurator):
         command = ['cmake',
                    self.get_unpacked_gtest_sources_dir(),
                    '-DBUILD_GTEST=ON',
-                   '-G',
-                   self._project_settings.get_cmake_generator()]
+                   '-G', self._project_settings.get_cmake_generator(),
+                   '-A x64 '
+                  ]
 
         result = subprocess.call(command)
         return result == 0
@@ -69,7 +70,9 @@ class GtestSettings(Configurator):
         print('Start building GTest')
         print(' '.join(command))
 
-        result = subprocess.call(command)
+        #result = subprocess.call(command)
+        cmdStr = r' '.join(command)
+        result = subprocess.call(cmdStr)
         return result == 0
 
     def get_solution_file(self):

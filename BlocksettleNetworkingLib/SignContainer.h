@@ -43,7 +43,6 @@ namespace bs {
    }
 }
 class ApplicationSettings;
-class ConnectionManager;
 
 class SignContainer : public QObject
 {

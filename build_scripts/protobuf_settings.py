@@ -49,8 +49,11 @@ class ProtobufSettings(Configurator):
 
         command = ['cmake',
                    os.path.join(self.get_unpacked_sources_dir(), 'cmake'),
+                   #'cmake',
                    '-G',
                    self._project_settings.get_cmake_generator(),
+                   #'-G ' + self._project_settings.get_cmake_generator(),
+                   '-A', 'x64 '
                    '-Dprotobuf_BUILD_TESTS=OFF',
                    '-Dprotobuf_WITH_ZLIB=OFF']
 
@@ -59,7 +62,9 @@ class ProtobufSettings(Configurator):
         else:
             command.append('-Dprotobuf_MSVC_STATIC_RUNTIME=ON')
 
-        result = subprocess.call(command)
+        #result = subprocess.call(command, shell=True)
+        cmdStr = r' '.join(command)
+        result = subprocess.call(cmdStr)
         return result == 0
 
     def get_solution_file(self):
