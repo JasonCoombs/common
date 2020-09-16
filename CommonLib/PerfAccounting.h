@@ -4,6 +4,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <string>
 
 namespace spdlog {
    class logger;

@@ -45,12 +45,15 @@ class MPIRSettings(Configurator):
         return True
 
     def get_solution_file(self):
+        local_vc_version = self._project_settings.get_vs_version_number()
+        if local_vc_version == "16":
+            local_vc_version = "15"	# MPIR doesn't have VS2019 build dir
         if self._project_settings.get_link_mode() == 'shared':
             return os.path.join(self.get_build_dir(), 'build.vc'
-               + self._project_settings.get_vs_version_number(), 'dll_mpir_gc\\dll_mpir_gc.vcxproj')
+               + local_vc_version, 'dll_mpir_gc\\dll_mpir_gc.vcxproj')
         else:
             return os.path.join(self.get_build_dir(), 'build.vc'
-               + self._project_settings.get_vs_version_number(), 'lib_mpir_gc\\lib_mpir_gc.vcxproj')
+               + local_vc_version, 'lib_mpir_gc\\lib_mpir_gc.vcxproj')
 
     def config_x(self):
         os.chmod(os.path.join(self.get_unpacked_sources_dir(), 'configure'),

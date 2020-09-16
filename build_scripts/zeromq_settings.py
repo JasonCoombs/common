@@ -85,8 +85,11 @@ class ZeroMQSettings(Configurator):
                 
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
+        command.append('-A x64 ')
 
-        result = subprocess.call(command)
+        #result = subprocess.call(command)
+        cmdStr = r' '.join(command)
+        result = subprocess.call(cmdStr)
         return result == 0
 
     def config_x(self):

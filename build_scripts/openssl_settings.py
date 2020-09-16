@@ -77,7 +77,8 @@ class OpenSslSettings(Configurator):
         command = []
 
         if self._project_settings.on_windows():
-            command.append(os.path.join(self._project_settings.get_common_build_dir(), 'Jom/bin/jom.exe'))
+            #command.append(os.path.join(self._project_settings.get_common_build_dir(), 'Jom/bin/jom.exe'))
+            command.append('nmake.exe')		# build fails with jom on VS2019
             command.append('/E')
 
             if self._project_settings.get_build_mode() == 'release':
@@ -87,9 +88,8 @@ class OpenSslSettings(Configurator):
 
         else:
             command.append('make')
-            command.append('-j')
             command.append(str(max(1, multiprocessing.cpu_count() - 1)))
-
+            
         result = subprocess.call(command)
         if result != 0:
             print('OpenSSL make failed')
