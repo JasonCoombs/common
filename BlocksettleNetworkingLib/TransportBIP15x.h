@@ -178,6 +178,7 @@ namespace bs {
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
 
          BIP15xNewKeyCb cbNewKey_;
+         bool gotKeyAnnounce_ = false;
       };
 
    }  // namespace network

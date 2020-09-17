@@ -390,6 +390,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
          return false;
       }
 
+      gotKeyAnnounce_ = true;
       if (!bip151Connection_->havePublicKey(msgObj.getData(), srvId)) {
          //we don't have this key, setup key ACK promise
          if (serverPubkeyProm_ != nullptr) {
@@ -411,6 +412,18 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
       }
 
       return true;
+   }
+
+   case ArmoryAEAD::HandshakeSequence::EncInit:
+   {
+      //reject encinit from a mismatched server
+      if (bip151Connection_->isOneWayAuth() && !gotKeyAnnounce_) {
+         logger_->error("[TransportBIP15xClient::processAEADHandshake] Trying to connect to a "
+            "2-way server as a 1-way client. Aborting!");
+         return false;
+      }
+
+      break;
    }
 
    default: 
