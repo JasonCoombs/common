@@ -386,7 +386,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
       */
       if (!bip151Connection_->isOneWayAuth()) {
          logger_->error("[TransportBIP15xClient::processAEADHandshake] Trying to connect to a "
-            "1-way server as a 2-way client. Aborting!");
+            "1-way server ({}) as a 2-way client. Aborting!", srvId);
          return false;
       }
 
@@ -419,7 +419,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
       //reject encinit from a mismatched server
       if (bip151Connection_->isOneWayAuth() && !gotKeyAnnounce_) {
          logger_->error("[TransportBIP15xClient::processAEADHandshake] Trying to connect to a "
-            "2-way server as a 1-way client. Aborting!");
+            "2-way server ({}) as a 1-way client. Aborting!", srvId);
          return false;
       }
 
@@ -459,6 +459,8 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
    }
 
    default:
+      logger_->error("[TransportBIP15xClient::processAEADHandshake] handshake with {} "
+         "failed with error status: {}", srvId, std::to_string(int(status)));
       return false;
    }
 }
