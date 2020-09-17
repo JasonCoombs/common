@@ -347,11 +347,20 @@ void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 
 void WalletsAdapter::sendWalletReady(const std::string &walletId)
 {
-   readyWallets_.insert(walletId);
-   WalletsMessage msg;
-   msg.set_wallet_ready(walletId);
-   Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
-   pushFill(env);
+   const auto &itReg = pendingRegistrations_.find(walletId);
+   if ((itReg == pendingRegistrations_.end()) || itReg->second.empty()) {
+      logger_->debug("[{}] wallet {} is ready", __func__, walletId);
+      readyWallets_.insert(walletId);
+      WalletsMessage msg;
+      msg.set_wallet_ready(walletId);
+      Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
+      pushFill(env);
+   }
+   else {
+      for (const auto& reg : itReg->second) {
+         logger_->debug("[{}] {} is left", __func__, reg);
+      }
+   }
 }
 
 void WalletsAdapter::sendWalletError(const std::string &walletId
@@ -420,7 +429,8 @@ void WalletsAdapter::processUnconfTgtSet(const std::string &walletId)
    }
    auto &pendingReg = pendingRegistrations_[itWallet->second->walletId()];
    for (const auto &id : itWallet->second->internalIds()) {
-      pendingReg.insert(id);
+      pendingReg.insert(id + ".bal");
+      pendingReg.insert(id + ".txn");
       sendTxNRequest(id);
       sendBalanceRequest(id);
    }
@@ -435,12 +445,20 @@ void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &res
          balanceData.addressTxNMap[BinaryData::fromString(txn.address())] = txn.txn();
       }
 
-      if (trackLiveAddresses()) {
-         sendTrackAddrRequest(byWallet.wallet_id());
+      const auto& wallet = getWalletById(byWallet.wallet_id());
+      if (!wallet) {
+         logger_->error("[{}] unknown wallet id: {}", __func__, byWallet.wallet_id());
+         continue;
       }
-      else {
-         if (balanceData.addrBalanceUpdated) {
-            sendWalletReady(byWallet.wallet_id());
+      auto& pendingReg = pendingRegistrations_[wallet->walletId()];
+      pendingReg.erase(byWallet.wallet_id() + ".txn");
+      if (balanceData.addrBalanceUpdated) {
+         if (trackLiveAddresses()) {
+            pendingReg.insert(byWallet.wallet_id() + ".tar");
+            sendTrackAddrRequest(byWallet.wallet_id());
+         }
+         else {
+            sendWalletReady(wallet->walletId());
          }
       }
    }
@@ -463,12 +481,28 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
          addrBalance.unconfirmedBalance = addrBal.unconfirmed_balance();
       }
 
-      if (trackLiveAddresses()) {
-         sendTrackAddrRequest(byWallet.wallet_id());
+      const auto& wallet = getWalletById(byWallet.wallet_id());
+      if (!wallet) {
+         logger_->error("[{}] unknown wallet id: {}", __func__, byWallet.wallet_id());
+         continue;
       }
-      else {
-         if (balanceData.addrTxNUpdated) {
-            sendWalletReady(byWallet.wallet_id());
+      auto& pendingReg = pendingRegistrations_[wallet->walletId()];
+      pendingReg.erase(byWallet.wallet_id() + ".bal");
+
+      if (balanceData.addrTxNUpdated) {
+         if (trackLiveAddresses()) {
+            const auto &itReg = pendingReg.find(byWallet.wallet_id() + ".tar");
+            if (itReg != pendingReg.end()) {
+               pendingReg.erase(itReg);
+               sendWalletReady(wallet->walletId());
+            }
+            else {
+               pendingReg.insert(byWallet.wallet_id() + ".tar");
+               sendTrackAddrRequest(byWallet.wallet_id());
+            }
+         }
+         else {
+            sendWalletReady(wallet->walletId());
          }
       }
    }
@@ -478,20 +512,24 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
 {
    const auto &cb = [this, walletId](bs::sync::SyncState st)
    {
+      walletBalances_[walletId].addrTxNUpdated = true;
+      const auto& wallet = getWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[WalletsAdapter::sendTrackAddrRequest] unknown wallet {}", walletId);
+         return;
+      }
       if (st == bs::sync::SyncState::Success) {
-         const auto &wallet = getWalletById(walletId);
-         if (wallet) {
-            const auto &cbSync = [this, walletId]
-            {
-               sendBalanceRequest(walletId);
-               //TODO: top up if needed
-               sendWalletReady(walletId);
-            };
-            wallet->synchronize(cbSync);
-         }
+         const auto &cbSync = [this, wallet, walletId]
+         {
+            pendingRegistrations_[wallet->walletId()].insert(walletId + ".bal");
+            sendBalanceRequest(walletId);
+            //TODO: top up if needed
+         };
+         wallet->synchronize(cbSync);
       }
       else {
-         sendWalletReady(walletId);
+         pendingRegistrations_[wallet->walletId()].erase(walletId + ".tar");
+         sendWalletReady(wallet->walletId());
       }
    };
 
