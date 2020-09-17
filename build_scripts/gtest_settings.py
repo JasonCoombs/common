@@ -20,7 +20,7 @@ class GtestSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self._version = '1.8.1'
-        self._script_revision = '1'
+        self._script_revision = '2'
         self._package_name = 'Gtest'
 
         if settings.on_windows():
@@ -70,7 +70,6 @@ class GtestSettings(Configurator):
         print('Start building GTest')
         print(' '.join(command))
 
-        #result = subprocess.call(command)
         cmdStr = r' '.join(command)
         result = subprocess.call(cmdStr)
         return result == 0

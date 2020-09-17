@@ -23,7 +23,7 @@ class WebsocketsSettings(Configurator):
         self._version = '4.0.15'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
-        self._script_revision = '11'
+        self._script_revision = '12'
         self._sources = os.path.join(self._project_settings.get_sources_dir(), self._package_name + '-' + self._version)
 
     def get_package_name(self):
