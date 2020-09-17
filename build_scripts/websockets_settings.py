@@ -20,10 +20,12 @@ class WebsocketsSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self.openssl = OpenSslSettings(settings)
+        # Do not forget to update patched file for new version (build_scripts/libwebsockets/openssl-tls.c)
+        # It's used if git is not avaialble
         self._version = '4.0.15'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
-        self._script_revision = '11'
+        self._script_revision = '12'
         self._sources = os.path.join(self._project_settings.get_sources_dir(), self._package_name + '-' + self._version)
 
     def get_package_name(self):
@@ -51,7 +53,10 @@ class WebsocketsSettings(Configurator):
         try:
             subprocess.check_call(['git', 'apply', patch_path], cwd=self.get_unpacked_sources_dir())
         except:
-            subprocess.check_call(['patch', '--quiet', '-p1', '-i', patch_path], cwd=self.get_unpacked_sources_dir())
+            # If git is not available just copy patched file
+            patched_src = os.path.join(self._project_settings._build_scripts_root, 'libwebsockets', 'openssl-tls.c')
+            patched_dst = os.path.join(self.get_unpacked_sources_dir(), 'lib', 'tls', 'openssl', 'openssl-tls.c')
+            shutil.copyfile(patched_src, patched_dst)
 
         # LWS_SSL_CLIENT_USE_OS_CA_CERTS is off because it only tries to load CA bundle from OpenSSL build dir (useless feature for us).
         # As a workaround we embed CA bundle in terminal binary itself.
