@@ -97,6 +97,9 @@ class PrometheusCpp(Configurator):
                    '-G',
                    self._project_settings.get_cmake_generator()]
 
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
+
         command.append('-DENABLE_TESTING=OFF')
         command.append('-DENABLE_PUSH=OFF')
         command.append('-DENABLE_COMPRESSION=OFF')
@@ -106,7 +109,11 @@ class PrometheusCpp(Configurator):
             command.append('-DCMAKE_CXX_FLAGS_RELEASE=/MT')
             command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT')
 
-        result = subprocess.call(command)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+           result = subprocess.call(command)
 
         return result == 0
 

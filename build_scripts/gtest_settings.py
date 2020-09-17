@@ -50,11 +50,16 @@ class GtestSettings(Configurator):
         command = ['cmake',
                    self.get_unpacked_gtest_sources_dir(),
                    '-DBUILD_GTEST=ON',
-                   '-G', self._project_settings.get_cmake_generator(),
-                   '-A x64 '
+                   '-G', self._project_settings.get_cmake_generator()
                   ]
-
-        result = subprocess.call(command)
+        if self._project_settings.on_windows():
+           command.append('-A x64 ')
+                  
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         return result == 0
 
     def make_windows(self):
