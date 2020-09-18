@@ -918,7 +918,17 @@ bool WalletsAdapter::processTXDetails(const bs::message::Envelope &env
    std::vector<bs::sync::TXWallet>  requests;
    for (const auto &req : request.requests()) {
       const auto &txHash = BinaryData::fromString(req.tx_hash());
-      requests.push_back({ txHash, req.wallet_id(), req.value() });
+      auto walletId = req.wallet_id();
+      if (walletId.empty() && !request.address().empty()) {
+         try {
+            const auto& wallet = getWalletByAddress(bs::Address::fromAddressString(request.address()));
+            if (wallet) {
+               walletId = wallet->walletId();
+            }
+         }
+         catch (const std::exception&) {}
+      }
+      requests.push_back({ txHash, walletId, req.value() });
       initialHashes.insert(txHash);
    }
    ArmoryMessage msg;
@@ -942,7 +952,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
       std::vector<Tx> result;
       for (const auto &txSer : response.transactions()) {
          const Tx tx(BinaryData::fromString(txSer));
-         result.emplace_back(std::move(tx));
+         result.emplace_back(tx);
       }
       return result;
    };
@@ -985,7 +995,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
       
       WalletsMessage msg;
       auto msgResp = msg.mutable_tx_details_response();
-      for (const auto &req : itId->second.requests) {
+      for (auto &req : itId->second.requests) {
          auto resp = msgResp->add_responses();
          resp->set_tx_hash(req.txHash.toBinStr());
          resp->set_wallet_id(req.walletId);
@@ -994,7 +1004,39 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             logger_->warn("[{}] failed to find TX hash {}", __func__, req.txHash.toHexStr(true));
             continue;
          }
-         const auto &wallet = getWalletById(req.walletId);
+         std::string walletId = req.walletId;
+         if (walletId.empty()) { // if no walletId is given, get it from output addresses
+            for (size_t i = 0; i < itTx->second.getNumTxOut(); ++i) {
+               const TxOut& out = itTx->second.getTxOutCopy((int)i);
+               const auto& addr = bs::Address::fromTxOut(out);
+               const auto& addrWallet = getWalletByAddress(addr);
+               if (addrWallet) {
+                  walletId = addrWallet->walletId();
+                  break;
+               }
+            }
+         }
+         if (walletId.empty()) { // obtain walletId from input addresses if output ones were not found
+            for (int i = 0; i < itTx->second.getNumTxIn(); ++i) {
+               const auto& in = itTx->second.getTxInCopy(i);
+               const auto& op = in.getOutPoint();
+               const auto& itPrev = itId->second.allTXs.find(op.getTxHash());
+               if (itPrev == itId->second.allTXs.end()) {
+                  continue;
+               }
+               const TxOut& prevOut = itPrev->second.getTxOutCopy(op.getTxOutIndex());
+               const auto &addr = bs::Address::fromTxOut(prevOut);
+               const auto &addressWallet = getWalletByAddress(addr);
+               if (addressWallet) {
+                  walletId = addressWallet->walletId();
+                  break;
+               }
+            }
+         }
+         if (req.value == 0) {
+            req.value = itTx->second.getSumOfOutputs();
+         }
+         const auto &wallet = getWalletById(walletId);
          if (wallet) {
             resp->set_wallet_name(wallet->name());
             resp->set_wallet_type((int)wallet->type());
@@ -1087,6 +1129,8 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             inAddr->set_value(addrDet.value);
             inAddr->set_value_string(addrDet.valueStr);
             inAddr->set_wallet_name(addrDet.walletName);
+            inAddr->set_out_hash(addrDet.outHash.toBinStr());
+            inAddr->set_out_index(addrDet.outIndex);
             inAddr->set_script_type((int)addrDet.type);
          }
 
@@ -1104,6 +1148,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             addrDet.value = out.getValue();
             addrDet.type = out.getScriptType();
             addrDet.outIndex = (int)out.getIndex();
+            addrDet.outHash = out.getScript();
             const auto &addrWallet = getWalletByAddress(addrDet.address);
             if (addrWallet) {
                addrDet.valueStr = addrWallet->displayTxValue(out.getValue()).toStdString();
@@ -1124,6 +1169,8 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             chgAddr->set_value(lastChange.value);
             chgAddr->set_value_string(lastChange.valueStr);
             chgAddr->set_script_type((int)lastChange.type);
+            chgAddr->set_out_hash(lastChange.outHash.toBinStr());
+            chgAddr->set_out_index(lastChange.outIndex);
             const auto &itOut = std::find_if(outputAddrs.cbegin(), outputAddrs.cend()
                , [addr = lastChange.address](const bs::sync::AddressDetails &addrDet){
                return (addrDet.address == addr);
@@ -1139,6 +1186,8 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             outAddr->set_value(addrDet.value);
             outAddr->set_value_string(addrDet.valueStr);
             outAddr->set_script_type((int)addrDet.type);
+            outAddr->set_out_hash(addrDet.outHash.toBinStr());
+            outAddr->set_out_index(addrDet.outIndex);
          }
       }
       Envelope envResp{ itId->second.env.id, ownUser_, itId->second.env.sender

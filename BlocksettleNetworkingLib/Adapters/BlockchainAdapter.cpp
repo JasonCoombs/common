@@ -14,6 +14,7 @@
 #include "ArmoryObject.h"
 #include "BitcoinFeeCache.h"
 #include "StringUtils.h"
+#include "Wallets/SyncPlainWallet.h"
 
 #include "common.pb.h"
 
@@ -92,6 +93,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processLedgerEntries(env, msg.get_ledger_entries());
       case ArmoryMessage::kLedgerUnsubscribe:
          return processLedgerUnsubscribe(env, msg.ledger_unsubscribe());
+      case ArmoryMessage::kGetAddressHistory:
+         return processAddressHist(env, msg.get_address_history());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -290,6 +293,13 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
             , msgUnconfTgt.SerializeAsString() };
          pushFill(env);
          unconfTgtMap_.erase(itUnconfTgt);
+         continue;
+      }
+
+      const auto& itAddrHist = addressSubscriptions_.find(idStr);
+      if (itAddrHist != addressSubscriptions_.end()) {
+         singleAddrWalletRegistered(itAddrHist->second);
+         addressSubscriptions_.erase(itAddrHist);
          continue;
       }
       msgRefresh->add_ids(id.toBinStr());
@@ -741,6 +751,9 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
       ArmoryMessage msg;
       auto msgResp = msg.mutable_transactions();
       for (const auto &tx : txBatch) {
+         if (!tx.second) {
+            continue;
+         }
          msgResp->add_transactions(tx.second->serialize().toBinStr());
       }             // broadcast intentionally even as a reply to some request
       Envelope envResp{ env.id, user_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -867,4 +880,107 @@ bool BlockchainAdapter::processLedgerUnsubscribe(const bs::message::Envelope &en
          ledgerSubscriptions_.erase(itSub);
       }
    }
+}
+
+bool BlockchainAdapter::processAddressHist(const bs::message::Envelope& env
+   , const std::string& addrStr)
+{
+   bs::Address address;
+   try {
+      address = std::move(bs::Address::fromAddressString(addrStr));
+   }
+   catch (const std::exception& e) {
+      logger_->error("[{}] invalid address string: {}", __func__, e.what());
+      return true;
+   }
+   const auto& walletId = CryptoPRNG::generateRandom(8).toHexStr();
+   auto& newWallet = wallets_[walletId];
+   newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
+   newWallet.asNew = true;
+   newWallet.addresses = { address.id() };
+
+   const auto& regId = newWallet.wallet->registerAddresses(newWallet.addresses
+      , newWallet.asNew);
+   addressSubscriptions_[regId] = { env, address, walletId };
+   return true;
+}
+
+void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& request)
+{
+   const auto& itWallet = wallets_.find(request.walletId);
+   if (itWallet != wallets_.end()) {
+      itWallet->second.registered = true;
+   }
+   const auto& entries = std::make_shared<std::vector<bs::TXEntry>>();
+   const auto& cbLedger = [this, request, itWallet, entries]
+      (const std::shared_ptr<AsyncClient::LedgerDelegate>& delegate)
+   {
+      const auto& cbPage = [this, delegate, request, itWallet, entries]
+         (ReturnMessage<uint64_t> pageCntReturn)
+      {
+         uint32_t pageCnt = 0;
+         try {
+            pageCnt = (uint32_t)pageCntReturn.get();
+         }
+         catch (const std::exception&) {
+            return;
+         }
+         for (uint32_t page = 0; page < pageCnt; ++page) {
+            if (suspended_) {
+               return;
+            }
+            const auto& cbEntries = [this, request, page, pageCnt, itWallet, entries]
+               (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
+            {
+               try {
+                  auto le = entriesRet.get();
+                  for (auto& entry : bs::TXEntry::fromLedgerEntries(le)) {
+                     entry.nbConf = armory_->getConfirmationsNumber(entry.blockNum);
+                     entries->emplace_back(std::move(entry));
+                  }
+               }
+               catch (const std::exception&) {}
+               if (page == (pageCnt - 1)) {  // remove temporary wallet on completion
+                  itWallet->second.wallet->unregister();
+                  wallets_.erase(itWallet);
+
+                  ArmoryMessage msg;
+                  auto msgResp = msg.mutable_address_history();
+                  msgResp->set_address(request.address.display());
+                  for (const auto& entry : *entries) {
+                     auto msgEntry = msgResp->add_entries();
+                     msgEntry->set_tx_hash(entry.txHash.toBinStr());
+                     msgEntry->set_value(entry.value);
+                     msgEntry->set_block_num(entry.blockNum);
+                     msgEntry->set_tx_time(entry.txTime);
+                     msgEntry->set_rbf(entry.isRBF);
+                     msgEntry->set_chained_zc(entry.isChainedZC);
+                     msgEntry->set_recv_time(entry.recvTime.time_since_epoch().count());
+                     msgEntry->set_nb_conf(entry.nbConf);
+                     if ((entry.walletIds.size() == 1) && entry.walletIds.cbegin()->empty()) {
+                        msgEntry->add_wallet_ids(request.walletId);
+                     }
+                     else {
+                        for (const auto& walletId : entry.walletIds) {
+                           msgEntry->add_wallet_ids(walletId);
+                        }
+                     }
+                     for (const auto& addr : entry.addresses) {
+                        msgEntry->add_addresses(addr.display());
+                     }
+                  }
+                  Envelope envResp{ request.env.id, user_, request.env.sender, {}, {}, msg.SerializeAsString() };
+                  pushFill(envResp);
+               }
+            };
+            delegate->getHistoryPage(uint32_t(page), cbEntries);
+         }
+      };
+      if (!delegate) {
+         logger_->error("[BlockchainAdapter::processLedgerEntries] invalid ledger for {}", request.address.display());
+         return;
+      }
+      delegate->getPageCount(cbPage);
+   };
+   armory_->getLedgerDelegateForAddress(request.walletId, request.address, cbLedger);
 }

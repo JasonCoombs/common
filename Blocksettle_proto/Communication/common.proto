@@ -199,6 +199,13 @@ message ArmoryMessage
       repeated TXEntry entries = 5;
    }
 
+   message AddressHistory
+   {
+      string address = 1;
+      uint32 cur_block = 2;
+      repeated TXEntry entries = 3;
+   }
+
    oneof data
    {
       Loading          loading = 1;
@@ -229,6 +236,8 @@ message ArmoryMessage
       string           get_ledger_entries = 27;
       LedgerEntries    ledger_entries = 28;
       string           ledger_unsubscribe = 29;
+      string           get_address_history = 30;
+      AddressHistory   address_history = 31;
    }
 }
 
@@ -512,6 +521,7 @@ message WalletsMessage
          int64  value = 3;
       }
       repeated TXDetail requests = 1;
+      string address = 2;
    }
 
    message TXDetailsResponse
