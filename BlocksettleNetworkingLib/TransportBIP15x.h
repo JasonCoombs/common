@@ -67,6 +67,12 @@ namespace bs {
          ReadServer,
       };
 
+      enum class BIP15xAuthMode
+      {
+         OneWay, //client auths server, server does not auth client
+         TwoWay, //client auths server, server auths client
+      };
+
       struct BIP15xParams
       {
          // The directory containing the file with the non-ephemeral key
@@ -82,7 +88,7 @@ namespace bs {
          BIP15xCookie cookie{ BIP15xCookie::NotUsed };
 
          //2-way auth by default
-         bool oneWayAuth = false;
+         BIP15xAuthMode authMode = BIP15xAuthMode::TwoWay;
 
          std::chrono::milliseconds connectionTimeout{ std::chrono::seconds(10) };
       };

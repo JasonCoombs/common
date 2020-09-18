@@ -299,7 +299,8 @@ void TransportBIP15xClient::openConnection(const std::string &host
    // BIP 151 connection setup. Technically should be per-socket or something
    // similar but data connections will only connect to one machine at a time.
    auto lbds = getAuthPeerLambda();
-   bip151Connection_ = std::make_unique<BIP151Connection>(lbds, params_.oneWayAuth);
+   bool oneWay = (params_.authMode == BIP15xAuthMode::OneWay) ? true : false;
+   bip151Connection_ = std::make_unique<BIP151Connection>(lbds, oneWay);
 }
 
 void TransportBIP15xClient::closeConnection()

@@ -1465,7 +1465,7 @@ void RemoteSigner::RecreateConnection()
    params.ephemeralPeers = ephemeralDataConnKeys_;
    params.ownKeyFileDir = ownKeyFileDir_;
    params.ownKeyFileName = ownKeyFileName_;
-   params.oneWayAuth = false;
+   params.authMode = bs::network::BIP15xAuthMode::TwoWay;
 
    // Server's cookies are not available in remote mode
    if (opMode() == OpMode::Local || opMode() == OpMode::LocalInproc) {
