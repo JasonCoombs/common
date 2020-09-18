@@ -315,7 +315,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   bool isLegacy = !txSignReq.armorySigner_.isSegWit();
+   bool isLegacy = txSignReq.armorySigner_.hasLegacyInputs();
 
    if (!isLegacy && !partial && txSignReq.txHash.empty()) {
       SPDLOG_LOGGER_ERROR(logger_, "expected tx hash must be set before sign");
@@ -1674,7 +1674,7 @@ void HeadlessContainerListener::AutoSignActivatedEvent(ErrorCode result
 
 bool HeadlessContainerListener::checkSpendLimit(uint64_t value, const std::string &walletId
    , bool autoSign)
-{  
+{
    if (autoSign && isAutoSignActive(walletId)) {
       if (value > limits_.autoSignSpendXBT) {
          logger_->warn("[HeadlessContainerListener] requested auto-sign spend {} exceeds limit {}", value
@@ -1992,7 +1992,7 @@ bool HeadlessContainerListener::onSyncAddresses(const std::string &clientId, hea
    try {
       parsedMap = std::move(wallet->indexPath(addrSet));
    } catch (AccountException &e) {
-      //failure to find even on of the addresses means the wallet chain needs 
+      //failure to find even on of the addresses means the wallet chain needs
       //extended further
       SyncAddrsResponse(clientId, packet.id(), request.wallet_id(), bs::sync::SyncState::Failure);
       logger_->error("[{}] failed to find indices for {} addresses in {}: {}"
