@@ -310,7 +310,8 @@ void TransportBIP15xClient::closeConnection()
       serverPubkeyProm_->setValue(false);
    }
 
-   SPDLOG_LOGGER_DEBUG(logger_, "[TransportBIP15xClient::closeConnection]");
+   const std::string &srvId = host_ + ":" + port_;
+   SPDLOG_LOGGER_DEBUG(logger_, "[TransportBIP15xClient::closeConnection] {}", srvId);
 
    bip151Connection_.reset();
 }
