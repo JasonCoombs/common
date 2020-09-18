@@ -483,7 +483,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             {
                const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
                tx = bs::core::SignMultiInputTX(multiReq, wallets, partial);
-               if (!partial) {
+               if (!partial && !isLegacy) {
                   Tx t(tx);
                   if (t.getThisHash() != txSignReq.txHash) {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
