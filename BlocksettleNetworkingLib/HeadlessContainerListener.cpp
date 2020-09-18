@@ -445,7 +445,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             auto txSignCopy = txSignReq; //TODO: txSignReq should be passed as a shared_ptr instead
             const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignCopy).SerializeAsString())
                : wallet->signTXRequest(txSignCopy, keepDuplicatedRecipients);
-            if (!partial) {
+            if (!partial && !isLegacy) {
                Tx t(tx);
                if (t.getThisHash() != txSignReq.txHash) {
                   SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
