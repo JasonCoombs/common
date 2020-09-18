@@ -1992,7 +1992,7 @@ bool HeadlessContainerListener::onSyncAddresses(const std::string &clientId, hea
    try {
       parsedMap = std::move(wallet->indexPath(addrSet));
    } catch (AccountException &e) {
-      //failure to find even on of the addresses means the wallet chain needs
+      //failure to find even one of the addresses means the wallet chain needs
       //extended further
       SyncAddrsResponse(clientId, packet.id(), request.wallet_id(), bs::sync::SyncState::Failure);
       logger_->error("[{}] failed to find indices for {} addresses in {}: {}"
