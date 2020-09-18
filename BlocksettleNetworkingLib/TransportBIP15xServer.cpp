@@ -45,12 +45,12 @@ void BIP15xPerConnData::reset()
 TransportBIP15xServer::TransportBIP15xServer(
    const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback& cbTrustedClients
-   , bool ephemeralPeers, bool oneWayAuth
+   , bool ephemeralPeers, BIP15xAuthMode authMode
    , const std::string& ownKeyFileDir
    , const std::string& ownKeyFileName, bool makeServerCookie
    , bool readClientCookie, const std::string& cookiePath)
    : TransportBIP15x(logger)
-   , ephemeralPeers_(ephemeralPeers), oneWayAuth_(oneWayAuth)
+   , ephemeralPeers_(ephemeralPeers), authMode_(authMode)
    , cbTrustedClients_(cbTrustedClients)
    , useClientIDCookie_(readClientCookie)
    , makeServerIDCookie_(makeServerCookie)
@@ -122,11 +122,11 @@ TransportBIP15xServer::TransportBIP15xServer(
 // OUTPUT: None
 TransportBIP15xServer::TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &logger
    , const TrustedClientsCallback &cbTrustedClients
-   , bool oneWayAuth
+   , BIP15xAuthMode authMode
    , const std::string& ownKeyFileDir, const std::string& ownKeyFileName
    , bool makeServerCookie, bool readClientCookie
    , const std::string& cookiePath) : 
-   TransportBIP15xServer(logger, cbTrustedClients, true, oneWayAuth
+   TransportBIP15xServer(logger, cbTrustedClients, true, authMode
       , ownKeyFileDir, ownKeyFileName, makeServerCookie, readClientCookie,
       cookiePath)
 {}
@@ -447,9 +447,11 @@ void TransportBIP15xServer::addClient(const std::string &clientId, const ServerC
    auto &connection = socketConnMap_[clientId];
    assert(!connection);
    
+   bool oneWayAuth = (authMode_ == BIP15xAuthMode::OneWay) ? true : false;
+
    auto lbds = getAuthPeerLambda();
    connection = std::make_shared<BIP15xPerConnData>();
-   connection->encData_ = std::make_unique<BIP151Connection>(lbds, oneWayAuth_);
+   connection->encData_ = std::make_unique<BIP151Connection>(lbds, oneWayAuth);
    connection->outKeyTimePoint_ = std::chrono::steady_clock::now();
    connection->details = details;
    connection->clientId = clientId;

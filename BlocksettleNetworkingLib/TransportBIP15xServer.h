@@ -75,7 +75,7 @@ namespace bs {
          TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &
             , const TrustedClientsCallback& trustedClients
             , bool ephemeralPeers
-            , bool oneWayAuth
+            , BIP15xAuthMode authMode
             , const std::string& ownKeyFileDir = ""
             , const std::string& ownKeyFileName = ""
             , bool makeServerCookie = false
@@ -84,7 +84,7 @@ namespace bs {
 
          TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &
             , const TrustedClientsCallback& cbTrustedClients
-            , bool oneWayAuth
+            , BIP15xAuthMode authMode
             , const std::string& ownKeyFileDir = ""
             , const std::string& ownKeyFileName = ""
             , bool makeServerCookie = false
@@ -140,7 +140,7 @@ namespace bs {
          std::map<std::string, std::shared_ptr<BIP15xPerConnData>>   socketConnMap_;
          
          const bool ephemeralPeers_;
-         const bool oneWayAuth_;
+         const BIP15xAuthMode authMode_;
          TrustedClientsCallback cbTrustedClients_;
          const bool useClientIDCookie_;
          const bool makeServerIDCookie_;
