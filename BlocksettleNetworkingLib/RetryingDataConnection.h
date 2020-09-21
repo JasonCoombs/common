@@ -11,6 +11,7 @@
 #ifndef RETRYING_DATA_CONNECTION_H
 #define RETRYING_DATA_CONNECTION_H
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -85,6 +86,7 @@ private:
    std::string host_;
    std::string port_{};
    std::unique_ptr<RetryingDataConnectionListener> ownListener_;
+   std::atomic_bool shuttingDown_{false};
 
 };
 
