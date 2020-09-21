@@ -23,7 +23,7 @@ class LibChaCha20Poly1305Settings(Configurator):
         Configurator.__init__(self, settings)
         self._version = '2e8241cbcd607f4ed90e7fc932869daa7239d2a0'
         self._package_name = 'chacha20poly1305'
-        self._script_revision = '2'
+        self._script_revision = '3'
 
         self._package_url = 'https://github.com/sergey-chernikov/chacha20poly1305/archive/' + self._version + '.zip'
 
@@ -46,9 +46,10 @@ class LibChaCha20Poly1305Settings(Configurator):
         command = ['cmake',
                    self.get_unpacked_sources_dir(),
                    '-G',
-                   self._project_settings.get_cmake_generator(),
-                   '-A x64 '
+                   self._project_settings.get_cmake_generator()
                   ]
+        if self._project_settings.on_windows():
+            command.append('-A x64 ');
 
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':

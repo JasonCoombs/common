@@ -21,7 +21,7 @@ class MPIRSettings(Configurator):
         Configurator.__init__(self, settings)
         self._version = '3.0.0'
         self._package_name = 'mpir-' + self._version
-        self._script_revision = '1'
+        self._script_revision = '2'
 
         self._package_url = 'http://mpir.org/' + self._package_name + '.zip'
 

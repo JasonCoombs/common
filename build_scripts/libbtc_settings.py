@@ -23,7 +23,7 @@ class LibBTC(Configurator):
         self.mpir = MPIRSettings(settings)
         self._version = 'd5a25cb138532167d1475a1270e53a917d1f2156'
         self._package_name = 'libbtc'
-        self._script_revision = '2'
+        self._script_revision = '3'
 
         self._package_url = 'https://github.com/sergey-chernikov/' + self._package_name + '/archive/%s.zip' % self._version
 
@@ -60,12 +60,15 @@ class LibBTC(Configurator):
         command.append('-DGMP_INSTALL_DIR=' + self.mpir.get_install_dir())
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
-        command.append('-A x64')
+        if self._project_settings.on_windows():
+            command.append('-A x64')
 
         print(command)
-        #result = subprocess.call(command)
-        cmdStr = r' '.join(command)
-        result = subprocess.call(cmdStr)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         
         return result == 0
 

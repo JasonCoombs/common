@@ -21,7 +21,7 @@ class LibQREncode(Configurator):
         Configurator.__init__(self, settings)
         self._version = '13b159f9d9509b0c9f5ca0df7a144638337ddb15'
         self._package_name = 'libqrencode'
-        self._script_revision = '3'
+        self._script_revision = '4'
 
         self._package_url = 'https://github.com/fukuchi/libqrencode/archive/' + self._version + '.zip'
 
@@ -44,9 +44,10 @@ class LibQREncode(Configurator):
         command = ['cmake',
                    '-DWITH_TOOLS=NO',
                    self.get_unpacked_sources_dir(),
-                   '-G', self._project_settings.get_cmake_generator(),
-                   '-A x64 '
+                   '-G', self._project_settings.get_cmake_generator()
                   ]
+        if self._project_settings.on_windows():
+            command.append('-A x64 ');
 
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
@@ -64,9 +65,11 @@ class LibQREncode(Configurator):
 
         command.append('-DCMAKE_INSTALL_PREFIX=' + self.get_install_dir())
 
-        #result = subprocess.call(command)
-        cmdStr = r' '.join(command)
-        result = subprocess.call(cmdStr)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         return result == 0
 
     def make_windows(self):

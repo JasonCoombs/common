@@ -320,7 +320,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   bool isLegacy = !txSignReq.armorySigner_.isSegWit();
+   bool isLegacy = txSignReq.armorySigner_.hasLegacyInputs();
 
    if (!isLegacy && !partial && txSignReq.txHash.empty()) {
       SPDLOG_LOGGER_ERROR(logger_, "expected tx hash must be set before sign");
@@ -450,7 +450,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             auto txSignCopy = txSignReq; //TODO: txSignReq should be passed as a shared_ptr instead
             const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignCopy).SerializeAsString())
                : wallet->signTXRequest(txSignCopy, keepDuplicatedRecipients);
-            if (!partial) {
+            if (!partial && !isLegacy) {
                Tx t(tx);
                if (t.getThisHash() != txSignReq.txHash) {
                   SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
@@ -488,7 +488,7 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             {
                const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
                tx = bs::core::SignMultiInputTX(multiReq, wallets, partial);
-               if (!partial) {
+               if (!partial && !isLegacy) {
                   Tx t(tx);
                   if (t.getThisHash() != txSignReq.txHash) {
                      SPDLOG_LOGGER_ERROR(logger_, "unexpected tx hash: {}, expected: {}"
@@ -1679,7 +1679,7 @@ void HeadlessContainerListener::AutoSignActivatedEvent(ErrorCode result
 
 bool HeadlessContainerListener::checkSpendLimit(uint64_t value, const std::string &walletId
    , bool autoSign)
-{  
+{
    if (autoSign && isAutoSignActive(walletId)) {
       if (value > limits_.autoSignSpendXBT) {
          logger_->warn("[HeadlessContainerListener] requested auto-sign spend {} exceeds limit {}", value
@@ -1997,7 +1997,7 @@ bool HeadlessContainerListener::onSyncAddresses(const std::string &clientId, hea
    try {
       parsedMap = std::move(wallet->indexPath(addrSet));
    } catch (AccountException &e) {
-      //failure to find even on of the addresses means the wallet chain needs 
+      //failure to find even one of the addresses means the wallet chain needs
       //extended further
       SyncAddrsResponse(clientId, packet.id(), request.wallet_id(), bs::sync::SyncState::Failure);
       logger_->error("[{}] failed to find indices for {} addresses in {}: {}"

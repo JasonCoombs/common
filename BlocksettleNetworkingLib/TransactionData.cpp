@@ -125,7 +125,7 @@ bool TransactionData::setGroup(const std::shared_ptr<bs::sync::hd::Group> &group
    if (group != group_) {
       wallet_ = nullptr;
       group_ = group;
-      
+
       if (!leaves.empty()) {
          wallet_ = leaves.front();
       }
@@ -239,7 +239,7 @@ bool TransactionData::UpdateTransactionData()
          if (!recip) {
             return false;
          }
-         recipientsMap.emplace(it.first, 
+         recipientsMap.emplace(it.first,
             std::vector<std::shared_ptr<ScriptRecipient>>({recip}));
       }
    }
