@@ -63,9 +63,11 @@ class LibChaCha20Poly1305Settings(Configurator):
                 command.append('"-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
 
         #result = subprocess.call(command)
-        cmdStr = r' '.join(command)
-        result = subprocess.call(cmdStr)
-        
+        if self._project_settings.on_windows():
+           cmdStr = r' '.join(command)
+           result = subprocess.call(cmdStr)
+        else:
+           result = subprocess.call(command)
         return result == 0
 
     def make_windows(self):

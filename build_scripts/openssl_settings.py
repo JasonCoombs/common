@@ -88,11 +88,13 @@ class OpenSslSettings(Configurator):
 
         else:
             command.append('make')
+            command.append('-j')
             command.append(str(max(1, multiprocessing.cpu_count() - 1)))
-            
+
+        print("command: " + ' '.join(command))
         result = subprocess.call(command)
         if result != 0:
-            print('OpenSSL make failed')
+            print('OpenSSL make failed: ' + str(result))
             return False
 
         return True
