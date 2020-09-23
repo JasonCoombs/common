@@ -95,6 +95,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processLedgerUnsubscribe(env, msg.ledger_unsubscribe());
       case ArmoryMessage::kGetAddressHistory:
          return processAddressHist(env, msg.get_address_history());
+      case ArmoryMessage::kFeeLevelsRequest:
+         return processFeeLevels(env, msg.fee_levels_request());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -902,6 +904,58 @@ bool BlockchainAdapter::processAddressHist(const bs::message::Envelope& env
    const auto& regId = newWallet.wallet->registerAddresses(newWallet.addresses
       , newWallet.asNew);
    addressSubscriptions_[regId] = { env, address, walletId };
+   return true;
+}
+
+bool BlockchainAdapter::processFeeLevels(const bs::message::Envelope& env
+   , const ArmoryMessage_FeeLevelsRequest& request)
+{
+   if (suspended_ || !armory_) {
+      return false;
+   }
+   auto result = std::make_shared<std::map<unsigned int, float>>();
+   for (auto level : request.levels()) {
+      if (level < 2) {
+         level = 2;
+      }
+      else if (level > 1008) {
+         level = 1008;
+      }
+      const auto& cbFee = [this, env, level, result, size=request.levels_size()]
+         (float fee)
+      {
+         if (fee == std::numeric_limits<float>::infinity()) {
+            (*result)[level] = fee;
+         }
+         else {
+            fee = ArmoryConnection::toFeePerByte(fee);
+            if (fee == 0) {
+               SPDLOG_LOGGER_WARN(logger_, "Fees estimation for {} is not available, use hardcoded values!", level);
+               if (level > 3) {
+                  fee = 50;
+               } else if (level >= 2) {
+                  fee = 100;
+               }
+            }
+            (*result)[level] = fee;
+         }
+
+         if (result->size() >= size) {
+            ArmoryMessage msg;
+            auto msgResp = msg.mutable_fee_levels_response();
+            for (const auto& pair : *result) {
+               auto respData = msgResp->add_fee_levels();
+               respData->set_level(pair.first);
+               respData->set_fee(pair.second);
+            }
+            Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+            pushFill(envResp);
+         }
+      };
+      if (!armory_->estimateFee(level, cbFee)) {
+         return false;
+      }
+   }
    return true;
 }
 

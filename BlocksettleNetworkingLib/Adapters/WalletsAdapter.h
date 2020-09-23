@@ -30,6 +30,7 @@ namespace BlockSettle {
       class WalletsMessage_AddressComments;
       class WalletsMessage_TXDetailsRequest;
       class WalletsMessage_WalletAddresses;
+      class WalletsMessage_WalletsListRequest;
    }
 }
 namespace bs {
@@ -108,6 +109,8 @@ private:
 
    bool processHdWalletGet(const bs::message::Envelope &, const std::string &walletId);
    bool processWalletGet(const bs::message::Envelope &, const std::string &walletId);
+   bool processWalletsList(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_WalletsListRequest&);
    bool processGetTxComment(const bs::message::Envelope &
       , const std::string &txBinHash);
    bool processGetWalletBalances(const bs::message::Envelope &

@@ -91,8 +91,11 @@ public:
    // should be used only if you could not set CB in ctor
    void SetCallback(onTransactionChanged changedCallback);
 
-   bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
+   [[deprecated]] bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
+   bool setWallets(const std::vector<std::string>& walletsId, uint32_t topBlock
+      , const std::vector<UTXO>&, bool resetInputs = false
+      , const std::function<void()>& cbInputsReset = nullptr);
    bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
    bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
@@ -166,6 +169,7 @@ private:
    std::shared_ptr<spdlog::logger>  logger_;
 
    std::shared_ptr<bs::sync::Wallet>            wallet_;
+   std::vector<std::string>   walletsId_;
    std::shared_ptr<bs::sync::hd::Group>         group_;
    std::shared_ptr<SelectedTransactionInputs>   selectedInputs_;
 

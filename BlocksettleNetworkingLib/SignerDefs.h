@@ -162,6 +162,7 @@ namespace sync {
       };
       std::vector<Group>   groups;
       std::string          id;
+      bool                 primary{ false };
 
       BlockSettle::Common::HDWalletData toCommonMessage() const;
       static HDWalletData fromCommonMessage(const BlockSettle::Common::HDWalletData &);

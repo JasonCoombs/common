@@ -206,38 +206,54 @@ message ArmoryMessage
       repeated TXEntry entries = 3;
    }
 
+   message FeeLevelsRequest
+   {
+      repeated uint32 levels = 1;
+   }
+
+   message FeeLevelsResponse
+   {
+      message ByBlockCnt {
+         uint32 level = 1;
+         float  fee = 2;
+      }
+      repeated ByBlockCnt fee_levels = 1;
+   }
+
    oneof data
    {
-      Loading          loading = 1;
-      Empty            ready   = 2;
-      Empty            reconnect = 3;
-      Empty            settings_request = 4;
-      Settings         settings_response = 5;
-      State            state_changed = 6;
-      NewKeyCompare    compare_key = 7;
-      bool             key_compared = 8;
-      RegisterWallet   register_wallet = 10;
-      WalletRegistered wallet_registered = 11;
-      Refresh          refresh = 12;
-      NewBlock         new_block = 13;
-      ZCInvalidated    zc_invalidated = 14;
-      ZCReceived       zc_received = 15;
-      TXPushRequest    tx_push = 16;
-      TXPushResult     tx_push_result = 17;
-      string           tx_push_timeout = 18;
+      Loading           loading = 1;
+      Empty             ready   = 2;
+      Empty             reconnect = 3;
+      Empty             settings_request = 4;
+      Settings          settings_response = 5;
+      State             state_changed = 6;
+      NewKeyCompare     compare_key = 7;
+      bool              key_compared = 8;
+      RegisterWallet    register_wallet = 10;
+      WalletRegistered  wallet_registered = 11;
+      Refresh           refresh = 12;
+      NewBlock          new_block = 13;
+      ZCInvalidated     zc_invalidated = 14;
+      ZCReceived        zc_received = 15;
+      TXPushRequest     tx_push = 16;
+      TXPushResult      tx_push_result = 17;
+      string            tx_push_timeout = 18;
       WalletUnconfirmedTarget set_unconf_target = 19;
-      string           unconf_target_set = 20;
-      WalletIDs        addr_txn_request = 21;
+      string            unconf_target_set = 20;
+      WalletIDs         addr_txn_request = 21;
       AddressTxNsResponse addr_txn_response = 22;
-      WalletIDs        wallet_balance_request = 23;
+      WalletIDs         wallet_balance_request = 23;
       WalletBalanceResponse wallet_balance_response = 24;
-      TXHashes         get_txs_by_hash = 25;
-      Transactions     transactions = 26;
-      string           get_ledger_entries = 27;
-      LedgerEntries    ledger_entries = 28;
-      string           ledger_unsubscribe = 29;
-      string           get_address_history = 30;
-      AddressHistory   address_history = 31;
+      TXHashes          get_txs_by_hash = 25;
+      Transactions      transactions = 26;
+      string            get_ledger_entries = 27;
+      LedgerEntries     ledger_entries = 28;
+      string            ledger_unsubscribe = 29;
+      string            get_address_history = 30;
+      AddressHistory    address_history = 31;
+      FeeLevelsRequest  fee_levels_request = 32;
+      FeeLevelsResponse fee_levels_response = 33;
    }
 }
 
@@ -554,38 +570,52 @@ message WalletsMessage
       repeated TXDetail responses = 1;
    }
 
+   message WalletsListRequest
+   {
+      bool legacy = 1;
+      bool hardware = 2;
+      bool segwit = 3;
+   }
+
+   message WalletsListResponse
+   {
+      repeated HDWalletData wallets = 1;
+   }
+
    oneof data
    {
-      Loading           loading = 1;
-      Empty             ready   = 2;
-      WalletError       error = 3;
-      WalletInfo        wallet_loaded = 4;
-      string            auth_leaf_created = 5;
-      string            balance_updated = 6;
-      string            wallet_changed = 7;
-      string            wallet_meta_changed = 8;
-      string            wallet_ready = 9;
-      string            wallet_reset = 10;    
-      Empty             start_wallets_sync = 11;
-      string            hd_wallet_get = 12;
-      HDWalletData      hd_wallet = 13;
-      string            wallet_get = 14;
-      WalletData        wallet_data = 15;
-      string            get_wallet_balances = 16;
-      WalletBalances    wallet_balances = 17;
-      bytes             tx_comment_get = 18;
-      TXComment         tx_comment = 19;
-      string            get_used_addresses = 20;
-      string            get_ext_addresses = 21;
-      string            get_int_addresses = 22;
-      WalletAddresses   wallet_addresses = 23;
-      WalletAddresses   get_addr_comments = 24;
-      AddressComments   addr_comments = 25;
-      AddressComments   set_addr_comments = 26;
-      TXComment         set_tx_comment = 27;
-      string            get_spendable_utxos = 28;
-      TXDetailsRequest  tx_details_request = 29;
-      TXDetailsResponse tx_details_response = 30;
+      Loading             loading = 1;
+      Empty               ready   = 2;
+      WalletError         error = 3;
+      WalletInfo          wallet_loaded = 4;
+      string              auth_leaf_created = 5;
+      string              balance_updated = 6;
+      string              wallet_changed = 7;
+      string              wallet_meta_changed = 8;
+      string              wallet_ready = 9;
+      string              wallet_reset = 10;    
+      Empty               start_wallets_sync = 11;
+      string              hd_wallet_get = 12;
+      HDWalletData        hd_wallet = 13;
+      string              wallet_get = 14;
+      WalletData          wallet_data = 15;
+      string              get_wallet_balances = 16;
+      WalletBalances      wallet_balances = 17;
+      bytes               tx_comment_get = 18;
+      TXComment           tx_comment = 19;
+      string              get_used_addresses = 20;
+      string              get_ext_addresses = 21;
+      string              get_int_addresses = 22;
+      WalletAddresses     wallet_addresses = 23;
+      WalletAddresses     get_addr_comments = 24;
+      AddressComments     addr_comments = 25;
+      AddressComments     set_addr_comments = 26;
+      TXComment           set_tx_comment = 27;
+      string              get_spendable_utxos = 28;
+      TXDetailsRequest    tx_details_request = 29;
+      TXDetailsResponse   tx_details_response = 30;
+      WalletsListRequest  wallets_list_request = 31;
+      WalletsListResponse wallets_list_response = 32;
    }
 }
 

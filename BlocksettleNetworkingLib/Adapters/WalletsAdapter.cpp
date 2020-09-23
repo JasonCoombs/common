@@ -734,6 +734,12 @@ bool WalletsAdapter::processWalletGet(const Envelope &env
    return pushFill(envResp);
 }
 
+bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
+   , const WalletsMessage_WalletsListRequest& request)
+{
+   return true;
+}
+
 bool WalletsAdapter::processGetTxComment(const Envelope &env
    , const std::string &txBinHash)
 {

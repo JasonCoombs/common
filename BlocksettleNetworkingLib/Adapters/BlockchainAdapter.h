@@ -26,6 +26,7 @@ namespace AsyncClient {
 }
 namespace BlockSettle {
    namespace Common {
+      class ArmoryMessage_FeeLevelsRequest;
       class ArmoryMessage_RegisterWallet;
       class ArmoryMessage_Settings;
       class ArmoryMessage_TXHashes;
@@ -106,6 +107,8 @@ protected:
    bool processLedgerEntries(const bs::message::Envelope &, const std::string &filter);
    bool processLedgerUnsubscribe(const bs::message::Envelope &, const std::string &filter);
    bool processAddressHist(const bs::message::Envelope&, const std::string&);
+   bool processFeeLevels(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_FeeLevelsRequest &);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
