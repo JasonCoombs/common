@@ -90,14 +90,14 @@ class QtSettings(Configurator):
         command.append('-qt-pcre')
         command.append('-qt-harfbuzz')
         command.append('-sql-sqlite')
-        if self.is_server_settings():
+        if self._project_settings.is_server_build():
            command.append('-sql-mysql')
         command.append('-no-feature-vulkan')
         command.append('-silent')
 
         command.append('-I{}'.format(os.path.join(self.openssl.get_install_dir(),'include')))
 
-        if self._project_settings.on_osx() and self._is_server_build():
+        if self._project_settings.on_osx() and self._project_settings.is_server_build():
             command.append('-L/usr/local/opt/mysql@5.7/lib')
             command.append('-I/usr/local/opt/mysql@5.7/include')
             command.append('-I/usr/local/opt/mysql@5.7/include/mysql')
@@ -115,7 +115,7 @@ class QtSettings(Configurator):
             command.append('-qt-libpng')
             command.append('-no-freetype')
 
-        if self._project_settings.on_windows() and self._is_server_build():
+        if self._project_settings.on_windows() and self._project_settings.is_server_build():
             print("Won't build MySQL plugin on Windows")
 
         command.append('-nomake')
