@@ -21,9 +21,9 @@ void PerfAccounting::Entry::add(const std::chrono::microseconds &interval)
 void PerfAccounting::Entry::reset()
 {
    count_ = 0;
-   min_.zero();
-   max_.zero();
-   total_.zero();
+   (void)min_.zero();
+   (void)max_.zero();
+   (void)total_.zero();
 }
 
 void PerfAccounting::add(int key, const std::chrono::microseconds &interval)

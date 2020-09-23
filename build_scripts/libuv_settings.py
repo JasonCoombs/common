@@ -50,13 +50,13 @@ class LibUVSettings(Configurator):
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
             if self._project_settings.get_build_mode() == 'debug':
-                command.append('-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
-                command.append('-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
+                command.append('"-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
+                command.append('"-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
             else:
-                command.append('-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
+                command.append('"-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
 
         # if self._project_settings.on_linux():
         #     command.append('-DLWS_WITH_STATIC=ON')
@@ -72,12 +72,18 @@ class LibUVSettings(Configurator):
 
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
 
         command.append('-DCMAKE_INSTALL_PREFIX=' + self.get_install_dir())
 
         print(command)
         env_vars = os.environ.copy()
-        result = subprocess.call(command, env=env_vars)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr, env=env_vars)
+        else:
+           result = subprocess.call(command, env=env_vars)
         return result == 0
 
     def make(self):

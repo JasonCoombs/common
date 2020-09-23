@@ -24,7 +24,7 @@ class OpenSslSettings(Configurator):
         self._patch_ver = '1g'
         self._version = self._major_ver + '_' + self._minor_ver + '_' + self._patch_ver
         self._package_name = 'openssl-OpenSSL_' + self._version
-        self._script_revision = '4'
+        self._script_revision = '5'
 
         self._package_url = 'https://github.com/openssl/openssl/archive/OpenSSL_' + self._version + '.tar.gz'
 
@@ -77,7 +77,8 @@ class OpenSslSettings(Configurator):
         command = []
 
         if self._project_settings.on_windows():
-            command.append(os.path.join(self._project_settings.get_common_build_dir(), 'Jom/bin/jom.exe'))
+            #command.append(os.path.join(self._project_settings.get_common_build_dir(), 'Jom/bin/jom.exe'))
+            command.append('nmake.exe')		# build fails with jom on VS2019
             command.append('/E')
 
             if self._project_settings.get_build_mode() == 'release':
@@ -90,9 +91,10 @@ class OpenSslSettings(Configurator):
             command.append('-j')
             command.append(str(max(1, multiprocessing.cpu_count() - 1)))
 
+        print("command: " + ' '.join(command))
         result = subprocess.call(command)
         if result != 0:
-            print('OpenSSL make failed')
+            print('OpenSSL make failed: ' + str(result))
             return False
 
         return True

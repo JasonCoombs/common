@@ -22,7 +22,7 @@ class ProtobufSettings(Configurator):
         self._version = '3.11.4'
         self._package_name = 'protobuf-' + self._version
         self._package_name_url = 'protobuf-cpp-' + self._version
-        self._script_revision = '3'
+        self._script_revision = '4'
 
         self._package_url = 'https://github.com/protocolbuffers/protobuf/releases/download/v' + \
             self._version + '/' + self._package_name_url + '.tar.gz'
@@ -49,17 +49,26 @@ class ProtobufSettings(Configurator):
 
         command = ['cmake',
                    os.path.join(self.get_unpacked_sources_dir(), 'cmake'),
+                   #'cmake',
                    '-G',
                    self._project_settings.get_cmake_generator(),
+                   #'-G ' + self._project_settings.get_cmake_generator(),
                    '-Dprotobuf_BUILD_TESTS=OFF',
                    '-Dprotobuf_WITH_ZLIB=OFF']
+
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
 
         if self._project_settings.get_link_mode() == 'shared':
             command.append('-Dprotobuf_MSVC_STATIC_RUNTIME=OFF')
         else:
             command.append('-Dprotobuf_MSVC_STATIC_RUNTIME=ON')
 
-        result = subprocess.call(command)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command, shell=True)
         return result == 0
 
     def get_solution_file(self):

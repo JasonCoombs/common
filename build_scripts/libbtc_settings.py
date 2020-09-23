@@ -23,7 +23,7 @@ class LibBTC(Configurator):
         self.mpir = MPIRSettings(settings)
         self._version = 'd5a25cb138532167d1475a1270e53a917d1f2156'
         self._package_name = 'libbtc'
-        self._script_revision = '2'
+        self._script_revision = '3'
 
         self._package_url = 'https://github.com/sergey-chernikov/' + self._package_name + '/archive/%s.zip' % self._version
 
@@ -49,21 +49,27 @@ class LibBTC(Configurator):
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
             if self._project_settings.get_build_mode() == 'debug':
-                command.append('-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
-                command.append('-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
+                command.append('"-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
+                command.append('"-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
             else:
-                command.append('-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
+                command.append('"-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
 
         command.append('-DGMP_INSTALL_DIR=' + self.mpir.get_install_dir())
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
+        if self._project_settings.on_windows():
+            command.append('-A x64')
 
         print(command)
-        result = subprocess.call(command)
-
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
+        
         return result == 0
 
     def make_windows(self):
