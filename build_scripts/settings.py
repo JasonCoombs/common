@@ -107,12 +107,14 @@ class Settings:
 
     def get_cmake_generator(self):
         if self._is_windows:
-            return 'Visual Studio ' + self.get_vs_version_number() + ' Win64'
+            #return 'Visual Studio ' + self.get_vs_version_number() + ' Win64'
+            return '"Visual Studio ' + self.get_vs_version_number() + ' ' + self.get_vs_year() + '"'
         else:
             return 'Unix Makefiles'
 
     def get_vs_year(self):
         return {
+            '16': '2019',
             '15': '2017',
             '14': '2015',
             '12': '2013'

@@ -24,7 +24,7 @@ class QtSettings(Configurator):
         self.jom = JomSettings(settings)
         self.openssl = OpenSslSettings(settings)
         self._release = '5.12'
-        self._version = self._release + '.8'
+        self._version = self._release + '.9'
         self._package_name = 'qt-everywhere-src-' + self._version
         self._script_revision = '8'
 
@@ -90,13 +90,14 @@ class QtSettings(Configurator):
         command.append('-qt-pcre')
         command.append('-qt-harfbuzz')
         command.append('-sql-sqlite')
-        command.append('-sql-mysql')
+        if self._project_settings.is_server_build():
+           command.append('-sql-mysql')
         command.append('-no-feature-vulkan')
         command.append('-silent')
 
         command.append('-I{}'.format(os.path.join(self.openssl.get_install_dir(),'include')))
 
-        if self._project_settings.on_osx():
+        if self._project_settings.on_osx() and self._project_settings.is_server_build():
             command.append('-L/usr/local/opt/mysql@5.7/lib')
             command.append('-I/usr/local/opt/mysql@5.7/include')
             command.append('-I/usr/local/opt/mysql@5.7/include/mysql')
@@ -114,9 +115,8 @@ class QtSettings(Configurator):
             command.append('-qt-libpng')
             command.append('-no-freetype')
 
-        if self._project_settings.on_windows():
-            command.append('-IC:\\Program Files\\MySQL\\MySQL Connector C 6.1\\include')
-            command.append('-LC:\\Program Files\\MySQL\\MySQL Connector C 6.1\\lib')
+        if self._project_settings.on_windows() and self._project_settings.is_server_build():
+            print("Won't build MySQL plugin on Windows")
 
         command.append('-nomake')
         command.append('tests')

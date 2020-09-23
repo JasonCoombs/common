@@ -21,7 +21,7 @@ class LibQREncode(Configurator):
         Configurator.__init__(self, settings)
         self._version = '13b159f9d9509b0c9f5ca0df7a144638337ddb15'
         self._package_name = 'libqrencode'
-        self._script_revision = '3'
+        self._script_revision = '4'
 
         self._package_url = 'https://github.com/fukuchi/libqrencode/archive/' + self._version + '.zip'
 
@@ -44,27 +44,32 @@ class LibQREncode(Configurator):
         command = ['cmake',
                    '-DWITH_TOOLS=NO',
                    self.get_unpacked_sources_dir(),
-                   '-G',
-                   self._project_settings.get_cmake_generator()]
+                   '-G', self._project_settings.get_cmake_generator()
+                  ]
+        if self._project_settings.on_windows():
+            command.append('-A x64 ');
 
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
             if self._project_settings.get_build_mode() == 'debug':
-                command.append('-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
-                command.append('-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1')
+                command.append('"-DCMAKE_C_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
+                command.append('"-DCMAKE_CXX_FLAGS_DEBUG=/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1"')
             else:
-                command.append('-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
-                command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG')
+                command.append('"-DCMAKE_C_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
+                command.append('"-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
 
         if self._project_settings.get_link_mode() == "shared":
             command.append('-DBUILD_SHARED_LIBS=YES')
 
         command.append('-DCMAKE_INSTALL_PREFIX=' + self.get_install_dir())
 
-        result = subprocess.call(command)
-
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         return result == 0
 
     def make_windows(self):

@@ -19,7 +19,7 @@ class ZeroMQSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self._version = '4.3.2'
-        self._script_revision = '2'
+        self._script_revision = '3'
 
         if settings.on_windows():
             self._package_name = 'libzmq-' + self._version
@@ -85,8 +85,14 @@ class ZeroMQSettings(Configurator):
                 
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
 
-        result = subprocess.call(command)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         return result == 0
 
     def config_x(self):

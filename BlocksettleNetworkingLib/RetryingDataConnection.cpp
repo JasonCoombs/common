@@ -57,6 +57,7 @@ RetryingDataConnection::RetryingDataConnection(const std::shared_ptr<spdlog::log
 
 RetryingDataConnection::~RetryingDataConnection()
 {
+   shuttingDown_ = true;
    closeConnection();
 }
 
@@ -127,7 +128,7 @@ void RetryingDataConnection::trySendPackets()
 
 void RetryingDataConnection::tryReconnectIfNeeded()
 {
-   if (state_ == State::WaitingRestart && std::chrono::steady_clock::now() >= restartTime_) {
+   if (state_ == State::WaitingRestart && std::chrono::steady_clock::now() >= restartTime_ && !shuttingDown_) {
       restart();
    }
 }
