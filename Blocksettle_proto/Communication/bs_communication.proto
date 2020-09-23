@@ -23,6 +23,7 @@ enum RequestType
    ConfirmAuthAddressSubmitType        = 9;
    CreateCCDefinitionRequestType       = 10;
    GetNetworkSettingsType              = 12;
+   BootstrapSignedDataType             = 13;
 }
 
 // copy of autheid.rp.GetResultResponse.SignatureResult
@@ -179,4 +180,25 @@ message GetNetworkSettingsResponse
    optional ConnectionData proxy = 5;
    optional Status status = 6;
    optional string statusMsg = 7;
+}
+
+message BootstrapData
+{
+   message CCSecurityDefinition {
+      required string securityId  = 1;
+      required string product     = 2;
+      required string genesisAddr = 3;
+      required uint64 satoshisNb  = 4;
+   }
+
+   required int32    revision             = 1;
+   required bool     is_testnet           = 2;
+
+   repeated string   proxy_keys           = 3;
+   repeated string   armory_mainnet_keys  = 4;
+   repeated string   armory_testnet_keys  = 5;
+
+   repeated string   validation_address   = 6;
+
+   repeated CCSecurityDefinition cc_securities  = 7;
 }
