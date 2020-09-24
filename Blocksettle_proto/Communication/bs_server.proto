@@ -73,8 +73,6 @@ enum ArmoryMessageType
    ArmoryAuthWalletLoaded  = 14;
    ArmoryBroadcastTimeout  = 15;
    ArmoryGetOutpointsForAddrList = 16;
-   ArmoryUpdateAuthAddrs   = 17;
-   ArmoryUpdateCcAddrs     = 18;
    ArmoryPushXbtTXs        = 19;
    ArmoryGetOutputsForOPs  = 20;
    ArmorySettlementsStatus = 21;
@@ -216,16 +214,6 @@ message ArmoryAuthAddresses
    repeated string addresses = 1;
 }
 
-message ArmoryUpdateAuthAddrsRequest
-{
-   bytes auth_addresses_signed = 1;
-}
-
-message ArmoryUpdateCcAddrsRequest
-{
-   bytes cc_addresses_signed = 1;
-}
-
 message ArmoryGetOutpointsForAddrListRequest
 {
    repeated string addresses = 1;
@@ -290,8 +278,6 @@ message ArmoryMessage
       ArmoryAuthAddresses                    auth_addresses          = 16;
       ArmoryGetOutpointsForAddrListRequest   out_points_request      = 19;
       ArmoryGetOutpointsForAddrListResponse  out_points_response     = 20;
-      ArmoryUpdateAuthAddrsRequest           update_auth_addrs       = 21;
-      ArmoryUpdateCcAddrsRequest             update_cc_addrs         = 22;
       ArmoryPushXbtTXsRequest                push_xbt_txs_request    = 23;
       ArmoryGetOutputsForOPsRequest          outs_for_ops_request    = 24;
       ArmoryGetOutputsForOPsResponse         outs_for_ops_response   = 25;
