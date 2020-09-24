@@ -130,13 +130,13 @@ public:
    bool isAllLoadded() const;
    const std::unordered_set<std::string> &GetBSAddresses() const;
 
-   void setAuthAddressesSigned(const BinaryData &data);
-
    static std::string readyErrorStr(ReadyError error);
 
    void setUserType(bs::network::UserType userType);
 
    bool UserCanSubmitAuthAddress() const;
+
+   void ProcessBSAddressListResponse(const Blocksettle::Communication::BootstrapData &data);
 
 private slots:
    void tryVerifyWalletAddresses();
@@ -166,9 +166,6 @@ private:
    void SetAuthWallet();
    void ClearAddressList();
    bool setup();
-   void OnDataReceived(const std::string& data);
-
-   void ProcessBSAddressListResponse(const std::string& response, bool sigVerified);
 
    bool HaveBSAddressList() const;
 

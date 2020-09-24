@@ -203,7 +203,6 @@ public:
    // Returns "mainnet", "testnet" or "regtest"
    static std::string networkName(NetworkType type);
 
-   QString ccFilePath() const;
    QString bootstrapFilePath() const;
 
 signals:

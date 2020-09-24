@@ -250,42 +250,6 @@ bool AuthAddressManager::RevokeAddress(const bs::Address &address)
    return true;
 }
 
-void AuthAddressManager::OnDataReceived(const std::string& data)
-{
-   ResponsePacket response;
-
-   if (!response.ParseFromString(data)) {
-      logger_->error("[AuthAddressManager::OnDataReceived] failed to parse response from public bridge");
-      return;
-   }
-
-   bool sigVerified = false;
-   if (!response.has_datasignature()) {
-      logger_->warn("[AuthAddressManager::OnDataReceived] Public bridge response of type {} has no signature!"
-         , static_cast<int>(response.responsetype()));
-   }
-   else {
-      const auto signAddress = bs::Address::fromAddressString(settings_->GetBlocksettleSignAddress()).prefixed();
-      const auto message = BinaryData::fromString(response.responsedata());
-      const auto signature = BinaryData::fromString(response.datasignature());
-
-      sigVerified = ArmorySigner::Signer::verifyMessageSignature(message, signAddress, signature);
-      if (!sigVerified) {
-         logger_->error("[AuthAddressManager::OnDataReceived] Response signature verification failed - response {} dropped"
-            , static_cast<int>(response.responsetype()));
-         return;
-      }
-   }
-
-   switch(response.responsetype()) {
-   case RequestType::GetBSFundingAddressListType:
-      ProcessBSAddressListResponse(response.responsedata(), sigVerified);
-      break;
-   default:
-      break;
-   }
-}
-
 void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address)
 {
    logger_->debug("[AuthAddressManager::ConfirmSubmitForVerification] confirm submission of {}", address.display());
@@ -457,11 +421,6 @@ const std::unordered_set<std::string> &AuthAddressManager::GetBSAddresses() cons
    return bsAddressList_;
 }
 
-void AuthAddressManager::setAuthAddressesSigned(const BinaryData &data)
-{
-   OnDataReceived(data.toBinStr());
-}
-
 std::string AuthAddressManager::readyErrorStr(AuthAddressManager::ReadyError error)
 {
    switch (error) {
@@ -474,27 +433,10 @@ std::string AuthAddressManager::readyErrorStr(AuthAddressManager::ReadyError err
    return "Unknown";
 }
 
-void AuthAddressManager::ProcessBSAddressListResponse(const std::string& response, bool sigVerified)
+void AuthAddressManager::ProcessBSAddressListResponse(const Blocksettle::Communication::BootstrapData &data)
 {
-   GetBSFundingAddressListResponse recvList;
-
-   if (!recvList.ParseFromString(response)) {
-      logger_->error("[AuthAddressManager::ProcessBSAddressListResponse] data corrupted. Could not parse.");
-      return;
-   }
-   if (!sigVerified) {
-      logger_->error("[AuthAddressManager::ProcessBSAddressListResponse] rejecting unverified response");
-      return;
-   }
-
-   std::unordered_set<std::string> tempList;
-   int size = recvList.validation_address_size();
-   for (int i = 0; i < size; i++) {
-      tempList.emplace(recvList.validation_address(i));
-   }
-
-   logger_->debug("[AuthAddressManager::ProcessBSAddressListResponse] get {} BS addresses", tempList.size());
-
+   logger_->debug("[AuthAddressManager::ProcessBSAddressListResponse] get {} BS addresses", data.validation_address().size());
+   std::unordered_set<std::string> tempList(data.validation_address().begin(), data.validation_address().end());
    ClearAddressList();
    SetBSAddressList(tempList);
    tryVerifyWalletAddresses();

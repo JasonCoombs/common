@@ -11,8 +11,8 @@
 #include "BootstrapDataManager.h"
 
 #include "ApplicationSettings.h"
-#include "CelerClient.h"
-#include "ConnectionManager.h"
+#include "AuthAddressManager.h"
+#include "CCFileManager.h"
 #include "EncryptionUtils.h"
 
 #include <spdlog/spdlog.h>
@@ -26,10 +26,14 @@ using namespace Blocksettle::Communication;
 
 
 BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger> &logger
-   , const std::shared_ptr<ApplicationSettings> &appSettings)
+   , const std::shared_ptr<ApplicationSettings> &appSettings
+   , const std::shared_ptr<AuthAddressManager> &authAddressManager
+   , const std::shared_ptr<CCFileManager> &ccFileManager)
    : appSettings_(appSettings)
    , signAddress_(bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()))
    , bootstapFilePath_(appSettings->bootstrapFilePath())
+   , authAddressManager_(authAddressManager)
+   , ccFileManager_(ccFileManager)
 {
 }
 
@@ -59,10 +63,10 @@ void BootstrapDataManager::setReceivedData(const BinaryData &data)
    }
 }
 
-CcGenFileError BootstrapDataManager::loadSavedData()
+BootstrapFileError BootstrapDataManager::loadSavedData()
 {
    auto loadError = loadFromFile(bootstapFilePath_.toStdString(), appSettings_->get<NetworkType>(ApplicationSettings::netType));
-   if (loadError != CcGenFileError::NoError) {
+   if (loadError != BootstrapFileError::NoError) {
       QFile::remove(bootstapFilePath_);
    }
    return loadError;
@@ -88,18 +92,21 @@ void BootstrapDataManager::processResponse(const std::string &response, const st
       return;
    }
 
-   if (data.revision() == currentRev_) {
-      SPDLOG_LOGGER_DEBUG(logger_, "having the same revision already");
-      return;
-   }
-
    if (data.revision() < currentRev_) {
       SPDLOG_LOGGER_ERROR(logger_, "proxy has older revision {} than we ({})"
          , data.revision(), currentRev_);
       return;
    }
 
-   fillFrom(data);
+   // authAddressManager_ is updated only after login (so need to do that before revision check)
+   authAddressManager_->ProcessBSAddressListResponse(data);
+
+   if (data.revision() == currentRev_) {
+      SPDLOG_LOGGER_DEBUG(logger_, "having the same revision already");
+      return;
+   }
+
+   ccFileManager_->ProcessGenAddressesResponse(data);
 
    saveToFile(bootstapFilePath_.toStdString(), response, sig);
 }
@@ -137,54 +144,49 @@ bool BootstrapDataManager::verifySignature(const BinaryData &data, const BinaryD
    return ArmorySigner::Signer::verifyMessageSignature(data, signAddress.prefixed(), sign);
 }
 
-void BootstrapDataManager::fillFrom(const BootstrapData &data)
-{
-   // TODO: Use somehow
-}
-
-CcGenFileError BootstrapDataManager::loadFromFile(const std::string &path, NetworkType netType)
+BootstrapFileError BootstrapDataManager::loadFromFile(const std::string &path, NetworkType netType)
 {
    QFile f(QString::fromStdString(path));
    if (!f.exists()) {
       SPDLOG_LOGGER_DEBUG(logger_, "no bootstrap file to load at {}", path);
-      return CcGenFileError::ReadError;
+      return BootstrapFileError::ReadError;
    }
    if (!f.open(QIODevice::ReadOnly)) {
       SPDLOG_LOGGER_ERROR(logger_, "failed to open file {} for reading", path);
-      return CcGenFileError::ReadError;
+      return BootstrapFileError::ReadError;
    }
 
    const auto buf = f.readAll();
    if (buf.isEmpty()) {
       SPDLOG_LOGGER_ERROR(logger_, "failed to read from {}", path);
-      return CcGenFileError::ReadError;
+      return BootstrapFileError::ReadError;
    }
 
    Blocksettle::Storage::CCDefinitions msg;
    bool result = msg.ParseFromArray(buf.data(), buf.size());
    if (!result) {
       SPDLOG_LOGGER_ERROR(logger_, "failed to parse storage file");
-      return CcGenFileError::InvalidFormat;
+      return BootstrapFileError::InvalidFormat;
    }
 
    result = verifySignature(BinaryData::fromString(msg.response()), BinaryData::fromString(msg.signature()), signAddress_);
    if (!result) {
       SPDLOG_LOGGER_ERROR(logger_, "signature verification failed for {}", path);
-      return CcGenFileError::InvalidSign;
+      return BootstrapFileError::InvalidSign;
    }
 
    BootstrapData data;
    if (!data.ParseFromString(msg.response())) {
       SPDLOG_LOGGER_ERROR(logger_, "failed to parse {}", path);
-      return CcGenFileError::InvalidFormat;
+      return BootstrapFileError::InvalidFormat;
    }
 
    if (data.is_testnet() != (netType == NetworkType::TestNet)) {
       SPDLOG_LOGGER_ERROR(logger_, "wrong network type in {}", path);
-      return CcGenFileError::InvalidFormat;
+      return BootstrapFileError::InvalidFormat;
    }
 
-   fillFrom(data);
+   ccFileManager_->ProcessGenAddressesResponse(data);
 
-   return CcGenFileError::NoError;
+   return BootstrapFileError::NoError;
 }
