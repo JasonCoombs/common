@@ -78,6 +78,7 @@ struct BsClientLoginResult
    BinaryData chatTokenSign;
    BinaryData authAddressesSigned;
    BinaryData ccAddressesSigned;
+   BinaryData bootstrapDataSigned;
    bool enabled{};
    float feeRatePb{};
    bs::TradeSettings tradeSettings;
@@ -182,6 +183,7 @@ signals:
 
    void emailHashReceived(const std::string &email, const std::string &hash);
    void ccGenAddrUpdated(const BinaryData &ccGenAddrData);
+   void bootstapDataUpdated(const BinaryData &data);
    void accountStateChanged(bs::network::UserType userType, bool enabled);
    void feeRateReceived(float feeRate);
    void balanceLoaded();

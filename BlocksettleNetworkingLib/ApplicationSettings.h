@@ -204,6 +204,7 @@ public:
    static std::string networkName(NetworkType type);
 
    QString ccFilePath() const;
+   QString bootstrapFilePath() const;
 
 signals:
    void settingChanged(int setting, QVariant value);

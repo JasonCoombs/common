@@ -648,6 +648,13 @@ QString ApplicationSettings::ccFilePath() const
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 
+QString ApplicationSettings::bootstrapFilePath() const
+{
+   auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
+   auto fileName = fmt::format("bottstrap-{}.data", envName(conf));
+   return AppendToWritableDir(QString::fromStdString(fileName));
+}
+
 std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthKeys()
 {
    if (!authPrivKey_.empty() && !authPubKey_.empty()) {

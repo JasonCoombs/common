@@ -570,6 +570,7 @@ void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
    result.chatTokenSign = BinaryData::fromString(response.chat_token_sign());
    result.authAddressesSigned = BinaryData::fromString(response.auth_addresses_signed());
    result.ccAddressesSigned = BinaryData::fromString(response.cc_addresses_signed());
+   result.bootstrapDataSigned = BinaryData::fromString(response.bootstrap_data_signed());
    result.enabled = response.enabled();
    result.feeRatePb = response.fee_rate();
    result.tradeSettings = bs::TradeSettings::fromPb(response.trade_settings());
@@ -602,6 +603,7 @@ void BsClient::processGenAddrUpdated(const Response_GenAddrUpdated &response)
 {
    SPDLOG_LOGGER_DEBUG(logger_, "new CC gen addresses updated");
    emit ccGenAddrUpdated(BinaryData::fromString(response.cc_addresses_signed()));
+   emit bootstapDataUpdated(BinaryData::fromString(response.bootstrap_data_signed()));
 }
 
 void BsClient::processUserStatusUpdated(const Response_UserStatusUpdated &response)
