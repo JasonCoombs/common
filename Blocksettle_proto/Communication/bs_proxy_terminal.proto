@@ -121,6 +121,7 @@ message Response
 
       bytes          auth_addresses_signed   = 6;
       bytes          cc_addresses_signed     = 7;
+      bytes          bootstrap_data_signed   = 12;
       bool           enabled                 = 8;
       float          fee_rate                = 9;
       string         terminal_user_id        = 10;
@@ -169,6 +170,7 @@ message Response
    {
       bytes auth_addresses_signed = 1;
       bytes cc_addresses_signed = 2;
+      bytes bootstrap_data_signed = 3;
    }
 
    message UserStatusUpdated
