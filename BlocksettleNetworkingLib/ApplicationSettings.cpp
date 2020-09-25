@@ -640,11 +640,10 @@ QString ApplicationSettings::getPath(const ApplicationSettings::SettingDef &s) c
    return QStringLiteral("%1/%2").arg(QString::fromStdString(envName(env))).arg(s.path);
 }
 
-QString ApplicationSettings::ccFilePath() const
+QString ApplicationSettings::bootstrapFilePath() const
 {
    auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-   auto netType = get<NetworkType>(ApplicationSettings::netType);
-   auto fileName = fmt::format("ccgenaddr-{}-{}.signed", envName(conf), networkName(netType));
+   auto fileName = fmt::format("bottstrap-{}.data", envName(conf));
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 
