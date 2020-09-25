@@ -56,27 +56,28 @@ message PrivateBridgeMessage
 
 enum ArmoryMessageType
 {
-   ArmoryUnknownType       = 0;
-   ArmoryStateChanged      = 1;
-   ArmoryReconnect         = 2;
-   ArmoryWalletReady       = 3;
-   ArmoryWalletLoaded      = 4;
-   ArmoryWalletReload      = 5;
-   ArmoryGetWalletUTXOs    = 6;
-   ArmoryNewBlock          = 7;
-   ArmoryPushTX            = 8;
-   ArmoryFeePerByte        = 9;
-   ArmoryStartSettlement   = 10;
-   ArmoryStopSettlement    = 11;
-   ArmoryGetSpentness      = 12;
-   ArmoryGetTxByHash       = 13;
-   ArmoryAuthWalletLoaded  = 14;
-   ArmoryBroadcastTimeout  = 15;
+   ArmoryUnknownType             = 0;
+   ArmoryStateChanged            = 1;
+   ArmoryReconnect               = 2;
+   ArmoryWalletReady             = 3;
+   ArmoryWalletLoaded            = 4;
+   ArmoryWalletReload            = 5;
+   ArmoryGetWalletUTXOs          = 6;
+   ArmoryNewBlock                = 7;
+   ArmoryPushTX                  = 8;
+   ArmoryFeePerByte              = 9;
+   ArmoryStartSettlement         = 10;
+   ArmoryStopSettlement          = 11;
+   ArmoryGetSpentness            = 12;
+   ArmoryGetTxByHash             = 13;
+   ArmoryAuthWalletLoaded        = 14;
+   ArmoryBroadcastTimeout        = 15;
    ArmoryGetOutpointsForAddrList = 16;
-   ArmoryPushXbtTXs        = 19;
-   ArmoryGetOutputsForOPs  = 20;
-   ArmorySettlementsStatus = 21;
-   ArmoryGetSpendableUTXOs = 22;
+   ArmoryPushXbtTXs              = 19;
+   ArmoryGetOutputsForOPs        = 20;
+   ArmorySettlementsStatus       = 21;
+   ArmoryGetSpendableUTXOs       = 22;
+   ArmoryUpdateBootstrapData     = 23;
 }
 
 enum ArmoryStateData
@@ -286,6 +287,7 @@ message ArmoryMessage
       bool                                   settlements_suspended   = 28;
       ArmoryGetSpendableUTXOsRequest         spendable_utxos_request = 29;
       ArmoryGetSpendableUTXOsResponse        spendable_utxos_response= 30;
+      bytes                                  bootstrap_data          = 31;
    }
 }
 
