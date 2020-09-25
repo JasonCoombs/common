@@ -14,9 +14,7 @@ package Blocksettle.Communication;
 
 enum RequestType
 {
-   GetBSFundingAddressListType         = 2;
    ErrorMessageResponseType            = 3;
-   GetCCGenesisAddressesType           = 5;
    SubmitCCAddrInitialDistribType      = 6;
    GenerateCCSeedRequestType           = 7;
    RevokeAuthAddressRequestType        = 8;
@@ -68,12 +66,6 @@ message ResponsePacket
    optional bytes       dataSignature = 3;
 }
 
-message GetBSFundingAddressListResponse
-{
-   required bool     is_testnet           = 1;
-   repeated string   validation_address   = 2;
-}
-
 message ErrorMessageResponse
 {
    required string errorMessage = 1;
@@ -103,20 +95,6 @@ message ClientAddress
    optional string mainPhone = 8;
    optional string company = 9;
    optional string countryCode = 10;
-}
-
-message GetCCGenesisAddressesResponse
-{
-   required bool                 is_testnet     = 1;
-   required int32                revision       = 2;
-   repeated CCSecurityDefinition ccSecurities   = 3;
-
-   message CCSecurityDefinition {
-      required string securityId  = 1;
-      required string product     = 2;
-      required string genesisAddr = 3;
-      required uint64 satoshisNb  = 4;
-   }
 }
 
 message SubmitAddrForInitialDistributionRequest
