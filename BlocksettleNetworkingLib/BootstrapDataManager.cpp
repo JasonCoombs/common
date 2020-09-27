@@ -42,25 +42,30 @@ bool BootstrapDataManager::hasLocalFile() const
    return QFile(bootstapFilePath_).exists();
 }
 
-void BootstrapDataManager::setReceivedData(const BinaryData &data)
+bool BootstrapDataManager::setReceivedData(const std::string& data)
 {
    if (data.empty()) {
-      return;
+      logger_->error("[BootstrapDataManager::setReceivedData] empty data");
+      return false;
    }
 
    ResponsePacket response;
-   if (!response.ParseFromArray(data.getPtr(), static_cast<int>(data.getSize()))) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to parse response from public bridge");
-      return;
+   if (!response.ParseFromString(data)) {
+      logger_->error("[BootstrapDataManager::setReceivedData] failed to parse bootstrap data");
+      return false;
    }
 
    switch (response.responsetype()) {
       case RequestType::BootstrapSignedDataType:
-         processResponse(response.responsedata(), response.datasignature());
+         return processResponse(response.responsedata(), response.datasignature());
          break;
       default:
+         logger_->error("[BootstrapDataManager::setReceivedData] undefined response type {}"
+                        , static_cast<int>(response.responsetype()));
          break;
    }
+
+   return false;
 }
 
 BootstrapFileError BootstrapDataManager::loadSavedData()
@@ -72,30 +77,30 @@ BootstrapFileError BootstrapDataManager::loadSavedData()
    return loadError;
 }
 
-void BootstrapDataManager::processResponse(const std::string &response, const std::string &sig)
+bool BootstrapDataManager::processResponse(const std::string &response, const std::string &sig)
 {
    bool sigVerified = verifySignature(BinaryData::fromString(response), BinaryData::fromString(sig), signAddress_);
    if (!sigVerified) {
       SPDLOG_LOGGER_ERROR(logger_, "signature verification failed! Rejecting CC genesis addresses reply.");
-      return;
+      return false;
    }
 
    BootstrapData data;
 
    if (!data.ParseFromString(response)) {
       SPDLOG_LOGGER_ERROR(logger_, "data corrupted. Could not parse.");
-      return;
+      return false;
    }
 
    if (data.is_testnet() != (appSettings_->get<NetworkType>(ApplicationSettings::netType) == NetworkType::TestNet)) {
       SPDLOG_LOGGER_ERROR(logger_, "network type mismatch in reply");
-      return;
+      return false;
    }
 
    if (data.revision() < currentRev_) {
       SPDLOG_LOGGER_ERROR(logger_, "proxy has older revision {} than we ({})"
          , data.revision(), currentRev_);
-      return;
+      return false;
    }
 
    // authAddressManager_ is updated only after login (so need to do that before revision check)
@@ -103,12 +108,12 @@ void BootstrapDataManager::processResponse(const std::string &response, const st
 
    if (data.revision() == currentRev_) {
       SPDLOG_LOGGER_DEBUG(logger_, "having the same revision already");
-      return;
+      return true;
    }
 
    ccFileManager_->ProcessGenAddressesResponse(data);
 
-   saveToFile(bootstapFilePath_.toStdString(), response, sig);
+   return saveToFile(bootstapFilePath_.toStdString(), response, sig);
 }
 
 bool BootstrapDataManager::saveToFile(const std::string &path, const std::string &response, const std::string &sig)

@@ -640,10 +640,18 @@ QString ApplicationSettings::getPath(const ApplicationSettings::SettingDef &s) c
    return QStringLiteral("%1/%2").arg(QString::fromStdString(envName(env))).arg(s.path);
 }
 
+QString ApplicationSettings::bootstrapResourceFileName() const
+{
+   auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
+   auto fileName = fmt::format("bootstrap-{}.data", envName(conf));
+   return QString::fromStdString("://resources/bootstrap_files/"+ fileName);
+}
+
+
 QString ApplicationSettings::bootstrapFilePath() const
 {
    auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-   auto fileName = fmt::format("bottstrap-{}.data", envName(conf));
+   auto fileName = fmt::format("bootstrap-{}.data", envName(conf));
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 

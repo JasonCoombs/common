@@ -204,6 +204,7 @@ public:
    static std::string networkName(NetworkType type);
 
    QString bootstrapFilePath() const;
+   QString bootstrapResourceFileName() const;
 
 signals:
    void settingChanged(int setting, QVariant value);

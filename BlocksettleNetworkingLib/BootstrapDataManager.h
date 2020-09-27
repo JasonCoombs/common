@@ -51,14 +51,14 @@ public:
       , const std::shared_ptr<CCFileManager> &ccFileManager);
 
    bool hasLocalFile() const;
-   void setReceivedData(const BinaryData &data);
+   bool setReceivedData(const std::string& data);
    BootstrapFileError loadSavedData();
 
    static bool verifySignature(const BinaryData &data, const BinaryData &signatureStr
       , const bs::Address &signAddress);
 
 private:
-   void processResponse(const std::string& response, const std::string &sig);
+   bool processResponse(const std::string& response, const std::string &sig);
    bool saveToFile(const std::string &path, const std::string &data, const std::string &sig);
    bool isTestNet() const;
    BootstrapFileError loadFromFile(const std::string &path, NetworkType netType);

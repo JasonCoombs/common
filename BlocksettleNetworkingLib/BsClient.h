@@ -70,16 +70,16 @@ namespace bs {
 
 struct BsClientLoginResult
 {
-   AutheIDClient::ErrorType status{};
-   std::string errorMsg;
-   bs::network::UserType userType{};
-   std::string celerLogin;
-   BinaryData chatTokenData;
-   BinaryData chatTokenSign;
-   BinaryData bootstrapDataSigned;
-   bool enabled{};
-   float feeRatePb{};
-   bs::TradeSettings tradeSettings;
+   AutheIDClient::ErrorType   status{};
+   std::string                errorMsg;
+   bs::network::UserType      userType{};
+   std::string                celerLogin;
+   BinaryData                 chatTokenData;
+   BinaryData                 chatTokenSign;
+   std::string                bootstrapDataSigned;
+   bool                       enabled{};
+   float                      feeRatePb{};
+   bs::TradeSettings          tradeSettings;
 };
 
 class BsClient : public QObject, public DataConnectionListener
@@ -180,7 +180,7 @@ signals:
    void connectionFailed();
 
    void emailHashReceived(const std::string &email, const std::string &hash);
-   void bootstapDataUpdated(const BinaryData &data);
+   void bootstapDataUpdated(const std::string& data);
    void accountStateChanged(bs::network::UserType userType, bool enabled);
    void feeRateReceived(float feeRate);
    void balanceLoaded();
