@@ -29,7 +29,8 @@ using namespace Blocksettle::Communication;
 
 CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
-   : appSettings_(appSettings)
+   : logger_{logger}
+   , appSettings_(appSettings)
 {
    const auto &cbSecLoaded = [this](const bs::network::CCSecurityDef &ccSecDef) {
       emit CCSecurityDef(ccSecDef);

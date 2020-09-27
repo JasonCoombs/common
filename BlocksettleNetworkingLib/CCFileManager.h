@@ -98,12 +98,12 @@ signals:
    void Loaded();
 
 private:
-   std::shared_ptr<spdlog::logger>  logger_;
+   std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<ApplicationSettings>   appSettings_;
    std::shared_ptr<BaseCelerClient>       celerClient_;
 
-   std::shared_ptr<CCPubResolver>   resolver_;
-   std::weak_ptr<BsClient> bsClient_;
+   std::shared_ptr<CCPubResolver>         resolver_;
+   std::weak_ptr<BsClient>                bsClient_;
 };
 
 #endif // __CC_FILE_MANAGER_H__
