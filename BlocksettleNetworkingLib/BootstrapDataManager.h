@@ -35,13 +35,6 @@ class ApplicationSettings;
 class AuthAddressManager;
 class CCFileManager;
 
-enum class BootstrapFileError : int {
-   NoError,
-   ReadError,
-   InvalidFormat,
-   InvalidSign,
-};
-
 class BootstrapDataManager
 {
 public:
@@ -51,26 +44,29 @@ public:
       , const std::shared_ptr<CCFileManager> &ccFileManager);
 
    bool hasLocalFile() const;
-   bool setReceivedData(const std::string& data);
-   BootstrapFileError loadSavedData();
 
-   static bool verifySignature(const BinaryData &data, const BinaryData &signatureStr
-      , const bs::Address &signAddress);
+   bool loadFromLocalFile();
+   bool setReceivedData(const std::string& data);
+
+   std::string getProxyKey() const;
+   std::string getChatKey() const;
+   std::string getCCTrackerKey() const;
 
 private:
-   bool processResponse(const std::string& response, const std::string &sig);
-   bool saveToFile(const std::string &path, const std::string &data, const std::string &sig);
-   bool isTestNet() const;
-   BootstrapFileError loadFromFile(const std::string &path, NetworkType netType);
+   bool loadData(const std::string& data);
+   bool processBootstrapData(const std::string& data);
+   bool saveToLocalFile(const std::string &data);
 
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<ApplicationSettings>   appSettings_;
-   const bs::Address                      signAddress_;
-   QString                                bootstapFilePath_;
-   int                                    currentRev_{};
+
    std::shared_ptr<AuthAddressManager>    authAddressManager_;
    std::shared_ptr<CCFileManager>         ccFileManager_;
 
+   int         currentRev_ = 0;
+   std::string proxyKey_;
+   std::string chatKey_;
+   std::string ccTrackerKey_;
 };
 
 #endif // BOOTSTRAP_DATA_MANAGER_H

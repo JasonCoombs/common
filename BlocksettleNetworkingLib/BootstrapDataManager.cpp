@@ -20,7 +20,6 @@
 #include <QFile>
 
 #include "bs_communication.pb.h"
-#include "bs_storage.pb.h"
 
 using namespace Blocksettle::Communication;
 
@@ -30,8 +29,6 @@ BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger>
    , const std::shared_ptr<AuthAddressManager> &authAddressManager
    , const std::shared_ptr<CCFileManager> &ccFileManager)
    : appSettings_(appSettings)
-   , signAddress_(bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()))
-   , bootstapFilePath_(appSettings->bootstrapFilePath())
    , authAddressManager_(authAddressManager)
    , ccFileManager_(ccFileManager)
 {
@@ -39,159 +36,149 @@ BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger>
 
 bool BootstrapDataManager::hasLocalFile() const
 {
-   return QFile(bootstapFilePath_).exists();
+   return QFile(appSettings_->bootstrapFilePath()).exists();
+}
+
+bool BootstrapDataManager::loadFromLocalFile()
+{
+   if (!hasLocalFile()) {
+      logger_->error("[BootstrapDataManager::loadFromLocalFile] local file missing");
+      return false;
+   }
+
+   QFile f(appSettings_->bootstrapFilePath());
+
+   if (!f.open(QIODevice::ReadOnly)) {
+      return false;
+   }
+
+   const auto buf = f.readAll();
+   if (buf.isEmpty()) {
+      return false;
+   }
+
+   return loadData(buf.toStdString());
 }
 
 bool BootstrapDataManager::setReceivedData(const std::string& data)
 {
-   if (data.empty()) {
-      logger_->error("[BootstrapDataManager::setReceivedData] empty data");
-      return false;
-   }
-
-   ResponsePacket response;
-   if (!response.ParseFromString(data)) {
-      logger_->error("[BootstrapDataManager::setReceivedData] failed to parse bootstrap data");
-      return false;
-   }
-
-   switch (response.responsetype()) {
-      case RequestType::BootstrapSignedDataType:
-         return processResponse(response.responsedata(), response.datasignature());
-         break;
-      default:
-         logger_->error("[BootstrapDataManager::setReceivedData] undefined response type {}"
-                        , static_cast<int>(response.responsetype()));
-         break;
+   if (loadData(data)) {
+      saveToLocalFile(data);
+      return true;
    }
 
    return false;
 }
 
-BootstrapFileError BootstrapDataManager::loadSavedData()
+bool BootstrapDataManager::loadData(const std::string& data)
 {
-   auto loadError = loadFromFile(bootstapFilePath_.toStdString(), appSettings_->get<NetworkType>(ApplicationSettings::netType));
-   if (loadError != BootstrapFileError::NoError) {
-      QFile::remove(bootstapFilePath_);
-   }
-   return loadError;
-}
-
-bool BootstrapDataManager::processResponse(const std::string &response, const std::string &sig)
-{
-   bool sigVerified = verifySignature(BinaryData::fromString(response), BinaryData::fromString(sig), signAddress_);
-   if (!sigVerified) {
-      SPDLOG_LOGGER_ERROR(logger_, "signature verification failed! Rejecting CC genesis addresses reply.");
+   if (data.empty()) {
+      logger_->error("[BootstrapDataManager::loadData] empty data");
       return false;
    }
 
+   ResponsePacket response;
+   if (!response.ParseFromString(data)) {
+      logger_->error("[BootstrapDataManager::loadData] failed to parse bootstrap data");
+      return false;
+   }
+
+   if (response.responsetype() != RequestType::BootstrapSignedDataType) {
+      logger_->error("[BootstrapDataManager::loadData] undefined response type {}"
+                     , static_cast<int>(response.responsetype()));
+      return false;
+   }
+
+   const auto payload = BinaryData::fromString(response.responsedata());
+   const auto signature = BinaryData::fromString(response.datasignature());
+   const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
+
+   if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
+      logger_->error("[BootstrapDataManager::loadData] signature invalid");
+      return false;
+   }
+
+   return processBootstrapData(response.responsedata());
+}
+
+bool BootstrapDataManager::processBootstrapData(const std::string& rawString)
+{
    BootstrapData data;
 
-   if (!data.ParseFromString(response)) {
-      SPDLOG_LOGGER_ERROR(logger_, "data corrupted. Could not parse.");
+   if (!data.ParseFromString(rawString)) {
+      logger_->error("[BootstrapDataManager::processBootstrapData] data corrupted. Could not parse.");
       return false;
    }
 
    if (data.is_testnet() != (appSettings_->get<NetworkType>(ApplicationSettings::netType) == NetworkType::TestNet)) {
-      SPDLOG_LOGGER_ERROR(logger_, "network type mismatch in reply");
+      logger_->error("[BootstrapDataManager::processBootstrapData] network type mismatch in reply");
       return false;
    }
 
    if (data.revision() < currentRev_) {
-      SPDLOG_LOGGER_ERROR(logger_, "proxy has older revision {} than we ({})"
+      logger_->error("[BootstrapDataManager::processBootstrapData] proxy has older revision {} than we ({})"
          , data.revision(), currentRev_);
+      return false;
+   }
+
+   if (data.revision() == currentRev_) {
+      logger_->error("[BootstrapDataManager::processBootstrapData] having the same revision already");
+      return true;
+   }
+
+   if (data.proxy_keys_size() == 0
+     || data.armory_mainnet_keys_size() == 0
+     || data.armory_testnet_keys_size() == 0
+     || data.chat_keys_size() == 0
+     || data.cc_tracker_keys_size() == 0) {
       return false;
    }
 
    // authAddressManager_ is updated only after login (so need to do that before revision check)
    authAddressManager_->ProcessBSAddressListResponse(data);
 
-   if (data.revision() == currentRev_) {
-      SPDLOG_LOGGER_DEBUG(logger_, "having the same revision already");
-      return true;
-   }
-
    ccFileManager_->ProcessGenAddressesResponse(data);
 
-   return saveToFile(bootstapFilePath_.toStdString(), response, sig);
+   // load keys
+   proxyKey_ = data.proxy_keys(0);
+   chatKey_ = data.chat_keys(0);
+   ccTrackerKey_ = data.cc_tracker_keys(0);
+
+   currentRev_ = data.revision();
+
+   return true;
 }
 
-bool BootstrapDataManager::saveToFile(const std::string &path, const std::string &response, const std::string &sig)
+bool BootstrapDataManager::saveToLocalFile(const std::string &data)
 {
-   Blocksettle::Storage::CCDefinitions msg;
-   msg.set_response(response);
-   msg.set_signature(sig);
-   auto data = msg.SerializeAsString();
+   const auto path = appSettings_->bootstrapFilePath();
 
-   QFile f(QString::fromStdString(path));
+   QFile f(path);
    if (!f.open(QIODevice::WriteOnly)) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to open file {} for writing", path);
+      logger_->error("[BootstrapDataManager::saveToLocalFile] failed to open file {} for writing", path.toStdString());
       return false;
    }
 
-   auto writeSize = f.write(response.data(), static_cast<int>(response.size()));
-   if (static_cast<int>(response.size()) != writeSize) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to write to {}", path);
+   const auto writeSize = f.write(data.data(), static_cast<int>(data.size()));
+   if (static_cast<int>(data.size()) != writeSize) {
+      logger_->error("[BootstrapDataManager::saveToLocalFile] failed to write to {}", path.toStdString());
       return false;
    }
 
    return true;
 }
 
-bool BootstrapDataManager::isTestNet() const
+std::string BootstrapDataManager::getProxyKey() const
 {
-   return appSettings_->get<NetworkType>(ApplicationSettings::netType) != NetworkType::MainNet;
+   return proxyKey_;
 }
 
-
-bool BootstrapDataManager::verifySignature(const BinaryData &data, const BinaryData &sign, const bs::Address &signAddress)
+std::string BootstrapDataManager::getChatKey() const
 {
-   return ArmorySigner::Signer::verifyMessageSignature(data, signAddress.prefixed(), sign);
+   return chatKey_;
 }
 
-BootstrapFileError BootstrapDataManager::loadFromFile(const std::string &path, NetworkType netType)
+std::string BootstrapDataManager::getCCTrackerKey() const
 {
-   QFile f(QString::fromStdString(path));
-   if (!f.exists()) {
-      SPDLOG_LOGGER_DEBUG(logger_, "no bootstrap file to load at {}", path);
-      return BootstrapFileError::ReadError;
-   }
-   if (!f.open(QIODevice::ReadOnly)) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to open file {} for reading", path);
-      return BootstrapFileError::ReadError;
-   }
-
-   const auto buf = f.readAll();
-   if (buf.isEmpty()) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to read from {}", path);
-      return BootstrapFileError::ReadError;
-   }
-
-   Blocksettle::Storage::CCDefinitions msg;
-   bool result = msg.ParseFromArray(buf.data(), buf.size());
-   if (!result) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to parse storage file");
-      return BootstrapFileError::InvalidFormat;
-   }
-
-   result = verifySignature(BinaryData::fromString(msg.response()), BinaryData::fromString(msg.signature()), signAddress_);
-   if (!result) {
-      SPDLOG_LOGGER_ERROR(logger_, "signature verification failed for {}", path);
-      return BootstrapFileError::InvalidSign;
-   }
-
-   BootstrapData data;
-   if (!data.ParseFromString(msg.response())) {
-      SPDLOG_LOGGER_ERROR(logger_, "failed to parse {}", path);
-      return BootstrapFileError::InvalidFormat;
-   }
-
-   if (data.is_testnet() != (netType == NetworkType::TestNet)) {
-      SPDLOG_LOGGER_ERROR(logger_, "wrong network type in {}", path);
-      return BootstrapFileError::InvalidFormat;
-   }
-
-   ccFileManager_->ProcessGenAddressesResponse(data);
-
-   return BootstrapFileError::NoError;
+   return ccTrackerKey_;
 }

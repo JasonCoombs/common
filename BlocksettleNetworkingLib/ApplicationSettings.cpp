@@ -118,7 +118,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
    #else
       { envConfiguration,        SettingDef(QLatin1String("envConfiguration"), static_cast<int>(EnvConfiguration::Staging)) },
    #endif
-      { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString(), true) },
       { chatDbFile,              SettingDef(QString(), AppendToWritableDir(QLatin1String("chat2.db"))) },
       { celerUsername,           SettingDef(QLatin1String("MatchSystemUsername")) },
       { signerIndex,             SettingDef(QLatin1String("SignerIndex"), 0) },
@@ -173,8 +172,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
          << QLatin1String("03c49668bc42777d2701c936e44ca2de8e834888d4842c6b4aaa2e8c99c7d1ba6d")       // mainnet Armory cluster key
          << QLatin1String("02219ecd0e6a6e560d53f9958678213bc51036496223405232fe54fb42dcea18b6")) },   // testnet Armory cluster key
       { twoWaySignerAuth,        SettingDef(QLatin1String("TwoWaySignerAuth"), true) },
-      { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString(), true) },
-      { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString(), true) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
