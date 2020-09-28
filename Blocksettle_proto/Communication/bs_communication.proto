@@ -169,8 +169,10 @@ message BootstrapData
    repeated string   proxy_keys           = 3;
    repeated string   armory_mainnet_keys  = 4;
    repeated string   armory_testnet_keys  = 5;
+   repeated string   chat_keys            = 6;
+   repeated string   cc_tracker_keys      = 7;
 
-   repeated string   validation_address   = 6;
+   repeated string   validation_address   = 8;
 
-   repeated CCSecurityDefinition cc_securities  = 7;
+   repeated CCSecurityDefinition cc_securities  = 9;
 }
