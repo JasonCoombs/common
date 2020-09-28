@@ -22,11 +22,6 @@
 
 #include <QFile>
 
-#include "bs_communication.pb.h"
-#include "bs_storage.pb.h"
-
-using namespace Blocksettle::Communication;
-
 CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
    : logger_{logger}
@@ -70,9 +65,9 @@ void CCFileManager::cancelActiveSign()
    }
 }
 
-void CCFileManager::ProcessGenAddressesResponse(const Blocksettle::Communication::BootstrapData &data)
+void CCFileManager::SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions)
 {
-   resolver_->fillFrom(data);
+   resolver_->fillFrom(definitions);
 }
 
 bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, const std::string &ccProduct)
@@ -201,16 +196,11 @@ bs::Address CCPubResolver::genesisAddrFor(const std::string &cc) const
    return {};
 }
 
-void CCPubResolver::fillFrom(const Blocksettle::Communication::BootstrapData &resp)
+void CCPubResolver::fillFrom(const std::vector<bs::network::CCSecurityDef>& definitions)
 {
    clear();
-   for (const auto &ccSecurity : resp.cc_securities()) {
-      bs::network::CCSecurityDef ccSecDef = {
-         ccSecurity.securityid(), ccSecurity.product(),
-         bs::Address::fromAddressString(ccSecurity.genesisaddr()), ccSecurity.satoshisnb()
-      };
+   for (const auto &ccSecDef : definitions) {
       add(ccSecDef);
    }
-   logger_->debug("[CCFileManager::ProcessCCGenAddressesResponse] got {} CC gen address[es]", securities_.size());
    cbLoadComplete_();
 }

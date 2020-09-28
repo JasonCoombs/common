@@ -22,12 +22,6 @@
 #include "BsClient.h"
 #include "Wallets/SyncWallet.h"
 
-namespace Blocksettle {
-   namespace Communication {
-      class BootstrapData;
-   }
-}
-
 class ApplicationSettings;
 class BaseCelerClient;
 
@@ -48,7 +42,7 @@ public:
    bs::Address genesisAddrFor(const std::string &cc) const override;
    std::vector<std::string> securities() const override;
 
-   void fillFrom(const Blocksettle::Communication::BootstrapData &data);
+   void fillFrom(const std::vector<bs::network::CCSecurityDef>& definitions);
 
 private:
    void add(const bs::network::CCSecurityDef &);
@@ -85,7 +79,7 @@ public:
 
    void setBsClient(const std::weak_ptr<BsClient> &);
 
-   void ProcessGenAddressesResponse(const Blocksettle::Communication::BootstrapData &data);
+   void SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions);
 
 signals:
    void CCSecurityDef(bs::network::CCSecurityDef);

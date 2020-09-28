@@ -120,7 +120,6 @@ public:
       remoteSigners,
       rememberLoginUserName,
       armoryServers,
-      defaultArmoryServersKeys,
       twoWaySignerAuth,
       ChartProduct,
       ChartTimeframe,

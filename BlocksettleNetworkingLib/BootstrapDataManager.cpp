@@ -11,9 +11,8 @@
 #include "BootstrapDataManager.h"
 
 #include "ApplicationSettings.h"
-#include "AuthAddressManager.h"
-#include "CCFileManager.h"
 #include "EncryptionUtils.h"
+#include "Signer.h"
 
 #include <spdlog/spdlog.h>
 
@@ -25,12 +24,8 @@ using namespace Blocksettle::Communication;
 
 
 BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger> &logger
-   , const std::shared_ptr<ApplicationSettings> &appSettings
-   , const std::shared_ptr<AuthAddressManager> &authAddressManager
-   , const std::shared_ptr<CCFileManager> &ccFileManager)
+   , const std::shared_ptr<ApplicationSettings> &appSettings)
    : appSettings_(appSettings)
-   , authAddressManager_(authAddressManager)
-   , ccFileManager_(ccFileManager)
 {
 }
 
@@ -130,19 +125,30 @@ bool BootstrapDataManager::processBootstrapData(const std::string& rawString)
      || data.armory_mainnet_keys_size() == 0
      || data.armory_testnet_keys_size() == 0
      || data.chat_keys_size() == 0
-     || data.cc_tracker_keys_size() == 0) {
+     || data.cc_tracker_keys_size() == 0
+     || data.validation_address_size() == 0) {
       return false;
    }
-
-   // authAddressManager_ is updated only after login (so need to do that before revision check)
-   authAddressManager_->ProcessBSAddressListResponse(data);
-
-   ccFileManager_->ProcessGenAddressesResponse(data);
 
    // load keys
    proxyKey_ = data.proxy_keys(0);
    chatKey_ = data.chat_keys(0);
    ccTrackerKey_ = data.cc_tracker_keys(0);
+
+   mainnetArmoryKey_ = data.armory_mainnet_keys(0);
+   testnetArmoryKey_ = data.armory_testnet_keys(0);
+
+   validationAddresses_ = std::unordered_set<std::string>(data.validation_address().begin(), data.validation_address().end());
+
+   ccDefinitions_.clear();
+
+   for (const auto &ccSecurity : data.cc_securities()) {
+      bs::network::CCSecurityDef ccSecDef = {
+         ccSecurity.securityid(), ccSecurity.product(),
+         bs::Address::fromAddressString(ccSecurity.genesisaddr()), ccSecurity.satoshisnb()
+      };
+      ccDefinitions_.emplace_back(ccSecDef);
+   }
 
    currentRev_ = data.revision();
 
@@ -181,4 +187,23 @@ std::string BootstrapDataManager::getChatKey() const
 std::string BootstrapDataManager::getCCTrackerKey() const
 {
    return ccTrackerKey_;
+}
+
+std::string BootstrapDataManager::getArmoryTestnetKey() const
+{
+   return mainnetArmoryKey_;
+}
+
+std::string BootstrapDataManager::getArmoryMainnetKey() const
+{
+   return testnetArmoryKey_;
+}
+
+std::unordered_set<std::string> BootstrapDataManager::GetAuthValidationList() const
+{
+   return validationAddresses_;
+}
+std::vector<bs::network::CCSecurityDef> BootstrapDataManager::GetCCDefinitions() const
+{
+   return ccDefinitions_;
 }

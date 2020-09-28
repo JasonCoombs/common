@@ -136,7 +136,7 @@ public:
 
    bool UserCanSubmitAuthAddress() const;
 
-   void ProcessBSAddressListResponse(const Blocksettle::Communication::BootstrapData &data);
+   void SetLoadedValidationAddressList(const std::unordered_set<std::string>& validationAddresses);
 
 private slots:
    void tryVerifyWalletAddresses();

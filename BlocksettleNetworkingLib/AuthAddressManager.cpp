@@ -433,12 +433,12 @@ std::string AuthAddressManager::readyErrorStr(AuthAddressManager::ReadyError err
    return "Unknown";
 }
 
-void AuthAddressManager::ProcessBSAddressListResponse(const Blocksettle::Communication::BootstrapData &data)
+void AuthAddressManager::SetLoadedValidationAddressList(const std::unordered_set<std::string>& validationAddresses)
 {
-   logger_->debug("[AuthAddressManager::ProcessBSAddressListResponse] get {} BS addresses", data.validation_address().size());
-   std::unordered_set<std::string> tempList(data.validation_address().begin(), data.validation_address().end());
+   logger_->debug("[AuthAddressManager::SetLoadedValidationAddressList] get {} BS addresses", validationAddresses.size());
+
    ClearAddressList();
-   SetBSAddressList(tempList);
+   SetBSAddressList(validationAddresses);
    tryVerifyWalletAddresses();
 }
 

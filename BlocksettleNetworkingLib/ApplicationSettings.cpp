@@ -168,9 +168,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
          << QString::fromLatin1("%1:127.0.0.1:23456:").arg(localSignerDefaultName())) },
       { rememberLoginUserName,            SettingDef(QLatin1String("RememberLoginUserName"), true) },
       { armoryServers,                    SettingDef(QLatin1String("ArmoryServers")) },
-      { defaultArmoryServersKeys,         SettingDef(QLatin1String("DefaultArmoryServersKeys"), QStringList()
-         << QLatin1String("03c49668bc42777d2701c936e44ca2de8e834888d4842c6b4aaa2e8c99c7d1ba6d")       // mainnet Armory cluster key
-         << QLatin1String("02219ecd0e6a6e560d53f9958678213bc51036496223405232fe54fb42dcea18b6")) },   // testnet Armory cluster key
       { twoWaySignerAuth,        SettingDef(QLatin1String("TwoWaySignerAuth"), true) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },

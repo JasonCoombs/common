@@ -21,6 +21,7 @@
 
 #include "Address.h"
 #include "BtcDefinitions.h"
+#include "CommonTypes.h"
 
 namespace spdlog {
    class logger;
@@ -32,16 +33,12 @@ namespace Blocksettle {
 }
 
 class ApplicationSettings;
-class AuthAddressManager;
-class CCFileManager;
 
 class BootstrapDataManager
 {
 public:
    BootstrapDataManager(const std::shared_ptr<spdlog::logger> &logger
-      , const std::shared_ptr<ApplicationSettings> &appSettings
-      , const std::shared_ptr<AuthAddressManager> &authAddressManager
-      , const std::shared_ptr<CCFileManager> &ccFileManager);
+      , const std::shared_ptr<ApplicationSettings> &appSettings);
 
    bool hasLocalFile() const;
 
@@ -52,6 +49,11 @@ public:
    std::string getChatKey() const;
    std::string getCCTrackerKey() const;
 
+   std::string getArmoryTestnetKey() const;
+   std::string getArmoryMainnetKey() const;
+
+   std::unordered_set<std::string>           GetAuthValidationList() const;
+   std::vector<bs::network::CCSecurityDef>   GetCCDefinitions() const;
 private:
    bool loadData(const std::string& data);
    bool processBootstrapData(const std::string& data);
@@ -60,13 +62,16 @@ private:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<ApplicationSettings>   appSettings_;
 
-   std::shared_ptr<AuthAddressManager>    authAddressManager_;
-   std::shared_ptr<CCFileManager>         ccFileManager_;
-
    int         currentRev_ = 0;
    std::string proxyKey_;
    std::string chatKey_;
    std::string ccTrackerKey_;
+
+   std::string mainnetArmoryKey_;
+   std::string testnetArmoryKey_;
+
+   std::unordered_set<std::string>           validationAddresses_;
+   std::vector<bs::network::CCSecurityDef>   ccDefinitions_;
 };
 
 #endif // BOOTSTRAP_DATA_MANAGER_H
