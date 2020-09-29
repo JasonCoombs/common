@@ -369,6 +369,19 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
    msgZC->set_request_id(requestId);
    for (const auto &entry : entries) {
       auto msgTX = msgZC->add_tx_entries();
+      msgTX->set_tx_hash(entry.txHash.toBinStr());
+      for (const auto& walletId : entry.walletIds) {
+         msgTX->add_wallet_ids(walletId);
+      }
+      for (const auto& addr : entry.addresses) {
+         msgTX->add_addresses(addr.display());
+      }
+      msgTX->set_value(entry.value);
+      msgTX->set_block_num(entry.blockNum);
+      msgTX->set_chained_zc(entry.isChainedZC);
+      msgTX->set_rbf(entry.isRBF);
+      msgTX->set_recv_time(entry.recvTime.time_since_epoch().count());
+      msgTX->set_nb_conf(entry.nbConf);
    }
    bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);

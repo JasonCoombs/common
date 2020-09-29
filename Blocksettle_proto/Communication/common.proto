@@ -579,12 +579,13 @@ message WalletsMessage
          string wallet_id = 2;
          string wallet_name = 3;
          int32  wallet_type = 4;
-         int32  direction = 5;
-         string comment = 6;
-         bool   valid = 7;
-         string amount = 8;
-         repeated string out_addresses = 9;
-         bytes  tx = 10;
+         string wallet_symbol = 5;
+         int32  direction = 6;
+         string comment = 7;
+         bool   valid = 8;
+         string amount = 9;
+         repeated string out_addresses = 10;
+         bytes  tx = 11;
 
          message AddrDetail {
             string address = 1;
@@ -595,9 +596,9 @@ message WalletsMessage
             bytes  out_hash = 6;
             int32  out_index = 7;
          }
-         repeated AddrDetail input_addresses = 11;
-         repeated AddrDetail output_addresses = 12;
-         AddrDetail change_address = 13;
+         repeated AddrDetail input_addresses = 12;
+         repeated AddrDetail output_addresses = 13;
+         AddrDetail change_address = 14;
       }
       repeated TXDetail responses = 1;
    }

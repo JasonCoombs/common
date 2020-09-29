@@ -1219,6 +1219,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
          if (wallet) {
             resp->set_wallet_name(wallet->name());
             resp->set_wallet_type((int)wallet->type());
+            resp->set_wallet_symbol(wallet->displaySymbol().toStdString());
             resp->set_comment(wallet->getTransactionComment(req.txHash));
             resp->set_valid(wallet->isTxValid(req.txHash) == bs::sync::TxValidity::Valid);
             resp->set_amount(wallet->displayTxValue(req.value).toStdString());

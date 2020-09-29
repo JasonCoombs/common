@@ -272,6 +272,7 @@ namespace sync {
       std::string walletId;
       std::string walletName;
       bs::core::wallet::Type  walletType;
+      std::string walletSymbol;
       Transaction::Direction  direction;
       std::string comment;
       bool        isValid;
