@@ -180,7 +180,7 @@ signals:
    void connectionFailed();
 
    void emailHashReceived(const std::string &email, const std::string &hash);
-   void bootstapDataUpdated(const std::string& data);
+   void bootstrapDataUpdated(const std::string& data);
    void accountStateChanged(bs::network::UserType userType, bool enabled);
    void feeRateReceived(float feeRate);
    void balanceLoaded();

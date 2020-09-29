@@ -599,8 +599,8 @@ void BsClient::processProxyPb(const Response_ProxyPb &response)
 
 void BsClient::processGenAddrUpdated(const Response_GenAddrUpdated &response)
 {
-   SPDLOG_LOGGER_DEBUG(logger_, "bootstap data updated");
-   emit bootstapDataUpdated(response.bootstrap_data_signed());
+   SPDLOG_LOGGER_DEBUG(logger_, "bootstrap data updated");
+   emit bootstrapDataUpdated(response.bootstrap_data_signed());
 }
 
 void BsClient::processUserStatusUpdated(const Response_UserStatusUpdated &response)
