@@ -74,6 +74,8 @@ bool SignerClient::process(const Envelope &env)
       return processSetSettlId(env.id, msg.settl_id_set());
    case SignerMessage::kRootPubkey:
       return processRootPubKey(env.id, msg.root_pubkey());
+   case SignerMessage::kWindowVisibleChanged:
+      break;
    default:
       logger_->debug("[{}] unknown signer message {}", __func__, msg.data_case());
       break;

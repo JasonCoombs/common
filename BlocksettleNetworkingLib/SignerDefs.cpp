@@ -310,7 +310,9 @@ BlockSettle::Common::HDWalletData bs::sync::HDWalletData::toCommonMessage() cons
 {
    BlockSettle::Common::HDWalletData result;
    result.set_wallet_id(id);
+   result.set_name(name);
    result.set_is_primary(primary);
+   result.set_is_offline(offline);
    for (const auto &group : groups) {
       auto msgGroup = result.add_groups();
       msgGroup->set_type(static_cast<int>(group.type));
@@ -342,7 +344,9 @@ bs::sync::HDWalletData bs::sync::HDWalletData::fromCommonMessage(
 {
    HDWalletData result;
    result.id = msg.wallet_id();
+   result.name = msg.name();
    result.primary = msg.is_primary();
+   result.offline = msg.is_offline();
    for (const auto &msgGroup : msg.groups()) {
       HDWalletData::Group group;
       group.type = static_cast<bs::hd::CoinType>(msgGroup.type());

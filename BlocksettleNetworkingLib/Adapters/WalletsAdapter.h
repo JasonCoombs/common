@@ -25,10 +25,13 @@ namespace BlockSettle {
    namespace Common {
       class ArmoryMessage_AddressTxNsResponse;
       class ArmoryMessage_Transactions;
+      class ArmoryMessage_UTXOs;
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
       class WalletsMessage_AddressComments;
+      class WalletsMessage_TXComment;
       class WalletsMessage_TXDetailsRequest;
+      class WalletsMessage_UtxoListRequest;
       class WalletsMessage_WalletAddresses;
       class WalletsMessage_WalletsListRequest;
    }
@@ -124,13 +127,17 @@ private:
       , const BlockSettle::Common::WalletsMessage_WalletAddresses &);
    bool processSetAddrComments(const bs::message::Envelope &
       , const BlockSettle::Common::WalletsMessage_AddressComments &);
+   bool processSetTxComment(const BlockSettle::Common::WalletsMessage_TXComment&);
    bool processTXDetails(const bs::message::Envelope &
       , const BlockSettle::Common::WalletsMessage_TXDetailsRequest &);
+   bool processGetUTXOs(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_UtxoListRequest&);
 
    void processTransactions(uint64_t msgId
       , const BlockSettle::Common::ArmoryMessage_Transactions &);
    bs::sync::Transaction::Direction getDirection(const BinaryData &txHash
       , const std::shared_ptr<bs::sync::Wallet> &, const std::map<BinaryData, Tx> &) const;
+   bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -189,6 +196,18 @@ private:
    };
    std::map<uint64_t, TXDetailData> initialHashes_;
    std::map<uint64_t, TXDetailData> prevHashes_;
+
+   struct UTXORequest {
+      bs::message::Envelope            env;
+      std::string    id;
+      std::string    walletId;
+      std::unordered_set<std::string>  walletIds;
+      std::unordered_map<std::string, std::vector<UTXO>> spendableUTXOs;
+      std::unordered_map<std::string, std::vector<UTXO>> zcUTXOs;
+      bool requireZC{ false };
+   };
+   std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoSpendableReqs_;
+   std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoZcReqs_;
 };
 
 

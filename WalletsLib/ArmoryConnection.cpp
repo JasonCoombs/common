@@ -295,6 +295,7 @@ bool ArmoryConnection::goOnline()
                      , static_cast<int>(state_.load()));
       return false;
    }
+   logger_->debug("[ArmoryConnection::goOnline]");
    bdv_->goOnline();
    isOnline_ = true;
    return true;

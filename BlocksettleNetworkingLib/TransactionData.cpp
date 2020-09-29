@@ -96,7 +96,7 @@ bool TransactionData::setWallet(const std::shared_ptr<bs::sync::Wallet> &wallet
    return true;
 }
 
-bool TransactionData::setWallets(const std::vector<std::string>& walletsId
+bool TransactionData::setUTXOs(const std::vector<std::string>& walletsId
    , uint32_t topBlock, const std::vector<UTXO>& utxos, bool resetInputs
    , const std::function<void()>& cbInputsReset)
 {
@@ -655,7 +655,7 @@ std::vector<UTXO> TransactionData::inputs() const
 
 bool TransactionData::IsTransactionValid() const
 {
-   return ((wallet_ && selectedInputs_) || summary_.fixedInputs)
+   return (((wallet_ || !walletsId_.empty()) && selectedInputs_) || summary_.fixedInputs)
       && summary_.usedTransactions != 0
       && (!qFuzzyIsNull(feePerByte_) || totalFee_ != 0 || summary_.totalFee != 0)
       && RecipientsReady();
@@ -832,49 +832,52 @@ bs::core::wallet::TXSignRequest TransactionData::createTXRequest(bool isRBF
    } else if (wallet_) {
       wallets.push_back(wallet_);
    }
-   if (wallets.empty()) {
-      SPDLOG_LOGGER_ERROR(logger_, "no wallets found");
-      return {};
-   }
 
-   if (!changeAddr.empty()) {
-      bool changeAddrFound = false;
-      for (const auto &wallet : wallets) {
-         if (!wallet->getAddressIndex(changeAddr).empty()) {
-            wallet->setAddressComment(changeAddr, bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
-            changeAddrFound = true;
-            break;
-         }
-      }
-      if (!changeAddrFound) {
-         SPDLOG_LOGGER_ERROR(logger_, "can't find change address index");
-         return {};
-      }
-   }
-
+   bs::core::wallet::TXSignRequest txReq;
    const auto fee = summary_.totalFee ? summary_.totalFee : totalFee();
 
-   auto txReq = bs::sync::wallet::createTXRequest(wallets, inputs(), GetRecipientList()
-      , true, changeAddr, fee, isRBF);
-   if (group_) {
-      txReq.walletIds.clear();
-      std::set<std::string> walletIds;
-      const auto &leaves = group_->getAllLeaves();
-      for (const auto &input : inputs()) {
-         std::string inputLeafId;
-         for (const auto &leaf : leaves) {
-            if (leaf->containsAddress(bs::Address::fromUTXO(input))) {
-               inputLeafId = leaf->walletId();
+   if (wallets.empty() && !walletsId_.empty()) {   // new code
+      txReq = bs::sync::wallet::createTXRequest(walletsId_, inputs(), GetRecipientList()
+         , true, changeAddr, {}, fee, isRBF);
+   }
+   else {
+      if (!changeAddr.empty()) {
+         bool changeAddrFound = false;
+         for (const auto& wallet : wallets) {
+            if (!wallet->getAddressIndex(changeAddr).empty()) {
+               wallet->setAddressComment(changeAddr, bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
+               changeAddrFound = true;
                break;
             }
          }
-         if (inputLeafId.empty()) {
-            throw std::runtime_error("orphaned input " + input.getTxHash().toHexStr(true)
-               + " without wallet");
+         if (!changeAddrFound) {
+            SPDLOG_LOGGER_ERROR(logger_, "can't find change address index");
+            return {};
          }
-         walletIds.insert(inputLeafId);
       }
-      txReq.walletIds.insert(txReq.walletIds.end(), walletIds.cbegin(), walletIds.cend());
+
+      txReq = bs::sync::wallet::createTXRequest(wallets, inputs(), GetRecipientList()
+         , true, changeAddr, fee, isRBF);
+      if (group_) {
+         txReq.walletIds.clear();
+         std::set<std::string> walletIds;
+         const auto& leaves = group_->getAllLeaves();
+         for (const auto& input : inputs()) {
+            std::string inputLeafId;
+            for (const auto& leaf : leaves) {
+               if (leaf->containsAddress(bs::Address::fromUTXO(input))) {
+                  inputLeafId = leaf->walletId();
+                  break;
+               }
+            }
+            if (inputLeafId.empty()) {
+               throw std::runtime_error("orphaned input " + input.getTxHash().toHexStr(true)
+                  + " without wallet");
+            }
+            walletIds.insert(inputLeafId);
+         }
+         txReq.walletIds.insert(txReq.walletIds.end(), walletIds.cbegin(), walletIds.cend());
+      }
    }
    return txReq;
 }

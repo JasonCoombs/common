@@ -316,6 +316,13 @@ void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string
       hct_->txSigned(id, {}, bs::error::ErrorCode::FailedToParse);
       return;
    }
+   const auto& itCb = signTxMap_.find(id);
+   if (itCb != signTxMap_.end()) {
+      itCb->second(BinaryData::fromString(response.signedtx())
+         , static_cast<bs::error::ErrorCode>(response.errorcode()), {});
+      signTxMap_.erase(itCb);
+      return;
+   }
    hct_->txSigned(id, BinaryData::fromString(response.signedtx())
       , static_cast<bs::error::ErrorCode>(response.errorcode()));
 }
@@ -507,6 +514,37 @@ bs::signer::RequestId HeadlessContainer::signTXRequest(const bs::core::wallet::T
    const auto id = Send(packet);
    signRequests_.insert(id);
    return id;
+}
+
+void HeadlessContainer::signTXRequest(const bs::core::wallet::TXSignRequest& txReq
+   , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>& cb
+   , TXSignMode mode, bool keepDuplicatedRecipients)
+{
+   if (!txReq.isValid()) {
+      logger_->error("[HeadlessContainer::signTXRequest] Invalid TXSignRequest");
+      cb({}, bs::error::ErrorCode::InternalError, "invalid request");
+      return;
+   }
+   const auto& request = bs::signer::coreTxRequestToPb(txReq, keepDuplicatedRecipients);
+
+   headless::RequestPacket packet;
+   switch (mode) {
+   case TXSignMode::Full:
+      packet.set_type(headless::SignTxRequestType);
+      break;
+
+   case TXSignMode::Partial:
+      packet.set_type(headless::SignPartialTXRequestType);
+      break;
+   }
+   packet.set_data(request.SerializeAsString());
+   const auto id = Send(packet);
+   if (id) {
+      signTxMap_[id] = cb;
+   }
+   else {
+      cb({}, bs::error::ErrorCode::InternalError, "failed to send");
+   }
 }
 
 bs::signer::RequestId HeadlessContainer::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txSignReq
@@ -1572,10 +1610,13 @@ void RemoteSigner::onDisconnected()
 
    // signRequests_ will be empty after that
    std::set<bs::signer::RequestId> tmpReqs = std::move(signRequests_);
-
    for (const auto &id : tmpReqs) {
       hct_->txSigned(id, {}, bs::error::ErrorCode::TxCancelled, "Signer disconnected");
    }
+   for (const auto& signTx : signTxMap_) {
+      signTx.second({}, bs::error::ErrorCode::TxCancelled, "Signer disconnected");
+   }
+   signTxMap_.clear();
 
    hct_->connTorn();
    hct_->restartConnection();

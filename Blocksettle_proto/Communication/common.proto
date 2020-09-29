@@ -13,6 +13,8 @@ syntax = "proto3";
 // Messages common between systems (e.g. terminal and PB)
 package BlockSettle.Common;
 
+import "headless.proto";
+
 
 message Empty {}
 
@@ -220,6 +222,12 @@ message ArmoryMessage
       repeated ByBlockCnt fee_levels = 1;
    }
 
+   message UTXOs
+   {
+      string wallet_id = 1;
+      repeated bytes utxos = 2;
+   }
+
    oneof data
    {
       Loading           loading = 1;
@@ -254,6 +262,10 @@ message ArmoryMessage
       AddressHistory    address_history = 31;
       FeeLevelsRequest  fee_levels_request = 32;
       FeeLevelsResponse fee_levels_response = 33;
+      WalletIDs	        get_spendable_utxos = 34;
+      WalletIDs         get_zc_utxos = 35;
+      WalletIDs         get_rbf_utxos = 36;
+      UTXOs             utxos = 37;
    }
 }
 
@@ -325,7 +337,9 @@ message HDWalletData
    }
    string wallet_id = 1;
    repeated Group groups = 2;
-   bool   is_primary = 3;
+   string name = 3;
+   bool   is_primary = 4;
+   bool   is_offline = 5;
 }
 
 
@@ -421,6 +435,22 @@ message SignerMessage
       bool   success = 3;
    }
 
+   message SignTxRequest
+   {
+      string id = 1;
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 2;
+      int32  sign_mode = 3;
+      bool   keep_dup_recips = 4;
+   }
+
+   message SignTxResponse
+   {
+      string id = 1;
+      bytes  signed_tx = 2;
+      int32  error_code = 3;
+      string error_text = 4;
+   }
+
    oneof data
    {
       NewKeyCompare      new_key_request  = 1;
@@ -452,6 +482,8 @@ message SignerMessage
       RootPubKey         root_pubkey = 27;
       string             del_hd_root = 28;
       string             del_hd_leaf = 29;
+      SignTxRequest      sign_tx_request = 30;
+      SignTxResponse     sign_tx_response = 31;
    }
 }
 
@@ -572,14 +604,34 @@ message WalletsMessage
 
    message WalletsListRequest
    {
-      bool legacy = 1;
-      bool hardware = 2;
-      bool segwit = 3;
+      string id = 1;
+      bool   full = 2;
+      bool   legacy = 3;
+      bool   native_sw = 4;
+      bool   nested_sw = 5;
+      bool   hardware = 6;
+      bool   watch_only = 7;
    }
 
    message WalletsListResponse
    {
-      repeated HDWalletData wallets = 1;
+      string id = 1;
+      repeated HDWalletData wallets = 2;
+   }
+
+   message UtxoListRequest
+   {
+      string id = 1;
+      string wallet_id = 2;
+      bool   confirmed_only = 3;
+      bool   segwit_only = 4;
+   }
+
+   message UtxoListResponse
+   {
+      string id = 1;
+      string wallet_id = 2;
+      repeated bytes utxos = 3;
    }
 
    oneof data
@@ -611,11 +663,12 @@ message WalletsMessage
       AddressComments     addr_comments = 25;
       AddressComments     set_addr_comments = 26;
       TXComment           set_tx_comment = 27;
-      string              get_spendable_utxos = 28;
-      TXDetailsRequest    tx_details_request = 29;
-      TXDetailsResponse   tx_details_response = 30;
-      WalletsListRequest  wallets_list_request = 31;
-      WalletsListResponse wallets_list_response = 32;
+      TXDetailsRequest    tx_details_request = 28;
+      TXDetailsResponse   tx_details_response = 29;
+      WalletsListRequest  wallets_list_request = 30;
+      WalletsListResponse wallets_list_response = 31;
+      UtxoListRequest     get_utxos = 32;
+      UtxoListResponse    utxos = 33;
    }
 }
 

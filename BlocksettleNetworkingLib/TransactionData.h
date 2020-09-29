@@ -93,17 +93,18 @@ public:
 
    [[deprecated]] bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
-   bool setWallets(const std::vector<std::string>& walletsId, uint32_t topBlock
+   bool setUTXOs(const std::vector<std::string>& walletsId, uint32_t topBlock
       , const std::vector<UTXO>&, bool resetInputs = false
       , const std::function<void()>& cbInputsReset = nullptr);
-   bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
+   [[deprecated]] bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
-   bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
+   [[deprecated]] bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
       , const std::vector<UTXO> &, uint32_t topBlock);
-   bool setGroupAndInputs(const std::shared_ptr<bs::sync::hd::Group> &
+   [[deprecated]] bool setGroupAndInputs(const std::shared_ptr<bs::sync::hd::Group> &
       , const std::vector<UTXO> &, uint32_t topBlock);
-   std::shared_ptr<bs::sync::Wallet> getWallet() const { return wallet_; }
-   std::shared_ptr<bs::sync::hd::Group> getGroup() const { return group_; }
+   [[deprecated]] std::shared_ptr<bs::sync::Wallet> getWallet() const { return wallet_; }
+   [[deprecated]] std::shared_ptr<bs::sync::hd::Group> getGroup() const { return group_; }
+   std::vector<std::string> getWallets() const { return walletsId_; }
    void setFeePerByte(float feePerByte);
    void setTotalFee(uint64_t fee, bool overrideFeePerByte = true);
    void setMinTotalFee(uint64_t fee) { minTotalFee_ = fee; }

@@ -51,7 +51,6 @@ bool InprocSigner::Start()
 bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest &txSignReq,
    TXSignMode mode, bool)
 {
-
    if (!txSignReq.isValid()) {
       logger_->error("[{}] Invalid TXSignRequest", __func__);
       return 0;
@@ -63,7 +62,7 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
          logger_->error("[{}] failed to find wallet with id {}", __func__, walletId);
          return 0;
       }
-      wallets.emplace_back(std::move(wallet));
+      wallets.push_back(wallet);
    }
    if (wallets.empty()) {
       logger_->error("[{}] empty wallets list", __func__);
@@ -115,6 +114,73 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
       });
    }
    return reqId;
+}
+
+void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignReq
+   , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>&cb
+   , TXSignMode mode, bool keepDuplicatedRecipients)
+{
+   if (!txSignReq.isValid()) {
+      logger_->error("[{}] Invalid TXSignRequest", __func__);
+      cb({}, bs::error::ErrorCode::InternalError, "invalid request");
+      return;
+   }
+   std::vector<std::shared_ptr<bs::core::Wallet>> wallets;
+   for (const auto& walletId : txSignReq.walletIds) {
+      const auto wallet = walletsMgr_->getWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[{}] failed to find wallet with id {}", __func__, walletId);
+         cb({}, bs::error::ErrorCode::InternalError, "wallet not found");
+         return;
+      }
+      wallets.push_back(wallet);
+   }
+   if (wallets.empty()) {
+      logger_->error("[{}] empty wallets list", __func__);
+      cb({}, bs::error::ErrorCode::InternalError, "empty wallets");
+      return;
+   }
+
+   const auto reqId = seqId_++;
+   try {
+      BinaryData signedTx;
+      if (mode == TXSignMode::Full) {
+         if (wallets.size() == 1) {
+            signedTx = wallets.front()->signTXRequest(txSignReq);
+         } else {
+            bs::core::wallet::TXMultiSignRequest multiReq;
+            multiReq.armorySigner_.merge(txSignReq.armorySigner_);
+
+            bs::core::WalletMap wallets;
+            for (unsigned i = 0; i < txSignReq.armorySigner_.getTxInCount(); i++) {
+               auto utxo = txSignReq.armorySigner_.getSpender(i)->getUtxo();
+               const auto addr = bs::Address::fromUTXO(utxo);
+               const auto wallet = walletsMgr_->getWalletByAddress(addr);
+               if (!wallet) {
+                  logger_->error("[{}] failed to find wallet for input address {}"
+                     , __func__, addr.display());
+                  cb({}, bs::error::ErrorCode::InternalError, "failed to find wallet for input address");
+                  return;
+               }
+               multiReq.addWalletId(wallet->walletId());
+               wallets[wallet->walletId()] = wallet;
+            }
+            multiReq.RBF = txSignReq.RBF;
+
+            signedTx = bs::core::SignMultiInputTX(multiReq, wallets);
+         }
+      } else {
+         if (wallets.size() != 1) {
+            logger_->error("[{}] can't sign partial request for more than 1 wallet", __func__);
+            cb({}, bs::error::ErrorCode::InternalError, "can't sign partial request for more than 1 wallet");
+            return;
+         }
+         signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
+      }
+      cb(signedTx, bs::error::ErrorCode::NoError, {});
+   } catch (const std::exception& e) {
+      cb({}, bs::error::ErrorCode::InternalError, e.what());
+   }
 }
 
 bs::signer::RequestId InprocSigner::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txReq

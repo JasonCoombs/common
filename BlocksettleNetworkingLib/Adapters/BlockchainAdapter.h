@@ -109,6 +109,8 @@ protected:
    bool processAddressHist(const bs::message::Envelope&, const std::string&);
    bool processFeeLevels(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_FeeLevelsRequest &);
+   bool processGetUTXOs(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_WalletIDs&, bool zc = false, bool rbf = false);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -144,6 +146,8 @@ protected:
       std::string    walletId;
    };
    std::unordered_map<std::string, AddressHistRequest>   addressSubscriptions_;
+
+   std::unordered_set<std::string>  receivedZCs_;
 
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);

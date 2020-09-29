@@ -80,14 +80,13 @@ namespace bs {
          // inputIndices required for HW wallets only.
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::string> &walletsIds
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::string> &inputIndices
             , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const std::string &changeIndex = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
+         [[deprecated]] bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts

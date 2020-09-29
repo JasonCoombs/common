@@ -42,8 +42,11 @@ public:
       , const std::shared_ptr<bs::message::User> &);
    ~SignerClient() override = default;
 
-   bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+   [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override { return 0; }
+   void signTXRequest(const bs::core::wallet::TXSignRequest&
+      , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>&
+      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override {}
 
    bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
       , const bs::sync::PasswordDialogData &dialogData

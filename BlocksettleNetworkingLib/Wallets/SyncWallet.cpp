@@ -783,7 +783,6 @@ void Wallet::init(bool force)
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::string> &walletsIds
    , const std::vector<UTXO> &inputs
-   , const std::vector<std::string> &inputIndices
    , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
    , bool allowBroadcasts, const bs::Address &changeAddr
    , const std::string &changeIndex
@@ -853,20 +852,6 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       walletIds.push_back(wallet->walletId());
    }
 
-   std::vector<std::string> inputIndices;
-   for (const auto &utxo : inputs) {
-      auto inputAddress = bs::Address::fromUTXO(utxo);
-      std::string inputIndex;
-      for (const auto &wallet : wallets) {
-         inputIndex = wallet->getAddressIndex(inputAddress);
-         if (!inputIndex.empty()) {
-            break;
-         }
-      }
-      // inputIndex could be empty (for example for P2WSH payout input)
-      inputIndices.push_back(inputIndex);
-   }
-
    std::string changeIndex;
    if (changeAddr.isValid()) {
       for (const auto &wallet : wallets) {
@@ -881,7 +866,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       }
    }
 
-   return createTXRequest(walletIds, inputs, inputIndices, recipients, allowBroadcasts, changeAddr, changeIndex, fee, isRBF);
+   return createTXRequest(walletIds, inputs, recipients, allowBroadcasts, changeAddr, changeIndex, fee, isRBF);
 }
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets

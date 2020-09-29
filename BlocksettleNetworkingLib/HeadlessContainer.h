@@ -83,7 +83,10 @@ public:
    HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode, HeadlessCallbackTarget *);
    ~HeadlessContainer() noexcept override = default;
 
-   bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+   [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
+   void signTXRequest(const bs::core::wallet::TXSignRequest&
+      , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>&
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
 
    bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txSignReq
@@ -231,6 +234,7 @@ protected:
    std::map<bs::signer::RequestId, std::function<void(const BIP32_Node &)>>   cbChatNodeMap_;
    std::map<bs::signer::RequestId, std::function<void(const bs::Address &)>>  cbSettlAuthMap_;
    std::map<bs::signer::RequestId, std::function<void(const BinaryData &, const BinaryData &)>>  cbSettlCPMap_;
+   std::map<bs::signer::RequestId, std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>> signTxMap_;
 
    std::map<bs::signer::RequestId, CreateHDLeafCb> cbCCreateLeafMap_;
    std::map<bs::signer::RequestId, PromoteHDWalletCb> cbPromoteHDWalletMap_;
