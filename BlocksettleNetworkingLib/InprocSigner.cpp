@@ -32,7 +32,7 @@ InprocSigner::InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &wallet
    walletsMgr_->addWallet(wallet);
 }
 
-bool InprocSigner::Start()
+void InprocSigner::Start()
 {
    if (!walletsPath_.empty() && !walletsMgr_->walletsLoaded()) {
       const auto &cbLoadProgress = [this](size_t cur, size_t total) {
@@ -42,7 +42,7 @@ bool InprocSigner::Start()
    }
    inited_ = true;
    emit ready();
-   return true;
+   return;
 }
 
 // All signing code below doesn't include password request support for encrypted wallets - i.e.

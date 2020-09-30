@@ -31,6 +31,8 @@
 #include "headless.pb.h"
 #include "signer.pb.h"
 
+#include "SocketObject.h"
+
 namespace {
 
    constexpr int kKillTimeout = 5000;
@@ -621,8 +623,8 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    , const bs::core::wallet::SettlementData &sd, const bs::sync::PasswordDialogData &dialogData
    , const SignTxCb &cb)
 {
-   if ((txSignReq.armorySigner_.getTxInCount() != 1) || 
-      (txSignReq.armorySigner_.getTxOutCount() != 1) || 
+   if ((txSignReq.armorySigner_.getTxInCount() != 1) ||
+      (txSignReq.armorySigner_.getTxOutCount() != 1) ||
       sd.settlementId.empty()) {
       logger_->error("[HeadlessContainer::signSettlementPayoutTXRequest] Invalid PayoutTXSignRequest");
       return 0;
@@ -1437,24 +1439,33 @@ RemoteSigner::RemoteSigner(const std::shared_ptr<spdlog::logger> &logger
 {}
 
 // Establish the remote connection to the signer.
-bool RemoteSigner::Start()
+void RemoteSigner::Start()
 {
    if (!connection_) {
       RecreateConnection();
    }
 
-   // If we've already connected, don't do more setup.
+   // If we're already connected, don't do more setup.
    if (headlessConnFinished_) {
-      return true;
+      return;
    }
 
    {
       std::lock_guard<std::mutex> lock(mutex_);
-      listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_
-         , this);
+      listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_);
+      connect(listener_.get(), &HeadlessListener::connected, this
+         , &RemoteSigner::onConnected, Qt::QueuedConnection);
+      connect(listener_.get(), &HeadlessListener::authenticated, this
+         , &RemoteSigner::onAuthenticated, Qt::QueuedConnection);
+      connect(listener_.get(), &HeadlessListener::disconnected, this
+         , &RemoteSigner::onDisconnected, Qt::QueuedConnection);
+      connect(listener_.get(), &HeadlessListener::error, this
+         , &RemoteSigner::onConnError, Qt::QueuedConnection);
+      connect(listener_.get(), &HeadlessListener::PacketReceived, this
+         , &RemoteSigner::onPacketReceived, Qt::QueuedConnection);
    }
 
-   return Connect();
+   RemoteSigner::Connect();
 }
 
 bool RemoteSigner::Stop()
@@ -1462,27 +1473,114 @@ bool RemoteSigner::Stop()
    return Disconnect();
 }
 
-bool RemoteSigner::Connect()
+void RemoteSigner::Connect()
 {
    if (!connection_) {
-      logger_->error("[RemoteSigner::Connect] connection not created");
-      return false;
+      //QString is a disaster
+      emit connectionError(ConnectionError::UnknownError
+         , QString::fromLocal8Bit("[RemoteSigner::Connect] connection not created"));
    }
 
    if (connection_->isActive()) {
-      return true;
+      return;
    }
-   listener_->setConnected();
 
-   bool result = connection_->openConnection(host_.toStdString(), port_.toStdString(), listener_.get());
-   if (!result) {
-      logger_->error("[RemoteSigner::Connect] Failed to open connection to headless container");
-      return false;
-   }
+   auto connectCb = [this]()
+   {
+      listener_->wasErrorReported_ = false;
+      listener_->isShuttingDown_ = false;
+
+      bool result = connection_->openConnection(host_.toStdString(), port_.toStdString(), listener_.get());
+      if (!result) {
+         emit connectionError(ConnectionError::SocketFailed
+            , QString::fromLocal8Bit("[RemoteSigner::Connect] Failed to open connection to headless container"));
+         return;
+      }
+
+      headlessConnFinished_ = true;
+   };
 
    hct_->connected(host_.toStdString());
    headlessConnFinished_ = true;
-   return true;
+//   return true;
+
+   auto getCookieLbd = [this, connectCb]()
+   {
+      auto bip15xConn = std::dynamic_pointer_cast<Bip15xDataConnection>(connection_);
+      if (bip15xConn == nullptr) {
+         //cookie sharing is specific to BIP15x connections
+         connectCb();
+         return;
+      }
+
+      const std::string& serverName = host_.toStdString() + ":" + port_.toStdString();
+
+      //check client uses cookie
+      if (!bip15xConn->usesCookie()) {
+         connectCb();
+         return;
+      }
+
+      auto now = std::chrono::steady_clock::now();
+
+      /*
+      Probe the signer listen port. The signer creates the cookie before it starts
+      listening for incoming connections. This is to make sure the new signer has had
+      the time to replace existing cookie files before we try and read it, otherwise
+      we could end up reading an expired cookie before it's replaced.
+
+      We do not want to read the cookie after establishing the WS connection. This is
+      because the server initiates the AEAD handhsake and we'd have to hang the client
+      while it tries to read the cookie from disk. Instead, we make sure the cookie is
+      available before initiating an encrypted connecting with the signer.
+
+      This whole procedure will timeout after 5sec without success.
+      */
+      {
+         SimpleSocket testSocket(host_.toStdString(), port_.toStdString());
+         bool serverUp = false;
+
+         while (std::chrono::steady_clock::now() - now < std::chrono::seconds(5)) {
+            if (testSocket.testConnection()) {
+               serverUp = true;
+               break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+         }
+
+         if (!serverUp) {
+            emit connectionError(ConnectionError::SocketFailed
+               , QString::fromLocal8Bit("[RemoteSigner::Connect] could not connect to server"));
+            return;
+         }
+      }
+
+
+      //try to read cookie file
+      bool haveCookie = false;
+      while (std::chrono::steady_clock::now() - now < std::chrono::seconds(5)) {
+         std::string cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
+         if (bip15xConn->addCookieKeyToKeyStore(cookiePath, serverName)) {
+            haveCookie = true;
+            break;
+         }
+         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      }
+
+      if (!haveCookie) {
+         emit connectionError(ConnectionError::CookieError
+            , QString::fromLocal8Bit("[RemoteSigner::Connect] failed to load cookie"));
+         return;
+      }
+
+      connectCb();
+   };
+
+   std::thread connectThread(getCookieLbd);
+   if (connectThread.joinable()) {
+      connectThread.detach();
+   }
+>>>>>>> bs_dev
 }
 
 bool RemoteSigner::Disconnect()
@@ -1527,11 +1625,11 @@ void RemoteSigner::RecreateConnection()
    params.ephemeralPeers = ephemeralDataConnKeys_;
    params.ownKeyFileDir = ownKeyFileDir_;
    params.ownKeyFileName = ownKeyFileName_;
+   params.authMode = bs::network::BIP15xAuthMode::TwoWay;
 
    // Server's cookies are not available in remote mode
    if (opMode() == OpMode::Local || opMode() == OpMode::LocalInproc) {
       params.cookie = bs::network::BIP15xCookie::ReadServer;
-      params.cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
    }
 
    try {
@@ -1592,7 +1690,16 @@ void RemoteSigner::updatePeerKeys(const bs::network::BIP15xPeers &peers)
 
 void RemoteSigner::onConnected()
 {
-   Authenticate();
+   auto lbd = [this]()
+   {
+      Authenticate();
+   };
+
+   std::thread connThr(lbd);
+   if (connThr.joinable()) {
+      connThr.detach();
+   }
+
 }
 
 void RemoteSigner::onAuthenticated()
@@ -1795,14 +1902,10 @@ QStringList LocalSigner::args() const
    return result;
 }
 
-bool LocalSigner::Start()
+void LocalSigner::Start()
 {
    Stop();
-
-   bool result = RemoteSigner::Start();
-   if (!result) {
-      return false;
-   }
+   RemoteSigner::Start();
 
    if (startProcess_) {
       // If there's a previous headless process, stop it.
@@ -1823,7 +1926,7 @@ bool LocalSigner::Start()
          logger_->error("[LocalSigner::Start] Signer binary {} not found"
             , signerAppPath.toStdString());
          hct_->connError(UnknownError, tr("missing signer binary"));
-         return false;
+         return;
       }
 
       const auto cmdArgs = args();
@@ -1843,15 +1946,14 @@ bool LocalSigner::Start()
          logger_->error("[LocalSigner::Start] Failed to start process");
          headlessProcess_.reset();
          hct_->connError(UnknownError, tr("failed to start process"));
-         return false;
       }
    }
-
-   return true;
 }
 
 bool LocalSigner::Stop()
 {
+
+
    RemoteSigner::Stop();
 
    if (headlessProcess_) {
@@ -1862,4 +1964,39 @@ bool LocalSigner::Stop()
       headlessProcess_.reset();
    }
    return true;
+}
+
+void HeadlessListener::processDisconnectNotification()
+{
+   SPDLOG_LOGGER_INFO(logger_, "remote signer has been disconnected");
+   isConnected_ = false;
+   isReady_ = false;
+   tryEmitError(HeadlessContainer::SignerGoesOffline, tr("Remote signer disconnected"));
+}
+
+void HeadlessListener::tryEmitError(SignContainer::ConnectionError errorCode, const QString &msg)
+{
+   // Try to send error only once because only first error should be relevant.
+   if (!wasErrorReported_) {
+      wasErrorReported_ = true;
+      emit error(errorCode, msg);
+   }
+}
+
+bs::signer::RequestId HeadlessListener::newRequestId()
+{
+   return ++id_;
+}
+
+bool HeadlessListener::addCookieKeyToKeyStore(
+   const std::string& path, const std::string& name)
+{
+   auto bip15xConnection =
+      std::dynamic_pointer_cast<Bip15xDataConnection>(connection_);
+
+   if (bip15xConnection == nullptr) {
+      return false;
+   }
+
+   return bip15xConnection->addCookieKeyToKeyStore(path, name);
 }

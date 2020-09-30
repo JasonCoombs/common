@@ -73,10 +73,8 @@ public:
       armoryDbPort,
       armoryPathName,
       envConfiguration,
-      chatServerPubKey,
       chatDbFile,
       celerUsername,
-      localSignerPort,
       signerIndex,
       signerOfflineDir,
       autoSignSpendLimit,
@@ -122,14 +120,11 @@ public:
       remoteSigners,
       rememberLoginUserName,
       armoryServers,
-      defaultArmoryServersKeys,
       twoWaySignerAuth,
       ChartProduct,
       ChartTimeframe,
       ChartCandleCount,
       LastAqDir,
-      proxyServerPubKey,
-      ccServerPubKey,
       HideLegacyWalletWarning,
       DetailedSettlementTxDialogByDefault,
       AutoStartRFQScript,
@@ -205,7 +200,8 @@ public:
    // Returns "mainnet", "testnet" or "regtest"
    static std::string networkName(NetworkType type);
 
-   QString ccFilePath() const;
+   QString bootstrapFilePath() const;
+   QString bootstrapResourceFileName() const;
 
 signals:
    void settingChanged(int setting, QVariant value);

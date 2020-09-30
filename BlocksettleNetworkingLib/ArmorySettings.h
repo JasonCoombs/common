@@ -29,6 +29,7 @@ struct ArmoryServer
    QString armoryDBKey;
    SecureBinaryData  password;
    bool runLocally = false;
+   bool oneWayAuth_ = true;
 
    bool operator ==(const ArmoryServer &other) const  {
       return armoryDBIp == other.armoryDBIp

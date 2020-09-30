@@ -255,9 +255,9 @@ public:
       , const bs::network::BIP15xNewKeyCb &inNewKeyCB = nullptr);
    ~RemoteSigner() noexcept override = default;
 
-   bool Start() override;
+   void Start(void) override;
    bool Stop() override;
-   bool Connect() override;
+   void Connect(void) override;
    bool Disconnect() override;
    bool isOffline() const override;
    void updatePeerKeys(const bs::network::BIP15xPeers &);
@@ -310,7 +310,8 @@ public:
       , const bs::network::BIP15xNewKeyCb &inNewKeyCB = nullptr);
    ~LocalSigner() noexcept override;
 
-   bool Start() override;
+   void Start(void) override;
+   void Connect(void) override {}
    bool Stop() override;
 
 protected:
@@ -343,6 +344,7 @@ public:
       , bool updateId = true);
 
    bool isReady() const { return isReady_; }
+   bool addCookieKeyToKeyStore(const std::string&, const std::string&);
 
    void setConnected(bool flag = true);
 

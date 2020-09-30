@@ -40,9 +40,9 @@ public:
       , const std::shared_ptr<spdlog::logger> &);
    ~InprocSigner() noexcept override = default;
 
-   bool Start() override;
+   void Start() override;
    bool Stop() override { return true; }
-   bool Connect() override { return true; }
+   void Connect() override {}
    bool Disconnect() override { return true; }
    bool isOffline() const override { return false; }
    bool isWalletOffline(const std::string &) const override { return false; }

@@ -186,8 +186,10 @@ void ArmoryConnection::stopServiceThreads()
    }
 }
 
-void ArmoryConnection::setupConnection(NetworkType netType, const std::string &host
-   , const std::string &port, const BIP151Cb &cbBIP151)
+void ArmoryConnection::setupConnection(NetworkType netType
+   , const std::string &host, const std::string &port
+   , const std::string& datadir
+   , bool oneWayAuth, const BIP151Cb &cbBIP151)
 {
    addToQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
       tgt->onPrepareConnection(netType, host, port);
@@ -232,7 +234,7 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       logger_->debug("[ArmoryConnection::setupConnection] completed");
    };
 
-   const auto &connectRoutine = [this, registerRoutine, cbBIP151, host, port] {
+   const auto &connectRoutine = [this, registerRoutine, oneWayAuth, cbBIP151, host, port, datadir] {
       if (connThreadRunning_) {
          return;
       }
@@ -256,13 +258,23 @@ void ArmoryConnection::setupConnection(NetworkType netType, const std::string &h
       logger_->debug("[ArmoryConnection::setupConnection] connecting to Armory {}:{}"
                      , host, port);
 
+      auto passLbd = [](const std::set<BinaryData>&)->SecureBinaryData
+      {
+         //return empty passphase, we don't want to lock the key-store wallet (TODO: revisit)
+         return SecureBinaryData();
+      };
+
       // Get Armory BDV (gateway to the remote ArmoryDB instance). cbBIP151
       // will deal with key ACK/nACK. BIP 150/151 is transparent to us
       // otherwise. If it fails, the connection will fail.
       bdv_ = AsyncClient::BlockDataViewer::getNewBDV(host, port
-         , "" //ephemeral peers means key store isn't loaded, don't need its path
-         , nullptr //don't need a key store passphrase, it's not loaded
-         , true // enable ephemeralPeers, we will manage server keys ourselves (through cbBIP151)
+         , datadir
+         , passLbd
+
+         /*if cbBIP151 is set, use it and ignore key store (ephemeral peers)*/
+         , cbBIP151 != nullptr 
+
+         , oneWayAuth
          , cbRemote_);
       if (!bdv_) {
          logger_->error("[setupConnection (connectRoutine)] failed to "
