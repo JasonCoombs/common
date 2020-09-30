@@ -83,7 +83,7 @@ TransportBIP15xServer::TransportBIP15xServer(
    if (!ephemeralPeers) {
       /*
       TODO:
-      Trusted key store conflicts with on disk peer wallet key store. 
+      Trusted key store conflicts with on disk peer wallet key store.
       Reassess key storage strategy.
       */
 
@@ -92,8 +92,8 @@ TransportBIP15xServer::TransportBIP15xServer(
    }
 
    /*
-   This procedure overwrites all authpeers keys but our own. 
-   This means the authpeers file effectively only carries our 
+   This procedure overwrites all authpeers keys but our own.
+   This means the authpeers file effectively only carries our
    own keypair.
    */
    assert(cbTrustedClients_);
@@ -112,7 +112,7 @@ TransportBIP15xServer::TransportBIP15xServer(
 }
 
 // A specialized server connection constructor with limited options. Used only
-// for connections with ephemeral keys 
+// for connections with ephemeral keys
 //
 // INPUT:  Logger object. (const shared_ptr<spdlog::logger>&)
 //         Callback for getting a list of trusted clients. (function<vector<string>()>)
@@ -125,7 +125,7 @@ TransportBIP15xServer::TransportBIP15xServer(const std::shared_ptr<spdlog::logge
    , BIP15xAuthMode authMode
    , const std::string& ownKeyFileDir, const std::string& ownKeyFileName
    , bool makeServerCookie, bool readClientCookie
-   , const std::string& cookiePath) : 
+   , const std::string& cookiePath) :
    TransportBIP15xServer(logger, cbTrustedClients, true, authMode
       , ownKeyFileDir, ownKeyFileName, makeServerCookie, readClientCookie,
       cookiePath)
@@ -319,7 +319,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
       if (connection->encData_->isOneWayAuth())
       {
          writeToClient(
-            connection->encData_->getOwnPubKey(), 
+            connection->encData_->getOwnPubKey(),
             ArmoryAEAD::HandshakeSequence::PresentPubKey,
             false);
       }
@@ -332,7 +332,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
    }
 
    auto status = ArmoryAEAD::BIP15x_Handshake::serverSideHandshake(
-      connection->encData_.get(), 
+      connection->encData_.get(),
       msgObj.getAEADType(), msgObj.getData(),
       writeToClient);
 
@@ -446,7 +446,7 @@ void TransportBIP15xServer::addClient(const std::string &clientId, const ServerC
       , BinaryData::fromString(clientId).toHexStr());
    auto &connection = socketConnMap_[clientId];
    assert(!connection);
-   
+
    bool oneWayAuth = (authMode_ == BIP15xAuthMode::OneWay) ? true : false;
 
    auto lbds = getAuthPeerLambda();
@@ -487,20 +487,20 @@ BIP15xServerParams TransportBIP15xServer::getParams(unsigned port) const
 bool TransportBIP15xServer::createCookie()
 {
    /*
-   We hold the cookie file open with write privileges for the lifetime of 
+   We hold the cookie file open with write privileges for the lifetime of
    the server process.
    */
 
    if (SystemFileUtils::fileExist(cookiePath_)) {
       if (!SystemFileUtils::rmFile(cookiePath_)) {
-         logger_->error("[TransportBIP15x::genBIPIDCookie] unable to delete"
+         logger_->error("[TransportBIP15xServer::createCookie] unable to delete"
             " identity cookie {} - will not write a new one", cookiePath_);
          return false;
       }
    }
 
    if (cookieFile_ != nullptr) {
-      logger_->error("[TransportBIP15x::genBIPIDCookie] identity key file stream"
+      logger_->error("[TransportBIP15xServer::createCookie] identity key file stream"
          " {} is already opened - aborting", cookiePath_);
       return false;
    }
@@ -508,20 +508,20 @@ bool TransportBIP15xServer::createCookie()
    // Ensure that we only write the compressed key.
    cookieFile_ = std::make_unique<std::ofstream>(cookiePath_, std::ios::out | std::ios::binary);
    if (!cookieFile_->is_open()) {
-      logger_->error("[TransportBIP15x::genBIPIDCookie] can't open identity key"
+      logger_->error("[TransportBIP15xServer::createCookie] can't open identity key"
          " {} for writing", cookiePath_);
       cookieFile_.reset();
       return false;
    }
    const BinaryData ourIDKey = getOwnPubKey();
    if (ourIDKey.getSize() != BTC_ECKEY_COMPRESSED_LENGTH) {
-      logger_->error("[TransportBIP15x::genBIPIDCookie] server identity key {}"
+      logger_->error("[TransportBIP15xServer::createCookie] server identity key {}"
          " is uncompressed - will not write the identity cookie", cookiePath_);
       cookieFile_.reset();
       return false;
    }
 
-   logger_->debug("[TransportBIP15x::genBIPIDCookie] writing a new identity "
+   logger_->debug("[TransportBIP15xServer::createCookie] writing a new identity "
       "cookie {}", cookiePath_);
    cookieFile_->write(getOwnPubKey().getCharPtr(), BTC_ECKEY_COMPRESSED_LENGTH);
    cookieFile_->flush();
@@ -534,7 +534,7 @@ bool TransportBIP15xServer::rmCookieFile()
    cookieFile_.reset();
    if (SystemFileUtils::fileExist(cookiePath_)) {
       if (!SystemFileUtils::rmFile(cookiePath_)) {
-         logger_->error("[TransportBIP15x::rmCookieFile] unable to delete "
+         logger_->error("[TransportBIP15xServer::rmCookieFile] unable to delete "
             "identity cookie {}", cookiePath_);
          return false;
       }
