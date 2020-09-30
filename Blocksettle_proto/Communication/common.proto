@@ -570,6 +570,7 @@ message WalletsMessage
       }
       repeated TXDetail requests = 1;
       string address = 2;
+      bool   use_cache = 3;
    }
 
    message TXDetailsResponse

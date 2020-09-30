@@ -361,13 +361,47 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
    pushFill(env);
 }
 
+static std::vector<bs::TXEntry> mergeTXEntries(const std::vector<bs::TXEntry>& entries)
+{
+   const auto& cbFindDupEntry = [](const std::vector<bs::TXEntry>& entries
+      , const std::vector<bs::TXEntry>::iterator& itEntry)
+   {
+      for (auto it = entries.begin(); it != entries.end(); ++it) {
+         if (it == itEntry) {
+            continue;
+         }
+      }
+      return entries.end();
+   };
+   auto result = entries;
+   auto itEntry = result.begin();
+   while (itEntry != result.end()) {
+      std::vector<std::vector<bs::TXEntry>::const_iterator> dupIts;
+      for (auto it = itEntry + 1; it != result.end(); ++it) {
+         if (it->txHash == itEntry->txHash) {
+            dupIts.push_back(it);
+         }
+      }
+      if (!dupIts.empty()) {
+         std::reverse(dupIts.begin(), dupIts.end());
+         for (const auto& itDup : dupIts) {
+            itEntry->merge(*itDup);
+            result.erase(itDup);
+         }
+      }
+      itEntry++;
+   }
+   return result;
+}
+
 void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::vector<bs::TXEntry> &entries)
 {
    receivedZCs_.insert(requestId);
+   const auto& mergedEntries = mergeTXEntries(entries);
    ArmoryMessage msg;
    auto msgZC = msg.mutable_zc_received();
    msgZC->set_request_id(requestId);
-   for (const auto &entry : entries) {
+   for (const auto &entry : mergedEntries) {
       auto msgTX = msgZC->add_tx_entries();
       msgTX->set_tx_hash(entry.txHash.toBinStr());
       for (const auto& walletId : entry.walletIds) {
@@ -393,7 +427,7 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
       msgResp->set_filter("");
       msgResp->set_total_pages(0);
       msgResp->set_cur_block(armory_->topBlock());
-      for (const auto &entry : entries) {
+      for (const auto &entry : mergedEntries) {
          auto msgEntry = msgResp->add_entries();
          msgEntry->set_tx_hash(entry.txHash.toBinStr());
          msgEntry->set_value(entry.value);
@@ -828,7 +862,7 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
             {
                try {
                   auto le = entriesRet.get();
-                  auto entries = bs::TXEntry::fromLedgerEntries(le);
+                  auto entries = mergeTXEntries(bs::TXEntry::fromLedgerEntries(le));
                   for (auto &entry : entries) {
                      entry.nbConf = armory_->getConfirmationsNumber(entry.blockNum);
                   }

@@ -1058,6 +1058,7 @@ bool WalletsAdapter::processTXDetails(const bs::message::Envelope &env
    for (const auto &txHash : initialHashes) {
       msgReq->add_tx_hashes(txHash.toBinStr());
    }
+   msgReq->set_disable_cache(!request.use_cache());
    Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
    if (pushFill(envReq)) {
       initialHashes_[envReq.id] = { env, std::map<BinaryData, Tx>{}, requests };
@@ -1215,16 +1216,17 @@ void WalletsAdapter::processTransactions(uint64_t msgId
          if (req.value == 0) {
             req.value = itTx->second.getSumOfOutputs();
          }
+         Transaction::Direction direction = bs::sync::Transaction::Direction::Unknown;
          const auto &wallet = getWalletById(walletId);
          if (wallet) {
+            direction = getDirection(req.txHash, wallet, itId->second.allTXs);
             resp->set_wallet_name(wallet->name());
             resp->set_wallet_type((int)wallet->type());
             resp->set_wallet_symbol(wallet->displaySymbol().toStdString());
             resp->set_comment(wallet->getTransactionComment(req.txHash));
             resp->set_valid(wallet->isTxValid(req.txHash) == bs::sync::TxValidity::Valid);
             resp->set_amount(wallet->displayTxValue(req.value).toStdString());
-            resp->set_direction((int)getDirection(req.txHash, wallet
-               , itId->second.allTXs));
+            resp->set_direction((int)direction);
 
             resp->set_tx(itTx->second.serialize().toBinStr());
             const bool isReceiving = (req.value > 0);
@@ -1264,6 +1266,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             logger_->warn("[{}] failed to find wallet {}", __func__, req.walletId);
          }
          std::set<std::shared_ptr<bs::sync::Wallet>> inputWallets;
+         int64_t value = 0;
          for (int i = 0; i < itTx->second.getNumTxIn(); ++i) {
             bs::sync::AddressDetails addrDet;
             const auto &in = itTx->second.getTxInCopy(i);
@@ -1273,6 +1276,7 @@ void WalletsAdapter::processTransactions(uint64_t msgId
                continue;
             }
             const TxOut &prevOut = itPrev->second.getTxOutCopy(op.getTxOutIndex());
+            value += prevOut.getValue();
             addrDet.address = bs::Address::fromTxOut(prevOut);
             addrDet.value = prevOut.getValue();
             addrDet.type = prevOut.getScriptType();
@@ -1312,6 +1316,15 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             inAddr->set_out_hash(addrDet.outHash.toBinStr());
             inAddr->set_out_index(addrDet.outIndex);
             inAddr->set_script_type((int)addrDet.type);
+         }
+         const auto fee = value - itTx->second.getSumOfOutputs();
+         switch (direction) {
+         case Transaction::Direction::Internal:
+            resp->set_amount(wallet->displayTxValue(-fee).toStdString());
+            break;
+         case Transaction::Direction::Sent:
+            resp->set_amount(wallet->displayTxValue(req.value + fee).toStdString());
+            break;
          }
 
          std::vector<TxOut> allOutputs;
