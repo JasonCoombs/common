@@ -465,8 +465,8 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    , const bs::core::wallet::SettlementData &sd, const bs::sync::PasswordDialogData &dialogData
    , const SignTxCb &cb)
 {
-   if ((txSignReq.armorySigner_.getTxInCount() != 1) || 
-      (txSignReq.armorySigner_.getTxOutCount() != 1) || 
+   if ((txSignReq.armorySigner_.getTxInCount() != 1) ||
+      (txSignReq.armorySigner_.getTxOutCount() != 1) ||
       sd.settlementId.empty()) {
       logger_->error("[HeadlessContainer::signSettlementPayoutTXRequest] Invalid PayoutTXSignRequest");
       return 0;
@@ -1531,7 +1531,7 @@ void RemoteSigner::onConnected()
    if (connThr.joinable()) {
       connThr.detach();
    }
-      
+
 }
 
 void RemoteSigner::onAuthenticated()
@@ -1782,6 +1782,8 @@ void LocalSigner::Start()
 
 bool LocalSigner::Stop()
 {
+
+
    RemoteSigner::Stop();
 
    if (headlessProcess_) {
@@ -1819,9 +1821,9 @@ bs::signer::RequestId HeadlessListener::newRequestId()
 bool HeadlessListener::addCookieKeyToKeyStore(
    const std::string& path, const std::string& name)
 {
-   auto bip15xConnection = 
+   auto bip15xConnection =
       std::dynamic_pointer_cast<Bip15xDataConnection>(connection_);
-   
+
    if (bip15xConnection == nullptr) {
       return false;
    }

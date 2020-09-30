@@ -14,15 +14,14 @@ package Blocksettle.Communication;
 
 enum RequestType
 {
-   GetBSFundingAddressListType         = 2;
    ErrorMessageResponseType            = 3;
-   GetCCGenesisAddressesType           = 5;
    SubmitCCAddrInitialDistribType      = 6;
    GenerateCCSeedRequestType           = 7;
    RevokeAuthAddressRequestType        = 8;
    ConfirmAuthAddressSubmitType        = 9;
    CreateCCDefinitionRequestType       = 10;
    GetNetworkSettingsType              = 12;
+   BootstrapSignedDataType             = 13;
 }
 
 // copy of autheid.rp.GetResultResponse.SignatureResult
@@ -67,18 +66,6 @@ message ResponsePacket
    optional bytes       dataSignature = 3;
 }
 
-message WalletInfoContainer
-{
-   required bytes validation_addresses_info  = 1;
-   required bytes cc_definitions_info        = 2;
-}
-
-message GetBSFundingAddressListResponse
-{
-   required bool     is_testnet           = 1;
-   repeated string   validation_address   = 2;
-}
-
 message ErrorMessageResponse
 {
    required string errorMessage = 1;
@@ -108,20 +95,6 @@ message ClientAddress
    optional string mainPhone = 8;
    optional string company = 9;
    optional string countryCode = 10;
-}
-
-message GetCCGenesisAddressesResponse
-{
-   required bool                 is_testnet     = 1;
-   required int32                revision       = 2;
-   repeated CCSecurityDefinition ccSecurities   = 3;
-
-   message CCSecurityDefinition {
-      required string securityId  = 1;
-      required string product     = 2;
-      required string genesisAddr = 3;
-      required uint64 satoshisNb  = 4;
-   }
 }
 
 message SubmitAddrForInitialDistributionRequest
@@ -179,4 +152,27 @@ message GetNetworkSettingsResponse
    optional ConnectionData proxy = 5;
    optional Status status = 6;
    optional string statusMsg = 7;
+}
+
+message BootstrapData
+{
+   message CCSecurityDefinition {
+      required string securityId  = 1;
+      required string product     = 2;
+      required string genesisAddr = 3;
+      required uint64 satoshisNb  = 4;
+   }
+
+   required int32    revision             = 1;
+   required bool     is_testnet           = 2;
+
+   repeated string   proxy_keys           = 3;
+   repeated string   armory_mainnet_keys  = 4;
+   repeated string   armory_testnet_keys  = 5;
+   repeated string   chat_keys            = 6;
+   repeated string   cc_tracker_keys      = 7;
+
+   repeated string   validation_address   = 8;
+
+   repeated CCSecurityDefinition cc_securities  = 9;
 }

@@ -11,8 +11,6 @@
 #ifndef __CC_FILE_MANAGER_H__
 #define __CC_FILE_MANAGER_H__
 
-#include "CCPubConnection.h"
-
 #include <functional>
 #include <memory>
 #include <vector>
@@ -24,28 +22,15 @@
 #include "BsClient.h"
 #include "Wallets/SyncWallet.h"
 
-namespace Blocksettle {
-   namespace Communication {
-      class GetCCGenesisAddressesResponse;
-   }
-}
-
 class ApplicationSettings;
 class BaseCelerClient;
-
-enum class CcGenFileError : int {
-   NoError,
-   ReadError,
-   InvalidFormat,
-   InvalidSign,
-};
 
 class CCPubResolver : public bs::sync::CCDataResolver
 {
 public:
 
    using CCSecLoadedCb = std::function<void(const bs::network::CCSecurityDef &)>;
-   using CCLoadCompleteCb = std::function<void(unsigned int)>;
+   using CCLoadCompleteCb = std::function<void()>;
    CCPubResolver(const std::shared_ptr<spdlog::logger> &logger
       , const std::string &signAddress, const CCSecLoadedCb &cbSec
       , const CCLoadCompleteCb &cbLoad)
@@ -57,12 +42,8 @@ public:
    bs::Address genesisAddrFor(const std::string &cc) const override;
    std::vector<std::string> securities() const override;
 
-   void fillFrom(Blocksettle::Communication::GetCCGenesisAddressesResponse *resp);
-   CcGenFileError loadFromFile(const std::string &path, NetworkType netType);
-   bool saveToFile(const std::string &path, const std::string &response
-      , const std::string &signature);
+   void fillFrom(const std::vector<bs::network::CCSecurityDef>& definitions);
 
-   bool verifySignature(const std::string& data, const std::string& signature) const;
 private:
    void add(const bs::network::CCSecurityDef &);
    void clear();
@@ -76,7 +57,7 @@ private:
    const CCLoadCompleteCb  cbLoadComplete_;
 };
 
-class CCFileManager : public CCPubConnection
+class CCFileManager : public QObject
 {
 Q_OBJECT
 public:
@@ -90,18 +71,15 @@ public:
 
    std::shared_ptr<bs::sync::CCDataResolver> getResolver() const { return resolver_; }
 
-   void LoadSavedCCDefinitions();
    void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient> &);
 
    bool submitAddress(const bs::Address &, uint32_t seed, const std::string &ccProduct);
    bool wasAddressSubmitted(const bs::Address &);
    void cancelActiveSign();
 
-   bool hasLocalFile() const;
-
    void setBsClient(const std::weak_ptr<BsClient> &);
 
-   void setCcAddressesSigned(const BinaryData &data);
+   void SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions);
 
 signals:
    void CCSecurityDef(bs::network::CCSecurityDef);
@@ -112,20 +90,14 @@ signals:
    void CCInitialSubmitted(const QString);
    void CCSubmitFailed(const QString address, const QString &err);
    void Loaded();
-   void LoadingFailed(CcGenFileError);
-
-protected:
-   void ProcessGenAddressesResponse(const std::string& response, const std::string &sig) override;
-
-   bool IsTestNet() const override;
 
 private:
+   std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<ApplicationSettings>   appSettings_;
    std::shared_ptr<BaseCelerClient>       celerClient_;
 
-   std::shared_ptr<CCPubResolver>   resolver_;
-   std::weak_ptr<BsClient> bsClient_;
-   QString ccFilePath_;
+   std::shared_ptr<CCPubResolver>         resolver_;
+   std::weak_ptr<BsClient>                bsClient_;
 };
 
 #endif // __CC_FILE_MANAGER_H__

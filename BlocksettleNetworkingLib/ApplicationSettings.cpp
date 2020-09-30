@@ -118,7 +118,6 @@ ApplicationSettings::ApplicationSettings(const QString &appName
    #else
       { envConfiguration,        SettingDef(QLatin1String("envConfiguration"), static_cast<int>(EnvConfiguration::Staging)) },
    #endif
-      { chatServerPubKey,        SettingDef(QLatin1String("ChatServerPubKey"), QString(), true) },
       { chatDbFile,              SettingDef(QString(), AppendToWritableDir(QLatin1String("chat2.db"))) },
       { celerUsername,           SettingDef(QLatin1String("MatchSystemUsername")) },
       { signerIndex,             SettingDef(QLatin1String("SignerIndex"), 0) },
@@ -169,12 +168,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
          << QString::fromLatin1("%1:127.0.0.1:23456:").arg(localSignerDefaultName())) },
       { rememberLoginUserName,            SettingDef(QLatin1String("RememberLoginUserName"), true) },
       { armoryServers,                    SettingDef(QLatin1String("ArmoryServers")) },
-      { defaultArmoryServersKeys,         SettingDef(QLatin1String("DefaultArmoryServersKeys"), QStringList()
-         << QLatin1String("03c49668bc42777d2701c936e44ca2de8e834888d4842c6b4aaa2e8c99c7d1ba6d")       // mainnet Armory cluster key
-         << QLatin1String("02219ecd0e6a6e560d53f9958678213bc51036496223405232fe54fb42dcea18b6")) },   // testnet Armory cluster key
       { twoWaySignerAuth,        SettingDef(QLatin1String("TwoWaySignerAuth"), true) },
-      { proxyServerPubKey,       SettingDef(QLatin1String("ProxyServerPubKey"), QString(), true) },
-      { ccServerPubKey,          SettingDef(QLatin1String("CcServerPubKey"), QString(), true) },
       { LastAqDir,               SettingDef(QLatin1String("LastAqDir")) },
       { HideLegacyWalletWarning,             SettingDef(QStringLiteral("HideLegacyWalletWarning")) },
       { DetailedSettlementTxDialogByDefault, SettingDef(QLatin1String("DetailedSettlementTxDialogByDefault"), false) },
@@ -640,11 +634,18 @@ QString ApplicationSettings::getPath(const ApplicationSettings::SettingDef &s) c
    return QStringLiteral("%1/%2").arg(QString::fromStdString(envName(env))).arg(s.path);
 }
 
-QString ApplicationSettings::ccFilePath() const
+QString ApplicationSettings::bootstrapResourceFileName() const
 {
    auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
-   auto netType = get<NetworkType>(ApplicationSettings::netType);
-   auto fileName = fmt::format("ccgenaddr-{}-{}.signed", envName(conf), networkName(netType));
+   auto fileName = fmt::format("bootstrap-{}.data", envName(conf));
+   return QString::fromStdString("://resources/bootstrap_files/"+ fileName);
+}
+
+
+QString ApplicationSettings::bootstrapFilePath() const
+{
+   auto conf = EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
+   auto fileName = fmt::format("bootstrap-{}.data", envName(conf));
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 
