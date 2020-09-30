@@ -68,18 +68,18 @@ bool bip15x::addAuthPeer(AuthorizedPeers *authPeers, const BIP15xPeer &peer)
    return true;
 }
 
-void bip15x::updatePeerKeys(AuthorizedPeers *authPeers_, const BIP15xPeers &newPeers)
+void bip15x::updatePeerKeys(AuthorizedPeers *authPeers, const BIP15xPeers &newPeers)
 {
    // Make a copy of peers map!
-   const auto oldPeers = authPeers_->getPeerNameMap();
+   const auto oldPeers = authPeers->getPeerNameMap();
    for (const auto &oldPeer : oldPeers) {
       // Own key pair is also stored here, we should preserve it
       if (oldPeer.first != "own") {
-         authPeers_->eraseName(oldPeer.first);
+         authPeers->eraseName(oldPeer.first);
       }
    }
 
    for (const auto &newPeer : newPeers) {
-      authPeers_->addPeer(newPeer.pubKey(), std::vector<std::string>({newPeer.name()}));
+      authPeers->addPeer(newPeer.pubKey(), std::vector<std::string>({newPeer.name()}));
    }
 }

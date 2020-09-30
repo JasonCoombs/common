@@ -12,6 +12,8 @@
 
 #include <spdlog/spdlog.h>
 #include "Transport.h"
+#include "BinaryData.h"
+#include "TransportBIP15x.h"
 
 class Bip15xDataListener : public DataConnectionListener
 {
@@ -25,7 +27,9 @@ public:
 
    void OnConnected() override
    {
-      owner_->transport_->startHandshake();
+      if (owner_ != nullptr && owner_->isHandshakeCompleted()) {
+         owner_->listener_->OnConnected();
+      }
    }
 
    void OnDisconnected() override
@@ -109,4 +113,60 @@ bool Bip15xDataConnection::send(const std::string &data)
       }
    }
    return transport_->sendData(data);
+}
+
+BinaryData Bip15xDataConnection::getOwnPublicKey() const
+{
+   auto transportBIP15x = 
+      std::dynamic_pointer_cast<bs::network::TransportBIP15x>(transport_);
+   if (transportBIP15x == nullptr) {
+      throw std::runtime_error("unexpected/null transport ptr type");
+   }
+
+   return transportBIP15x->getOwnPubKey();
+}
+
+bool Bip15xDataConnection::addCookieKeyToKeyStore(
+   const std::string& path, const std::string& name)
+{
+   auto bip15xClient = std::dynamic_pointer_cast<
+      bs::network::TransportBIP15xClient>(transport_);
+   
+   if (bip15xClient == nullptr) {
+      if (logger_) {
+         logger_->warn("[Bip15xDataConnection::addCookieKeyToKeyStore] "
+            "unexpected transport ptr type");
+      }
+      return false;
+   }
+
+   return bip15xClient->addCookieToPeers(path, name);
+}
+
+bool Bip15xDataConnection::usesCookie() const
+{
+   auto bip15xClient = std::dynamic_pointer_cast<
+      bs::network::TransportBIP15xClient>(transport_);
+
+   if (bip15xClient == nullptr) {
+      return false;
+   }
+   return bip15xClient->usesCookie();
+}
+
+bool Bip15xDataConnection::isHandshakeCompleted() const
+{
+   auto bip15xClient = std::dynamic_pointer_cast<
+      bs::network::TransportBIP15xClient>(transport_);
+   
+   if (bip15xClient == nullptr) {
+      if (logger_) {
+         logger_->warn("[Bip15xDataConnection::isHandshakeCompleted] "
+            "unexpected transport ptr type");
+      }
+      return false;
+   }
+
+   return bip15xClient->handshakeCompleted();
+ 
 }

@@ -45,14 +45,24 @@ namespace bs {
          void reset();
 
          std::unique_ptr<BIP151Connection> encData_;
-         bool bip150HandshakeCompleted_ = false;
-         bool bip151HandshakeCompleted_ = false;
          std::chrono::time_point<std::chrono::steady_clock> outKeyTimePoint_;
          ServerConnectionListener::Details details;
-         uint32_t outerRekeyCount_ = 0;
-         uint32_t innerRekeyCount_ = 0;
          bool     isValid{ true };
          std::string clientId;
+      };
+
+      struct BIP15xServerParams
+      {
+         using AddPeerFunc = std::function<void(const BIP15xPeer&)>;
+         const unsigned listenPort_;
+         const BinaryData publicKey_;
+         const AddPeerFunc addPeer_;
+
+         BIP15xServerParams(unsigned listenPort
+            , const BinaryData& publicKey
+            , const AddPeerFunc& addPeer) :
+            listenPort_(listenPort), publicKey_(publicKey), addPeer_(addPeer)
+         {}
       };
 
       // The class establishing BIP 150/151 handshakes before encrypting/decrypting
@@ -64,19 +74,21 @@ namespace bs {
 
          TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &
             , const TrustedClientsCallback& trustedClients
-            , const bool& ephemeralPeers
+            , bool ephemeralPeers
+            , BIP15xAuthMode authMode
             , const std::string& ownKeyFileDir = ""
             , const std::string& ownKeyFileName = ""
-            , const bool& makeServerCookie = false
-            , const bool& readClientCookie = false
+            , bool makeServerCookie = false
+            , bool readClientCookie = false
             , const std::string& cookiePath = "");
 
          TransportBIP15xServer(const std::shared_ptr<spdlog::logger> &
             , const TrustedClientsCallback& cbTrustedClients
+            , BIP15xAuthMode authMode
             , const std::string& ownKeyFileDir = ""
             , const std::string& ownKeyFileName = ""
-            , const bool& makeServerCookie = false
-            , const bool& readClientCookie = false
+            , bool makeServerCookie = false
+            , bool readClientCookie = false
             , const std::string& cookiePath = "");
 
          ~TransportBIP15xServer() noexcept override;
@@ -100,13 +112,15 @@ namespace bs {
          // Returns null if clientId is not known or was not yet authenticated.
          std::unique_ptr<BIP15xPeer> getClientKey(const std::string &clientId) const;
 
-      private:
-         bool getCookie(BinaryData &cookieBuf) override;
+         BIP15xServerParams getParams(unsigned) const;
 
-         bool handshakeCompleted(const BIP15xPerConnData &cd) const
-         {
-            return (cd.bip150HandshakeCompleted_ && cd.bip151HandshakeCompleted_);
-         }
+      private:
+         bool createCookie(void);
+         bool rmCookieFile(void);
+         bool usesCookie(void) const override;
+         bool areAuthKeysEphemeral(void) const override;
+
+         void startHandshake(const std::string& clientID);
 
          void processIncomingData(const std::string &encData
             , const std::string &clientID) override;
@@ -124,12 +138,18 @@ namespace bs {
 
       private:
          std::map<std::string, std::shared_ptr<BIP15xPerConnData>>   socketConnMap_;
-
+         
+         const bool ephemeralPeers_;
+         const BIP15xAuthMode authMode_;
          TrustedClientsCallback cbTrustedClients_;
          const bool useClientIDCookie_;
          const bool makeServerIDCookie_;
 
          BIP15xPeers forcedTrustedClients_;
+
+         //Need to be kept opened for the whole object lifetime         
+         std::unique_ptr<std::ofstream>   cookieFile_;   
+         const std::string cookiePath_;
       };
 
    }  // namespace network

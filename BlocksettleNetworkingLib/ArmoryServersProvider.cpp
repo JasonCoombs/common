@@ -10,6 +10,7 @@
 */
 #include "ArmoryServersProvider.h"
 #include "ArmoryConnection.h"
+#include "BootstrapDataManager.h"
 
 #include <QDir>
 #include <QStandardPaths>
@@ -41,9 +42,12 @@ const QList<ArmoryServer> ArmoryServersProvider::defaultServers_ = {
 
 const int ArmoryServersProvider::kDefaultServersCount = ArmoryServersProvider::defaultServers_.size();
 
-ArmoryServersProvider::ArmoryServersProvider(const std::shared_ptr<ApplicationSettings> &appSettings, QObject *parent)
+ArmoryServersProvider::ArmoryServersProvider(const std::shared_ptr<ApplicationSettings> &appSettings
+                                             , const std::shared_ptr<BootstrapDataManager>& bootstrapDataManager
+                                             , QObject *parent)
    : QObject(parent)
    , appSettings_(appSettings)
+   , bootstrapDataManager_{bootstrapDataManager}
 {
 }
 
@@ -52,38 +56,27 @@ QList<ArmoryServer> ArmoryServersProvider::servers() const
    QStringList userServers = appSettings_->get<QStringList>(ApplicationSettings::armoryServers);
 
    QList<ArmoryServer> servers;
-   QStringList defaultServersKeys = appSettings_->get<QStringList>(ApplicationSettings::defaultArmoryServersKeys);
 
    // #1 add MainNet blocksettle server
    ArmoryServer bsMainNet = defaultServers_.at(static_cast<int>(ServerIndexes::MainNet));
-   if (defaultServersKeys.size() >= 1) {
-      bsMainNet.armoryDBKey = defaultServersKeys.at(static_cast<int>(ServerIndexes::MainNet));
-   }
+   bsMainNet.armoryDBKey = QString::fromStdString(bootstrapDataManager_->getArmoryMainnetKey());
    servers.append(bsMainNet);
 
    // #2 add TestNet blocksettle server
    ArmoryServer bsTestNet = defaultServers_.at(static_cast<int>(ServerIndexes::TestNet));
-   if (defaultServersKeys.size() >= 2) {
-      bsTestNet.armoryDBKey = defaultServersKeys.at(static_cast<int>(ServerIndexes::TestNet));
-   }
+   bsTestNet.armoryDBKey = QString::fromStdString(bootstrapDataManager_->getArmoryTestnetKey());
    servers.append(bsTestNet);
 
    // #3 add localhost node MainNet
    ArmoryServer localMainNet = defaultServers_.at(static_cast<int>(ServerIndexes::LocalhostMainNet));
    localMainNet.armoryDBPort = appSettings_->GetDefaultArmoryLocalPort(NetworkType::MainNet);
    localMainNet.runLocally = kEnableLocalAutostart;
-   if (defaultServersKeys.size() >= 3) {
-      localMainNet.armoryDBKey = defaultServersKeys.at(static_cast<int>(ServerIndexes::LocalhostMainNet));
-   }
    servers.append(localMainNet);
 
    // #4 add localhost node TestNet
    ArmoryServer localTestNet = defaultServers_.at(static_cast<int>(ServerIndexes::LocalHostTestNet));
    localTestNet.armoryDBPort = appSettings_->GetDefaultArmoryLocalPort(NetworkType::TestNet);
    localTestNet.runLocally = kEnableLocalAutostart;
-   if (defaultServersKeys.size() >= 4) {
-      localTestNet.armoryDBKey = defaultServersKeys.at(static_cast<int>(ServerIndexes::LocalHostTestNet));
-   }
    servers.append(localTestNet);
 
    for (const QString &srv : userServers) {
@@ -295,25 +288,16 @@ void ArmoryServersProvider::addKey(const QString &address, int port, const QStri
    }
 
    if (index < ArmoryServersProvider::kDefaultServersCount) {
-      QStringList defaultKeys = appSettings_->get<QStringList>(ApplicationSettings::defaultArmoryServersKeys);
-
-      // defaultKeys might be empty
-      while (defaultKeys.size() <= index) {
-         defaultKeys.append(QString());
-      }
-
-      defaultKeys[index] = key;
-      appSettings_->set(ApplicationSettings::defaultArmoryServersKeys, defaultKeys);
+      return;
    }
-   else {
-      QStringList servers = appSettings_->get<QStringList>(ApplicationSettings::armoryServers);
-      QString serverTxt = servers.at(index - ArmoryServersProvider::kDefaultServersCount);
-      ArmoryServer server = ArmoryServer::fromTextSettings(serverTxt);
-      server.armoryDBKey = key;
-      servers[index - ArmoryServersProvider::kDefaultServersCount] = server.toTextSettings();
 
-      appSettings_->set(ApplicationSettings::armoryServers, servers);
-   }
+   QStringList servers = appSettings_->get<QStringList>(ApplicationSettings::armoryServers);
+   QString serverTxt = servers.at(index - ArmoryServersProvider::kDefaultServersCount);
+   ArmoryServer server = ArmoryServer::fromTextSettings(serverTxt);
+   server.armoryDBKey = key;
+   servers[index - ArmoryServersProvider::kDefaultServersCount] = server.toTextSettings();
+
+   appSettings_->set(ApplicationSettings::armoryServers, servers);
 
    // update key for current server
    connectedArmorySettings_.armoryDBKey = key;

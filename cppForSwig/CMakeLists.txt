@@ -23,6 +23,7 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.cpp
    ${CPP_FOR_SWIG_ROOT}/BinaryData.cpp
    ${CPP_FOR_SWIG_ROOT}/BIP150_151.cpp
+   ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.cpp   
    ${CPP_FOR_SWIG_ROOT}/BIP32_Node.cpp
    ${CPP_FOR_SWIG_ROOT}/BlockDataManagerConfig.cpp
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.cpp
@@ -113,6 +114,7 @@ SET (HEADERS
    ${CPP_FOR_SWIG_ROOT}/BDVCodec.h
    ${CPP_FOR_SWIG_ROOT}/BinaryData.h
    ${CPP_FOR_SWIG_ROOT}/BIP150_151.h
+   ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.h
    ${CPP_FOR_SWIG_ROOT}/BIP32_Node.h
    ${CPP_FOR_SWIG_ROOT}/BlockDataManagerConfig.h
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.h

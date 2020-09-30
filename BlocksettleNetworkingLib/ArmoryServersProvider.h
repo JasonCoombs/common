@@ -15,8 +15,6 @@
 #include "ApplicationSettings.h"
 #include "BinaryData.h"
 
-
-// armory.blocksettle.com - 185.213.153.37 server
 #define ARMORY_BLOCKSETTLE_NAME "BlockSettle"
 
 #define MAINNET_ARMORY_BLOCKSETTLE_ADDRESS "armory.blocksettle.com"
@@ -25,12 +23,15 @@
 #define TESTNET_ARMORY_BLOCKSETTLE_ADDRESS MAINNET_ARMORY_BLOCKSETTLE_ADDRESS
 #define TESTNET_ARMORY_BLOCKSETTLE_PORT 81
 
+class BootstrapDataManager;
 
 class ArmoryServersProvider : public QObject
 {
    Q_OBJECT
 public:
-   ArmoryServersProvider(const std::shared_ptr<ApplicationSettings> &appSettings, QObject *parent = nullptr);
+   ArmoryServersProvider(const std::shared_ptr<ApplicationSettings> &appSettings
+                         , const std::shared_ptr<BootstrapDataManager>& bootstrapDataManager
+                         , QObject *parent = nullptr);
 
    QList<ArmoryServer> servers() const;
    ArmorySettings getArmorySettings() const;
@@ -62,7 +63,9 @@ public:
 signals:
    void dataChanged();
 private:
-   std::shared_ptr<ApplicationSettings> appSettings_;
+   std::shared_ptr<ApplicationSettings>   appSettings_;
+   std::shared_ptr<BootstrapDataManager>  bootstrapDataManager_;
+
    static const QList<ArmoryServer> defaultServers_;
 
    ArmorySettings connectedArmorySettings_;  // latest connected server

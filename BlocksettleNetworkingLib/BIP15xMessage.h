@@ -16,6 +16,7 @@
 #include <spdlog/spdlog.h>
 #include "BinaryData.h"
 #include "BIP150_151.h"
+#include "BIP15x_Handshake.h"
 
 // The message format is as follows:
 //
@@ -41,16 +42,6 @@ namespace bs {
          enum class MsgType : uint8_t {
             Undefined = 0,
             SinglePacket = 1,
-            AEAD_Threshold = 10,
-            AEAD_Setup = 11,
-            AEAD_PresentPubkey = 12,
-            AEAD_EncInit = 14,
-            AEAD_EncAck = 15,
-            AEAD_Rekey = 16,
-            AuthThreshold = 20,
-            AuthChallenge = 21,
-            AuthReply = 22,
-            AuthPropose = 23,
          };
 
          constexpr unsigned int AEAD_REKEY_INTERVAL_SECS = 600;
@@ -60,15 +51,16 @@ namespace bs {
          {
          public:
             // Constructs plain packet
-            MessageBuilder(const uint8_t *data, uint32_t dataSize, MsgType type);
+            MessageBuilder(const uint8_t *data, uint32_t dataSize, uint8_t type);
 
             // Shotcuts for the first ctor
-            MessageBuilder(const std::vector<uint8_t>& data, MsgType type);
+            MessageBuilder(const std::vector<uint8_t>& data, uint8_t type);
+            MessageBuilder(const BinaryDataRef& data, uint8_t type);
+            MessageBuilder(const std::string& data, uint8_t type);
             MessageBuilder(const BinaryDataRef& data, MsgType type);
-            MessageBuilder(const std::string& data, MsgType type);
 
             // Constructs plain packet without data
-            MessageBuilder(MsgType type);
+            MessageBuilder(uint8_t type);
 
             // Encrypts plain packet. If conn is not set this is NOOP.
             MessageBuilder &encryptIfNeeded(BIP151Connection *conn);
@@ -78,6 +70,7 @@ namespace bs {
 
          private:
             void construct(const uint8_t *data, uint32_t dataSize, MsgType type);
+            void construct(const uint8_t *data, uint32_t dataSize, uint8_t type);
 
          private:
             BinaryData packet_;
@@ -93,20 +86,23 @@ namespace bs {
             static Message parse(const BinaryDataRef& packet);
 
             // Validate if packet is valid before use
-            bool isValid() const { return type_ != MsgType::Undefined; }
+            bool isValid() const { return type_ != (uint8_t)MsgType::Undefined; }
 
             // Packet's type (SinglePacket, Heartbeat etc)
-            MsgType getType() const { return type_; }
+            MsgType getMsgType() const;
+            ArmoryAEAD::HandshakeSequence getAEADType() const;
 
             // Packet's payload
             BinaryDataRef getData() const { return data_; }
+
+            bool isForAEADHandshake(void) const;
 
          private:
             Message() = default;
 
          private:
             BinaryDataRef data_;
-            MsgType type_{ MsgType::Undefined };
+            uint8_t type_{ (uint8_t)MsgType::Undefined };
          };
 
       }  // namespace bip15x

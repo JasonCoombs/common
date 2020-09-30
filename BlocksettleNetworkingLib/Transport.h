@@ -32,10 +32,8 @@ namespace bs {
          virtual void closeConnection() = 0;
 
          virtual bool sendData(const std::string &) = 0;
-         virtual void startHandshake() = 0;
-
          virtual void onRawDataReceived(const std::string &) = 0;
-
+         
          using SendCb = std::function<bool(const std::string &)>;
          void setSendCb(const SendCb &cb) { sendCb_ = cb; }
 

@@ -72,15 +72,16 @@ public:
       NetworkTypeMismatch,
       ConnectionTimeout,
       SignerGoesOffline,
+      CookieError
    };
    Q_ENUM(ConnectionError)
 
    SignContainer(const std::shared_ptr<spdlog::logger> &, OpMode opMode);
    ~SignContainer() noexcept = default;
 
-   virtual bool Start() { return true; }
+   virtual void Start(void) = 0;
    virtual bool Stop() { return true; }
-   virtual bool Connect() { return true; }
+   virtual void Connect(void) = 0;
    virtual bool Disconnect() { return true; }
 
    using SignTxCb = std::function<void(bs::error::ErrorCode result, const BinaryData &)>;

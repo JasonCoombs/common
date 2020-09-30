@@ -455,6 +455,7 @@ void CcTrackerClient::reconnect()
 
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
+   params.authMode = bs::network::BIP15xAuthMode::OneWay;
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(logger_, params);
    transport->setKeyCb(newKeyCb_);
    auto wsConn = std::make_unique<WsDataConnection>(logger_, WsDataConnectionParams{});
