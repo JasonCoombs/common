@@ -25,7 +25,8 @@ using namespace Blocksettle::Communication;
 
 BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
-   : appSettings_(appSettings)
+   : logger_{ logger }
+   , appSettings_(appSettings)
 {
 }
 
