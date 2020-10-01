@@ -12,6 +12,7 @@
 #define WS_SERVER_CONNECTION_H
 
 #include "ServerConnection.h"
+#include "WsCommonPrivate.h"
 #include "WsConnection.h"
 
 #include <atomic>
@@ -25,7 +26,6 @@ namespace spdlog {
    class logger;
 }
 
-class WsServerTimer;
 struct lws;
 struct lws_context;
 struct lws_sorted_usec_list;
@@ -120,15 +120,12 @@ private:
 
    int callback(lws *wsi, int reason, void *in, size_t len);
 
-   static void timerCallback(lws_sorted_usec_list *list);
-
    // Methods accessible from listener thread only
    std::string nextClientId();
    bool done() const;
    bool writeNeeded(const ClientData &client) const;
    void requestWriteIfNeeded(const ClientData &client);
    bool processSentAck(ClientData &client, uint64_t sentAckCounter);
-   void scheduleCallback(std::chrono::milliseconds timeout, TimerCallback callback);
    void processError(lws *wsi);
    void closeConnectedClient(const std::string &clientId);
 
@@ -149,9 +146,8 @@ private:
    std::map<std::string, ClientData> clients_;
    std::map<std::string, std::string> cookieToClientIdMap_;
    uint64_t nextClientId_{};
-   std::map<uint64_t, std::unique_ptr<WsServerTimer>> timers_;
-   uint64_t nextTimerId_{};
    bool shuttingDownReceived_{};
+   bs::network::ws::WsTimerHelper timers_;
 
 };
 

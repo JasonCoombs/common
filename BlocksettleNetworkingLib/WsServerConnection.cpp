@@ -14,7 +14,6 @@
 #include "EncryptionUtils.h"
 #include "StringUtils.h"
 #include "ThreadName.h"
-#include "WsConnection.h"
 
 #include <random>
 #include <libwebsockets.h>
@@ -43,20 +42,6 @@ namespace {
    }
 
 } // namespace
-
-struct WsServerTimerInt : lws_sorted_usec_list_t
-{
-   WsServerTimer *owner;
-};
-
-class WsServerTimer
-{
-public:
-   WsServerConnection *owner_{};
-   WsServerTimerInt timerInt_;
-   uint64_t timerId_{};
-   WsServerConnection::TimerCallback callback_;
-};
 
 WsServerConnection::WsServerConnection(const std::shared_ptr<spdlog::logger>& logger, WsServerConnectionParams params)
    : logger_(logger)
@@ -132,7 +117,6 @@ void WsServerConnection::stopServer()
    clients_ = {};
    connections_ = {};
    cookieToClientIdMap_ = {};
-   nextTimerId_ = {};
    shuttingDownReceived_ = {};
    timers_.clear();
 }
@@ -221,7 +205,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             return -1;
          }
 
-         scheduleCallback(params_.handshakeTimeout, [this, wsi] {
+         timers_.scheduleCallback(context_, params_.handshakeTimeout, [this, wsi] {
             auto it = connections_.find(wsi);
             if (it != connections_.end() && it->second.state != State::Connected) {
                SPDLOG_LOGGER_ERROR(logger_, "close client because handshake is not complete on time");
@@ -244,7 +228,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                SPDLOG_LOGGER_DEBUG(logger_, "connection closed unexpectedly, clientId: {}", bs::toHex(connection.clientId));
                client.wsi = nullptr;
-               scheduleCallback(params_.clientTimeout, [this, clientId] {
+               timers_.scheduleCallback(context_, params_.clientTimeout, [this, clientId] {
                   auto clientIt = clients_.find(clientId);
                   if (clientIt == clients_.end()) {
                      return;
@@ -496,15 +480,6 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
    return 0;
 }
 
-void WsServerConnection::timerCallback(lws_sorted_usec_list *list)
-{
-   auto dataInt = static_cast<WsServerTimerInt*>(list);
-   auto data = dataInt->owner;
-   data->callback_();
-   auto count = data->owner_->timers_.erase(data->timerId_);
-   assert(count == 1);
-}
-
 std::string WsServerConnection::nextClientId()
 {
    nextClientId_ += 1;
@@ -546,23 +521,6 @@ bool WsServerConnection::processSentAck(WsServerConnection::ClientData &client, 
    }
 
    return true;
-}
-
-void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsServerConnection::TimerCallback callback)
-{
-   auto timerId = nextTimerId_;
-   nextTimerId_ += 1;
-
-   auto timer = std::make_unique<WsServerTimer>();
-   std::memset(&timer->timerInt_, 0, sizeof(timer->timerInt_));
-   timer->timerInt_.owner = timer.get();
-   timer->owner_ = this;
-   timer->timerId_ = timerId;
-   timer->callback_ = std::move(callback);
-
-   lws_sul_schedule(context_, 0, &timer->timerInt_, timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
-
-   timers_.insert(std::make_pair(timerId, std::move(timer)));
 }
 
 void WsServerConnection::processError(lws *wsi)
@@ -611,9 +569,14 @@ bool WsServerConnection::SendDataToAllClients(const std::string &data)
 bool WsServerConnection::timer(std::chrono::milliseconds timeout, ServerConnection::TimerCallback callback)
 {
    if (!isActive()) {
+      SPDLOG_LOGGER_ERROR(logger_, "can't start timer because server is not active");
       return false;
    }
-   scheduleCallback(timeout, std::move(callback));
+   if (listenThread_.get_id() != std::this_thread::get_id()) {
+      SPDLOG_LOGGER_ERROR(logger_, "starting timer from non-listening thread is not supported");
+      return false;
+   }
+   timers_.scheduleCallback(context_, timeout, std::move(callback));
    return true;
 }
 

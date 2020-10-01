@@ -10,8 +10,6 @@
 */
 #include "WsDataConnection.h"
 
-#include "WsConnection.h"
-
 #include <libwebsockets.h>
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
