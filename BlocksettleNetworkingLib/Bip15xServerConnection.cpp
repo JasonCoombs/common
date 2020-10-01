@@ -17,6 +17,10 @@
 
 #include <spdlog/spdlog.h>
 
+namespace {
+   const auto kHandshakeTimeout = std::chrono::seconds(5);
+}
+
 class Bip15xServerListener : public ServerConnectionListener
 {
 public:
@@ -30,6 +34,15 @@ public:
    void OnClientConnected(const std::string& clientId, const Details &details) override
    {
       owner_->transport_->addClient(clientId, details);
+
+      owner_->server_->timer(kHandshakeTimeout, [this, clientId] {
+         if (!owner_->transport_->handshakeComplete(clientId)) {
+            SPDLOG_LOGGER_DEBUG(owner_->logger_, "close client {} because handshake is not complete on time", bs::toHex(clientId));
+            if (!owner_->server_->closeClient(clientId)) {
+               SPDLOG_LOGGER_DEBUG(owner_->logger_, "closing client {} failed", bs::toHex(clientId));
+            }
+         }
+      });
    }
 
    void OnClientDisconnected(const std::string& clientId) override

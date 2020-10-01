@@ -135,9 +135,11 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
    switch (reason) {
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
          std::queue<DataToSend> packets;
+         std::queue<std::string> forceClosingClients;
          {
             std::lock_guard<std::mutex> lock(mutex_);
             std::swap(packets, packets_);
+            std::swap(forceClosingClients, forceClosingClients_);
          }
          while (!packets.empty()) {
             auto data = std::move(packets.front());
@@ -172,6 +174,25 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             }
          }
 
+         while (!forceClosingClients.empty()) {
+            auto clientId = std::move(forceClosingClients.front());
+            forceClosingClients.pop();
+
+            auto clientIt = clients_.find(clientId);
+            if (clientIt != clients_.end()) {
+               SPDLOG_LOGGER_DEBUG(logger_, "force close client {}", bs::toHex(clientId));
+               auto clientWsi = clientIt->second.wsi;
+               if (clientWsi) {
+                  auto &connection = connections_.at(clientWsi);
+                  connection.state = State::Closed;
+                  lws_close_reason(clientWsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+                  lws_set_timeout(clientWsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+               }
+               closeConnectedClient(clientId);
+            }
+            listener_->OnClientDisconnected(clientId);
+         }
+
          break;
       }
 
@@ -192,6 +213,15 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             connection.state = State::Closed;
             return -1;
          }
+
+         scheduleCallback(params_.handshakeTimeout, [this, wsi] {
+            auto it = connections_.find(wsi);
+            if (it != connections_.end() && it->second.state != State::Connected) {
+               SPDLOG_LOGGER_ERROR(logger_, "close client because handshake is not complete on time");
+               lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+               lws_set_timeout(wsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+            }
+         });
          break;
       }
 
@@ -567,6 +597,26 @@ bool WsServerConnection::SendDataToClient(const std::string &clientId, const std
 bool WsServerConnection::SendDataToAllClients(const std::string &data)
 {
    return SendDataToClient(kAllClientsId, data);
+}
+
+bool WsServerConnection::timer(std::chrono::milliseconds timeout, ServerConnection::TimerCallback callback)
+{
+   if (!isActive()) {
+      return false;
+   }
+   scheduleCallback(timeout, std::move(callback));
+   return true;
+}
+
+bool WsServerConnection::closeClient(const std::string &clientId)
+{
+   if (!isActive()) {
+      return false;
+   }
+   std::lock_guard<std::mutex> lock(mutex_);
+   forceClosingClients_.push(clientId);
+   lws_cancel_service(context_);
+   return true;
 }
 
 int WsServerConnection::callbackHelper(lws *wsi, int reason, void *in, size_t len)

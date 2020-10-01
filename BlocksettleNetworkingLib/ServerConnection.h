@@ -13,6 +13,7 @@
 
 #include "ServerConnectionListener.h"
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
@@ -34,6 +35,13 @@ public:
 
    virtual bool SendDataToClient(const std::string& clientId, const std::string& data) = 0;
    virtual bool SendDataToAllClients(const std::string&) { return false; }
+
+   // Execute callback after timeout on listening thread
+   using TimerCallback = std::function<void()>;
+   virtual bool timer(std::chrono::milliseconds /*timeout*/, TimerCallback /*callback*/) { return false; }
+
+   // Close client connection
+   virtual bool closeClient(const std::string& /*clientId*/) { return false; }
 };
 
 #endif // __SERVER_CONNECTION_H__

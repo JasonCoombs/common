@@ -467,6 +467,15 @@ void TransportBIP15xServer::reportFatalError(const std::shared_ptr<BIP15xPerConn
    }
 }
 
+bool TransportBIP15xServer::handshakeComplete(const std::string &clientId)
+{
+   auto connection = GetConnection(clientId);
+   if (!connection) {
+      return false;
+   }
+   return (connection->encData_->getBIP150State() == BIP150State::SUCCESS);
+}
+
 BIP15xServerParams TransportBIP15xServer::getParams(unsigned port) const
 {
    auto addPeersLbd = [this](const BIP15xPeer& peer)

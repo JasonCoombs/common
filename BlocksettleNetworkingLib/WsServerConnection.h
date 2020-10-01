@@ -48,6 +48,8 @@ struct WsServerConnectionParams
    using FilterCallback = std::function<bool(const std::string &ip)>;
    FilterCallback filterCallback;
 
+   std::chrono::milliseconds handshakeTimeout{std::chrono::seconds(5)};
+
    std::chrono::milliseconds clientTimeout{std::chrono::seconds(30)};
 };
 
@@ -68,9 +70,11 @@ public:
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string&) override;
 
-   static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
+   bool timer(std::chrono::milliseconds timeout, TimerCallback callback) override;
 
-   using TimerCallback = std::function<void()>;
+   bool closeClient(const std::string& clientId) override;
+
+   static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
 
 private:
    enum class State
@@ -112,6 +116,7 @@ private:
    void listenFunction();
 
    void stopServer();
+   bool isActive() { return listenThread_.joinable(); }
 
    int callback(lws *wsi, int reason, void *in, size_t len);
 
@@ -137,6 +142,7 @@ private:
 
    mutable std::mutex mutex_;
    std::queue<DataToSend> packets_;
+   std::queue<std::string> forceClosingClients_;
 
    // Fields accessible from listener thread only
    std::map<lws*, ConnectionData> connections_;
