@@ -25,7 +25,7 @@ namespace spdlog {
    class logger;
 }
 
-struct WsServerTimer;
+class WsServerTimer;
 struct lws;
 struct lws_context;
 struct lws_sorted_usec_list;

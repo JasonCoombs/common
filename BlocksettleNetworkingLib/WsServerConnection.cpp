@@ -44,11 +44,18 @@ namespace {
 
 } // namespace
 
-struct WsServerTimer : lws_sorted_usec_list_t
+struct WsServerTimerInt : lws_sorted_usec_list_t
 {
+   WsServerTimer *owner;
+};
+
+class WsServerTimer
+{
+public:
    WsServerConnection *owner_{};
-   uint64_t timerId{};
-   WsServerConnection::TimerCallback callback;
+   WsServerTimerInt timerInt_;
+   uint64_t timerId_{};
+   WsServerConnection::TimerCallback callback_;
 };
 
 WsServerConnection::WsServerConnection(const std::shared_ptr<spdlog::logger>& logger, WsServerConnectionParams params)
@@ -491,9 +498,10 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
 
 void WsServerConnection::timerCallback(lws_sorted_usec_list *list)
 {
-   auto data = static_cast<WsServerTimer*>(list);
-   data->callback();
-   auto count = data->owner_->timers_.erase(data->timerId);
+   auto dataInt = static_cast<WsServerTimerInt*>(list);
+   auto data = dataInt->owner;
+   data->callback_();
+   auto count = data->owner_->timers_.erase(data->timerId_);
    assert(count == 1);
 }
 
@@ -546,12 +554,13 @@ void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsS
    nextTimerId_ += 1;
 
    auto timer = std::make_unique<WsServerTimer>();
-   std::memset(static_cast<lws_sorted_usec_list_t*>(timer.get()), 0, sizeof(lws_sorted_usec_list_t));
+   std::memset(&timer->timerInt_, 0, sizeof(timer->timerInt_));
+   timer->timerInt_.owner = timer.get();
    timer->owner_ = this;
-   timer->timerId = timerId;
-   timer->callback = std::move(callback);
+   timer->timerId_ = timerId;
+   timer->callback_ = std::move(callback);
 
-   lws_sul_schedule(context_, 0, timer.get(), timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
+   lws_sul_schedule(context_, 0, &timer->timerInt_, timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
 
    timers_.insert(std::make_pair(timerId, std::move(timer)));
 }
