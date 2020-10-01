@@ -191,12 +191,12 @@ std::string BootstrapDataManager::getCCTrackerKey() const
 
 std::string BootstrapDataManager::getArmoryTestnetKey() const
 {
-   return mainnetArmoryKey_;
+   return testnetArmoryKey_;
 }
 
 std::string BootstrapDataManager::getArmoryMainnetKey() const
 {
-   return testnetArmoryKey_;
+   return mainnetArmoryKey_;
 }
 
 std::unordered_set<std::string> BootstrapDataManager::GetAuthValidationList() const
