@@ -25,7 +25,8 @@ using namespace Blocksettle::Communication;
 
 BootstrapDataManager::BootstrapDataManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
-   : appSettings_(appSettings)
+   : logger_{ logger }
+   , appSettings_(appSettings)
 {
 }
 
@@ -191,12 +192,12 @@ std::string BootstrapDataManager::getCCTrackerKey() const
 
 std::string BootstrapDataManager::getArmoryTestnetKey() const
 {
-   return mainnetArmoryKey_;
+   return testnetArmoryKey_;
 }
 
 std::string BootstrapDataManager::getArmoryMainnetKey() const
 {
-   return testnetArmoryKey_;
+   return mainnetArmoryKey_;
 }
 
 std::unordered_set<std::string> BootstrapDataManager::GetAuthValidationList() const
