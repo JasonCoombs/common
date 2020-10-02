@@ -153,12 +153,12 @@ int ArmoryServersProvider::indexOfIpPort(const std::string &srvIPPort) const
    return -1;
 }
 
-int ArmoryServersProvider::getIndexOfMainNetServer() const
+int ArmoryServersProvider::getIndexOfMainNetServer()
 {
    return static_cast<int>(ServerIndexes::MainNet);
 }
 
-int ArmoryServersProvider::getIndexOfTestNetServer() const
+int ArmoryServersProvider::getIndexOfTestNetServer()
 {
    return static_cast<int>(ServerIndexes::TestNet);
 }

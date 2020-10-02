@@ -203,6 +203,8 @@ public:
    QString bootstrapFilePath() const;
    QString bootstrapResourceFileName() const;
 
+   static bs::LogConfig parseLogConfig(const QStringList&);
+
 signals:
    void settingChanged(int setting, QVariant value);
 
@@ -214,8 +216,7 @@ private:
    void SetDBDir(const QString& path);
 
    QString AppendToWritableDir(const QString &filename) const;
-   bs::LogConfig parseLogConfig(const QStringList &) const;
-   bs::LogLevel parseLogLevel(QString) const;
+   static bs::LogLevel parseLogLevel(QString);
 
    QString getPath(const SettingDef &s) const;
 

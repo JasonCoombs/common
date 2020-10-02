@@ -1452,8 +1452,8 @@ void RemoteSigner::Start()
 
    {
       std::lock_guard<std::mutex> lock(mutex_);
-      listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_);
-      connect(listener_.get(), &HeadlessListener::connected, this
+      listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_, this);
+/*      connect(listener_.get(), &HeadlessListener::connected, this
          , &RemoteSigner::onConnected, Qt::QueuedConnection);
       connect(listener_.get(), &HeadlessListener::authenticated, this
          , &RemoteSigner::onAuthenticated, Qt::QueuedConnection);
@@ -1462,7 +1462,7 @@ void RemoteSigner::Start()
       connect(listener_.get(), &HeadlessListener::error, this
          , &RemoteSigner::onConnError, Qt::QueuedConnection);
       connect(listener_.get(), &HeadlessListener::PacketReceived, this
-         , &RemoteSigner::onPacketReceived, Qt::QueuedConnection);
+         , &RemoteSigner::onPacketReceived, Qt::QueuedConnection);*/
    }
 
    RemoteSigner::Connect();
@@ -1487,8 +1487,8 @@ void RemoteSigner::Connect()
 
    auto connectCb = [this]()
    {
-      listener_->wasErrorReported_ = false;
-      listener_->isShuttingDown_ = false;
+//      listener_->wasErrorReported_ = false;
+//      listener_->isShuttingDown_ = false;
 
       bool result = connection_->openConnection(host_.toStdString(), port_.toStdString(), listener_.get());
       if (!result) {
@@ -1580,7 +1580,6 @@ void RemoteSigner::Connect()
    if (connectThread.joinable()) {
       connectThread.detach();
    }
->>>>>>> bs_dev
 }
 
 bool RemoteSigner::Disconnect()
@@ -1964,28 +1963,6 @@ bool LocalSigner::Stop()
       headlessProcess_.reset();
    }
    return true;
-}
-
-void HeadlessListener::processDisconnectNotification()
-{
-   SPDLOG_LOGGER_INFO(logger_, "remote signer has been disconnected");
-   isConnected_ = false;
-   isReady_ = false;
-   tryEmitError(HeadlessContainer::SignerGoesOffline, tr("Remote signer disconnected"));
-}
-
-void HeadlessListener::tryEmitError(SignContainer::ConnectionError errorCode, const QString &msg)
-{
-   // Try to send error only once because only first error should be relevant.
-   if (!wasErrorReported_) {
-      wasErrorReported_ = true;
-      emit error(errorCode, msg);
-   }
-}
-
-bs::signer::RequestId HeadlessListener::newRequestId()
-{
-   return ++id_;
 }
 
 bool HeadlessListener::addCookieKeyToKeyStore(

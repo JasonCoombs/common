@@ -569,19 +569,27 @@ void ApplicationSettings::SaveSettings()
 std::vector<bs::LogConfig> ApplicationSettings::GetLogsConfig() const
 {
    std::vector<bs::LogConfig> result;
-   result.push_back(parseLogConfig(get<QStringList>(ApplicationSettings::logDefault)));
-   result.push_back(parseLogConfig(get<QStringList>(ApplicationSettings::logMessages)));
+   auto cfgDefault = parseLogConfig(get<QStringList>(ApplicationSettings::logDefault));
+   if (!QDir::toNativeSeparators(QString::fromStdString(cfgDefault.fileName)).contains(QDir::separator())) {
+      cfgDefault.fileName = AppendToWritableDir(QString::fromStdString(cfgDefault.fileName)).toStdString();
+   }
+   result.push_back(cfgDefault);
+   auto cfgMessages = parseLogConfig(get<QStringList>(ApplicationSettings::logMessages));
+   if (!QDir::toNativeSeparators(QString::fromStdString(cfgMessages.fileName)).contains(QDir::separator())) {
+      cfgMessages.fileName = AppendToWritableDir(QString::fromStdString(cfgMessages.fileName)).toStdString();
+   }
+   result.push_back(cfgMessages);
    return result;
 }
 
-bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config) const
+bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config)
 {
    bs::LogConfig result;
    if (config.size() > 0) {
       if (QDir::toNativeSeparators(config[0]).contains(QDir::separator())) {
          result.fileName = QDir().absoluteFilePath(config[0]).toStdString();
       } else {
-         result.fileName = AppendToWritableDir(config[0]).toStdString();
+         result.fileName = config[0].toStdString();
       }
    }
    if (config.size() > 1) {
@@ -596,7 +604,7 @@ bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config) con
    return result;
 }
 
-bs::LogLevel ApplicationSettings::parseLogLevel(QString level) const
+bs::LogLevel ApplicationSettings::parseLogLevel(QString level)
 {
    level = level.toLower();
    if (level.contains(QLatin1String("trace"))) {

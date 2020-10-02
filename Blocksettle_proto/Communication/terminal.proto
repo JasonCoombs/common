@@ -27,77 +27,72 @@ enum SettingIndex
    SetIdx_ArmoryDbPort = 5;
    SetIdx_ArmoryPathName = 6;
    SetIdx_Environment = 7;
-   SetIdx_ChatServerPubKey = 8;
-   SetIdx_ChatDbFile = 9;
-   SetIdx_SavedUsername = 10;
-   SetIdx_LocalSignerPort = 11;
-   SetIdx_SignerIndex = 12;
-   SetIdx_SignerOfflineDir = 13;
-   SetIdx_AutoSignSpendLimit = 14;
-   SetIdx_LaunchToTray = 15;
-   SetIdx_MinimizeToTray = 16;
-   SetIdx_CloseToTray = 17;
-   SetIdx_NotifyOnTX = 18;
-   SetIdx_DefaultAuthAddr = 19;
-   SetIdx_NbAuthAddrsVisible = 20;
-   SetIdx_LogDefault = 21;
-   SetIdx_LogMessages = 22;
-   SetIdx_TxCacheFileName = 23;
-   SetIdx_NbBackupFilesKeep = 24;
-   SetIdx_AQScripts = 25;
-   SetIdx_LastAQScript = 26;
-   SetIdx_DropQuoteNotif = 27;
-   SetIdx_GUI_MainGeom = 28;
-   SetIdx_GUI_MainTab = 29;
-   SetIdx_Filter_MD_RFQ = 30;
-   SetIdx_Filter_MD_RFQ_Portfolio = 31;
-   SetIdx_Filter_MD_QN = 32;
-   SetIdx_Filter_MD_QN_cnt = 33;
-   SetIdx_ChangeLog_BaseURL = 34;
-   SetIdx_Binaries_DownloadURL = 35;
-   SetIdx_ResetPasswordURL = 36;
-   SetIdx_GetAccount_ProdURL = 37;
-   SetIdx_GetAccount_TestURL = 38;
-   SetIdx_GetStartedGuideURL = 39;
-   SetIdx_WalletFiltering = 40;
-   SetIdx_Limit_FxRFQ = 41;
-   SetIdx_Limit_XbtRFQ = 42;
-   SetIdx_Limit_CcRFQ = 43;
-   SetIdx_NoNotifyRFQ = 44;
-   SetIdx_PriceUpdateInterval = 45;
-   SetIdx_ShowQuoted = 46;
-   SetIdx_AdvancedTXisDefault = 47;
-   SetIdx_TxFilter = 48;
-   SetIdx_SubscribeMDatStart = 49;
-   SetIdx_MDLicenseAccepted = 50;
-   SetIdx_AuthPrivKey = 51;
-   SetIdx_jwtUsername = 52;
-   SetIdx_LocalSignerPubKeyPath = 53;
-   SetIdx_RemoteSigners = 54;
-   SetIdx_RememberLogin = 55;
-   SetIdx_ArmoryServers = 56;
-   SetIdx_DefArmoryServerKeys = 57;
-   SetIdx_TwoWaySignerAuth = 58;
-   SetIdx_ChartProduct = 59;
-   SetIdx_ChartTimeframe = 60;
-   SetIdx_ChartCandleCount = 61;
-   SetIdx_LastAQDir = 62;
-   SetIdx_ProxyPubKey = 63;
-   SetIdx_CCServerPubKey = 64;
-   SetIdx_HideLegacyWalletWarn = 65;
-   SetIdx_DetailedSettlDisalogByDef = 66;
-   SetIdx_AutoStartRFQScript = 67;
-   SetIdx_CurrentRFQScript = 68;
-   SetIdx_ShowInfoWidget = 69;
-   SetIdx_LoginApiKey = 70;
-   SetIdx_AutoQuoting = 71;
-   SetIdx_AutoSigning = 82;
-//   SetIdx_ExtConnName = 73;
-//   SetIdx_ExtConnHost = 74;
-   SetIdx_ExtConnPort = 75;
-   SetIdx_ExtConnPubKey = 76;
-   SetIdx_SubmittedAddrXbtLimit = 77;
-//   SetIdx_ExtConnOwnPubKey = 78;
+   SetIdx_ChatDbFile = 8;
+   SetIdx_SavedUsername = 9;
+   SetIdx_SignerIndex = 10;
+   SetIdx_SignerOfflineDir = 11;
+   SetIdx_AutoSignSpendLimit = 12;
+   SetIdx_LaunchToTray = 13;
+   SetIdx_MinimizeToTray = 14;
+   SetIdx_CloseToTray = 15;
+   SetIdx_NotifyOnTX = 16;
+   SetIdx_DefaultAuthAddr = 17;
+   SetIdx_NbAuthAddrsVisible = 18;
+   SetIdx_LogDefault = 19;
+   SetIdx_LogMessages = 20;
+   SetIdx_TxCacheFileName = 21;
+   SetIdx_NbBackupFilesKeep = 22;
+   SetIdx_AQScripts = 23;
+   SetIdx_LastAQScript = 24;
+   SetIdx_DropQuoteNotif = 25;
+   SetIdx_GUI_MainGeom = 26;
+   SetIdx_GUI_MainTab = 27;
+   SetIdx_Filter_MD_RFQ = 28;
+   SetIdx_Filter_MD_RFQ_Portfolio = 29;
+   SetIdx_Filter_MD_QN = 30;
+   SetIdx_Filter_MD_QN_cnt = 31;
+   SetIdx_ChangeLog_BaseURL = 32;
+   SetIdx_Binaries_DownloadURL = 33;
+   SetIdx_ResetPasswordURL = 34;
+   SetIdx_GetAccount_ProdURL = 35;
+   SetIdx_GetAccount_TestURL = 36;
+   SetIdx_GetStartedGuideURL = 37;
+   SetIdx_WalletFiltering = 38;
+   SetIdx_Limit_FxRFQ = 39;
+   SetIdx_Limit_XbtRFQ = 40;
+   SetIdx_Limit_CcRFQ = 41;
+   SetIdx_NoNotifyRFQ = 42;
+   SetIdx_PriceUpdateInterval = 43;
+   SetIdx_ShowQuoted = 44;
+   SetIdx_AdvancedTXisDefault = 45;
+   SetIdx_TxFilter = 46;
+   SetIdx_SubscribeMDatStart = 47;
+   SetIdx_MDLicenseAccepted = 48;
+   SetIdx_AuthPrivKey = 49;
+   SetIdx_jwtUsername = 50;
+   SetIdx_LocalSignerPubKeyPath = 51;
+   SetIdx_RemoteSigners = 52;
+   SetIdx_RememberLogin = 53;
+   SetIdx_ArmoryServers = 54;
+   SetIdx_TwoWaySignerAuth = 55;
+   SetIdx_ChartProduct = 56;
+   SetIdx_ChartTimeframe = 57;
+   SetIdx_ChartCandleCount = 58;
+   SetIdx_LastAQDir = 59;
+   SetIdx_HideLegacyWalletWarn = 60;
+   SetIdx_DetailedSettlDisalogByDef = 61;
+   SetIdx_AutoStartRFQScript = 62;
+   SetIdx_CurrentRFQScript = 63;
+   SetIdx_ShowInfoWidget = 64;
+   SetIdx_LoginApiKey = 65;
+   SetIdx_AutoQuoting = 66;
+   SetIdx_AutoSigning = 67;
+//   SetIdx_ExtConnName = 68;
+//   SetIdx_ExtConnHost = 79;
+   SetIdx_ExtConnPort = 70;
+   SetIdx_ExtConnPubKey = 71;
+   SetIdx_SubmittedAddrXbtLimit = 72;
+//   SetIdx_ExtConnOwnPubKey = 73;
 }
 
 enum SettingType
@@ -178,10 +173,29 @@ message SettingsMessage
       repeated SettingResponse responses = 1;
    }
 
-   message ArmoryServerSet
+   message ArmoryServer
    {
       int32  network_type = 1;
       string server_name  = 2;
+      string server_address = 3;
+      string server_port = 4;
+      string server_key = 5;
+      bool   run_locally = 6;
+      bool   one_way_auth = 7;
+      bytes  password = 8;
+   }
+
+   message ArmoryServers
+   {
+      repeated ArmoryServer servers = 1;
+      int32 idx_current = 2;
+      int32 idx_connected = 3;
+   }
+
+   message ArmoryServerUpdate
+   {
+      ArmoryServer server = 1;
+      int32 index = 2;
    }
 
    message SignerServer
@@ -196,9 +210,15 @@ message SettingsMessage
       string remote_keys_dir = 8;
       string remote_keys_file = 9;
       repeated StrKeyVal client_keys = 10;
-      string local_port = 11;
-      string home_dir = 12;
-      double auto_sign_spend_limit = 13;
+      string home_dir = 11;
+      double auto_sign_spend_limit = 12;
+   }
+
+   message SignerServers
+   {
+      repeated SignerServer servers = 1;
+      int32  idx_current = 2;
+      string own_key = 3;
    }
 
    message SignerSetKey
@@ -209,15 +229,30 @@ message SettingsMessage
 
    oneof data
    {
-      SettingsRequest  get_request  = 1;
-      SettingsResponse get_response = 2;
-      SettingsResponse put_request = 3;
-      SettingsResponse settings_updated = 4;
-      ArmoryServerSet  armory_server = 5;
-      Empty            signer_request = 6;
-      SignerServer     signer_response = 7;
-      SignerSetKey     signer_set_key = 8;
-      Empty            signer_reset = 9;
+      SettingsRequest    get_request  = 1;
+      SettingsResponse   get_response = 2;
+      SettingsResponse   put_request = 3;
+      SettingsResponse   settings_updated = 4;
+      ArmoryServer       armory_server = 5;
+      int32              set_armory_server = 6;	// by index
+      Empty              armory_servers_get = 7;
+      ArmoryServers      armory_servers = 8;
+      ArmoryServer       add_armory_server = 9;
+      int32              del_armory_server = 10;
+      ArmoryServerUpdate upd_armory_server = 11;
+      Empty              signer_request = 12;
+      SignerServer       signer_response = 13;
+      SignerSetKey       signer_set_key = 14;
+      Empty              signer_reset = 15;
+      Empty              signer_servers_get = 16;
+      SignerServers      signer_servers = 17;
+      int32              set_signer_server = 18;
+      SignerServer       add_signer_server = 19;
+      int32              del_signer_server = 20;
+      Empty              state_get = 21;
+      SettingsResponse   state = 22;
+      SettingsRequest    reset = 23;
+      SettingsResponse   reset_to_state = 24;
    }
 }
 
