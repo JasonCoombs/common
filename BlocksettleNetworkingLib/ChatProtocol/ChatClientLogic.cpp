@@ -57,10 +57,10 @@ void ChatClientLogic::initDbDone()
 
    sessionKeyHolderPtr_ = std::make_shared<SessionKeyHolder>(loggerPtr_, this);
    clientConnectionLogicPtr_ = std::make_shared<ClientConnectionLogic>(
-      clientPartyLogicPtr_, 
-      clientDBServicePtr_, 
-      loggerPtr_, 
-      cryptManagerPtr_, 
+      clientPartyLogicPtr_,
+      clientDBServicePtr_,
+      loggerPtr_,
+      cryptManagerPtr_,
       sessionKeyHolderPtr_,
       this);
    clientConnectionLogicPtr_->setCurrentUserPtr(currentUserPtr_);
@@ -130,6 +130,8 @@ void ChatClientLogic::LoginToServer(const BinaryData &token, const BinaryData &t
 
    bs::network::BIP15xParams params;
    params.ephemeralPeers = true;
+   params.authMode = bs::network::BIP15xAuthMode::OneWay;
+
    const auto &transport = std::make_shared<bs::network::TransportBIP15xClient>(loggerPtr_, params);
    transport->setKeyCb(cb);
    auto wsConn = std::make_unique<WsDataConnection>(loggerPtr_, WsDataConnectionParams{});
