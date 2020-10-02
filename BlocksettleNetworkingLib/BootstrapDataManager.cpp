@@ -118,7 +118,7 @@ bool BootstrapDataManager::processBootstrapData(const std::string& rawString)
    }
 
    if (data.revision() == currentRev_) {
-      logger_->error("[BootstrapDataManager::processBootstrapData] having the same revision already");
+      logger_->debug("[BootstrapDataManager::processBootstrapData] having the same revision already");
       return true;
    }
 
