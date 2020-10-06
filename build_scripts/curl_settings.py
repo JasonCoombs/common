@@ -23,7 +23,7 @@ class CurlSettings(Configurator):
         self._script_revision = '3'
         self._package_name = 'curl-' + self._version
         self._package_url = 'https://github.com/curl/curl/archive/' + self._package_name + '.tar.gz'
-	self._package_dir_name = 'curl-' + self._package_name
+        self._package_dir_name = 'curl-' + self._package_name
 
     def get_package_name(self):
         return self._package_name
