@@ -47,10 +47,6 @@ message MDStatusServerStatus
    uint64 eur_usd_timeout = 7;
    uint64 gbp_usd_timeout = 8;
    uint64 usd_cad_timeout = 9;
-   uint64 eur_pln_timeout = 10;
-   uint64 gbp_pln_timeout = 11;
-   uint64 usd_pln_timeout = 12;
-   uint64 cad_pln_timeout = 13;
 
    bool eur_gbp_from_xbt = 14;
    bool eur_cad_from_xbt = 15;
@@ -58,15 +54,10 @@ message MDStatusServerStatus
    bool eur_usd_from_xbt = 17;
    bool gbp_usd_from_xbt = 18;
    bool usd_cad_from_xbt = 19;
-   bool eur_pln_from_xbt = 20;
-   bool gbp_pln_from_xbt = 21;
-   bool usd_pln_from_xbt = 22;
-   bool cad_pln_from_xbt = 23;
 
    // XBT stream timeouts
    uint64 xbt_eur_timeout = 24;
    uint64 xbt_gbp_timeout = 25;
-   uint64 xbt_pln_timeout = 26;
    uint64 xbt_cad_timeout = 27;
    uint64 xbt_usd_timeout = 28;
 }
