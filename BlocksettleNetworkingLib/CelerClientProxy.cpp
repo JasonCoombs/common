@@ -13,17 +13,17 @@
 #include <spdlog/spdlog.h>
 
 CelerClientProxy::CelerClientProxy(const std::shared_ptr<spdlog::logger> &logger, bool userIdRequired)
-   : BaseCelerClient (logger, userIdRequired, true)
+   : CelerClientQt (logger, userIdRequired, true)
 {
 }
 
 CelerClientProxy::~CelerClientProxy() = default;
 
-bool CelerClientProxy::LoginToServer(BsClient *client, const std::string &login, const std::string &email)
+bool CelerClientProxy::LoginToServer(BsClientQt *client, const std::string &login, const std::string &email)
 {
    client_ = client;
 
-   connect(client_, &BsClient::celerRecv, this, [this](CelerAPI::CelerMessageType messageType, const std::string &data) {
+   connect(client_, &BsClientQt::celerRecv, this, [this](CelerAPI::CelerMessageType messageType, const std::string &data) {
       recvData(messageType, data);
    });
 

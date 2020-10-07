@@ -90,10 +90,10 @@ public:
    AuthAddressManager(AuthAddressManager&&) = delete;
    AuthAddressManager& operator = (AuthAddressManager&&) = delete;
 
-   void init(const std::shared_ptr<ApplicationSettings> &
+   [[deprecated]] void init(const std::shared_ptr<ApplicationSettings> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<SignContainer> &);
-   void initLogin(const std::shared_ptr<BaseCelerClient> &,
+   [[deprecated]] void initLogin(const std::shared_ptr<BaseCelerClient> &,
       const std::shared_ptr<bs::TradeSettings> &);
 
    const std::shared_ptr<bs::TradeSettings>& tradeSettings() const;

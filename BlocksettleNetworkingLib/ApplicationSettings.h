@@ -55,7 +55,8 @@ public:
 
    enum class EnvConfiguration
    {
-      Production,
+      Unknown = -1,
+      Production = 0,
       Test,
 #ifndef PRODUCTION_BUILD
       Staging,

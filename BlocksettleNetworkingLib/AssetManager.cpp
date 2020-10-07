@@ -27,7 +27,7 @@
 AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
       , const std::shared_ptr<bs::sync::WalletsManager>& walletsManager
       , const std::shared_ptr<MDCallbacksQt> &mdCallbacks
-      , const std::shared_ptr<BaseCelerClient>& celerClient)
+      , const std::shared_ptr<CelerClientQt>& celerClient)
    : logger_(logger)
    , walletsManager_(walletsManager)
    , mdCallbacks_(mdCallbacks)
@@ -47,8 +47,8 @@ void AssetManager::init()
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletsReady, this, &AssetManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AssetManager::onWalletChanged);
 
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectedToServer, this, &AssetManager::onCelerConnected);
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectedToServer, this, &AssetManager::onCelerConnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
 }
 
 double AssetManager::getBalance(const std::string& currency, const std::shared_ptr<bs::sync::Wallet> &wallet) const

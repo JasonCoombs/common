@@ -54,10 +54,9 @@ public:
 };
 
 CelerClient::CelerClient(const std::shared_ptr<ConnectionManager> &connectionManager, bool userIdRequired)
-   : BaseCelerClient(connectionManager->GetLogger(), userIdRequired, false)
+   : CelerClientQt(connectionManager->GetLogger(), userIdRequired, false)
    , connectionManager_(connectionManager)
-{
-}
+{}
 
 CelerClient::~CelerClient() = default;
 

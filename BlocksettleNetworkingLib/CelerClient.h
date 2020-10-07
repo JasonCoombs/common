@@ -16,7 +16,7 @@
 class CelerClientListener;
 class ConnectionManager;
 
-class CelerClient : public BaseCelerClient
+class CelerClient : public CelerClientQt
 {
 public:
    CelerClient(const std::shared_ptr<ConnectionManager>& connectionManager, bool userIdRequired = true);

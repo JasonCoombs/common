@@ -25,24 +25,15 @@
 
 using namespace com::celertech::baseserver::communication::protobuf;
 
-BaseCelerClient::BaseCelerClient(const std::shared_ptr<spdlog::logger> &logger, bool userIdRequired, bool useRecvTimer)
-   : logger_(logger)
+BaseCelerClient::BaseCelerClient(const std::shared_ptr<spdlog::logger> &logger
+   , CelerCallbackTarget *cct, bool userIdRequired, bool useRecvTimer)
+   : logger_(logger), cct_(cct), useRecvTimer_(useRecvTimer)
    , userId_(CelerUserProperties::UserIdPropertyName)
    , submittedAuthAddressListProperty_(CelerUserProperties::SubmittedBtcAuthAddressListPropertyName)
    , submittedCCAddressListProperty_(CelerUserProperties::SubmittedCCAddressListPropertyName)
    , userIdRequired_(userIdRequired)
    , serverNotAvailable_(false)
 {
-   timerSendHb_ = new QTimer(this);
-
-   if (useRecvTimer) {
-      timerRecvHb_ = new QTimer(this);
-      connect(timerRecvHb_, &QTimer::timeout, this, &BaseCelerClient::onRecvHbTimeout);
-   }
-
-   connect(timerSendHb_, &QTimer::timeout, this, &BaseCelerClient::onSendHbTimeout);
-
-   connect(this, &BaseCelerClient::closingConnection, this, &BaseCelerClient::CloseConnection, Qt::QueuedConnection);
    RegisterDefaulthandlers();
 
    celerUserType_ = CelerUserType::Undefined;
@@ -103,34 +94,29 @@ void BaseCelerClient::loginSuccessCallback(const std::string& userName, const st
          const bool bd = (properties[CelerUserProperties::BitcoinDealerPropertyName].value == "true");
          const bool bp = (bitcoinParticipant_.value == "true");
 
-         if (bp && bd) {
-            userType_ = tr("Dealing Participant");
+         if (bp && bd) {   //FIXME: userType_ should be enum instead of translatable string
+            userType_ = QObject::tr("Dealing Participant");
             celerUserType_ = CelerUserType::Dealing;
          } else if (bp && !bd) {
-            userType_ = tr("Trading Participant");
+            userType_ = QObject::tr("Trading Participant");
             celerUserType_ = CelerUserType::Trading;
          } else {
-            userType_ = tr("Market Participant");
+            userType_ = QObject::tr("Market Participant");
             celerUserType_ = CelerUserType::Market;
          }
-
-         emit OnConnectedToServer();
+         cct_->connectedToServer();
       });
       ExecuteSequence(getUserIdSequence);
    } else {
-      emit OnConnectedToServer();
+      cct_->connectedToServer();
    }
 
-   QMetaObject::invokeMethod(this, [this] {
-      timerSendHb_->setInterval(heartbeatInterval_);
-      timerSendHb_->start();
-   });
+   cct_->setSendTimer(heartbeatInterval_);
 
-   if (timerRecvHb_) {
+   if (useRecvTimer_) {
+      cct_->setRecvTimer(heartbeatInterval_ + std::chrono::seconds(15));
       // If there is nothing received for 45 seconds channel will be closed.
       // Celer will also send heartbeats but only when idle.
-      timerRecvHb_->setInterval(heartbeatInterval_ + std::chrono::seconds(15));
-      timerRecvHb_->start();
    }
 }
 
@@ -141,11 +127,10 @@ void BaseCelerClient::loginFailedCallback(const std::string& errorMessage)
          logger_->error("[CelerClient] login failed: {}", errorMessage);
          serverNotAvailable_ = true;
       }
-
-      emit OnConnectionError(ServerMaintainanceError);
+      cct_->connectionError(ServerMaintainanceError);
    } else {
       logger_->error("[CelerClient] login failed: {}", errorMessage);
-      emit OnConnectionError(LoginError);
+      cct_->connectionError(LoginError);
    }
 }
 
@@ -156,25 +141,15 @@ void BaseCelerClient::AddInternalSequence(const std::shared_ptr<BaseCelerCommand
 
 void BaseCelerClient::CloseConnection()
 {
-   QMetaObject::invokeMethod(this, [this] {
-      timerSendHb_->stop();
-   });
-
-   if (timerRecvHb_) {
-      timerRecvHb_->stop();
-   }
-
    if (!sessionToken_.empty()) {
       sessionToken_.clear();
-      emit OnConnectionClosed();
+      cct_->connectionClosed();
    }
 }
 
 void BaseCelerClient::OnDataReceived(CelerAPI::CelerMessageType messageType, const std::string& data)
 {
-   if (timerRecvHb_ && timerRecvHb_->isActive()) {
-      timerRecvHb_->start();
-   }
+   cct_->resetRecvTimer();
 
    // internal queue
    while (!internalCommands_.empty()) {
@@ -225,12 +200,7 @@ void BaseCelerClient::SendCommandMessagesIfRequired(const std::shared_ptr<BaseCe
 
 bool BaseCelerClient::sendMessage(CelerAPI::CelerMessageType messageType, const std::string& data)
 {
-   QMetaObject::invokeMethod(this, [this] {
-      // reset heartbeat interval
-      if (timerSendHb_->isActive()) {
-         timerSendHb_->start();
-      }
-   });
+   cct_->resetSendTimer();
 
    onSendData(messageType, data);
    return true;
@@ -252,7 +222,7 @@ void BaseCelerClient::OnConnected()
 void BaseCelerClient::OnDisconnected()
 {
 //   commandsQueueType{}.swap(internalCommands_);
-   emit closingConnection();
+   cct_->onClosingConnection();
 }
 
 void BaseCelerClient::OnError(DataConnectionListener::DataConnectionError errorCode)
@@ -268,7 +238,7 @@ void BaseCelerClient::OnError(DataConnectionListener::DataConnectionError errorC
       break;
    }
 
-   emit OnConnectionError(celerError);
+   cct_->connectionError(celerError);
 }
 
 void BaseCelerClient::RegisterDefaulthandlers()
@@ -528,4 +498,66 @@ void BaseCelerClient::AddToSet(const std::string& address, std::unordered_set<st
 bool BaseCelerClient::tradingAllowed() const
 {
    return (IsConnected() && (bitcoinParticipant_.value == "true"));
+}
+
+
+CelerClientQt::CelerClientQt(const std::shared_ptr<spdlog::logger>& logger
+   , bool userIdRequired, bool useRecvTimer)
+   : QObject(nullptr), BaseCelerClient(logger, this, userIdRequired, useRecvTimer)
+{
+   timerSendHb_ = new QTimer(this);
+
+   if (useRecvTimer) {
+      timerRecvHb_ = new QTimer(this);
+      connect(timerRecvHb_, &QTimer::timeout, this, &CelerClientQt::onRecvHbTimeout);
+   }
+   connect(timerSendHb_, &QTimer::timeout, this, &CelerClientQt::onSendHbTimeout);
+   connect(this, &CelerClientQt::closingConnection, this, &CelerClientQt::CloseConnection, Qt::QueuedConnection);
+}
+
+void CelerClientQt::setSendTimer(std::chrono::seconds timeout)
+{
+   QMetaObject::invokeMethod(this, [this, timeout] {
+      timerSendHb_->setInterval(timeout);
+      timerSendHb_->start();
+   });
+}
+
+void CelerClientQt::setRecvTimer(std::chrono::seconds timeout)
+{
+   if (!timerRecvHb_) {
+      return;
+   }
+   timerRecvHb_->setInterval(timeout);
+   timerRecvHb_->start();
+}
+
+void CelerClientQt::resetSendTimer()
+{
+   QMetaObject::invokeMethod(this, [this] {
+      // reset heartbeat interval
+      if (timerSendHb_->isActive()) {
+         timerSendHb_->start();
+      }
+   });
+}
+
+void CelerClientQt::resetRecvTimer()
+{
+   if (timerRecvHb_ && timerRecvHb_->isActive()) {
+      timerRecvHb_->start();
+   }
+}
+
+void CelerClientQt::CloseConnection()
+{
+   QMetaObject::invokeMethod(this, [this] {
+      timerSendHb_->stop();
+   });
+
+   if (timerRecvHb_) {
+      timerRecvHb_->stop();
+   }
+
+   BaseCelerClient::CloseConnection();
 }

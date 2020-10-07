@@ -14,19 +14,19 @@
 #include "BaseCelerClient.h"
 #include "BsClient.h"
 
-class CelerClientProxy : public BaseCelerClient
+class CelerClientProxy : public CelerClientQt
 {
    Q_OBJECT
 public:
    CelerClientProxy(const std::shared_ptr<spdlog::logger> &logger, bool userIdRequired = true);
    ~CelerClientProxy() override;
 
-   bool LoginToServer(BsClient *client, const std::string& login, const std::string& email);
+   bool LoginToServer(BsClientQt *client, const std::string& login, const std::string& email);
 
 private:
    void onSendData(CelerAPI::CelerMessageType messageType, const std::string &data) override;
 
-   BsClient *client_{};
+   BsClientQt *client_{};
 };
 
 #endif

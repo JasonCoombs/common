@@ -58,7 +58,7 @@ QuoteProvider::QuoteProvider(const std::shared_ptr<AssetManager>& assetManager
 
 QuoteProvider::~QuoteProvider() noexcept = default;
 
-void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>& celerClient)
+void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient)
 {
    celerClient_ = celerClient;
 
@@ -94,7 +94,7 @@ void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>&
       return this->onQuoteNotifCancelled(data);
    });
 
-   connect(celerClient.get(), &BaseCelerClient::OnConnectedToServer, this, &QuoteProvider::onConnectedToCeler);
+   connect(celerClient.get(), &CelerClientQt::OnConnectedToServer, this, &QuoteProvider::onConnectedToCeler);
 }
 
 void QuoteProvider::onConnectedToCeler()

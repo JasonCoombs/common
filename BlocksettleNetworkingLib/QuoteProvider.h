@@ -30,7 +30,7 @@ namespace bs {
 }
 
 class AssetManager;
-class BaseCelerClient;
+class CelerClientQt;
 
 class QuoteProvider : public QObject
 {
@@ -51,7 +51,7 @@ public:
    QuoteProvider(QuoteProvider&&) = delete;
    QuoteProvider& operator = (QuoteProvider&&) = delete;
 
-   void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>& celerClient);
+   void ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient);
 
    bs::network::QuoteNotification getSubmittedXBTQuoteNotification(const std::string& settlementId);
 
@@ -115,7 +115,7 @@ private:
 private:
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<AssetManager>    assetManager_;
-   std::shared_ptr<BaseCelerClient>     celerClient_;
+   std::shared_ptr<CelerClientQt>   celerClient_;
    std::unordered_map<std::string, bs::network::RFQ>   submittedRFQs_;
 
    std::unordered_map<std::string, std::string> quoteIdMap_;

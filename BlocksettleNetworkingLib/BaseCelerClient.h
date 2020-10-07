@@ -36,10 +36,21 @@ namespace spdlog {
    class logger;
 };
 
-class BaseCelerClient : public QObject
+struct CelerCallbackTarget
 {
-Q_OBJECT
+   virtual void connectedToServer() {}
+   virtual void connectionClosed() {}
+   virtual void connectionError(int errorCode) {}
+   virtual void onClosingConnection() {}
 
+   virtual void setSendTimer(std::chrono::seconds) {}
+   virtual void setRecvTimer(std::chrono::seconds) {}
+   virtual void resetSendTimer() {}
+   virtual void resetRecvTimer() {}
+};
+
+class BaseCelerClient
+{
 friend class CelerClientListener;
 
 public:
@@ -56,8 +67,9 @@ public:
    using message_handler = std::function<bool (const std::string&)>;
 
 public:
-   BaseCelerClient(const std::shared_ptr<spdlog::logger> &logger, bool userIdRequired, bool useRecvTimer);
-   ~BaseCelerClient() noexcept override = default;
+   BaseCelerClient(const std::shared_ptr<spdlog::logger> &logger, CelerCallbackTarget *
+      , bool userIdRequired, bool useRecvTimer);
+   virtual ~BaseCelerClient() noexcept = default;
 
    BaseCelerClient(const BaseCelerClient&) = delete;
    BaseCelerClient& operator = (const BaseCelerClient&) = delete;
@@ -96,13 +108,6 @@ public:
 
    virtual void CloseConnection();
 
-signals:
-   void OnConnectedToServer();
-   void OnConnectionClosed();
-   void OnConnectionError(int errorCode);
-
-   void closingConnection();
-
 protected:
    // Override to do actual data send
    virtual void onSendData(CelerAPI::CelerMessageType messageType, const std::string &data) = 0;
@@ -113,11 +118,8 @@ protected:
    // Call when there is need to send login request
    bool SendLogin(const std::string& login, const std::string& email, const std::string& password);
 
-   std::shared_ptr<spdlog::logger> logger_;
-
-private slots:
-   void onSendHbTimeout();
-   void onRecvHbTimeout();
+   virtual void onSendHbTimeout();
+   virtual void onRecvHbTimeout();
 
 private:
    void OnDataReceived(CelerAPI::CelerMessageType messageType, const std::string& data);
@@ -146,10 +148,8 @@ private:
 
    static void AddToSet(const std::string& address, std::unordered_set<std::string> &set);
 
-   QTimer                                 *timerSendHb_{};
-   QTimer                                 *timerRecvHb_{};
-
-   using commandsQueueType = std::queue< std::shared_ptr<BaseCelerCommand> >;
+protected:
+   using commandsQueueType = std::queue<std::shared_ptr<BaseCelerCommand>>;
    commandsQueueType internalCommands_;
 
    std::unordered_map<CelerAPI::CelerMessageType, message_handler, std::hash<int> > messageHandlersMap_;
@@ -158,6 +158,9 @@ private:
    // Use recursive mutex here as active commands could probably call RegisterUserCommand again
    std::recursive_mutex activeCommandsMutex_;
 
+   std::shared_ptr<spdlog::logger> logger_;
+   CelerCallbackTarget* cct_{ nullptr };
+   const bool useRecvTimer_;
    std::string sessionToken_;
    std::string userName_;
    std::string email_;
@@ -178,6 +181,51 @@ private:
    bool                    userIdRequired_;
 
    bool serverNotAvailable_;
+};
+
+
+class CelerClientQt : public QObject, public BaseCelerClient, public CelerCallbackTarget
+{
+   Q_OBJECT
+public:
+   CelerClientQt(const std::shared_ptr<spdlog::logger>& logger, bool userIdRequired, bool useRecvTimer);
+   ~CelerClientQt() noexcept override = default;
+
+   CelerClientQt(const CelerClientQt&) = delete;
+   CelerClientQt& operator = (const CelerClientQt&) = delete;
+   CelerClientQt(CelerClientQt&&) = delete;
+   CelerClientQt& operator = (CelerClientQt&&) = delete;
+
+   void CloseConnection() override;
+
+signals:
+   void OnConnectedToServer();
+   void OnConnectionClosed();
+   void OnConnectionError(int errorCode);
+   void closingConnection();
+
+protected:
+   // Override to do actual data send
+   virtual void onSendData(CelerAPI::CelerMessageType messageType, const std::string& data) = 0;
+
+private slots:
+   void onSendHbTimeout() override { BaseCelerClient::onSendHbTimeout(); }
+   void onRecvHbTimeout() override { BaseCelerClient::onRecvHbTimeout(); }
+
+private:    // CelerCallbacks
+   void connectedToServer() override { emit OnConnectedToServer(); }
+   void connectionClosed() override { emit OnConnectionClosed(); }
+   void connectionError(int errorCode) override { emit OnConnectionError(errorCode); }
+   void onClosingConnection() override { emit closingConnection(); }
+
+   void setSendTimer(std::chrono::seconds) override;
+   void setRecvTimer(std::chrono::seconds) override;
+   void resetSendTimer() override;
+   void resetRecvTimer() override;
+
+private:
+   QTimer* timerSendHb_{};
+   QTimer* timerRecvHb_{};
 };
 
 #endif

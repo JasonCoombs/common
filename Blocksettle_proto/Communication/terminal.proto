@@ -16,6 +16,14 @@ import "common.proto";
 
 message Empty {}
 
+message CCDefinition
+{
+   string security_id = 1;
+   string product = 2;
+   string genesis_address = 3;
+   uint64 lot_size = 4;
+}
+
 
 enum SettingIndex
 {
@@ -227,6 +235,13 @@ message SettingsMessage
       string new_key = 2;
    }
 
+   message BootstrapData
+   {
+      bool loaded = 1;
+      repeated string auth_validations = 2;
+      repeated CCDefinition cc_definitions = 3;
+   }
+
    oneof data
    {
       SettingsRequest    get_request  = 1;
@@ -253,6 +268,8 @@ message SettingsMessage
       SettingsResponse   state = 22;
       SettingsRequest    reset = 23;
       SettingsResponse   reset_to_state = 24;
+      bytes              load_bootstrap = 25;
+      BootstrapData      bootstrap = 26;
    }
 }
 
@@ -271,18 +288,64 @@ message AdministrativeMessage
 }
 
 
+message TradeSettings
+{
+   uint64 xbt_tier1_limit = 1;
+   uint32 xbt_price_band = 2;
+   uint32 auth_reqd_settl_trades = 3;
+   uint32 auth_submit_addr_limit = 4;
+   uint32 dealer_auth_submit_addr_limit = 5;
+}
+
 message BsServerMessage
 {
+   message StartLoginResult
+   {
+      string login = 1;
+      bool   success = 2;
+      string error_text = 3;
+   }
+
+   message LoginResult
+   {
+      string login = 1;
+      int32  status = 2;
+      int32  user_type = 3;
+      string error_text = 4;
+      string celer_login = 5;
+      bytes  chat_token = 6;
+      bytes  chat_token_signature = 7;
+      bytes  bootstrap_signed_data = 8;
+      bool   enabled = 9;
+      float  fee_rate = 10;
+      TradeSettings trade_settings = 11;
+   }
+
    oneof data
    {
+      Empty            open_connection = 1;
+      Empty            connected = 2;
+      Empty            disconnected = 3;
+      string           start_login = 4;
+      Empty            cancel_last_login = 5;
+      StartLoginResult start_login_result = 6;
+      LoginResult      login_result = 7;
+      Empty            close_connection = 8;
       Common.NewKeyCompare pub_new_key_request  = 10;
-      bool    pub_new_key_response = 11;
+      bool             pub_new_key_response = 11;
+      string           timeout = 12;
    }
 }
 
 
 message MatchingMessage
 {
+   message Login
+   {
+      string matching_login = 1;
+      string terminal_login = 2;
+   }
+
    message LoggedIn
    {
       int32  user_type = 1;
@@ -292,9 +355,10 @@ message MatchingMessage
 
    oneof data
    {
-      LoggedIn logged_in = 1;
-      Empty    logged_out = 2;
-      int32    connection_error = 3;
+      int32    connection_error = 1;
+      Login    login = 2;
+      LoggedIn logged_in = 3;
+      Empty    logged_out = 4;
    }
 }
 
