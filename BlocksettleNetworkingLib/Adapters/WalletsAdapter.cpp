@@ -677,6 +677,8 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processTXDetails(env, msg.tx_details_request());
    case WalletsMessage::kGetUtxos:
       return processGetUTXOs(env, msg.get_utxos());
+   case WalletsMessage::kSetUserId:
+      return processSetUserId(msg.set_user_id());
    default: break;
    }
    return true;
@@ -1553,5 +1555,19 @@ bool WalletsAdapter::processUTXOs(uint64_t msgId, const ArmoryMessage_UTXOs& res
       }
       utxoSpendableReqs_.erase(itSpendable);
    }
+   return true;
+}
+
+bool WalletsAdapter::processSetUserId(const std::string& userIdHex)
+{
+   const auto& userId = BinaryData::CreateFromHex(userIdHex);
+   std::string primaryWalletId;
+   for (const auto& hdWallet : hdWallets_) {
+      hdWallet->setUserId(userId);
+      if (primaryWalletId.empty() && hdWallet->isPrimary()) {
+         primaryWalletId = hdWallet->walletId();
+      }
+   }
+   signerClient_->setUserId(userId, primaryWalletId);
    return true;
 }

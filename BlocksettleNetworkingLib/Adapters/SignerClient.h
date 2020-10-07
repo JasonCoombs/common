@@ -75,7 +75,7 @@ public:
 
    bs::signer::RequestId CancelSignTx(const BinaryData &txId) override { return 0; }
 
-   bs::signer::RequestId setUserId(const BinaryData &, const std::string &walletId) override { return 0; }
+   bs::signer::RequestId setUserId(const BinaryData&, const std::string& walletId) override;
    bs::signer::RequestId syncCCNames(const std::vector<std::string> &) override { return 0; }
 
    bs::signer::RequestId GetInfo(const std::string &rootWalletId) override { return 0; }

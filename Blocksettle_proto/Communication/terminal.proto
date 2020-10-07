@@ -321,6 +321,12 @@ message BsServerMessage
       TradeSettings trade_settings = 11;
    }
 
+   message MatchingData
+   {
+      int32  message_type = 1;
+      bytes  data = 2;
+   }
+
    oneof data
    {
       Empty            open_connection = 1;
@@ -334,6 +340,8 @@ message BsServerMessage
       Common.NewKeyCompare pub_new_key_request  = 10;
       bool             pub_new_key_response = 11;
       string           timeout = 12;
+      MatchingData     send_matching = 13;
+      MatchingData     recv_matching = 14;
    }
 }
 
@@ -358,7 +366,8 @@ message MatchingMessage
       int32    connection_error = 1;
       Login    login = 2;
       LoggedIn logged_in = 3;
-      Empty    logged_out = 4;
+      Empty    logout = 4;
+      Empty    logged_out = 5;
    }
 }
 

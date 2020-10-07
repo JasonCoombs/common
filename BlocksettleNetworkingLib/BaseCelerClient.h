@@ -106,17 +106,17 @@ public:
    static void UpdateSetFromString(const std::string& value, std::unordered_set<std::string> &set);
    static std::string SetToString(const std::unordered_set<std::string> &set);
 
+   // Call when there is need to send login request
+   bool SendLogin(const std::string& login, const std::string& email, const std::string& password);
+
+   // Call when there is new data was received
+   void recvData(CelerAPI::CelerMessageType messageType, const std::string& data);
+
    virtual void CloseConnection();
 
 protected:
    // Override to do actual data send
    virtual void onSendData(CelerAPI::CelerMessageType messageType, const std::string &data) = 0;
-
-   // Call when there is new data was received
-   void recvData(CelerAPI::CelerMessageType messageType, const std::string &data);
-
-   // Call when there is need to send login request
-   bool SendLogin(const std::string& login, const std::string& email, const std::string& password);
 
    virtual void onSendHbTimeout();
    virtual void onRecvHbTimeout();

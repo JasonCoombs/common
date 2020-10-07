@@ -260,6 +260,18 @@ void SignerClient::syncAddressBatch(const std::string &walletId,
    reqSyncAddrMap_[env.id] = { walletId, std::move(cb) };
 }
 
+bs::signer::RequestId SignerClient::setUserId(const BinaryData& userId
+   , const std::string& walletId)
+{
+   SignerMessage msg;
+   auto msgReq = msg.mutable_set_user_id();
+   msgReq->set_user_id(userId.toBinStr());
+   msgReq->set_wallet_id(walletId);
+   Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
+   queue_->pushFill(env);
+   return (bs::signer::RequestId)env.id;
+}
+
 void SignerClient::syncNewAddress(const std::string &walletId, const std::string &index
    , const std::function<void(const bs::Address &)> &cb)
 {

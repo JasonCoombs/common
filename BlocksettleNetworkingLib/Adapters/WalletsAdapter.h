@@ -139,6 +139,8 @@ private:
       , const std::shared_ptr<bs::sync::Wallet> &, const std::map<BinaryData, Tx> &) const;
    bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
+   bool processSetUserId(const std::string&);
+
 private:
    std::shared_ptr<spdlog::logger>     logger_;
    std::shared_ptr<bs::message::User>  ownUser_, blockchainUser_;

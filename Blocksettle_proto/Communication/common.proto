@@ -451,6 +451,12 @@ message SignerMessage
       string error_text = 4;
    }
 
+   message SetUserId
+   {
+      string wallet_id = 1;
+      bytes  user_id = 2;
+   }
+
    oneof data
    {
       NewKeyCompare      new_key_request  = 1;
@@ -484,6 +490,7 @@ message SignerMessage
       string             del_hd_leaf = 29;
       SignTxRequest      sign_tx_request = 30;
       SignTxResponse     sign_tx_response = 31;
+      SetUserId          set_user_id = 32;
    }
 }
 
@@ -671,6 +678,7 @@ message WalletsMessage
       WalletsListResponse wallets_list_response = 31;
       UtxoListRequest     get_utxos = 32;
       UtxoListResponse    utxos = 33;
+      string              set_user_id = 34;
    }
 }
 
