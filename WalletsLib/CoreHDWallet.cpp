@@ -332,7 +332,7 @@ void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
 void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup)
 {
    assert(isHardwareWallet());
-   const auto groupHW = createGroup(getXBTGroupType());
+   const auto groupHW = std::dynamic_pointer_cast<hd::HWGroup>(createGroup(getXBTGroupType()));
    assert(groupHW);
 
    std::map<AddressEntryType, std::string> xpubs = {

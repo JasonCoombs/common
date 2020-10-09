@@ -44,18 +44,14 @@ namespace bs {
             std::shared_ptr<hd::Leaf> getLeafById(const std::string &id) const;
             std::vector<std::shared_ptr<Leaf>> getLeaves() const;
             std::vector<std::shared_ptr<Leaf>> getAllLeaves() const;
-            
+
             virtual std::shared_ptr<Leaf> createLeaf(const bs::hd::Path &
                , unsigned lookup = UINT32_MAX);
             virtual std::shared_ptr<Leaf> createLeaf(AddressEntryType
                , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
             virtual std::shared_ptr<Leaf> createLeaf(AddressEntryType
                , const std::string &key, unsigned lookup = UINT32_MAX);
-            
-            std::shared_ptr<Leaf> createLeafFromXpub(
-               const std::string&, unsigned, AddressEntryType
-               , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
-            
+
             virtual std::shared_ptr<Leaf> newLeaf(AddressEntryType) const;
             virtual bool addLeaf(const std::shared_ptr<Leaf> &);
             bool deleteLeaf(const std::shared_ptr<bs::core::hd::Leaf> &);
@@ -75,13 +71,11 @@ namespace bs {
             bool needsCommit() const { return needsCommit_; }
             void committed() { needsCommit_ = false; }
 
-            virtual void serializeLeaves(BinaryWriter &) const;
-            virtual void initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &, 
-               unsigned lookup = UINT32_MAX) const;
+            void commit(const std::shared_ptr<DBIfaceTransaction> &
+               , bool force = false);
 
-            void initLeafXpub(
-               const std::string& xpub, unsigned seedFingerprint,
-               std::shared_ptr<Leaf> &, const bs::hd::Path &,
+            virtual void serializeLeaves(BinaryWriter &) const;
+            virtual void initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &,
                unsigned lookup = UINT32_MAX) const;
 
             bs::hd::Path getPath(AddressEntryType aet
@@ -101,15 +95,13 @@ namespace bs {
             virtual BinaryData serialize() const;
 
             static std::shared_ptr<Group> deserialize(
-               std::shared_ptr<AssetWallet_Single>, 
+               std::shared_ptr<AssetWallet_Single>,
                BinaryDataRef key, BinaryDataRef val
                , const std::string &name
                , const std::string &desc
                , NetworkType netType
                , const std::shared_ptr<spdlog::logger> &logger);
             virtual void deserialize(BinaryDataRef value);
-            void commit(const std::shared_ptr<DBIfaceTransaction> &
-               , bool force = false);
          };
 
          ///////////////////////////////////////////////////////////////////////
@@ -201,7 +193,7 @@ namespace bs {
                throw AccountException("cannot setup ECDH accounts from HD account routines");
             }
 
-            void initLeaf(std::shared_ptr<hd::Leaf> &, 
+            void initLeaf(std::shared_ptr<hd::Leaf> &,
                const SecureBinaryData&, const SecureBinaryData&) const;
             void serializeLeaves(BinaryWriter &) const override;
 
@@ -212,7 +204,7 @@ namespace bs {
 
          ///////////////////////////////////////////////////////////////////////
 
-         class HWGroup : public Group 
+         class HWGroup : public Group
          {
          public:
             HWGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
@@ -223,6 +215,16 @@ namespace bs {
             ~HWGroup() override = default;
 
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
+
+            std::shared_ptr<Leaf> createLeafFromXpub(
+               const std::string&, unsigned, AddressEntryType
+               , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
+
+         protected:
+            void initLeafXpub(
+               const std::string& xpub, unsigned seedFingerprint,
+               std::shared_ptr<Leaf> &, const bs::hd::Path &,
+               unsigned lookup = UINT32_MAX) const;
          };
 
 

@@ -112,7 +112,7 @@ std::shared_ptr<hd::Leaf> hd::Group::createLeaf(AddressEntryType aet
    return createLeaf(aet, bs::hd::Path::keyToElem(key), lookup);
 }
 
-std::shared_ptr<bs::core::hd::Leaf> bs::core::hd::Group::createLeafFromXpub(
+std::shared_ptr<bs::core::hd::Leaf> bs::core::hd::HWGroup::createLeafFromXpub(
    const std::string& xpub, unsigned seedFingerprint, AddressEntryType aet
    , bs::hd::Path::Elem elem, unsigned lookup/*= UINT32_MAX*/)
 {
@@ -181,7 +181,7 @@ bool hd::Group::deleteLeaf(const std::shared_ptr<bs::core::hd::Leaf> &wallet)
 BinaryData hd::Group::serialize() const
 {
    BinaryWriter bw;
-   
+
    bw.put_uint32_t(index_ & ~bs::hd::hardFlag);
    bw.put_uint8_t(isExtOnly_);
 
@@ -221,7 +221,7 @@ std::shared_ptr<hd::Group> hd::Group::deserialize(
 
    case bs::hd::CoinType::Bitcoin_main:
    case bs::hd::CoinType::Bitcoin_test:
-      //use a place holder for isExtOnly (false), set it 
+      //use a place holder for isExtOnly (false), set it
       //while deserializing db value
       group = std::make_shared<hd::Group>(
          walletPtr, UINT32_MAX, netType, false, logger);
@@ -276,7 +276,7 @@ void hd::Group::initLeaf(
    }
    //setup address account
    auto accTypePtr = std::make_shared<AccountType_BIP32>(pathInt);
-   
+
    //account IDs and nodes
    if (!isExtOnly_)
    {
@@ -286,7 +286,7 @@ void hd::Group::initLeaf(
    }
    else
    {
-      //ext only address account uses the same asset account for both outer and 
+      //ext only address account uses the same asset account for both outer and
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
       accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
@@ -311,7 +311,7 @@ void hd::Group::initLeaf(
    leaf->init(walletPtr_, accID);
 }
 
-void bs::core::hd::Group::initLeafXpub(
+void bs::core::hd::HWGroup::initLeafXpub(
    const std::string& xpub, unsigned seedFingerprint,
    std::shared_ptr<hd::Leaf> &leaf, const bs::hd::Path &path,
    unsigned lookup /*= UINT32_MAX*/) const
@@ -328,7 +328,7 @@ void bs::core::hd::Group::initLeafXpub(
    auto pubRootAsset = std::make_shared<AssetEntry_BIP32Root>(-1, BinaryData()
       , pubkeyCopy, nullptr, chaincodeCopy, newPubNode.getDepth()
       , newPubNode.getLeafID(), newPubNode.getParentFingerprint()
-      , seedFingerprint 
+      , seedFingerprint
       , path.toVector());
 
    //no derivation path is passed to the account, it will use the pub root as is
@@ -457,7 +457,7 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
       accTypePtr->setInnerAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeInternal_));
    }
    else {
-      //ext only address account uses the same asset account for both outer and 
+      //ext only address account uses the same asset account for both outer and
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
       accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
@@ -478,7 +478,7 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    //the wallet's. We assume the passphrase prompt lambda is already set.
    auto lock = walletPtr_->lockDecryptedContainer();
    auto accID = walletPtr_->createBIP32Account(accTypePtr);
-   
+
    authLeafPtr->setPath(path);
    authLeafPtr->init(walletPtr_, accID);
    authLeafPtr->setSalt(salt_);
@@ -631,17 +631,17 @@ std::shared_ptr<hd::Leaf> hd::SettlementGroup::createLeaf(
 {
    /*
    We assume this address belongs to our wallet. We will try to recover the
-   asset for that address and extract the key pair to init the ECDH account 
-   with. 
+   asset for that address and extract the key pair to init the ECDH account
+   with.
 
-   The path argument is not useful on its own as ECDH accounts are not 
-   deterministic. However, leaves are keyed by their path within groups, 
+   The path argument is not useful on its own as ECDH accounts are not
+   deterministic. However, leaves are keyed by their path within groups,
    therefor the path provided should be that of the address the account is
    build from.
 
-   Sadly there is no way for a group to resolve the path of addresses 
+   Sadly there is no way for a group to resolve the path of addresses
    belonging to other groups, therefor this method is private and the class
-   friends HDWallet, which implements the method to create a leaf from an 
+   friends HDWallet, which implements the method to create a leaf from an
    address and feed the proper path to this method.
    */
 
@@ -721,7 +721,7 @@ std::shared_ptr<hd::SettlementLeaf> hd::SettlementGroup::getLeafForSettlementID(
 {
    for (auto& leafPair : leaves_) {
       auto settlLeaf = std::dynamic_pointer_cast<hd::SettlementLeaf>(leafPair.second);
-      
+
       if (settlLeaf == nullptr) {
          throw AccountException("unexpected leaf type");
       }
