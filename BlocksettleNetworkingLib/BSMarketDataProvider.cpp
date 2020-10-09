@@ -193,6 +193,7 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
    for (int i=0; i < snapshot.cc_products_size(); ++i) {
       OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, snapshot.cc_products(i), timestamp);
    }
+   callbacks_->allSecuritiesReceived();
 }
 
 void BSMarketDataProvider::OnProductUpdate(const bs::network::Asset::Type& assetType

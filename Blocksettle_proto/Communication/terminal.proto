@@ -383,10 +383,40 @@ message AssetsMessage
 
 message MktDataMessage
 {
+   message SecurityInfo
+   {
+      string name = 1;
+      int32  asset_type = 2;
+   }
+
+   message Prices
+   {
+      SecurityInfo security = 1;
+      uint64 timestamp = 2;
+      double bid = 3;
+      double ask = 4;
+      double last = 5;
+      double volume = 6;
+   }
+
+   message Trade
+   {
+      string product = 1;
+      double price = 2;
+      double amount = 3;
+      uint64 timestamp = 4;
+   }
+
    oneof data
    {
-      Empty accept_md_agreement = 1;
-      Empty md_agreement_accepted = 2;
+      Empty        accept_md_agreement = 1;
+      Empty        md_agreement_accepted = 2;
+      int32        start_connection = 3;	// environment
+      Empty        connected = 4;
+      Empty        disconnected = 5;
+      SecurityInfo new_security = 6;
+      Prices       price_update = 7;
+      Trade        trade = 8;
    }
 }
 
