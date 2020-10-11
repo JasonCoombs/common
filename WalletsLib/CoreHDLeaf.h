@@ -139,11 +139,11 @@ namespace bs {
             using PooledAddress = std::pair<AddrPoolKey, bs::Address>;
 
          protected:
-            mutable std::string     walletId_, walletIdInt_;
+            mutable std::string     walletId_;
             wallet::Type            type_;
             bs::hd::Path            path_;
-            std::string suffix_;
-            const NetworkType netType_;
+            std::string             suffix_;
+            const NetworkType       netType_;
             std::shared_ptr<::AddressAccount> accountPtr_;
             std::shared_ptr<AssetWallet_Single> walletPtr_;
 

@@ -60,16 +60,6 @@ std::shared_ptr<hd::Leaf> hd::Group::getLeafById(const std::string &id) const
    return nullptr;
 }
 
-std::vector<std::shared_ptr<hd::Leaf>> hd::Group::getLeaves() const
-{
-   std::vector<std::shared_ptr<hd::Leaf>> result;
-   result.reserve(leaves_.size());
-   for (const auto &leaf : leaves_) {
-      result.emplace_back(leaf.second);
-   }
-   return result;
-}
-
 std::vector<std::shared_ptr<hd::Leaf>> hd::Group::getAllLeaves() const
 {
    std::vector<std::shared_ptr<hd::Leaf>> result;

@@ -42,7 +42,6 @@ namespace bs {
             size_t getNumLeaves() const { return leaves_.size(); }
             std::shared_ptr<hd::Leaf> getLeafByPath(const bs::hd::Path &) const;
             std::shared_ptr<hd::Leaf> getLeafById(const std::string &id) const;
-            std::vector<std::shared_ptr<Leaf>> getLeaves() const;
             std::vector<std::shared_ptr<Leaf>> getAllLeaves() const;
 
             virtual std::shared_ptr<Leaf> createLeaf(const bs::hd::Path &
