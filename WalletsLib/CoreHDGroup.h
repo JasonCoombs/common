@@ -166,7 +166,7 @@ namespace bs {
             {} //Settlement groups are always ext only
             ~SettlementGroup() override = default;
 
-            wallet::Type type() const override { return wallet::Type::ColorCoin; }
+            wallet::Type type() const override { return wallet::Type::Settlement; }
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
 
             //these will throw on purpose, settlement leafs arent deterministic,
