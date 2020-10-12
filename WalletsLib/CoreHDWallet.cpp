@@ -144,12 +144,48 @@ void hd::Wallet::loadFromFile(const std::string &filename,
 
    //load armory wallet
    auto walletPtr = AssetWallet::loadMainWalletFromFile(filePathName_, lbdControlPassphrase_);
+
    walletPtr_ = std::dynamic_pointer_cast<AssetWallet_Single>(walletPtr);
    if (walletPtr_ == nullptr) {
       throw WalletException("failed to load wallet");
    }
 
-   readFromDB();
+   if (HaveArmoryAccount(walletPtr_)) {
+      throw WalletException("Armory wallet not supported");
+   }
+
+   if (HaveBlocksettleDBStructure(walletPtr_)) {
+      readFromDB();
+   }
+}
+
+bool hd::Wallet::HaveArmoryAccount(const std::shared_ptr<AssetWallet_Single>& wallet)
+{
+   if (wallet->getMainAccountID() == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+      return true;
+   }
+
+   for (const auto& accountId : wallet->getAccountIDs()) {
+      if (accountId == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+bool hd::Wallet::HaveBlocksettleDBStructure(const std::shared_ptr<AssetWallet_Single>& wallet)
+{
+   try {
+      // if there is no DB header for BS wallet - it will throw.
+      // if we could start read - BS wallet structure should be created
+      walletPtr_->beginSubDBTransaction(BS_WALLET_DBNAME, false);
+   }
+   catch (...) {
+      return false;
+   }
+
+   return true;
 }
 
 std::vector<std::shared_ptr<hd::Group>> hd::Wallet::getGroups() const

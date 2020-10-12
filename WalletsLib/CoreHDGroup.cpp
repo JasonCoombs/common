@@ -284,8 +284,8 @@ void hd::Group::initLeaf(
    }
 
    //address types
-   accTypePtr->setAddressTypes({ leaf->addressType() });
-   accTypePtr->setDefaultAddressType(leaf->addressType());
+   accTypePtr->setAddressTypes(leaf->addressTypes());
+   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //address lookup
    if (lookup == UINT32_MAX) {
@@ -326,8 +326,8 @@ void bs::core::hd::HWGroup::initLeafXpub(
 
    std::set<unsigned> nodes = { BIP32_LEGACY_OUTER_ACCOUNT_DERIVATIONID, BIP32_LEGACY_INNER_ACCOUNT_DERIVATIONID };
    accTypePtr->setNodes(nodes);
-   accTypePtr->setAddressTypes({ leaf->addressType() });
-   accTypePtr->setDefaultAddressType(leaf->addressType());
+   accTypePtr->setAddressTypes(leaf->addressTypes());
+   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
    accTypePtr->setAddressLookup(lookup);
    accTypePtr->setOuterAccountID(WRITE_UINT32_BE(*nodes.begin()));
    accTypePtr->setInnerAccountID(WRITE_UINT32_BE(*nodes.rbegin()));
@@ -455,8 +455,8 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    }
 
    //address types
-   accTypePtr->setAddressTypes({ leaf->addressType() });
-   accTypePtr->setDefaultAddressType(leaf->addressType());
+   accTypePtr->setAddressTypes(leaf->addressTypes());
+   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //address lookup
    if (lookup == UINT32_MAX) {
@@ -604,8 +604,8 @@ void hd::SettlementGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf,
    auto accTypePtr = std::make_shared<AccountType_ECDH>(privKey, pubKey);
 
    //address types
-   accTypePtr->setAddressTypes({ leaf->addressType() });
-   accTypePtr->setDefaultAddressType(leaf->addressType());
+   accTypePtr->setAddressTypes(leaf->addressTypes());
+   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //Lock the underlying armory wallet to allow accounts to derive their root from
    //the wallet's. We assume the passphrase prompt lambda is already set.

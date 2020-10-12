@@ -92,7 +92,8 @@ namespace bs {
 
          //this is a place holder for the Group ctor, settlement accounts
          //are not deterministic
-         BlockSettle_Settlement = 0xdeadbeef
+         BlockSettle_Settlement = 0xdeadbeef,
+         ArmoryLegacy = 0x41726d72 // Armr
       };
 
    }  //namespace hd

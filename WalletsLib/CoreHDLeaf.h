@@ -95,7 +95,8 @@ namespace bs {
 
             const bs::hd::Path &path() const { return path_; }
             bs::hd::Path::Elem index() const { return static_cast<bs::hd::Path::Elem>(path_.get(-1)); }
-            virtual AddressEntryType addressType() const = 0;
+            virtual std::set<AddressEntryType> addressTypes() const = 0;
+            virtual AddressEntryType defaultAddressType() const = 0;
             virtual BinaryData serialize() const;
 
             static std::pair<std::shared_ptr<hd::Leaf>, BinaryData> deserialize(
@@ -163,7 +164,8 @@ namespace bs {
             std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
 
          protected:
-            AddressEntryType addressType() const override { return AddressEntryType_P2WPKH; }
+            std::set<AddressEntryType> addressTypes() const override { return {AddressEntryType_P2WPKH}; }
+            AddressEntryType defaultAddressType() const override { return AddressEntryType_P2WPKH; }
          };
 
 
@@ -176,7 +178,10 @@ namespace bs {
             std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
 
          protected:
-            AddressEntryType addressType() const override {
+            std::set<AddressEntryType> addressTypes() const override {
+               return { static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH) };
+            }
+            AddressEntryType defaultAddressType() const override {
                return static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH);
             }
          };
@@ -191,7 +196,21 @@ namespace bs {
             std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
 
          protected:
-            AddressEntryType addressType() const override { return AddressEntryType_P2PKH; }
+            std::set<AddressEntryType> addressTypes() const override { return {AddressEntryType_P2PKH}; }
+            AddressEntryType defaultAddressType() const override { return AddressEntryType_P2PKH; }
+         };
+
+
+         class LeafArmoryWallet : public Leaf
+         {
+            LeafArmoryWallet(NetworkType netType, std::shared_ptr<spdlog::logger> logger)
+               : Leaf(netType, logger, wallet::Type::Bitcoin) {}
+
+            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+
+         protected:
+            std::set<AddressEntryType> addressTypes() const override;
+            AddressEntryType defaultAddressType() const override;
          };
 
 

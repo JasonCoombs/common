@@ -348,7 +348,7 @@ namespace bs {
             bool RBF;
 
             bool isValid() const noexcept;
-            void addWalletId(const std::string &walletId) 
+            void addWalletId(const std::string &walletId)
             { walletIDs_.insert(walletId); }
          };
 
@@ -422,8 +422,8 @@ namespace bs {
             , const BinaryData &cpPubKey);
          std::pair<BinaryData, BinaryData> getSettlCP(const BinaryData &txHash);
 
-         virtual std::vector<bs::Address> getUsedAddressList() const { 
-            return usedAddresses_; 
+         virtual std::vector<bs::Address> getUsedAddressList() const {
+            return usedAddresses_;
          }
          virtual std::vector<bs::Address> getPooledAddressList() const { return {}; }
          virtual std::vector<bs::Address> getExtAddressList() const { return usedAddresses_; }
@@ -439,12 +439,12 @@ namespace bs {
          virtual bs::Address getNewChangeAddress() { return getNewIntAddress(); }
          virtual std::shared_ptr<AddressEntry> getAddressEntryForAddr(const BinaryData &addr) = 0;
          virtual std::string getAddressIndex(const bs::Address &) = 0;
-         
+
          virtual bs::hd::Path::Elem getExtPath(void) const = 0;
          virtual bs::hd::Path::Elem getIntPath(void) const = 0;
 
          /***
-         Used to keep track of sync wallet used address index increments on the 
+         Used to keep track of sync wallet used address index increments on the
          Armory wallet side
          ***/
          virtual std::pair<bs::Address, bool> synchronizeUsedAddressChain(

@@ -19,7 +19,7 @@
 using namespace bs::core;
 
 hd::Leaf::Leaf(NetworkType netType,
-   std::shared_ptr<spdlog::logger> logger, 
+   std::shared_ptr<spdlog::logger> logger,
    wallet::Type type)
    : Wallet(logger), netType_(netType), type_(type)
 {}
@@ -53,7 +53,7 @@ void hd::Leaf::setPath(const bs::hd::Path& path)
 {
    if (path == path_)
       return;
- 
+
    path_ = path;
    suffix_.clear();
    suffix_ = bs::hd::Path::elemToKey(index());
@@ -161,7 +161,7 @@ SecureBinaryData hd::Leaf::getPublicKeyFor(const bs::Address &addr)
 {
    auto idPair = accountPtr_->getAssetIDPairForAddr(addr.prefixed());
    auto assetPtr = accountPtr_->getAssetForID(idPair.first.getSliceRef(4, 8));
-   
+
    auto assetSingle = std::dynamic_pointer_cast<AssetEntry_Single>(assetPtr);
    if (assetSingle == nullptr)
       throw AccountException("unexpected asset entry type");
@@ -171,7 +171,7 @@ SecureBinaryData hd::Leaf::getPublicKeyFor(const bs::Address &addr)
 
 bs::Address hd::Leaf::newAddress()
 {
-   auto addrPtr = accountPtr_->getNewAddress(addressType());
+   auto addrPtr = accountPtr_->getNewAddress(defaultAddressType());
 
    //this will not work with MS assets nor P2PK (the output script does not use a hash)
    auto&& addr = bs::Address::fromAddressEntry(*addrPtr);
@@ -181,7 +181,7 @@ bs::Address hd::Leaf::newAddress()
 
 bs::Address hd::Leaf::newInternalAddress()
 {
-   auto addrPtr = accountPtr_->getNewChangeAddress(addressType());
+   auto addrPtr = accountPtr_->getNewChangeAddress(defaultAddressType());
 
    //this will not work with MS assets nor P2PK (the output script does not use a hash)
    auto&& addr = bs::Address::fromAddressEntry(*addrPtr);
@@ -318,7 +318,8 @@ bs::Address hd::Leaf::getAddressByIndex(unsigned int id, bool ext) const
    accBw.put_uint32_t(id, BE);
 
    auto addrPtr = accountPtr_->getAddressEntryForID(accBw.getDataRef());
-   if (addrPtr->getType() != addressType()) {
+   const auto acceptableTypes = addressTypes();
+   if (acceptableTypes.find(addrPtr->getType()) == acceptableTypes.end()) {
       throw AccountException("type mismatch for instantiated address " + std::to_string(id));
    }
 
@@ -462,7 +463,7 @@ bool hd::Leaf::isWatchingOnly() const
 
 bool hd::Leaf::hasExtOnlyAddresses() const
 {
-   return (accountPtr_->getInnerAccountID() == 
+   return (accountPtr_->getInnerAccountID() ==
       accountPtr_->getOuterAccountID());
 }
 
@@ -658,7 +659,7 @@ std::map<BinaryData, bs::hd::Path> hd::Leaf::indexPath(const std::set<BinaryData
 
       //account id (ext/int)
       path.append(bs::hd::Path::Elem(brr.get_uint32_t(BE)));
-      
+
       //asset id
       path.append(bs::hd::Path::Elem(brr.get_uint32_t(BE)));
 
@@ -680,7 +681,7 @@ std::shared_ptr<AssetEntry> hd::Leaf::getRootAsset() const
 {
    if (accountPtr_ == nullptr)
       throw AccountException("null account ptr");
-   
+
    auto rootPtr = accountPtr_->getOutterAssetRoot();
    return rootPtr;
 }
@@ -832,4 +833,34 @@ unsigned hd::SettlementLeaf::getIndexForSettlementID(const SecureBinaryData& id)
    {}
 
    return UINT32_MAX;
+}
+
+std::shared_ptr<hd::Leaf> hd::LeafArmoryWallet::getCopy(std::shared_ptr<AssetWallet_Single> wltPtr) const
+{
+   if (wltPtr == nullptr) {
+      throw AccountException("empty wallet ptr");
+   }
+   auto leafCopy = std::make_shared<hd::LeafNative>(netType_, logger_, type());
+   leafCopy->setPath(path());
+   leafCopy->init(wltPtr, getRootId());
+
+   return leafCopy;
+}
+
+std::set<AddressEntryType> hd::LeafArmoryWallet::addressTypes() const
+{
+   if (accountPtr_ == nullptr) {
+      throw WalletException("armory wallet leaf not initialized");
+   }
+
+   return accountPtr_->getAddressTypeSet();
+}
+
+AddressEntryType hd::LeafArmoryWallet::defaultAddressType() const
+{
+   if (accountPtr_ == nullptr) {
+      throw WalletException("armory wallet leaf not initialized");
+   }
+
+   return accountPtr_->getAddressType();
 }
