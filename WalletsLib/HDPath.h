@@ -94,7 +94,7 @@ namespace bs {
          //this is a place holder for the Group ctor, settlement accounts
          //are not deterministic
          BlockSettle_Settlement = 0xdeadbeef,
-         VirtualWallet = 0x41726d72 // Armr
+         VirtualWallet = hardFlag | 0x41726d72 // Armr
       };
 
    }  //namespace hd
