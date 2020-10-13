@@ -154,6 +154,14 @@ void hd::Wallet::loadFromFile(const std::string &filename,
       // create virtual group
       auto group = std::make_shared<bs::core::hd::VirtualGroup>(walletPtr_, netType_, logger_);
       addGroup(group);
+
+      if (!walletPtr->getLabel().empty()) {
+         name_ = walletPtr->getLabel();
+      }
+
+      if (!walletPtr_->getDescription().empty()) {
+         desc_ = walletPtr_->getDescription();
+      }
    }
 
    if (HaveBlocksettleDBStructure(walletPtr_)) {
