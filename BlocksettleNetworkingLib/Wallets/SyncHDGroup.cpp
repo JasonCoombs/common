@@ -144,6 +144,9 @@ std::string hd::Group::nameForType(bs::hd::CoinType ct)
 
    case bs::hd::CoinType::BlockSettle_Settlement:
       return QObject::tr("Settlement").toStdString();
+
+   case bs::hd::CoinType::VirtualWallet:
+      return QObject::tr("Armory wallet").toStdString();
    }
 
    return QObject::tr("Unknown").toStdString();

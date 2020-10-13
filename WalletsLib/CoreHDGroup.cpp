@@ -728,3 +728,80 @@ std::set<AddressEntryType> bs::core::hd::HWGroup::getAddressTypeSet(void) const
       static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH)
    };
 }
+
+bs::core::hd::VirtualGroup::VirtualGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr, NetworkType netType, const std::shared_ptr<spdlog::logger> &logger)
+   : Group(walletPtr, bs::hd::CoinType::VirtualWallet, netType, true, logger)
+{
+   // need to create single leaf
+   bs::hd::Path path;
+   path.append(bs::hd::Purpose::Virtual | bs::hd::hardFlag);
+   path.append(bs::hd::CoinType::VirtualWallet | bs::hd::hardFlag);
+   path.append(bs::hd::hardFlag);
+
+   leafPath_ = path;
+
+   auto leaf = std::make_shared <bs::core::hd::LeafArmoryWallet>(netType, logger);
+
+   leaf->setPath(leafPath_);
+   leaf->init(walletPtr, WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID));
+
+   addLeaf(leaf);
+}
+
+std::shared_ptr<hd::Leaf> bs::core::hd::VirtualGroup::createLeaf(const bs::hd::Path &
+   , unsigned lookup)
+{
+   return nullptr;
+}
+
+std::shared_ptr<hd::Leaf> bs::core::hd::VirtualGroup::createLeaf(AddressEntryType
+   , bs::hd::Path::Elem, unsigned lookup)
+{
+   return nullptr;
+}
+
+std::shared_ptr<hd::Leaf> bs::core::hd::VirtualGroup::createLeaf(AddressEntryType
+   , const std::string &key, unsigned lookup)
+{
+   return nullptr;
+}
+
+std::shared_ptr<hd::Leaf> bs::core::hd::VirtualGroup::newLeaf(AddressEntryType) const
+{
+   return nullptr;
+}
+
+std::set<AddressEntryType> bs::core::hd::VirtualGroup::getAddressTypeSet(void) const
+{
+   auto leaf = getLeafByPath(leafPath_);
+   if (leaf != nullptr) {
+      return leaf->addressTypes();
+   }
+
+   return {};
+}
+
+std::shared_ptr<hd::Group> bs::core::hd::VirtualGroup::getCopy(std::shared_ptr<AssetWallet_Single>) const
+{
+   throw std::runtime_error("Could not copy virtual group ( not implemented )");
+}
+
+void bs::core::hd::VirtualGroup::serializeLeaves(BinaryWriter &) const
+{
+   throw std::runtime_error("VirtualGroup could not serialize leaves");
+}
+
+void bs::core::hd::VirtualGroup::initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &,unsigned lookup) const
+{
+   throw std::runtime_error("VirtualGroup::initLeaf should not be used");
+}
+
+BinaryData bs::core::hd::VirtualGroup::serialize() const
+{
+   throw std::runtime_error("VirtualGroup::serialize should not be used");
+}
+
+void bs::core::hd::VirtualGroup::deserialize(BinaryDataRef value)
+{
+   throw std::runtime_error("VirtualGroup::deserialize should not be used");
+}

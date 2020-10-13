@@ -151,7 +151,9 @@ void hd::Wallet::loadFromFile(const std::string &filename,
    }
 
    if (HaveArmoryAccount(walletPtr_)) {
-      throw WalletException("Armory wallet not supported");
+      // create virtual group
+      auto group = std::make_shared<bs::core::hd::VirtualGroup>(walletPtr_, netType_, logger_);
+      addGroup(group);
    }
 
    if (HaveBlocksettleDBStructure(walletPtr_)) {
