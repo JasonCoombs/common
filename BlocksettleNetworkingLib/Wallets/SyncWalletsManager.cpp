@@ -819,20 +819,25 @@ bool WalletsManager::getTransactionDirection(Tx tx, const std::string &walletId
       }
 
       for (size_t i = 0; i < tx.getNumTxOut(); ++i) {
-         TxOut out = tx.getTxOutCopy((int)i);
-         const auto addrObj = bs::Address::fromTxOut(out);
-         const auto addrWallet = getWalletByAddress(addrObj);
-         const auto addrGroup = addrWallet ? getGroupByWalletId(addrWallet->walletId()) : nullptr;
-         (((addrWallet == wallet) || (group && (group == addrGroup))) ? ourOuts : otherOuts) = true;
-         if (addrWallet && (addrWallet->type() == bs::core::wallet::Type::ColorCoin)) {
-            ccTx = true;
-            break;
-         }
-         else if (!ourOuts) {
-            if ((group && addrGroup) && (group == addrGroup)) {
-               ourOuts = true;
-               otherOuts = false;
+         try {
+            TxOut out = tx.getTxOutCopy((int)i);
+            const auto addrObj = bs::Address::fromTxOut(out);
+            const auto addrWallet = getWalletByAddress(addrObj);
+            const auto addrGroup = addrWallet ? getGroupByWalletId(addrWallet->walletId()) : nullptr;
+            (((addrWallet == wallet) || (group && (group == addrGroup))) ? ourOuts : otherOuts) = true;
+            if (addrWallet && (addrWallet->type() == bs::core::wallet::Type::ColorCoin)) {
+               ccTx = true;
+               break;
             }
+            else if (!ourOuts) {
+               if ((group && addrGroup) && (group == addrGroup)) {
+                  ourOuts = true;
+                  otherOuts = false;
+               }
+            }
+         }
+         catch (...) {
+            otherOuts = true;
          }
       }
 
