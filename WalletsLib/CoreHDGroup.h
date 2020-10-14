@@ -42,20 +42,15 @@ namespace bs {
             size_t getNumLeaves() const { return leaves_.size(); }
             std::shared_ptr<hd::Leaf> getLeafByPath(const bs::hd::Path &) const;
             std::shared_ptr<hd::Leaf> getLeafById(const std::string &id) const;
-            std::vector<std::shared_ptr<Leaf>> getLeaves() const;
             std::vector<std::shared_ptr<Leaf>> getAllLeaves() const;
-            
+
             virtual std::shared_ptr<Leaf> createLeaf(const bs::hd::Path &
                , unsigned lookup = UINT32_MAX);
             virtual std::shared_ptr<Leaf> createLeaf(AddressEntryType
                , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
             virtual std::shared_ptr<Leaf> createLeaf(AddressEntryType
                , const std::string &key, unsigned lookup = UINT32_MAX);
-            
-            std::shared_ptr<Leaf> createLeafFromXpub(
-               const std::string&, unsigned, AddressEntryType
-               , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
-            
+
             virtual std::shared_ptr<Leaf> newLeaf(AddressEntryType) const;
             virtual bool addLeaf(const std::shared_ptr<Leaf> &);
             bool deleteLeaf(const std::shared_ptr<bs::core::hd::Leaf> &);
@@ -72,44 +67,41 @@ namespace bs {
                std::shared_ptr<AssetWallet_Single>) const;
 
          protected:
-            bool needsCommit() const { return needsCommit_; }
+            virtual bool needsCommit() const { return needsCommit_; }
             void committed() { needsCommit_ = false; }
 
-            virtual void serializeLeaves(BinaryWriter &) const;
-            virtual void initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &, 
-               unsigned lookup = UINT32_MAX) const;
+            void commit(const std::shared_ptr<DBIfaceTransaction> &
+               , bool force = false);
 
-            void initLeafXpub(
-               const std::string& xpub, unsigned seedFingerprint,
-               std::shared_ptr<Leaf> &, const bs::hd::Path &,
+            virtual void serializeLeaves(BinaryWriter &) const;
+            virtual void initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &,
                unsigned lookup = UINT32_MAX) const;
 
             bs::hd::Path getPath(AddressEntryType aet
                , bs::hd::Path::Elem elem);
 
          protected:
-            bs::hd::Path::Elem   index_;
+            bs::hd::Path::Elem               index_;
             std::shared_ptr<spdlog::logger>  logger_;
-            bool        needsCommit_ = true;
-            NetworkType netType_;
-            bool isExtOnly_ = false;
-            std::map<bs::hd::Path, std::shared_ptr<hd::Leaf>> leaves_;
+            bool                             needsCommit_ = true;
+            NetworkType                      netType_;
+            bool                             isExtOnly_ = false;
 
-            std::shared_ptr<AssetWallet_Single> walletPtr_;
+            std::map<bs::hd::Path, std::shared_ptr<hd::Leaf>>  leaves_;
+
+            std::shared_ptr<AssetWallet_Single>                walletPtr_;
 
          private:
             virtual BinaryData serialize() const;
 
             static std::shared_ptr<Group> deserialize(
-               std::shared_ptr<AssetWallet_Single>, 
+               std::shared_ptr<AssetWallet_Single>,
                BinaryDataRef key, BinaryDataRef val
                , const std::string &name
                , const std::string &desc
                , NetworkType netType
                , const std::shared_ptr<spdlog::logger> &logger);
             virtual void deserialize(BinaryDataRef value);
-            void commit(const std::shared_ptr<DBIfaceTransaction> &
-               , bool force = false);
          };
 
          ///////////////////////////////////////////////////////////////////////
@@ -175,7 +167,7 @@ namespace bs {
             {} //Settlement groups are always ext only
             ~SettlementGroup() override = default;
 
-            wallet::Type type() const override { return wallet::Type::ColorCoin; }
+            wallet::Type type() const override { return wallet::Type::Settlement; }
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
 
             //these will throw on purpose, settlement leafs arent deterministic,
@@ -201,7 +193,7 @@ namespace bs {
                throw AccountException("cannot setup ECDH accounts from HD account routines");
             }
 
-            void initLeaf(std::shared_ptr<hd::Leaf> &, 
+            void initLeaf(std::shared_ptr<hd::Leaf> &,
                const SecureBinaryData&, const SecureBinaryData&) const;
             void serializeLeaves(BinaryWriter &) const override;
 
@@ -212,7 +204,7 @@ namespace bs {
 
          ///////////////////////////////////////////////////////////////////////
 
-         class HWGroup : public Group 
+         class HWGroup : public Group
          {
          public:
             HWGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
@@ -223,8 +215,54 @@ namespace bs {
             ~HWGroup() override = default;
 
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
+
+            std::shared_ptr<Leaf> createLeafFromXpub(
+               const std::string&, unsigned, AddressEntryType
+               , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX);
+
+         protected:
+            void initLeafXpub(
+               const std::string& xpub, unsigned seedFingerprint,
+               std::shared_ptr<Leaf> &, const bs::hd::Path &,
+               unsigned lookup = UINT32_MAX) const;
          };
 
+
+         class VirtualGroup : public Group
+         {
+         public:
+            VirtualGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
+                         , NetworkType netType
+                         , const std::shared_ptr<spdlog::logger> &logger);
+            ~VirtualGroup() override = default;
+
+            std::shared_ptr<Leaf> createLeaf(const bs::hd::Path &
+               , unsigned lookup = UINT32_MAX) override;
+            std::shared_ptr<Leaf> createLeaf(AddressEntryType
+               , bs::hd::Path::Elem, unsigned lookup = UINT32_MAX) override;
+            std::shared_ptr<Leaf> createLeaf(AddressEntryType
+               , const std::string &key, unsigned lookup = UINT32_MAX) override;
+
+            std::shared_ptr<Leaf> newLeaf(AddressEntryType) const override;
+
+            std::set<AddressEntryType> getAddressTypeSet(void) const override;
+
+            std::shared_ptr<hd::Group> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+
+         protected:
+            bool needsCommit() const override { return false; }
+
+            void serializeLeaves(BinaryWriter &) const override;
+            void initLeaf(std::shared_ptr<Leaf> &, const bs::hd::Path &,
+               unsigned lookup = UINT32_MAX) const override;
+
+         private:
+            BinaryData serialize() const override;
+            void deserialize(BinaryDataRef value) override;
+
+         private:
+            bs::hd::Path leafPath_;
+         };
 
       }  //namespace hd
    }  //namespace core

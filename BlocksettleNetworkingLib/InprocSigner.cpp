@@ -447,7 +447,7 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
             groupData.salt = authGroupPtr->getSalt();
          }
 
-         for (const auto &leaf : group->getLeaves()) {
+         for (const auto &leaf : group->getAllLeaves()) {
             BinaryData extraData;
             if (groupData.type == bs::hd::CoinType::BlockSettle_Settlement) {
                const auto settlLeaf = std::dynamic_pointer_cast<bs::core::hd::SettlementLeaf>(leaf);

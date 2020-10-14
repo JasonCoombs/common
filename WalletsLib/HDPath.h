@@ -73,9 +73,10 @@ namespace bs {
 
 
       enum Purpose : Path::Elem {
-         Native = 84,   // BIP84
-         Nested = 49,   // BIP49
-         NonSegWit = 44 // BIP44
+         Native      = 84, // BIP84
+         Nested      = 49, // BIP49
+         NonSegWit   = 44, // BIP44
+         Virtual     = 42  // non HD path.
       };
 
       Purpose purpose(AddressEntryType);
@@ -92,7 +93,8 @@ namespace bs {
 
          //this is a place holder for the Group ctor, settlement accounts
          //are not deterministic
-         BlockSettle_Settlement = 0xdeadbeef
+         BlockSettle_Settlement = 0xdeadbeef,
+         VirtualWallet = hardFlag | 0x41726d72 // Armr
       };
 
    }  //namespace hd

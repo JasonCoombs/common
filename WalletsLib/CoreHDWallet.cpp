@@ -144,12 +144,58 @@ void hd::Wallet::loadFromFile(const std::string &filename,
 
    //load armory wallet
    auto walletPtr = AssetWallet::loadMainWalletFromFile(filePathName_, lbdControlPassphrase_);
+
    walletPtr_ = std::dynamic_pointer_cast<AssetWallet_Single>(walletPtr);
    if (walletPtr_ == nullptr) {
       throw WalletException("failed to load wallet");
    }
 
-   readFromDB();
+   if (HaveArmoryAccount(walletPtr_)) {
+      // create virtual group
+      auto group = std::make_shared<bs::core::hd::VirtualGroup>(walletPtr_, netType_, logger_);
+      addGroup(group);
+
+      if (!walletPtr->getLabel().empty()) {
+         name_ = walletPtr->getLabel();
+      }
+
+      if (!walletPtr_->getDescription().empty()) {
+         desc_ = walletPtr_->getDescription();
+      }
+   }
+
+   if (HaveBlocksettleDBStructure(walletPtr_)) {
+      readFromDB();
+   }
+}
+
+bool hd::Wallet::HaveArmoryAccount(const std::shared_ptr<AssetWallet_Single>& wallet)
+{
+   if (wallet->getMainAccountID() == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+      return true;
+   }
+
+   for (const auto& accountId : wallet->getAccountIDs()) {
+      if (accountId == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+         return true;
+      }
+   }
+
+   return false;
+}
+
+bool hd::Wallet::HaveBlocksettleDBStructure(const std::shared_ptr<AssetWallet_Single>& wallet)
+{
+   try {
+      // if there is no DB header for BS wallet - it will throw.
+      // if we could start read - BS wallet structure should be created
+      walletPtr_->beginSubDBTransaction(BS_WALLET_DBNAME, false);
+   }
+   catch (...) {
+      return false;
+   }
+
+   return true;
 }
 
 std::vector<std::shared_ptr<hd::Group>> hd::Wallet::getGroups() const
@@ -332,7 +378,7 @@ void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
 void bs::core::hd::Wallet::createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup)
 {
    assert(isHardwareWallet());
-   const auto groupHW = createGroup(getXBTGroupType());
+   const auto groupHW = std::dynamic_pointer_cast<hd::HWGroup>(createGroup(getXBTGroupType()));
    assert(groupHW);
 
    std::map<AddressEntryType, std::string> xpubs = {

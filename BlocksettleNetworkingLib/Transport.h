@@ -77,6 +77,8 @@ namespace bs {
          using DisconnectedCb = std::function<void(const std::string &clientId)>;
          void setDisconnectedCb(const DisconnectedCb &disconnCb) { disconnCb_ = disconnCb; }
 
+         virtual bool handshakeComplete(const std::string &clientId) = 0;
+
       protected:
          ClientErrorCb        clientErrorCb_{ nullptr };
          DataReceivedCb       dataReceivedCb_{ nullptr };

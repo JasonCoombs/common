@@ -112,6 +112,7 @@ namespace bs {
          // Returns null if clientId is not known or was not yet authenticated.
          std::unique_ptr<BIP15xPeer> getClientKey(const std::string &clientId) const;
 
+         bool handshakeComplete(const std::string &clientId) override;
          BIP15xServerParams getParams(unsigned) const;
 
       private:

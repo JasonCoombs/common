@@ -11,6 +11,8 @@
 #ifndef __DATA_CONNECTION_H__
 #define __DATA_CONNECTION_H__
 
+#include <chrono>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -42,6 +44,10 @@ public:
    virtual bool closeConnection() = 0;
 
    virtual bool isActive() const = 0;
+
+   // Execute callback after timeout on listening thread
+   using TimerCallback = std::function<void()>;
+   virtual bool timer(std::chrono::milliseconds /*timeout*/, TimerCallback /*callback*/) { return false; }
 
 protected:
    void setListener(DataConnectionListener* listener) {

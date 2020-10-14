@@ -386,6 +386,9 @@ std::string hd::Leaf::shortName() const
    case bs::hd::Purpose::NonSegWit:
       name = QObject::tr("Legacy").toStdString();
       break;
+   case bs::hd::Purpose::Virtual:
+      name = QObject::tr("Armory").toStdString();
+      break;
    default:
       name = QObject::tr("Unknown").toStdString();
       break;

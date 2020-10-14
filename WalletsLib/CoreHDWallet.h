@@ -139,6 +139,9 @@ namespace bs {
 
             BinaryData signTXRequestWithWallet(const bs::core::wallet::TXSignRequest &request);
 
+            bool HaveArmoryAccount(const std::shared_ptr<AssetWallet_Single>& wallet);
+            bool HaveBlocksettleDBStructure(const std::shared_ptr<AssetWallet_Single>& wallet);
+
          protected:
             std::string    name_, desc_;
             NetworkType    netType_ = NetworkType::Invalid;

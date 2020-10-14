@@ -1891,7 +1891,7 @@ bool HeadlessContainerListener::onSyncHDWallet(const std::string &clientId, head
          if (static_cast<bs::hd::CoinType>(group->index()) == bs::hd::CoinType::BlockSettle_Auth) {
             continue;      // don't sync leaves for auth before setUserId is asked
          }
-         for (const auto &leaf : group->getLeaves()) {
+         for (const auto &leaf : group->getAllLeaves()) {
             auto leafData = groupData->add_leaves();
             leafData->set_id(leaf->walletId());
             leafData->set_path(leaf->path().toString());
