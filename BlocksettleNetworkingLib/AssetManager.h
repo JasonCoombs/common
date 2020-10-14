@@ -29,19 +29,32 @@ namespace bs {
       class WalletsManager;
    }
 }
-
 class MDCallbacksQt;
 class CelerClientQt;
 
-class AssetManager : public QObject
+struct AssetCallbackTarget
+{
+   virtual void onCcPriceChanged(const std::string& currency) {}
+   virtual void onXbtPriceChanged(const std::string& currency) {}
+
+   virtual void onFxBalanceLoaded() {}
+   virtual void onFxBalanceCleared() {}
+
+   virtual void onBalanceChanged(const std::string& currency) {}
+   virtual void onTotalChanged() {}
+   virtual void onSecuritiesChanged() {}
+};
+
+class AssetManager : public QObject, public AssetCallbackTarget
 {
     Q_OBJECT
 
 public:
-   AssetManager(const std::shared_ptr<spdlog::logger> &
+   [[deprecated]] AssetManager(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<MDCallbacksQt> &
       , const std::shared_ptr<CelerClientQt> &);
+   AssetManager(const std::shared_ptr<spdlog::logger>&, AssetCallbackTarget *);
    ~AssetManager() = default;
 
    virtual void init();
@@ -85,7 +98,6 @@ signals:
     void onMDSecuritiesReceived();
     void onAccountBalanceLoaded(const std::string& currency, double value);
 
- private slots:
    void onCelerConnected();
    void onCelerDisconnected();
    void onWalletChanged();
@@ -96,11 +108,21 @@ protected:
 private:
   void sendUpdatesOnXBTPrice(const std::string& ccy);
 
+  void onCcPriceChanged(const std::string& currency) override { emit ccPriceChanged(currency); }
+  void onXbtPriceChanged(const std::string& currency) override { emit xbtPriceChanged(currency); }
+  void onFxBalanceLoaded() override { emit fxBalanceLoaded(); }
+  void onFxBalanceCleared() override { emit fxBalanceCleared(); }
+
+  void onBalanceChanged(const std::string& currency) override { emit balanceChanged(currency); }
+  void onTotalChanged() override { emit totalChanged(); }
+  void onSecuritiesChanged() override { emit securitiesChanged(); }
+
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<bs::sync::WalletsManager> walletsManager_;
    std::shared_ptr<MDCallbacksQt>         mdCallbacks_;
    std::shared_ptr<CelerClientQt>         celerClient_;
+   AssetCallbackTarget* act_{ nullptr };
 
    bool     securitiesReceived_ = false;
    std::vector<std::string>   currencies_;

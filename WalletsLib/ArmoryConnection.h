@@ -127,7 +127,7 @@ public:
    virtual void onLedgerForAddress(const bs::Address &, const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
 
 protected:
-   ArmoryConnection  * armory_ = nullptr;
+   ArmoryConnection* armory_{ nullptr };
 };
 
 // The class is used as a callback that processes asynchronous Armory events.

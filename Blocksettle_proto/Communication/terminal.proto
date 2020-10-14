@@ -101,6 +101,7 @@ enum SettingIndex
    SetIdx_ExtConnPubKey = 71;
    SetIdx_SubmittedAddrXbtLimit = 72;
 //   SetIdx_ExtConnOwnPubKey = 73;
+   SetIdx_BlockSettleSignAddress = 100;
 }
 
 enum SettingType
@@ -270,6 +271,7 @@ message SettingsMessage
       SettingsResponse   reset_to_state = 24;
       bytes              load_bootstrap = 25;
       BootstrapData      bootstrap = 26;
+      Empty              get_bootstrap = 27;
    }
 }
 
@@ -327,6 +329,20 @@ message BsServerMessage
       bytes  data = 2;
    }
 
+   message SubmitCCAddress
+   {
+      string address = 1;
+      uint32 seed = 2;
+      string product = 3;
+   }
+
+   message SubmitCCResult
+   {
+      string address = 1;
+      string success = 2;
+      string error_text = 3;
+   }
+
    oneof data
    {
       Empty            open_connection = 1;
@@ -342,6 +358,10 @@ message BsServerMessage
       string           timeout = 12;
       MatchingData     send_matching = 13;
       MatchingData     recv_matching = 14;
+      SubmitCCAddress  submit_cc_address = 15;
+      SubmitCCResult   submit_cc_result = 16;
+      string           submit_auth_address = 17;
+      int32	       submit_auth_result = 18;
    }
 }
 
@@ -361,6 +381,11 @@ message MatchingMessage
       string user_name = 3;
    }
 
+   message SubmittedAuthAddresses
+   {
+      repeated string addresses = 1;
+   }
+
    oneof data
    {
       int32    connection_error = 1;
@@ -368,15 +393,26 @@ message MatchingMessage
       LoggedIn logged_in = 3;
       Empty    logout = 4;
       Empty    logged_out = 5;
+      Empty    get_submitted_auth_addresses = 6;
+      SubmittedAuthAddresses submitted_auth_addresses = 7;
+      string   submit_auth_address = 8;
    }
 }
 
 
 message AssetsMessage
 {
+   message SubmittedAuthAddresses
+   {
+      repeated string addresses = 1;
+   }
+
    oneof data
    {
-      Empty placeholder = 1;
+      Empty                  loaded = 1;
+      CCDefinition           cc_definition = 2;
+      SubmittedAuthAddresses submitted_auth_addrs = 3;
+      string                 submit_auth_address = 4;
    }
 }
 

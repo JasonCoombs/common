@@ -32,11 +32,13 @@ AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
    , walletsManager_(walletsManager)
    , mdCallbacks_(mdCallbacks)
    , celerClient_(celerClient)
-{
-   connect(this, &AssetManager::ccPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::xbtPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::balanceChanged, [this] { emit totalChanged(); });
-}
+   , act_(this)
+{}
+
+AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
+   , AssetCallbackTarget *act)
+   : logger_(logger), act_(act)
+{}
 
 void AssetManager::init()
 {
@@ -187,7 +189,8 @@ bs::network::Asset::Type AssetManager::GetAssetTypeForSecurity(const std::string
 
 void AssetManager::onWalletChanged()
 {
-   emit balanceChanged(bs::network::XbtCurrency);
+   act_->onBalanceChanged(bs::network::XbtCurrency);
+   act_->onTotalChanged();
 }
 
 void AssetManager::onMDSecurityReceived(const std::string &security, const bs::network::SecurityDef &sd)
@@ -254,7 +257,8 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
       }
       prices_[ccy] = productPrice;
       if (at == bs::network::Asset::PrivateMarket) {
-         emit ccPriceChanged(ccy);
+         act_->onCcPriceChanged(ccy);
+         act_->onTotalChanged();
       } else {
          sendUpdatesOnXBTPrice(ccy);
       }
@@ -339,9 +343,9 @@ void AssetManager::onCelerDisconnected()
 
    balances_.clear();
    currencies_.clear();
-   emit securitiesChanged();
-   emit fxBalanceCleared();
-   emit totalChanged();
+   act_->onSecuritiesChanged();
+   act_->onFxBalanceCleared();
+   act_->onTotalChanged();
 }
 
 void AssetManager::onAccountBalanceLoaded(const std::string& currency, double value)
@@ -350,7 +354,8 @@ void AssetManager::onAccountBalanceLoaded(const std::string& currency, double va
       return;
    }
    balances_[currency] = value;
-   emit balanceChanged(currency);
+   act_->onBalanceChanged(currency);
+   act_->onTotalChanged();
 }
 
 void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
@@ -371,6 +376,7 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
    }
 
    if (emitUpdate) {
-      emit xbtPriceChanged(ccy);
+      act_->onXbtPriceChanged(ccy);
+      act_->onTotalChanged();
    }
 }

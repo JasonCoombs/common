@@ -103,6 +103,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processGetUTXOs(env, msg.get_zc_utxos(), true);
       case ArmoryMessage::kGetRbfUtxos:
          return processGetUTXOs(env, msg.get_rbf_utxos(), false, true);
+      case ArmoryMessage::kGetOutPoints:
+         return processGetOutpoints(env, msg.get_out_points());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -1057,6 +1059,59 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
       return armory_->getSpendableTxOutListForValue(walletIDs
          , std::numeric_limits<uint64_t>::max(), cbTxOutList);
    }
+}
+
+bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
+   , const ArmoryMessage_GetOutpointsForAddrList& request)
+{
+   auto cbOutpoints = [this, env] (const OutpointBatch& outpointBatch)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_out_points();
+      msgResp->set_height_cutoff(outpointBatch.heightCutoff_);
+      msgResp->set_zc_index_cutoff(outpointBatch.zcIndexCutoff_);
+      for (const auto& outpointsItem : outpointBatch.outpoints_) {
+         auto opData = msgResp->add_outpoints();
+         opData->set_id(outpointsItem.first.toBinStr());
+         for (const auto& outpoint : outpointsItem.second) {
+            auto inputData = opData->add_outpoints();
+            inputData->set_hash(outpoint.txHash_.toBinStr());
+            inputData->set_index(outpoint.txOutIndex_);
+            inputData->set_tx_height(outpoint.txHeight_);
+            inputData->set_tx_index(outpoint.txIndex_);
+            inputData->set_value(outpoint.value_);
+            inputData->set_spent(outpoint.isSpent_);
+            inputData->set_spender_hash(outpoint.spenderHash_.toBinStr());
+         }
+      }
+      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
+         , msg.SerializeAsString() };
+      if (pushFill(envResp)) {
+         std::unique_lock<std::mutex> lock(mtxReqPool_);
+         requestsPool_.erase(env.id);
+      }
+   };
+   {
+      std::unique_lock<std::mutex> lock(mtxReqPool_);
+      requestsPool_[env.id] = env;
+   }
+   std::vector<BinaryData> addrVec;
+   for (const auto& addr : request.addresses()) {
+      try {
+         addrVec.push_back(bs::Address::fromAddressString(addr).prefixed());
+      } catch (const std::exception& e) {
+         SPDLOG_LOGGER_WARN(logger_, "invalid address: {}", e.what());
+      }
+   }
+   if (addrVec.empty()) {
+      cbOutpoints({});
+   } else {
+      if (!armory_->getOutpointsFor(addrVec, cbOutpoints, request.height()
+         , request.zc_index())) {
+         return false;
+      }
+   }
+   return true;
 }
 
 void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& request)

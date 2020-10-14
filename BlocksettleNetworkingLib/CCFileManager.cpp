@@ -25,20 +25,38 @@
 CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ApplicationSettings> &appSettings)
    : logger_{logger}
-   , appSettings_(appSettings)
+   , cct_(this)
 {
    const auto &cbSecLoaded = [this](const bs::network::CCSecurityDef &ccSecDef) {
-      emit CCSecurityDef(ccSecDef);
-      emit CCSecurityId(ccSecDef.securityId);
-      emit CCSecurityInfo(QString::fromStdString(ccSecDef.product)
-         , (unsigned long)ccSecDef.nbSatoshis, QString::fromStdString(ccSecDef.genesisAddr.display()));
+      cct_->onCCSecurityDef(ccSecDef);
+      cct_->onCCSecurityId(ccSecDef.securityId);
+      cct_->onCCSecurityInfo(ccSecDef.product, (unsigned long)ccSecDef.nbSatoshis
+         , ccSecDef.genesisAddr);
    };
    const auto &cbLoadComplete = [this] {
       logger_->debug("[CCFileManager] loading complete");
-      emit Loaded();
+      cct_->onLoaded();
    };
    resolver_ = std::make_shared<CCPubResolver>(logger_
-      , appSettings_->GetBlocksettleSignAddress()
+      , appSettings->GetBlocksettleSignAddress()
+      , cbSecLoaded, cbLoadComplete);
+}
+
+CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger>& logger
+   , CCCallbackTarget* cct, const std::string& signAddress)
+   : logger_(logger), cct_(cct)
+{
+   const auto& cbSecLoaded = [this](const bs::network::CCSecurityDef& ccSecDef) {
+      cct_->onCCSecurityDef(ccSecDef);
+      cct_->onCCSecurityId(ccSecDef.securityId);
+      cct_->onCCSecurityInfo(ccSecDef.product, (unsigned long)ccSecDef.nbSatoshis
+         , ccSecDef.genesisAddr);
+   };
+   const auto& cbLoadComplete = [this] {
+      logger_->debug("[CCFileManager] loading complete");
+      cct_->onLoaded();
+   };
+   resolver_ = std::make_shared<CCPubResolver>(logger_, signAddress
       , cbSecLoaded, cbLoadComplete);
 }
 
@@ -94,11 +112,10 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
 
       if (!result.success) {
          SPDLOG_LOGGER_ERROR(logger_, "submit CC address failed: '{}'", result.errorMsg);
-         emit CCSubmitFailed(QString::fromStdString(address.display()), QString::fromStdString(result.errorMsg));
+         cct_->onCCSubmitFailed(address, result.errorMsg);
          return;
       }
-
-      emit CCInitialSubmitted(QString::fromStdString(address.display()));
+      cct_->onCCInitialSubmitted(address);
 
       if (!bsClient) {
          SPDLOG_LOGGER_ERROR(logger_, "disconnected from server");
@@ -110,13 +127,13 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
 
          if (result.userCancelled) {
             SPDLOG_LOGGER_DEBUG(logger_, "signing CC address cancelled: '{}'", result.errorMsg);
-            emit CCSubmitFailed(QString::fromStdString(address.display()), tr("Cancelled"));
+            cct_->onCCSubmitFailed(address, tr("Cancelled").toStdString());
             return;
          }
 
          if (!result.success) {
             SPDLOG_LOGGER_ERROR(logger_, "signing CC address failed: '{}'", result.errorMsg);
-            emit CCSubmitFailed(QString::fromStdString(address.display()), QString::fromStdString(result.errorMsg));
+            cct_->onCCSubmitFailed(address, result.errorMsg);
             return;
          }
 
@@ -128,7 +145,7 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
          bsClient->confirmCcAddress(address, [this, address](const BsClient::BasicResponse &result) {
             if (!result.success) {
                SPDLOG_LOGGER_ERROR(logger_, "confirming CC address failed: '{}'", result.errorMsg);
-               emit CCSubmitFailed(QString::fromStdString(address.display()), QString::fromStdString(result.errorMsg));
+               cct_->onCCSubmitFailed(address, result.errorMsg);
                return;
             }
 
@@ -137,7 +154,7 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
                   , address.display());
             }
 
-            emit CCAddressSubmitted(QString::fromStdString(address.display()));
+            cct_->onCCAddressSubmitted(address);
          });
       });
    });

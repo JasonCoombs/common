@@ -61,7 +61,9 @@ bool SignerClient::process(const Envelope &env)
    case SignerMessage::kWalletsInfo:
       return processWalletsInfo(env.id, msg.wallets_info());
    case SignerMessage::kAuthLeafAdded:
-      //TODO: process
+      if (cbAuthLeaf_) {
+         cbAuthLeaf_(msg.auth_leaf_added());
+      }
       break;
    case SignerMessage::kSyncAddrResult:
       return processSyncAddr(env.id, msg.sync_addr_result());

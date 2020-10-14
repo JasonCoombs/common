@@ -15,7 +15,7 @@
 #include "BinaryData.h"
 #include "HDPath.h"
 #include "SignerClient.h"
-#include "Message/Adapter.h"
+#include "Message/ThreadedAdapter.h"
 #include "Wallets/SyncWallet.h"
 
 namespace spdlog {
@@ -47,7 +47,7 @@ namespace bs {
    }
 }
 
-class WalletsAdapter : public bs::message::Adapter, public bs::sync::WalletCallbackTarget
+class WalletsAdapter : public bs::message::ThreadedAdapter, public bs::sync::WalletCallbackTarget
 {
 public:
    WalletsAdapter(const std::shared_ptr<spdlog::logger> &
@@ -56,7 +56,7 @@ public:
       , const std::shared_ptr<bs::message::User> &blockchainUser);
    ~WalletsAdapter() override = default;
 
-   bool process(const bs::message::Envelope &) override;
+   bool processEnvelope(const bs::message::Envelope &) override;
 
    std::set<std::shared_ptr<bs::message::User>> supportedReceivers() const override {
       return { ownUser_ };
@@ -85,6 +85,7 @@ private:
    void sendWalletChanged(const std::string &walletId);
    void sendWalletReady(const std::string &walletId);
    void sendWalletError(const std::string &walletId, const std::string &errMsg);
+   void authLeafAdded(const std::string& walletId);
 
    void loadWallet(const bs::sync::WalletInfo &);
    void saveWallet(const std::shared_ptr<bs::sync::hd::Wallet> &);

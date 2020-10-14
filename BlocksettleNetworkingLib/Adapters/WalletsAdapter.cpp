@@ -38,9 +38,12 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
       logger_->debug("[WalletsAdapter] no wallets found");
    });
    signerClient_->setWalletsListUpdated([this] { reset(); });
+   signerClient_->setAuthLeafAdded([this](const std::string& walletId) {
+      authLeafAdded(walletId);
+   });
 }
 
-bool WalletsAdapter::process(const Envelope &env)
+bool WalletsAdapter::processEnvelope(const Envelope &env)
 {
    if (signerClient_->isSignerUser(env.sender)) {
       return signerClient_->process(env);
@@ -376,6 +379,45 @@ void WalletsAdapter::sendWalletError(const std::string &walletId
    msgError->set_error_message(errMsg);
    Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
+}
+
+void WalletsAdapter::authLeafAdded(const std::string& walletId)
+{
+   std::shared_ptr<bs::sync::hd::Wallet> priWallet;
+   for (const auto& hdWallet : hdWallets_) {
+      if (hdWallet->isPrimary()) {
+         priWallet = hdWallet;
+         break;
+      }
+   }
+   if (!priWallet) {
+      logger_->error("[{}] can't find primary wallet", __func__);
+      return;
+   }
+   std::shared_ptr<bs::sync::hd::Group> authGroup = priWallet->getGroup(bs::hd::CoinType::BlockSettle_Auth);
+   if (!authGroup) {
+      authGroup = std::make_shared<bs::sync::hd::AuthGroup>("Authentication"
+         , "", signerClient_.get(), this, logger_);
+      priWallet->addGroup(authGroup);
+   }
+   const auto &authLeaf = std::make_shared<hd::AuthLeaf>(walletId, "Authentication"
+      , "", signerClient_.get(), logger_);
+   authGroup->addLeaf(authLeaf);
+   authAddressWallet_ = authLeaf;
+   priWallet->synchronize([this, walletId, priWallet] {
+      saveWallet(priWallet);
+      WalletsMessage msg;
+      auto msgAuth = msg.mutable_auth_wallet();
+      msgAuth->set_wallet_id(walletId);
+      for (const auto& addr : authAddressWallet_->getUsedAddressList()) {
+         auto msgAddr = msgAuth->add_used_addresses();
+         msgAddr->set_address(addr.display());
+         msgAddr->set_index(authAddressWallet_->getAddressIndex(addr));
+         msgAddr->set_comment(authAddressWallet_->getAddressComment(addr));
+      }
+      Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
+      pushFill(env);
+   });
 }
 
 void WalletsAdapter::addressAdded(const std::string &walletId)

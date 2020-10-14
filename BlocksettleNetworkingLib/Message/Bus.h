@@ -65,8 +65,9 @@ namespace bs {
       class QueueInterface
       {
       public:
-         QueueInterface(const std::shared_ptr<RouterInterface> &router)
-            : router_(router) {}
+         QueueInterface(const std::shared_ptr<RouterInterface> &router
+            , const std::string& name = {})
+            : router_(router), name_(name) {}
          virtual ~QueueInterface() = default;
 
          virtual void terminate() = 0;
@@ -79,13 +80,15 @@ namespace bs {
 
       protected:
          std::shared_ptr<RouterInterface> router_;
+         const std::string       name_;
          std::atomic<uint64_t>   seqNo_{ 1 };
       };
 
       class Queue_Locking : public QueueInterface
       {
       public:
-         Queue_Locking(const std::shared_ptr<RouterInterface> &, const std::shared_ptr<spdlog::logger> &
+         Queue_Locking(const std::shared_ptr<RouterInterface> &
+            , const std::shared_ptr<spdlog::logger> &, const std::string& name = {}
             , const std::map<int, std::string> & = {}, bool accounting = true);
          ~Queue_Locking() override;
 

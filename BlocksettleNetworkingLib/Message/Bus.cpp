@@ -136,10 +136,10 @@ void Router::reset()
 
 
 Queue_Locking::Queue_Locking(const std::shared_ptr<RouterInterface> &router
-   , const std::shared_ptr<spdlog::logger> &logger
+   , const std::shared_ptr<spdlog::logger> &logger, const std::string &name
    , const std::map<int, std::string> &accMap, bool accounting)
-   : QueueInterface(router), logger_(logger), accMap_(accMap)
-   , accounting_(accounting)
+   : QueueInterface(router, name)
+   , logger_(logger), accMap_(accMap), accounting_(accounting)
 {
    thread_ = std::thread(&Queue::process, this);
 }
@@ -187,7 +187,7 @@ bool Queue_Locking::push(const Envelope &env)
 
 void Queue_Locking::process()
 {
-   logger_->debug("[Queue::process] started");
+   logger_->debug("[Queue::process] {} started", name_);
    decltype(queue_) deferredQueue;
    auto dqTime = std::chrono::system_clock::now();
    auto accTime = std::chrono::system_clock::now();
@@ -200,7 +200,7 @@ void Queue_Locking::process()
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {
-               deferredQueue.emplace_back(std::move(env));
+               deferredQueue.emplace_back(env);
                continue;
             }
          } else if (accounting_) {
@@ -208,49 +208,50 @@ void Queue_Locking::process()
          }
 
          if (!env.sender) {
-            logger_->info("[Queue::process] no sender found - skipping msg #{}", env.id);
+            logger_->info("[Queue::process] {} no sender found - skipping msg #{}"
+               , name_, env.id);
             continue;
          }
 
          if (env.receiver && env.sender->isSystem() && env.receiver->isSystem()) {
             if (env.message == kQuitMessage) {
-               logger_->info("[Queue::process] detected quit system message");
+               logger_->info("[Queue::process] {} detected quit system message", name_);
                running_ = false;
             } else if (env.message == kAccResetMessage) {
                acc.reset();
                continue;
             } else {
-               logger_->warn("[Queue::process] unknown system message {} - skipping"
-                  , env.message);
+               logger_->warn("[Queue::process] {} unknown system message {} - skipping"
+                  , name_, env.message);
             }
          } else {
             const auto &adapters = router_->process(env);
             if (adapters.empty()) {
                continue;
-            } else if (adapters.size() == 1) {
-               if (accounting_) {
-                  procStart = std::chrono::system_clock::now();
-               }
+            }
+            if (accounting_) {
+               procStart = std::chrono::system_clock::now();
+            }
+            if (adapters.size() == 1) {
                if (!adapters[0]->process(env)) {
-                  deferredQueue.emplace_back(std::move(env));
+                  deferredQueue.emplace_back(env);
                }
                if (accounting_) {
                   acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
                      , std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - procStart));
                }
             } else {
-               if (accounting_) {
-                  procStart = std::chrono::system_clock::now();
-               }
                // Multiple adapters to process a message typically means broadcast. We don't requeue such messages
                // on processing failed, as it's hard to signify the failure: if all adapters return false, or only one.
                // Also semantically broadcasts are not supposed to be re-queued
                for (const auto &adapter : adapters) {
                   adapter->process(env);
-               }
-               if (accounting_) {
-                  acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
-                     , std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - procStart));
+                  if (accounting_) {
+                     const auto& timeNow = std::chrono::system_clock::now();
+                     acc.add(static_cast<int>((*adapter->supportedReceivers().cbegin())->value() + 0x1000)
+                        , std::chrono::duration_cast<std::chrono::microseconds>(timeNow - procStart));
+                     procStart = timeNow;
+                  }
                }
             }
          }
@@ -284,17 +285,18 @@ void Queue_Locking::process()
 
       if ((deferredQueue.size() > 100) && ((timeNow - dqTime) > deferredQueueInterval_)) {
          dqTime = std::chrono::system_clock::now();
-         logger_->warn("[Queue::process] deferred queue has grown to {} elements", deferredQueue.size());
+         logger_->warn("[Queue::process] {} deferred queue has grown to {} elements"
+            , name_, deferredQueue.size());
       }
       if (accounting_ && ((timeNow - accTime) >= accountingInterval_)) {
          accTime = std::chrono::system_clock::now();
-         acc.report(logger_, accMap_);
+         acc.report(logger_, name_, accMap_);
       }
    }
    if (accounting_) {
-      acc.report(logger_, accMap_);
+      acc.report(logger_, name_, accMap_);
    }
-   logger_->debug("[Queue::process] finished");
+   logger_->debug("[Queue::process] {} finished", name_);
 }
 
 void Queue_Locking::bindAdapter(const std::shared_ptr<Adapter> &adapter)

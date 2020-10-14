@@ -27,6 +27,7 @@ namespace AsyncClient {
 namespace BlockSettle {
    namespace Common {
       class ArmoryMessage_FeeLevelsRequest;
+      class ArmoryMessage_GetOutpointsForAddrList;
       class ArmoryMessage_RegisterWallet;
       class ArmoryMessage_Settings;
       class ArmoryMessage_TXHashes;
@@ -111,6 +112,8 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_FeeLevelsRequest &);
    bool processGetUTXOs(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_WalletIDs&, bool zc = false, bool rbf = false);
+   bool processGetOutpoints(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_GetOutpointsForAddrList&);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;

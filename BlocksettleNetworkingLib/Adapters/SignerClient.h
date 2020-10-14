@@ -141,6 +141,7 @@ public:
    void setWalletsLoaded(const std::function<void()> &cb) { cbWalletsReady_ = cb; }
    void setNoWalletsFound(const std::function<void()> &cb) { cbNoWallets_ = cb; }
    void setWalletsListUpdated(const std::function<void()> &cb) { cbWalletsListUpdated_ = cb; }
+   void setAuthLeafAdded(const std::function<void(const std::string&)>& cb) { cbAuthLeaf_ = cb; }
 
 private:
    bool processWalletsInfo(uint64_t msgId, const BlockSettle::Common::SignerMessage_WalletsInfo &);
@@ -160,6 +161,7 @@ private:
    std::function<void()>   cbWalletsReady_{ nullptr };
    std::function<void()>   cbNoWallets_{ nullptr };
    std::function<void()>   cbWalletsListUpdated_{ nullptr };
+   std::function<void(const std::string &)> cbAuthLeaf_{ nullptr };
 
    std::map<uint64_t, std::function<void(std::vector<bs::sync::WalletInfo>)>>    reqSyncWalletInfoMap_;
    std::map<uint64_t, std::pair<std::string, std::function<void(bs::sync::SyncState)>>>   reqSyncAddrMap_;
