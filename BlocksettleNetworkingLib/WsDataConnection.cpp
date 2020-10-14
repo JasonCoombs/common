@@ -10,8 +10,6 @@
 */
 #include "WsDataConnection.h"
 
-#include "WsConnection.h"
-
 #include <libwebsockets.h>
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
@@ -147,6 +145,20 @@ bool WsDataConnection::send(const std::string &data)
 bool WsDataConnection::isActive() const
 {
    return context_ != nullptr;
+}
+
+bool WsDataConnection::timer(std::chrono::milliseconds timeout, DataConnection::TimerCallback callback)
+{
+   if (!isActive()) {
+      SPDLOG_LOGGER_ERROR(logger_, "can't start timer because connection is not active");
+      return false;
+   }
+   if (listenThread_.get_id() != std::this_thread::get_id()) {
+      SPDLOG_LOGGER_ERROR(logger_, "starting timer from non-listening thread is not supported");
+      return false;
+   }
+   timers_.scheduleCallback(context_, timeout, std::move(callback));
+   return true;
 }
 
 int WsDataConnection::callbackHelper(lws *wsi, int reason, void *user, void *in, size_t len)

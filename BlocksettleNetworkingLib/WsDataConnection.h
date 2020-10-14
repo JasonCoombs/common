@@ -12,6 +12,7 @@
 #define WS_DATA_CONNECTION_H
 
 #include "DataConnection.h"
+#include "WsCommonPrivate.h"
 #include "WsConnection.h"
 
 #include <atomic>
@@ -56,6 +57,8 @@ public:
 
    bool send(const std::string& data) override;
    bool isActive() const override;
+
+   bool timer(std::chrono::milliseconds timeout, TimerCallback callback) override;
 
    static int callbackHelper(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
@@ -116,6 +119,7 @@ private:
    uint16_t retryCounter_{};
    bool shuttingDownReceived_{};
    std::unique_ptr<lws_retry_bo> retryTable_;
+   bs::network::ws::WsTimerHelper timers_;
 
 };
 

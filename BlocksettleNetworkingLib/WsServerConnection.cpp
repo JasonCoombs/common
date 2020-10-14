@@ -14,7 +14,6 @@
 #include "EncryptionUtils.h"
 #include "StringUtils.h"
 #include "ThreadName.h"
-#include "WsConnection.h"
 
 #include <random>
 #include <libwebsockets.h>
@@ -43,13 +42,6 @@ namespace {
    }
 
 } // namespace
-
-struct WsServerTimer : lws_sorted_usec_list_t
-{
-   WsServerConnection *owner_{};
-   uint64_t timerId{};
-   WsServerConnection::TimerCallback callback;
-};
 
 WsServerConnection::WsServerConnection(const std::shared_ptr<spdlog::logger>& logger, WsServerConnectionParams params)
    : logger_(logger)
@@ -125,7 +117,6 @@ void WsServerConnection::stopServer()
    clients_ = {};
    connections_ = {};
    cookieToClientIdMap_ = {};
-   nextTimerId_ = {};
    shuttingDownReceived_ = {};
    timers_.clear();
 }
@@ -135,9 +126,11 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
    switch (reason) {
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
          std::queue<DataToSend> packets;
+         std::queue<std::string> forceClosingClients;
          {
             std::lock_guard<std::mutex> lock(mutex_);
             std::swap(packets, packets_);
+            std::swap(forceClosingClients, forceClosingClients_);
          }
          while (!packets.empty()) {
             auto data = std::move(packets.front());
@@ -172,6 +165,25 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             }
          }
 
+         while (!forceClosingClients.empty()) {
+            auto clientId = std::move(forceClosingClients.front());
+            forceClosingClients.pop();
+
+            auto clientIt = clients_.find(clientId);
+            if (clientIt != clients_.end()) {
+               SPDLOG_LOGGER_DEBUG(logger_, "force close client {}", bs::toHex(clientId));
+               auto clientWsi = clientIt->second.wsi;
+               if (clientWsi) {
+                  auto &connection = connections_.at(clientWsi);
+                  connection.state = State::Closed;
+                  lws_close_reason(clientWsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+                  lws_set_timeout(clientWsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+               }
+               closeConnectedClient(clientId);
+            }
+            listener_->OnClientDisconnected(clientId);
+         }
+
          break;
       }
 
@@ -192,6 +204,15 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
             connection.state = State::Closed;
             return -1;
          }
+
+         timers_.scheduleCallback(context_, params_.handshakeTimeout, [this, wsi] {
+            auto it = connections_.find(wsi);
+            if (it != connections_.end() && it->second.state != State::Connected) {
+               SPDLOG_LOGGER_ERROR(logger_, "close client because handshake is not complete on time");
+               lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+               lws_set_timeout(wsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+            }
+         });
          break;
       }
 
@@ -207,7 +228,7 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
                auto &client = clients_.at(connection.clientId);
                SPDLOG_LOGGER_DEBUG(logger_, "connection closed unexpectedly, clientId: {}", bs::toHex(connection.clientId));
                client.wsi = nullptr;
-               scheduleCallback(params_.clientTimeout, [this, clientId] {
+               timers_.scheduleCallback(context_, params_.clientTimeout, [this, clientId] {
                   auto clientIt = clients_.find(clientId);
                   if (clientIt == clients_.end()) {
                      return;
@@ -459,14 +480,6 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
    return 0;
 }
 
-void WsServerConnection::timerCallback(lws_sorted_usec_list *list)
-{
-   auto data = static_cast<WsServerTimer*>(list);
-   data->callback();
-   auto count = data->owner_->timers_.erase(data->timerId);
-   assert(count == 1);
-}
-
 std::string WsServerConnection::nextClientId()
 {
    nextClientId_ += 1;
@@ -510,22 +523,6 @@ bool WsServerConnection::processSentAck(WsServerConnection::ClientData &client, 
    return true;
 }
 
-void WsServerConnection::scheduleCallback(std::chrono::milliseconds timeout, WsServerConnection::TimerCallback callback)
-{
-   auto timerId = nextTimerId_;
-   nextTimerId_ += 1;
-
-   auto timer = std::make_unique<WsServerTimer>();
-   std::memset(static_cast<lws_sorted_usec_list_t*>(timer.get()), 0, sizeof(lws_sorted_usec_list_t));
-   timer->owner_ = this;
-   timer->timerId = timerId;
-   timer->callback = std::move(callback);
-
-   lws_sul_schedule(context_, 0, timer.get(), timerCallback, static_cast<lws_usec_t>(timeout / std::chrono::microseconds(1)));
-
-   timers_.insert(std::make_pair(timerId, std::move(timer)));
-}
-
 void WsServerConnection::processError(lws *wsi)
 {
    auto &connection = connections_.at(wsi);
@@ -567,6 +564,31 @@ bool WsServerConnection::SendDataToClient(const std::string &clientId, const std
 bool WsServerConnection::SendDataToAllClients(const std::string &data)
 {
    return SendDataToClient(kAllClientsId, data);
+}
+
+bool WsServerConnection::timer(std::chrono::milliseconds timeout, ServerConnection::TimerCallback callback)
+{
+   if (!isActive()) {
+      SPDLOG_LOGGER_ERROR(logger_, "can't start timer because server is not active");
+      return false;
+   }
+   if (listenThread_.get_id() != std::this_thread::get_id()) {
+      SPDLOG_LOGGER_ERROR(logger_, "starting timer from non-listening thread is not supported");
+      return false;
+   }
+   timers_.scheduleCallback(context_, timeout, std::move(callback));
+   return true;
+}
+
+bool WsServerConnection::closeClient(const std::string &clientId)
+{
+   if (!isActive()) {
+      return false;
+   }
+   std::lock_guard<std::mutex> lock(mutex_);
+   forceClosingClients_.push(clientId);
+   lws_cancel_service(context_);
+   return true;
 }
 
 int WsServerConnection::callbackHelper(lws *wsi, int reason, void *in, size_t len)

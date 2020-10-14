@@ -15,25 +15,51 @@
 #include "BinaryData.h"
 #include "TransportBIP15x.h"
 
+namespace {
+   const auto kHandshakeTimeout = std::chrono::seconds(5);
+}
+
 class Bip15xDataListener : public DataConnectionListener
 {
 public:
    Bip15xDataConnection *owner_{};
+   bool failed_{};
 
    void OnDataReceived(const std::string& data) override
    {
+      if (failed_) {
+         return;
+      }
+
       owner_->transport_->onRawDataReceived(data);
    }
 
    void OnConnected() override
    {
+      if (failed_) {
+         return;
+      }
+
       if (owner_ != nullptr && owner_->isHandshakeCompleted()) {
          owner_->listener_->OnConnected();
+         return;
       }
+
+      owner_->conn_->timer(kHandshakeTimeout, [this] {
+         if (!owner_->isHandshakeCompleted()) {
+            SPDLOG_LOGGER_DEBUG(owner_->logger_, "close connection because handshake is not complete on time");
+            failed_ = true;
+            owner_->listener_->OnError(DataConnectionError::ConnectionTimeout);
+         }
+      });
    }
 
    void OnDisconnected() override
    {
+      if (failed_) {
+         return;
+      }
+
       if (owner_->connected_) {
          owner_->connected_ = false;
          owner_->listener_->OnDisconnected();
@@ -42,6 +68,10 @@ public:
 
    void OnError(DataConnectionError errorCode) override
    {
+      if (failed_) {
+         return;
+      }
+
       OnDisconnected();
       owner_->listener_->OnError(errorCode);
    }

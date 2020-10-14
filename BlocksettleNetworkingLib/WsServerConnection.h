@@ -12,6 +12,7 @@
 #define WS_SERVER_CONNECTION_H
 
 #include "ServerConnection.h"
+#include "WsCommonPrivate.h"
 #include "WsConnection.h"
 
 #include <atomic>
@@ -25,7 +26,6 @@ namespace spdlog {
    class logger;
 }
 
-struct WsServerTimer;
 struct lws;
 struct lws_context;
 struct lws_sorted_usec_list;
@@ -48,6 +48,8 @@ struct WsServerConnectionParams
    using FilterCallback = std::function<bool(const std::string &ip)>;
    FilterCallback filterCallback;
 
+   std::chrono::milliseconds handshakeTimeout{std::chrono::seconds(5)};
+
    std::chrono::milliseconds clientTimeout{std::chrono::seconds(30)};
 };
 
@@ -68,9 +70,11 @@ public:
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string&) override;
 
-   static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
+   bool timer(std::chrono::milliseconds timeout, TimerCallback callback) override;
 
-   using TimerCallback = std::function<void()>;
+   bool closeClient(const std::string& clientId) override;
+
+   static int callbackHelper(struct lws *wsi, int reason, void *in, size_t len);
 
 private:
    enum class State
@@ -112,10 +116,9 @@ private:
    void listenFunction();
 
    void stopServer();
+   bool isActive() { return listenThread_.joinable(); }
 
    int callback(lws *wsi, int reason, void *in, size_t len);
-
-   static void timerCallback(lws_sorted_usec_list *list);
 
    // Methods accessible from listener thread only
    std::string nextClientId();
@@ -123,7 +126,6 @@ private:
    bool writeNeeded(const ClientData &client) const;
    void requestWriteIfNeeded(const ClientData &client);
    bool processSentAck(ClientData &client, uint64_t sentAckCounter);
-   void scheduleCallback(std::chrono::milliseconds timeout, TimerCallback callback);
    void processError(lws *wsi);
    void closeConnectedClient(const std::string &clientId);
 
@@ -137,15 +139,15 @@ private:
 
    mutable std::mutex mutex_;
    std::queue<DataToSend> packets_;
+   std::queue<std::string> forceClosingClients_;
 
    // Fields accessible from listener thread only
    std::map<lws*, ConnectionData> connections_;
    std::map<std::string, ClientData> clients_;
    std::map<std::string, std::string> cookieToClientIdMap_;
    uint64_t nextClientId_{};
-   std::map<uint64_t, std::unique_ptr<WsServerTimer>> timers_;
-   uint64_t nextTimerId_{};
    bool shuttingDownReceived_{};
+   bs::network::ws::WsTimerHelper timers_;
 
 };
 
