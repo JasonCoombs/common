@@ -89,6 +89,7 @@ private:
    bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
    bool processAuthAddresses(const BlockSettle::Common::OnChainTrackMessage_AuthAddresses&);
+   void sendVerifiedAuthAddresses();
 
 private:
    std::shared_ptr<spdlog::logger>        logger_;

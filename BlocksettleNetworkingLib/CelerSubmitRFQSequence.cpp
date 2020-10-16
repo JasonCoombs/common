@@ -8,6 +8,7 @@
 **********************************************************************************
 
 */
+#include "Celer/CommonCelerUtils.h"
 #include "CelerSubmitRFQSequence.h"
 
 #include "ProtobufUtils.h"
@@ -53,16 +54,16 @@ CelerMessage CelerSubmitRFQSequence::submitRFQ()
 
    group->set_expiretimeinutcinmillis(timestamp.count() + 120 * 1000);
 
-   group->set_assettype(bs::network::Asset::toCeler(rfq_.assetType));
-   group->set_producttype(bs::network::Asset::toCelerProductType(rfq_.assetType));
-   leg->set_settlementtype(bs::network::Asset::toCelerSettlementType(rfq_.assetType));
+   group->set_assettype(bs::celer::toCeler(rfq_.assetType));
+   group->set_producttype(bs::celer::toCelerProductType(rfq_.assetType));
+   leg->set_settlementtype(bs::celer::toCelerSettlementType(rfq_.assetType));
 
    group->set_currency(rfq_.product);
 
    group->set_securitycode(rfq_.security);
    group->set_securityid(rfq_.security);
 
-   leg->set_side(bs::network::Side::toCeler(rfq_.side));
+   leg->set_side(bs::celer::toCeler(rfq_.side));
 
    leg->set_qty(rfq_.quantity);
 

@@ -741,6 +741,7 @@ message OnChainTrackMessage
       Empty         loading = 1;
       AuthAddresses set_auth_addresses = 2;
       AuthState     auth_state = 3;
+      AuthAddresses verified_auth_addresses = 4;
    }
 }
 

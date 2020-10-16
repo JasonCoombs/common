@@ -15,14 +15,6 @@
 #include <QDateTime>
 #include <QString>
 #include "Address.h"
-#include "com/celertech/marketmerchant/api/enums/SideProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/MarketDataEntryTypeProto.pb.h"
-
-#include "com/celertech/marketdata/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/MarketDataEntryTypeProto.pb.h"
 
 #ifndef NDEBUG
 #include <stdexcept>
@@ -62,8 +54,6 @@ namespace bs {
             Sell
          };
 
-         static Type fromCeler(com::celertech::marketmerchant::api::enums::side::Side side);
-         static com::celertech::marketmerchant::api::enums::side::Side toCeler(Type side);
          static const char *toString(Type side);
          static const char *responseToString(Type side);
          static Type invert(Type side);
@@ -79,15 +69,6 @@ namespace bs {
             PrivateMarket,
             last
          };
-
-         static Type fromCelerProductType(com::celertech::marketdata::api::enums::producttype::ProductType pt);
-
-         static Type fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt);
-         static com::celertech::marketmerchant::api::enums::assettype::AssetType toCeler(Type at);
-         static com::celertech::marketdata::api::enums::assettype::AssetType toCelerMDAssetType(Type at);
-         static com::celertech::marketmerchant::api::enums::producttype::ProductType toCelerProductType(Type at);
-         static com::celertech::marketdata::api::enums::producttype::ProductType toCelerMDProductType(Type at);
-         static const char *toCelerSettlementType(Type at);
          static const char *toString(Type at);
       };
 
@@ -284,8 +265,6 @@ namespace bs {
          double   value;
          QString  desc;
 
-         static Type fromCeler(com::celertech::marketdata::api::enums::marketdataentrytype::MarketDataEntryType mdType);
-
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
       };
@@ -337,7 +316,7 @@ namespace bs {
    }  //namespace network
 }  //namespace bs
 
-
+//TODO: remove below declarations (no Qt signals/slots in common)
 Q_DECLARE_METATYPE(bs::network::Asset::Type)
 Q_DECLARE_METATYPE(bs::network::Quote)
 Q_DECLARE_METATYPE(bs::network::Order)
@@ -350,6 +329,5 @@ Q_DECLARE_METATYPE(bs::network::CCSecurityDef)
 Q_DECLARE_METATYPE(bs::network::NewTrade)
 Q_DECLARE_METATYPE(bs::network::NewPMTrade)
 Q_DECLARE_METATYPE(bs::network::UnsignedPayinData)
-
 
 #endif //__BS_COMMON_TYPES_H__

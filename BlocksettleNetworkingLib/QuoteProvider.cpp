@@ -11,6 +11,7 @@
 #include "QuoteProvider.h"
 
 #include "AssetManager.h"
+#include "Celer/CommonCelerUtils.h"
 #include "CelerCancelOrderSequence.h"
 #include "CelerCancelQuoteNotifSequence.h"
 #include "CelerCancelRFQSequence.h"
@@ -120,8 +121,8 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
    quote.quoteId = response.quoteid();
    quote.requestId = response.quoterequestid();
    quote.security = response.securitycode();
-   quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   quote.side = bs::network::Side::fromCeler(response.side());
+   quote.assetType = bs::celer::fromCelerProductType(response.producttype());
+   quote.side = bs::celer::fromCeler(response.side());
 
    if (quote.assetType == bs::network::Asset::PrivateMarket) {
       quote.dealerAuthPublicKey = response.dealerreceiptaddress();
@@ -479,8 +480,8 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.quantity = response.qty();
    order.price = response.price();
    order.product = response.currency();
-   order.side = bs::network::Side::fromCeler(response.side());
-   order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
+   order.side = bs::celer::fromCeler(response.side());
+   order.assetType = bs::celer::fromCelerProductType(response.producttype());
    order.settlementId = response.settlementid();
    order.reqTransaction = response.requestortransaction();
    order.dealerTransaction = response.dealertransaction();
@@ -536,7 +537,7 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    order.price = response.price();
    order.avgPx = response.avgpx();
    order.product = response.currency();
-   order.side = bs::network::Side::fromCeler(response.side());
+   order.side = bs::celer::fromCeler(response.side());
    order.assetType = bs::network::Asset::SpotFX;
 
    order.status = mapFxOrderStatus(response.orderstatus());
@@ -655,8 +656,8 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    qrn.celerTimestamp = response.timestampinutcinmillis();
    qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(response.timestampinutcinmillis()).msecsTo(QDateTime::currentDateTime());
 
-   qrn.side = bs::network::Side::fromCeler(legGroup.side());
-   qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
+   qrn.side = bs::celer::fromCeler(legGroup.side());
+   qrn.assetType = bs::celer::fromCelerProductType(respgrp.producttype());
 
    switch (response.quotenotificationtype()) {
       case QUOTE_WITHDRAWN:

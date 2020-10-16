@@ -235,6 +235,7 @@ void OnChainTrackerAdapter::completeAuthVerification(const bs::Address& addr
    msgState->set_state((int)state);
    Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
+   sendVerifiedAuthAddresses();
 }
 
 bool OnChainTrackerAdapter::processArmoryState(const ArmoryMessage_State& state)
@@ -323,6 +324,19 @@ bool OnChainTrackerAdapter::processAuthAddresses(const OnChainTrackMessage_AuthA
    }
    authAddressVerification();
    return true;
+}
+
+void OnChainTrackerAdapter::sendVerifiedAuthAddresses()
+{
+   OnChainTrackMessage msg;
+   auto msgVerified = msg.mutable_verified_auth_addresses();
+   for (const auto& state : addrStates_) {
+      if (state.second == AddressVerificationState::Verified) {
+         msgVerified->add_addresses(state.first.display());
+      }
+   }
+   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(env);
 }
 
 void OnChainTrackerAdapter::onAuthValidationAddresses(const std::vector<std::string>& addrs)

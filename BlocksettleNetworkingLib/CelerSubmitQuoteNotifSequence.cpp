@@ -10,6 +10,7 @@
 */
 #include <QDate>
 #include <spdlog/spdlog.h>
+#include "Celer/CommonCelerUtils.h"
 #include "CelerSubmitQuoteNotifSequence.h"
 #include "UpstreamQuoteProto.pb.h"
 
@@ -41,11 +42,11 @@ CelerMessage CelerSubmitQuoteNotifSequence::submitQuoteNotif()
    request.set_requestorsessionkey(qn_.sessionToken.substr(0, qn_.sessionToken.find(':')));
    request.set_requestorsessiontoken(qn_.sessionToken);
    request.set_quoterequestid(qn_.quoteRequestId);
-   request.set_assettype(Asset::toCeler(qn_.assetType));
-   request.set_producttype(Asset::toCelerProductType(qn_.assetType));
+   request.set_assettype(bs::celer::toCeler(qn_.assetType));
+   request.set_producttype(bs::celer::toCelerProductType(qn_.assetType));
    request.set_securitycode(qn_.security);
    request.set_securityid(qn_.security);
-   request.set_side(Side::toCeler(qn_.side));
+   request.set_side(bs::celer::toCeler(qn_.side));
 
    if (!qn_.authKey.empty()) {
       request.set_dealerauthenticationaddress(qn_.authKey);

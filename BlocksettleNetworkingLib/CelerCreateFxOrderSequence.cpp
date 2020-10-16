@@ -8,6 +8,7 @@
 **********************************************************************************
 
 */
+#include "Celer/CommonCelerUtils.h"
 #include "CelerCreateFxOrderSequence.h"
 #include "UpstreamOrderProto.pb.h"
 #include <QDate>
@@ -58,7 +59,7 @@ CelerMessage CelerCreateFxOrderSequence::createOrder()
    request.set_currency(quote_.product);
 
    request.set_producttype(com::celertech::marketmerchant::api::enums::producttype::ProductType::SPOT);
-   request.set_side(bs::network::Side::toCeler(bs::network::Side::invert(quote_.side)));
+   request.set_side(bs::celer::toCeler(bs::network::Side::invert(quote_.side)));
 
    request.set_handlinginstruction(AUTOMATED_NO_BROKER);
    request.set_timeinforce(FOK);

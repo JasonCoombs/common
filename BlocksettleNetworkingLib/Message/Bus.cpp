@@ -187,6 +187,7 @@ bool Queue_Locking::push(const Envelope &env)
 
 void Queue_Locking::process()
 {
+   srand(std::time(nullptr));    // requred for per-thread randomness
    logger_->debug("[Queue::process] {} started", name_);
    decltype(queue_) deferredQueue;
    auto dqTime = std::chrono::system_clock::now();

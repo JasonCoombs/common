@@ -8,6 +8,7 @@
 **********************************************************************************
 
 */
+#include "Celer/CommonCelerUtils.h"
 #include "CelerCreateOrderSequence.h"
 
 #include "NettyCommunication.pb.h"
@@ -64,8 +65,8 @@ CelerMessage CelerCreateOrderSequence::createOrder()
    request.set_qty(quote_.quantity);
    request.set_currency(quote_.product);
 
-   request.set_producttype(bs::network::Asset::toCelerProductType(quote_.assetType));
-   request.set_side(bs::network::Side::toCeler(bs::network::Side::invert(quote_.side)));
+   request.set_producttype(bs::celer::toCelerProductType(quote_.assetType));
+   request.set_side(bs::celer::toCeler(bs::network::Side::invert(quote_.side)));
 
    request.set_handlinginstruction(AUTOMATED_NO_BROKER);
    request.set_timeinforce(FOK);

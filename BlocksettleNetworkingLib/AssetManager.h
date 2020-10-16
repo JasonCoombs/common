@@ -40,7 +40,7 @@ struct AssetCallbackTarget
    virtual void onFxBalanceLoaded() {}
    virtual void onFxBalanceCleared() {}
 
-   virtual void onBalanceChanged(const std::string& currency) {}
+   virtual void onBalanceChanged(const std::string& currency, double value) {}
    virtual void onTotalChanged() {}
    virtual void onSecuritiesChanged() {}
 };
@@ -113,7 +113,7 @@ private:
   void onFxBalanceLoaded() override { emit fxBalanceLoaded(); }
   void onFxBalanceCleared() override { emit fxBalanceCleared(); }
 
-  void onBalanceChanged(const std::string& currency) override { emit balanceChanged(currency); }
+  void onBalanceChanged(const std::string& currency, double) override { emit balanceChanged(currency); }
   void onTotalChanged() override { emit totalChanged(); }
   void onSecuritiesChanged() override { emit securitiesChanged(); }
 
