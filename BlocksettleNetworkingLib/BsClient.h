@@ -26,7 +26,7 @@
 #include "autheid_utils.h"
 #include "AutheIDClient.h"
 #include "BSErrorCode.h"
-#include "CelerMessageMapper.h"
+#include "Celer/MessageMapper.h"
 #include "CommonTypes.h"
 #include "DataConnection.h"
 #include "DataConnectionListener.h"

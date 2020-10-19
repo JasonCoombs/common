@@ -11,16 +11,16 @@
 #include "QuoteProvider.h"
 
 #include "AssetManager.h"
-#include "Celer/CommonCelerUtils.h"
-#include "CelerCancelOrderSequence.h"
-#include "CelerCancelQuoteNotifSequence.h"
-#include "CelerCancelRFQSequence.h"
-#include "CelerClient.h"
-#include "CelerCreateFxOrderSequence.h"
-#include "CelerCreateOrderSequence.h"
-#include "CelerSignTxSequence.h"
-#include "CelerSubmitQuoteNotifSequence.h"
-#include "CelerSubmitRFQSequence.h"
+#include "Celer/CommonUtils.h"
+#include "Celer/CancelOrderSequence.h"
+#include "Celer/CancelQuoteNotifSequence.h"
+#include "Celer/CancelRFQSequence.h"
+#include "Celer/CelerClient.h"
+#include "Celer/CreateFxOrderSequence.h"
+#include "Celer/CreateOrderSequence.h"
+#include "Celer/SignTxSequence.h"
+#include "Celer/SubmitQuoteNotifSequence.h"
+#include "Celer/SubmitRFQSequence.h"
 #include "CurrencyPair.h"
 #include "FastLock.h"
 #include "ProtobufUtils.h"
@@ -376,7 +376,8 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::SubmitRFQ] submitting RFQ with empty account name");
    }
-   auto sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
+   auto sequence = std::make_shared<bs::celer::SubmitRFQSequence>(assetManager_->GetAssignedAccount()
+      , rfq, logger_, debugTraffic_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitRFQ] failed to execute CelerSubmitRFQSequence");
    } else {
@@ -390,7 +391,8 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
-   auto sequence = std::make_shared<CelerCreateOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, payoutTx, logger_);
+   auto sequence = std::make_shared<bs::celer::CreateOrderSequence>(assetManager_->GetAssignedAccount()
+      , reqId, quote, payoutTx, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuote] failed to execute CelerCreateOrderSequence");
    } else {
@@ -403,7 +405,8 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] accepting FX quote with empty account name");
    }
-   auto sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, logger_);
+   auto sequence = std::make_shared<bs::celer::CreateFxOrderSequence>(assetManager_->GetAssignedAccount()
+      , reqId, quote, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] failed to execute CelerCreateFxOrderSequence");
    }
@@ -414,7 +417,7 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
 
 void QuoteProvider::CancelQuote(const QString &reqId)
 {
-   auto sequence = std::make_shared<CelerCancelRFQSequence>(reqId, logger_);
+   auto sequence = std::make_shared<bs::celer::CancelRFQSequence>(reqId, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::CancelQuote] failed to execute CelerCancelRFQSequence sequence");
    }
@@ -425,7 +428,7 @@ void QuoteProvider::CancelQuote(const QString &reqId)
 
 void QuoteProvider::SignTxRequest(const QString &orderId, const std::string &txData)
 {
-   auto sequence = std::make_shared<CelerSignTxSequence>(orderId, txData, logger_);
+   auto sequence = std::make_shared<bs::celer::SignTxSequence>(orderId, txData, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SignTxRequest] failed to execute CelerSignTxSequence sequence");
    }
@@ -595,7 +598,8 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
       logger_->error("[QuoteProvider::SubmitQuoteNotif] account name not set");
    }
 
-   auto sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), qn, logger_);
+   auto sequence = std::make_shared<bs::celer::SubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount()
+      , qn, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitQuoteNotif] failed to execute CelerSubmitQuoteNotifSequence");
    } else {
@@ -609,7 +613,7 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
 
 void QuoteProvider::CancelQuoteNotif(const QString &reqId, const QString &reqSessToken)
 {
-   auto sequence = std::make_shared<CelerCancelQuoteNotifSequence>(reqId, reqSessToken, logger_);
+   auto sequence = std::make_shared<bs::celer::CancelQuoteNotifSequence>(reqId, reqSessToken, logger_);
 
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::CancelQuoteNotif] failed to execute CelerCancelQuoteNotifSequence");

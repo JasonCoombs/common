@@ -10,8 +10,8 @@
 */
 #include "ConnectionManager.h"
 
-#include "CelerClientConnection.h"
-#include "CelerStreamServerConnection.h"
+#include "Celer/ClientConnection.h"
+#include "Celer/StreamServerConnection.h"
 #include "GenoaConnection.h"
 #include "GenoaStreamServerConnection.h"
 #include "PublisherConnection.h"
@@ -106,7 +106,7 @@ std::shared_ptr<ServerConnection> ConnectionManager::CreateCelerAPIServerConnect
 
 std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection() const
 {
-   auto connection = std::make_shared<CelerClientConnection<ZmqDataConnection> >(logger_);
+   auto connection = std::make_shared<bs::celer::ClientConnection<ZmqDataConnection> >(logger_);
    connection->SetContext(zmqContext_);
 
    return connection;

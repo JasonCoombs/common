@@ -11,7 +11,7 @@
 #include "CCFileManager.h"
 
 #include "ApplicationSettings.h"
-#include "CelerClient.h"
+#include "Celer/CelerClient.h"
 #include "ConnectionManager.h"
 #include "EncryptionUtils.h"
 #include "HDPath.h"

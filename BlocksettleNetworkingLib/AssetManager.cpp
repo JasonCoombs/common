@@ -12,9 +12,9 @@
 #include <QMutexLocker>
 #include <spdlog/spdlog.h>
 #include "AssetManager.h"
-#include "CelerClient.h"
-#include "CelerFindSubledgersForAccountSequence.h"
-#include "CelerGetAssignedAccountsListSequence.h"
+#include "Celer/CelerClient.h"
+#include "Celer/FindSubledgersForAccountSequence.h"
+#include "Celer/GetAssignedAccountsListSequence.h"
 #include "CommonTypes.h"
 #include "CurrencyPair.h"
 #include "MDCallbacksQt.h"
@@ -325,7 +325,7 @@ void AssetManager::onCelerConnected()
       }
    };
 
-   auto seq = std::make_shared<CelerGetAssignedAccountsListSequence>(logger_, cb);
+   auto seq = std::make_shared<bs::celer::GetAssignedAccountsListSequence>(logger_, cb);
    celerClient_->ExecuteSequence(seq);
 }
 

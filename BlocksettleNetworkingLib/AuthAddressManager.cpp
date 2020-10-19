@@ -16,7 +16,7 @@
 #include "ApplicationSettings.h"
 #include "ArmoryConnection.h"
 #include "BsClient.h"
-#include "CelerClient.h"
+#include "Celer/CelerClient.h"
 #include "CheckRecipSigner.h"
 #include "ClientClasses.h"
 #include "FastLock.h"
