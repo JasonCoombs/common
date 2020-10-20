@@ -155,6 +155,7 @@ namespace bs {
             Filled
          };
          Status status{};
+         std::string info;
       };
 
 

@@ -157,7 +157,7 @@ void HeadlessContainerListener::onClientError(const std::string &clientId, Serve
 bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, headless::RequestPacket packet)
 {
    if (!connection_) {
-      logger_->error("[HeadlessContainerListener::{}] connection_ is not set");
+      logger_->error("[HeadlessContainerListener::onRequestPacket] connection is not set");
       return false;
    }
 
@@ -1853,6 +1853,8 @@ void HeadlessContainerListener::windowVisibilityChanged(bool visible)
 
 void HeadlessContainerListener::resetConnection(ServerConnection *connection)
 {
+   logger_->debug("[{}:{}] terminal connection is set {}", __func__, (void*)this
+      , (connection != nullptr));
    connection_ = connection;
 }
 

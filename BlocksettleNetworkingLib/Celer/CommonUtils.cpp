@@ -100,3 +100,14 @@ const char* bs::celer::toCelerSettlementType(bs::network::Asset::Type at)
    default:       return "";
    }
 }
+
+bs::network::Order::Status bs::celer::mapFxOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status)
+{
+   switch (status) {
+   case com::celertech::marketmerchant::api::enums::orderstatus::FILLED:   return Order::Filled;
+   case com::celertech::marketmerchant::api::enums::orderstatus::REJECTED: return Order::Failed;
+   case com::celertech::marketmerchant::api::enums::orderstatus::PENDING_NEW: [[fallthrough]]
+   case com::celertech::marketmerchant::api::enums::orderstatus::NEW:      return Order::New;
+   default:       return Order::Pending;
+   }
+}

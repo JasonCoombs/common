@@ -14,6 +14,7 @@
 #include "CommonTypes.h"
 #include "com/celertech/marketmerchant/api/enums/SideProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/AssetTypeProto.pb.h"
+#include "com/celertech/marketmerchant/api/enums/OrderStatusProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/MarketDataEntryTypeProto.pb.h"
 
@@ -36,6 +37,9 @@ namespace bs {
       const char *toCelerSettlementType(bs::network::Asset::Type);
 
       bs::network::MDField::Type fromCeler(com::celertech::marketdata::api::enums::marketdataentrytype::MarketDataEntryType);
+
+      bs::network::Order::Status mapFxOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status);
+
    }  //namespace celer
 }  //namespace bs
 

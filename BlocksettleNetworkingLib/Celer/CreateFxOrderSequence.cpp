@@ -79,7 +79,7 @@ CelerMessage CreateFxOrderSequence::createOrder()
    message.messageType = CelerAPI::CreateFxOrderRequestType;
    message.messageData = request.SerializeAsString();
 
-   logger_->debug("{}", request.DebugString());
+   logger_->debug("[{}] {}", __func__, request.DebugString());
 
    return message;
 }
