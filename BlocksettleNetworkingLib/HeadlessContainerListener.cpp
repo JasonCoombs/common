@@ -31,6 +31,14 @@ using namespace std::chrono;
 
 constexpr std::chrono::seconds kDefaultDuration{120};
 
+namespace {
+   bool invalidPasswordError(const std::exception &e)
+   {
+      return std::strcmp(e.what(), "witness data missing signature") == 0 ||
+             std::strcmp(e.what(), "signer failed to verify") == 0;
+   }
+}
+
 HeadlessContainerListener::HeadlessContainerListener(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<bs::core::WalletsManager> &walletsMgr
    , const std::shared_ptr<DispatchQueue> &queue
@@ -502,7 +510,11 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       }
       catch (const std::exception &e) {
          logger_->error("[HeadlessContainerListener] failed to sign {} TX request: {}", partial ? "partial" : "full", e.what());
-         SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
+         if (invalidPasswordError(e)) {
+            SignTXResponse(clientId, id, reqType, ErrorCode::InvalidPassword);
+         } else {
+            SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
+         }
          passwords_.erase(rootWalletId);
       }
    };
@@ -635,7 +647,11 @@ bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::strin
          }
       } catch (const std::exception &e) {
          logger_->error("[HeadlessContainerListener] failed to sign payout TX request: {}", e.what());
-         SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
+         if (invalidPasswordError(e)) {
+            SignTXResponse(clientId, id, reqType, ErrorCode::InvalidPassword);
+         } else {
+            SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
+         }
       }
    };
 
@@ -696,7 +712,7 @@ bool HeadlessContainerListener::onSignAuthAddrRevokeRequest(const std::string &c
             , validationAddr, utxo);
          SignTXResponse(clientId, id, reqType, ErrorCode::NoError, tx);
       } catch (const std::exception &e) {
-         logger_->error("[HeadlessContainerListener] failed to sign payout TX request: {}", e.what());
+         logger_->error("[HeadlessContainerListener] failed to sign addr revoke TX request: {}", e.what());
          SignTXResponse(clientId, id, reqType, ErrorCode::InternalError);
       }
    };
