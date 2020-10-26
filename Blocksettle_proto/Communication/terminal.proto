@@ -390,6 +390,47 @@ message BsServerMessage
 }
 
 
+message RFQ
+{
+   string id = 1;
+   string security = 2;
+   string product = 3;
+   int32  asset_type = 4;
+   bool   buy = 5;
+   double quantity = 6;
+   string auth_pub_key = 7;
+   string receipt_address = 8;
+   string coin_tx_input = 9;
+}
+
+message Quote
+{
+   string request_id = 1;
+   string quote_id = 2;
+   string security = 3;
+   string product = 4;
+   double price = 5;
+   double quantity = 6;
+   bool   buy = 7;
+   int32  asset_type = 8;
+   int32  quoting_type = 9;
+   string req_auth_pub_key = 10;
+   string deal_auth_pub_key = 11;
+   string settlement_id = 12;
+   string dealer_tx = 13;
+   uint64 expiration_time = 14;
+   int32  time_skew_ms = 15;
+   uint64 timestamp = 16;
+}
+
+message AcceptRFQ
+{
+   string rfq_id = 1;
+   Quote  quote = 2;
+   bytes  payout_tx = 3;
+}
+
+
 message MatchingMessage
 {
    message Login
@@ -408,46 +449,6 @@ message MatchingMessage
    message SubmittedAuthAddresses
    {
       repeated string addresses = 1;
-   }
-
-   message RFQ
-   {
-      string id = 1;
-      string security = 2;
-      string product = 3;
-      int32  asset_type = 4;
-      bool   buy = 5;
-      double quantity = 6;
-      string auth_pub_key = 7;
-      string receipt_address = 8;
-      string coin_tx_input = 9;
-   }
-
-   message Quote
-   {
-      string request_id = 1;
-      string quote_id = 2;
-      string security = 3;
-      string product = 4;
-      double price = 5;
-      double quantity = 6;
-      bool   buy = 7;
-      int32  asset_type = 8;
-      int32  quoting_type = 9;
-      string req_auth_pub_key = 10;
-      string deal_auth_pub_key = 11;
-      string settlement_id = 12;
-      string dealer_tx = 13;
-      uint64 expiration_time = 14;
-      int32  time_skew_ms = 15;
-      uint64 timestamp = 16;
-   }
-
-   message AcceptRFQ
-   {
-      string rfq_id = 1;
-      Quote  quote = 2;
-      bytes  payout_tx = 3;
    }
 
    message BestQuotedPrice
@@ -491,9 +492,45 @@ message MatchingMessage
       string          submit_auth_address = 8;
       RFQ             send_rfq = 9;
       AcceptRFQ       accept_rfq = 10;
-      Quote           quote = 11;
-      BestQuotedPrice best_quoted_price = 12;
-      Order           order = 13;
+      string          cancel_rfq = 11;
+      Quote           quote = 12;
+      BestQuotedPrice best_quoted_price = 13;
+      Order           order = 14;
+   }
+}
+
+
+message SettlementMessage
+{
+   message SendRFQ
+   {
+      RFQ rfq = 1;
+      string reserve_id = 2;
+   }
+
+   message MatchedQuote
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      double price = 3;
+   }
+
+   message FailedQuote
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      string info = 3;
+   }
+
+   oneof data
+   {
+      SendRFQ      send_rfq = 1;
+      string       rfq_timeout = 2;	// rfq_id
+      string       cancel_rfq = 3;	// rfq_id
+      AcceptRFQ    accept_rfq = 4;
+      Quote        quote = 5;
+      MatchedQuote matched_quote = 6;
+      FailedQuote  failed_quote = 7;
    }
 }
 
@@ -564,15 +601,6 @@ message MktDataMessage
 
 
 message MDHistMessage
-{
-   oneof data
-   {
-      Empty placeholder = 1;
-   }
-}
-
-
-message SettlementMessage
 {
    oneof data
    {

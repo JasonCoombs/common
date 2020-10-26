@@ -79,6 +79,8 @@ bool SignerClient::process(const Envelope &env)
       return processSetSettlId(env.id, msg.settl_id_set());
    case SignerMessage::kRootPubkey:
       return processRootPubKey(env.id, msg.root_pubkey());
+   case SignerMessage::kAuthPubkey:
+      return processAuthPubkey(env.id, msg.auth_pubkey());
    case SignerMessage::kWindowVisibleChanged:
       break;
    default:
@@ -234,11 +236,23 @@ bool SignerClient::processRootPubKey(uint64_t msgId
 {
    const auto &itReq = reqPubKeyMap_.find(msgId);
    if (itReq == reqPubKeyMap_.end()) {
-      logger_->warn("[{}] no mapping for msg #{}", __func__, msgId);
+      logger_->warn("[{}] no mapping for msg #{}, yet", __func__, msgId);
       return false;
    }
    itReq->second(response.success(), BinaryData::fromString(response.pub_key()));
    reqPubKeyMap_.erase(itReq);
+   return true;
+}
+
+bool SignerClient::processAuthPubkey(uint64_t msgId, const std::string& pubKey)
+{
+   const auto& itReq = settlWltMap_.find(msgId);
+   if (itReq == settlWltMap_.end()) {
+      logger_->warn("[{}] no mapping for msg #{}, yet", __func__, msgId);
+      return false;
+   }
+   itReq->second(BinaryData::fromString(pubKey));
+   settlWltMap_.erase(itReq);
    return true;
 }
 
@@ -357,6 +371,16 @@ void SignerClient::extendAddressChain(const std::string &walletId, unsigned coun
    Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
    queue_->pushFill(env);
    reqSyncNewAddrMulti_[env.id] = cb;
+}
+
+void SignerClient::createSettlementWallet(const bs::Address& authAddr
+   , const std::function<void(const SecureBinaryData&)>& cb)
+{
+   SignerMessage msg;
+   msg.set_create_settl_wallet(authAddr.display());
+   Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
+   queue_->pushFill(env);
+   settlWltMap_[env.id] = cb;
 }
 
 void SignerClient::setSettlementID(const std::string &walletId, const SecureBinaryData &id

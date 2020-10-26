@@ -529,6 +529,8 @@ message SignerMessage
       SignTxRequest      sign_tx_request = 30;
       SignTxResponse     sign_tx_response = 31;
       SetUserId          set_user_id = 32;
+      string             create_settl_wallet = 33;
+      bytes              auth_pubkey = 34;
    }
 }
 
@@ -681,6 +683,34 @@ message WalletsMessage
       repeated bytes utxos = 3;
    }
 
+   message AuthKey
+   {
+      string auth_address = 1;
+      bytes  auth_key = 2;
+   }
+
+   message ReserveUTXOs
+   {
+      string id = 1;
+      string sub_id = 2;
+      uint64 amount = 3;
+      bool   partial = 4;	// optional
+      repeated bytes utxos = 5;	// optional
+   }
+
+   message ReservedUTXOs
+   {
+      string id = 1;
+      string sub_id = 2;
+      repeated bytes utxos = 3;
+   }
+
+   message ReservationKey
+   {
+      string id = 1;
+      string sub_id = 2;
+   }
+
    oneof data
    {
       Loading             loading = 1;
@@ -718,6 +748,12 @@ message WalletsMessage
       UtxoListResponse    utxos = 33;
       string              set_user_id = 34;
       WalletData          auth_wallet = 35;
+      string              get_auth_key = 36;
+      AuthKey             auth_key = 37;
+      ReserveUTXOs        reserve_utxos = 38;
+      ReservedUTXOs       reserved_utxos = 39;
+      ReservationKey      get_reserved_utxos = 40;
+      ReservationKey      unreserve_utxos = 41;
    }
 }
 

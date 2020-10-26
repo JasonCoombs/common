@@ -11,7 +11,9 @@
 #include "WalletsAdapter.h"
 #include <spdlog/spdlog.h>
 #include "SignerClient.h"
+#include "UtxoReservation.h"
 #include "Wallets/SyncHDWallet.h"
+#include "WalletUtils.h"
 
 #include "common.pb.h"
 
@@ -27,6 +29,7 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
    : logger_(logger), ownUser_(ownUser), signerClient_(std::move(signerClient))
    , blockchainUser_(blockchainUser)
 {
+   utxoResMgr_ = std::make_shared<bs::UtxoReservation>(logger);
    signerClient_->setClientUser(ownUser_);
    signerClient_->setSignerReady([this] {
       sendLoadingBC();
@@ -41,6 +44,11 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
    signerClient_->setAuthLeafAdded([this](const std::string& walletId) {
       authLeafAdded(walletId);
    });
+}
+
+WalletsAdapter::~WalletsAdapter()
+{
+   utxoResMgr_->shutdownCheck();
 }
 
 bool WalletsAdapter::processEnvelope(const Envelope &env)
@@ -721,6 +729,14 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetUTXOs(env, msg.get_utxos());
    case WalletsMessage::kSetUserId:
       return processSetUserId(msg.set_user_id());
+   case WalletsMessage::kGetAuthKey:
+      return processAuthKey(env, msg.get_auth_key());
+   case WalletsMessage::kReserveUtxos:
+      return processReserveUTXOs(env, msg.reserve_utxos());
+   case WalletsMessage::kGetReservedUtxos:
+      return processGetReservedUTXOs(env, msg.get_reserved_utxos());
+   case WalletsMessage::kUnreserveUtxos:
+      return processUnreserveUTXOs(msg.unreserve_utxos());
    default: break;
    }
    return true;
@@ -761,7 +777,7 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
          msgLeaf->set_ext_only(leaf->extOnly());
       }
    }
-   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   Envelope envResp{ env.id, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };  // broadcast
    return pushFill(envResp);
 }
 
@@ -769,20 +785,39 @@ bool WalletsAdapter::processWalletGet(const Envelope &env
    , const std::string &walletId)
 {
    const auto &wallet = getWalletById(walletId);
-   if (!wallet) {
-      logger_->error("[{}] wallet {} not found", __func__, walletId);
+   std::vector<std::shared_ptr<bs::sync::Wallet>>  wallets;
+   if (wallet) {
+      wallets = { wallet };
+   }
+   else {
+      const auto& hdWallet = getHDWalletById(walletId);
+      if (!hdWallet) {
+         logger_->error("[{}] wallet {} not found", __func__, walletId);
+         return true;
+      }
+      const auto& group = hdWallet->getGroup(hdWallet->getXBTGroupType());
+      if (!group) {
+         logger_->error("[{}] no XBT group in wallet {}", __func__, walletId);
+         return true;
+      }
+      wallets = group->getAllLeaves();
+   }
+   if (wallets.empty()) {
+      logger_->error("[{}] no leaves for wallet {}", __func__, walletId);
       return true;
    }
    WalletsMessage msg;
    auto msgResp = msg.mutable_wallet_data();
-   msgResp->set_wallet_id(wallet->walletId());
-   for (const auto &addr : wallet->getUsedAddressList()) {
-      auto msgAddr = msgResp->add_used_addresses();
-      const auto &idx = wallet->getAddressIndex(addr);
-      const auto &comment = wallet->getAddressComment(addr);
-      msgAddr->set_index(idx);
-      msgAddr->set_address(addr.display());
-      msgAddr->set_comment(comment);
+   msgResp->set_wallet_id(walletId);
+   for (const auto& wallet : wallets) {
+      for (const auto& addr : wallet->getUsedAddressList()) {
+         auto msgAddr = msgResp->add_used_addresses();
+         const auto& idx = wallet->getAddressIndex(addr);
+         const auto& comment = wallet->getAddressComment(addr);
+         msgAddr->set_index(idx);
+         msgAddr->set_address(addr.display());
+         msgAddr->set_comment(comment);
+      }
    }
    Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
    return pushFill(envResp);
@@ -1521,6 +1556,25 @@ Transaction::Direction WalletsAdapter::getDirection(const BinaryData &txHash
 
 bool WalletsAdapter::processUTXOs(uint64_t msgId, const ArmoryMessage_UTXOs& response)
 {
+   std::vector<UTXO> utxos;
+   utxos.reserve(response.utxos_size());
+   try {
+      for (const auto& serUtxo : response.utxos()) {
+         UTXO utxo;
+         utxo.unserialize(BinaryData::fromString(serUtxo));
+         utxos.emplace_back(std::move(utxo));
+      }
+   } catch (const std::exception& e) {
+      logger_->error("[{}] failed to deser UTXO: {}", __func__, e.what());
+   }
+
+   const auto& itReserve = utxoReserveReqs_.find(msgId);
+   if (itReserve != utxoReserveReqs_.end()) {
+      itReserve->second(utxos);
+      utxoReserveReqs_.erase(itReserve);
+      return true;
+   }
+
    const auto& sendUTXOs = [this](std::shared_ptr<UTXORequest> utxoReq)
    {
       if (utxoReq->spendableUTXOs.size() < utxoReq->walletIds.size()) {
@@ -1570,13 +1624,6 @@ bool WalletsAdapter::processUTXOs(uint64_t msgId, const ArmoryMessage_UTXOs& res
          logger_->warn("[{}] unrequested ZC UTXO response {}", __func__, msgId);
          return true;
       }
-      std::vector<UTXO> utxos;
-      utxos.reserve(response.utxos_size());
-      for (const auto& serUtxo : response.utxos()) {
-         UTXO utxo;
-         utxo.unserialize(BinaryData::fromString(serUtxo));
-         utxos.emplace_back(std::move(utxo));
-      }
       itZC->second->zcUTXOs[walletId] = std::move(utxos);
       if (itZC->second->zcUTXOs.size() >= itZC->second->walletIds.size()) {
          sendUTXOs(itZC->second);
@@ -1611,5 +1658,151 @@ bool WalletsAdapter::processSetUserId(const std::string& userIdHex)
       }
    }
    signerClient_->setUserId(userId, primaryWalletId);
+   return true;
+}
+
+bool WalletsAdapter::processAuthKey(const bs::message::Envelope& env
+   , const std::string& address)
+{
+   bs::Address authAddr;
+   try {
+      authAddr = bs::Address::fromAddressString(address);
+   }
+   catch (const std::exception&) {
+      logger_->error("[{}] failed to deser auth address {}", __func__, address);
+      return true;
+   }
+   const auto& cbPubKey = [this, env, authAddr](const SecureBinaryData& pubKey)
+   {
+      WalletsMessage msg;
+      auto msgResp = msg.mutable_auth_key();
+      msgResp->set_auth_address(authAddr.display());
+      msgResp->set_auth_key(pubKey.toBinStr());
+      Envelope envResp{ env.id, ownUser_, env.sender, {}, {}
+         , msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+   std::shared_ptr<bs::sync::hd::Wallet> priWallet;
+   for (const auto& hdWallet : hdWallets_) {
+      if (hdWallet->isPrimary()) {
+         priWallet = hdWallet;
+         break;
+      }
+   }
+   if (!priWallet) {
+      cbPubKey({});
+      return true;
+   }
+   const auto &group = priWallet->getGroup(bs::hd::BlockSettle_Settlement);
+   std::shared_ptr<bs::sync::hd::SettlementLeaf> settlLeaf;
+   if (group) {
+      const auto settlGroup = std::dynamic_pointer_cast<bs::sync::hd::SettlementGroup>(group);
+      if (!settlGroup) {
+         logger_->error("[WalletsAdapter::processAuthKey] wrong settlement group type");
+         return true;
+      }
+      settlLeaf = settlGroup->getLeaf(authAddr);
+   }
+   if (settlLeaf) {
+      settlLeaf->getRootPubkey(cbPubKey);
+   } else {
+      const auto& cbWrap = [this, priWallet, cbPubKey](const SecureBinaryData& pubKey)
+      {
+         cbPubKey(pubKey);
+         priWallet->synchronize([] {});
+      };
+      signerClient_->createSettlementWallet(authAddr, cbWrap);
+   }
+   return true;
+}
+
+bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
+   , const WalletsMessage_ReserveUTXOs& request)
+{
+   const auto& sendResponse = [this, env, request](const std::vector<UTXO>& utxos)
+   {
+      WalletsMessage msg;
+      auto msgResp = msg.mutable_reserved_utxos();
+      msgResp->set_id(request.id());
+      msgResp->set_sub_id(request.sub_id());
+      for (const auto& utxo : utxos) {
+         msgResp->add_utxos(utxo.serialize().toBinStr());
+      }
+      Envelope envResp{ env.id, ownUser_, env.sender, {}, {}
+         , msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+   if (request.utxos_size()) {
+      std::vector<UTXO> utxos;
+      for (const auto& utxoSer : request.utxos()) {
+         UTXO utxo;
+         utxo.unserialize(BinaryData::fromString(utxoSer));
+         utxos.push_back(std::move(utxo));
+      }
+      utxoResMgr_->reserve(request.id(), utxos, request.sub_id());
+      sendResponse(utxos);
+   }
+   else {
+      if (!request.amount()) {
+         logger_->error("[{}] {}/{} zero amount and no UTXOs", __func__
+            , request.id(), request.sub_id());
+         sendResponse({});
+         return true;
+      }
+      auto wallet = getWalletById(request.sub_id());
+      if (!wallet) {
+         const auto& hdWallet = getHDWalletById(request.sub_id());
+         if (hdWallet) {
+            const auto& group = hdWallet->getGroup(hdWallet->getXBTGroupType());
+            if (group) {
+               wallet = group->getLeaf(bs::hd::Purpose::Native);
+            }
+         }
+      }
+      if (!wallet) {
+         logger_->error("[{}] {}: no wallet found by {} and no UTXOs", __func__
+            , request.id(), request.sub_id());
+         sendResponse({});
+         return true;
+      }
+      const auto& cbFilter = [this, sendResponse, request](const std::vector<UTXO>& utxos)
+      {
+         auto utxosCopy = utxos;
+         decltype(utxosCopy) filteredUTXOs, foo;
+         utxoResMgr_->filter(utxosCopy, foo);
+         filteredUTXOs = bs::selectUtxoForAmount(std::move(utxosCopy), request.amount());
+         utxoResMgr_->reserve(request.id(), filteredUTXOs, request.sub_id());
+         sendResponse(filteredUTXOs);
+      };
+      ArmoryMessage msgSpendable;
+      auto msgReq = msgSpendable.mutable_get_spendable_utxos();
+      for (const auto& walletId : wallet->internalIds()) {
+         msgReq->add_wallet_ids(walletId);
+      }
+      Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}, msgSpendable.SerializeAsString(), true };
+      if (pushFill(envReq)) {
+         utxoReserveReqs_[envReq.id] = cbFilter;
+      }
+   }
+   return true;
+}
+
+bool WalletsAdapter::processGetReservedUTXOs(const bs::message::Envelope& env
+   , const WalletsMessage_ReservationKey& request)
+{
+   WalletsMessage msg;
+   auto msgResp = msg.mutable_reserved_utxos();
+   msgResp->set_id(request.id());
+   msgResp->set_sub_id(request.sub_id());
+   for (const auto& utxo : utxoResMgr_->get(request.id(), request.sub_id())) {
+      msgResp->add_utxos(utxo.serialize().toBinStr());
+   }
+   Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+   return pushFill(envResp);
+}
+
+bool WalletsAdapter::processUnreserveUTXOs(const WalletsMessage_ReservationKey& request)
+{
+   utxoResMgr_->unreserve(request.id(), request.sub_id());
    return true;
 }

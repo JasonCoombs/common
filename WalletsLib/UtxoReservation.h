@@ -27,48 +27,50 @@ namespace bs {
    // are then set aside and made unavailable for future usage. This is useful
    // for keeping UTXOs from being used, and for accessing UTXOs later (e.g.,
    // when zero conf TXs arrive and the inputs need to be accessed quickly).
-   //
-   // NB: This is a global singleton that shouldn't be accessed directly. Use an
-   // Adapter object to access the singleton and do all the heavy lifting.
    class UtxoReservation
    {
    public:
+      explicit UtxoReservation(const std::shared_ptr<spdlog::logger>& logger);
       // Create the singleton. Use only once!
       // Destroying disabled as it's broken, see BST-2362 for details
-      static void init(const std::shared_ptr<spdlog::logger> &logger);
+      [[deprecated]] static void init(const std::shared_ptr<spdlog::logger> &logger);
 
       // Reserve/Unreserve UTXOs. Used as needed. User supplies the wallet ID,
       // a reservation ID, and the UTXOs to reserve.
-      void reserve(const std::string &reserveId, const std::vector<UTXO> &utxos);
-      bool unreserve(const std::string &reserveId);
+      bool reserve(const std::string& reserveId, const std::vector<UTXO>& utxos
+         , const std::string& subId = {});
+      bool unreserve(const std::string &reserveId, const std::string& subId = {});
 
       // Get the UTXOs based on the reservation ID.
-      std::vector<UTXO> get(const std::string &reserveId) const;
+      [[nodiscard]] std::vector<UTXO> get(const std::string &reserveId
+         , const std::string& subId = {}) const;
 
       // Pass in a vector of UTXOs. If any of the UTXOs are in the wallet ID
       // being queried, remove the UTXOs from the vector.
-      void filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const;
+      size_t filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const;
 
       bool containsReservedUTXO(const std::vector<UTXO> &utxos) const;
+
+      size_t cleanUpReservations(const std::chrono::seconds &);
 
       // Check that all reservations have been cleared
       void shutdownCheck();
 
-      static UtxoReservation *instance();
-
-      explicit UtxoReservation(const std::shared_ptr<spdlog::logger> &logger);
+      [[deprecated]] static UtxoReservation *instance();
 
    private:
       using UTXOs = std::vector<UTXO>;
+      using UTXOMap = std::unordered_map<std::string, UTXOs>;
       using IdList = std::unordered_set<std::string>;
 
       mutable std::mutex mutex_;
 
       // Reservation ID, UTXO vector.
-      std::unordered_map<std::string, UTXOs> byReserveId_;
+      std::unordered_map<std::string, UTXOMap> byReserveId_;
 
       // Reservation ID, time of reservation
-      std::unordered_map<std::string, std::chrono::steady_clock::time_point> reserveTime_;
+      std::unordered_map<std::string, std::unordered_map<std::string
+         , std::chrono::steady_clock::time_point>> reserveTime_;
 
       std::set<UTXO> reserved_;
 

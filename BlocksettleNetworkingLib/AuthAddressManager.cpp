@@ -68,7 +68,7 @@ void AuthAddressManager::initLogin(const std::shared_ptr<BaseCelerClient> &celer
    tradeSettings_ = tradeSettings;
 }
 
-const std::shared_ptr<bs::TradeSettings>& AuthAddressManager::tradeSettings() const
+std::shared_ptr<bs::TradeSettings> AuthAddressManager::tradeSettings() const
 {
    return tradeSettings_;
 }

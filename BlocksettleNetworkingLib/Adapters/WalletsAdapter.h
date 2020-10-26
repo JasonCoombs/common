@@ -29,6 +29,8 @@ namespace BlockSettle {
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
       class WalletsMessage_AddressComments;
+      class WalletsMessage_ReserveUTXOs;
+      class WalletsMessage_ReservationKey;
       class WalletsMessage_TXComment;
       class WalletsMessage_TXDetailsRequest;
       class WalletsMessage_UtxoListRequest;
@@ -45,6 +47,7 @@ namespace bs {
       class Wallet;
       struct WalletInfo;
    }
+   class UtxoReservation;
 }
 
 class WalletsAdapter : public bs::message::ThreadedAdapter, public bs::sync::WalletCallbackTarget
@@ -54,7 +57,7 @@ public:
       , const std::shared_ptr<bs::message::User> &ownUser
       , std::unique_ptr<SignerClient>
       , const std::shared_ptr<bs::message::User> &blockchainUser);
-   ~WalletsAdapter() override = default;
+   ~WalletsAdapter() override;
 
    bool processEnvelope(const bs::message::Envelope &) override;
 
@@ -141,11 +144,19 @@ private:
    bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
    bool processSetUserId(const std::string&);
+   bool processAuthKey(const bs::message::Envelope&, const std::string& address);
+
+   bool processReserveUTXOs(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_ReserveUTXOs&);
+   bool processGetReservedUTXOs(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_ReservationKey&);
+   bool processUnreserveUTXOs(const BlockSettle::Common::WalletsMessage_ReservationKey&);
 
 private:
-   std::shared_ptr<spdlog::logger>     logger_;
-   std::shared_ptr<bs::message::User>  ownUser_, blockchainUser_;
-   std::unique_ptr<SignerClient>       signerClient_;
+   std::shared_ptr<spdlog::logger>        logger_;
+   std::shared_ptr<bs::message::User>     ownUser_, blockchainUser_;
+   std::unique_ptr<SignerClient>          signerClient_;
+   std::shared_ptr<bs::UtxoReservation>   utxoResMgr_;
 
    BinaryData                          userId_;
    std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_;
@@ -211,6 +222,7 @@ private:
    };
    std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoSpendableReqs_;
    std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoZcReqs_;
+   std::map<uint64_t, std::function<void(const std::vector<UTXO>&)>> utxoReserveReqs_;
 };
 
 

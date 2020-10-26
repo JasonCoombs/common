@@ -115,7 +115,7 @@ public:
    [[deprecated]] void initLogin(const std::shared_ptr<BaseCelerClient> &,
       const std::shared_ptr<bs::TradeSettings> &);
 
-   const std::shared_ptr<bs::TradeSettings>& tradeSettings() const;
+   std::shared_ptr<bs::TradeSettings> tradeSettings() const;
 
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);

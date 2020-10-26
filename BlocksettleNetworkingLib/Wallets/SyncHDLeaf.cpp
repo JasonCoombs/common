@@ -1311,10 +1311,11 @@ void hd::SettlementLeaf::getRootPubkey(const std::function<void(const SecureBina
       return;
    }
 
-   const auto &cbWrap = [cb](bool result, const SecureBinaryData &pubKey) {
+   const auto &cbWrap = [cb](bool result, const SecureBinaryData &pubKey)
+   {
       if (cb) {
          cb(result ? pubKey : SecureBinaryData{});
       }
    };
-   return signContainer_->getRootPubkey(walletId(), cbWrap);
+   signContainer_->getRootPubkey(walletId(), cbWrap);
 }

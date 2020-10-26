@@ -111,8 +111,8 @@ public:
    bs::signer::RequestId DeleteHDLeaf(const std::string &leafWalletId) override;
 
    //settlement related methods
-   void createSettlementWallet(const bs::Address &authAddr
-      , const std::function<void(const SecureBinaryData &)> &) override {}
+   void createSettlementWallet(const bs::Address& authAddr
+      , const std::function<void(const SecureBinaryData&)>&) override;
    void setSettlementID(const std::string &walletId, const SecureBinaryData &id
       , const std::function<void(bool)> &) override;
    void getSettlementPayinAddress(const std::string &walletID
@@ -151,6 +151,7 @@ private:
    bool processHdWalletSync(uint64_t msgId, const BlockSettle::Common::HDWalletData &);
    bool processSetSettlId(uint64_t msgId, bool);
    bool processRootPubKey(uint64_t msgId, const BlockSettle::Common::SignerMessage_RootPubKey &);
+   bool processAuthPubkey(uint64_t msgId, const std::string&);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -171,6 +172,7 @@ private:
    std::map<uint64_t, std::function<void(bs::sync::HDWalletData)>>   reqSyncHdWalletMap_;
    std::map<uint64_t, std::function<void(bool)>>                  reqSettlIdMap_;
    std::map<uint64_t, std::function<void(bool, const SecureBinaryData &)>> reqPubKeyMap_;
+   std::map<uint64_t, std::function<void(const SecureBinaryData&)>>        settlWltMap_;
 };
 
 
