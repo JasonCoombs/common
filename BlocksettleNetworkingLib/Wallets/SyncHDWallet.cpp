@@ -38,7 +38,7 @@ hd::Wallet::Wallet(const bs::sync::WalletInfo &info, WalletSignerContainer *cont
          break;
       }
    }
-   
+
    if (info.watchOnly && !isHw) {
       encryptionTypes_ = { bs::wallet::EncryptionType::Unencrypted };
    }
@@ -78,7 +78,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
             group = createGroup(grpData.type, grpData.extOnly);
             if (grpData.type == bs::hd::CoinType::BlockSettle_Auth &&
                grpData.salt.getSize() == 32) {
-               auto authGroupPtr = 
+               auto authGroupPtr =
                   std::dynamic_pointer_cast<hd::AuthGroup>(group);
                if (authGroupPtr == nullptr)
                   throw std::runtime_error("unexpected sync group type");
@@ -120,7 +120,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
          leafIds->insert(leaf->walletId());
 
       for (const auto &leaf : leaves) {
-         const auto &cbLeafDone = [leafIds, cbDone, id=leaf->walletId()] 
+         const auto &cbLeafDone = [leafIds, cbDone, id=leaf->walletId()]
          {
             leafIds->erase(id);
             if (leafIds->empty() && cbDone)
@@ -319,7 +319,7 @@ std::vector<std::string> hd::Wallet::registerWallet(
 std::vector<std::string> hd::Wallet::setUnconfirmedTargets()
 {
    std::vector<std::string> result;
-   for (const auto &leaf : getLeaves()) 
+   for (const auto &leaf : getLeaves())
    {
       auto hdLeafPtr = std::dynamic_pointer_cast<hd::Leaf>(leaf);
       if (hdLeafPtr == nullptr)
@@ -391,11 +391,7 @@ bool hd::Wallet::isPrimary() const
       return false;
    }
 
-   if ((getGroup(bs::hd::CoinType::BlockSettle_Auth) != nullptr)
-      && (getGroup(getXBTGroupType()) != nullptr)) {
-      return true;
-   }
-   return false;
+   return getGroup(bs::hd::CoinType::BlockSettle_Settlement) != nullptr;
 }
 
 std::vector<bs::wallet::EncryptionType> hd::Wallet::encryptionTypes() const
