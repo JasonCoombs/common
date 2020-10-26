@@ -285,22 +285,22 @@ void HeadlessContainer::ProcessCreateHDLeafResponse(unsigned int id, const std::
    }
 }
 
-void HeadlessContainer::ProcessHDWalletPromotionResponse(unsigned int id, const std::string& data)
+void HeadlessContainer::ProcessEnableTradingInWalletResponse(unsigned int id, const std::string& data)
 {
-   headless::PromoteHDWalletResponse response;
+   headless::EnableTradingInWalletResponse response;
 
-   auto it = cbPromoteHDWalletMap_.find(id);
-   WalletSignerContainer::PromoteHDWalletCb cb = nullptr;
+   auto it = cbEnableTradingMap_.find(id);
+   WalletSignerContainer::EnableXBTTradingCb cb = nullptr;
 
-   if (it != cbPromoteHDWalletMap_.end()) {
+   if (it != cbEnableTradingMap_.end()) {
       cb = it->second;
-      cbPromoteHDWalletMap_.erase(it);
+      cbEnableTradingMap_.erase(it);
    } else {
-      logger_->debug("[HeadlessContainer::ProcessHDWalletPromotionResponse] no CB for promote HD Wallet response");
+      logger_->debug("[HeadlessContainer::ProcessEnableTradingInWalletResponse] no CB for promote HD Wallet response");
    }
 
    if (!response.ParseFromString(data)) {
-      logger_->error("[HeadlessContainer::ProcessHDWalletPromotionResponse] Failed to parse PromoteHDWallet reply");
+      logger_->error("[HeadlessContainer::ProcessEnableTradingInWalletResponse] Failed to parse PromoteHDWallet reply");
 
       if (cb) {
          cb(bs::error::ErrorCode::FailedToParse, {});
@@ -312,9 +312,9 @@ void HeadlessContainer::ProcessHDWalletPromotionResponse(unsigned int id, const 
    bs::error::ErrorCode result = static_cast<bs::error::ErrorCode>(response.errorcode());
 
    if (result == bs::error::ErrorCode::NoError) {
-      logger_->debug("[HeadlessContainer::ProcessHDWalletPromotionResponse] HDWallet {} promoted", response.rootwalletid());
+      logger_->debug("[HeadlessContainer::ProcessEnableTradingInWalletResponse] HDWallet {} promoted", response.rootwalletid());
    } else {
-      logger_->error("[HeadlessContainer::ProcessHDWalletPromotionResponse] failed to create leaf: {}"
+      logger_->error("[HeadlessContainer::ProcessEnableTradingInWalletResponse] failed to create leaf: {}"
                      , response.errorcode());
    }
 
@@ -609,11 +609,11 @@ bool HeadlessContainer::createHDLeaf(const std::string &rootWalletId, const bs::
    return true;
 }
 
-bool HeadlessContainer::promoteHDWallet(const std::string& rootWalletId
+bool HeadlessContainer::enableTradingInHDWallet(const std::string& rootWalletId
    , const BinaryData &userId, bs::sync::PasswordDialogData dialogData
-   , const WalletSignerContainer::PromoteHDWalletCb& cb)
+   , const WalletSignerContainer::EnableXBTTradingCb& cb)
 {
-   headless::PromoteHDWalletRequest request;
+   headless::EnableTradingInWalletRequest request;
    request.set_rootwalletid(rootWalletId);
    request.set_user_id(userId.toBinStr());
 
@@ -623,19 +623,19 @@ bool HeadlessContainer::promoteHDWallet(const std::string& rootWalletId
    *requestDialogData = dialogData.toProtobufMessage();
 
    headless::RequestPacket packet;
-   packet.set_type(headless::PromoteHDWalletRequestType);
+   packet.set_type(headless::EnableTradingInWalletType);
    packet.set_data(request.SerializeAsString());
-   auto promoteWalletRequestID = Send(packet);
+   auto requestId = Send(packet);
 
-   if (promoteWalletRequestID == 0) {
-      logger_->error("[HeadlessContainer::promoteHDWallet] failed to send request");
+   if (requestId == 0) {
+      logger_->error("[HeadlessContainer::enableTradingInHDWallet] failed to send request");
       return false;
    }
 
    if (cb) {
-      cbPromoteHDWalletMap_.emplace(promoteWalletRequestID, cb);
+      cbEnableTradingMap_.emplace(requestId, cb);
    } else {
-      logger_->warn("[HeadlessContainer::promoteHDWallet] cb not set for wallet promotion {}"
+      logger_->warn("[HeadlessContainer::enableTradingInHDWallet] cb not set {}"
                      , rootWalletId);
    }
 
@@ -1590,8 +1590,8 @@ void RemoteSigner::onPacketReceived(headless::RequestPacket packet)
       ProcessCreateHDLeafResponse(packet.id(), packet.data());
       break;
 
-   case headless::PromoteHDWalletRequestType:
-      ProcessHDWalletPromotionResponse(packet.id(), packet.data());
+   case headless::EnableTradingInWalletType:
+      ProcessEnableTradingInWalletResponse(packet.id(), packet.data());
       break;
 
    case headless::GetHDWalletInfoRequestType:

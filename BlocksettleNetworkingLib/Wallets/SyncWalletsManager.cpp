@@ -1638,44 +1638,44 @@ void WalletsManager::processCreatedCCLeaf(const std::string &ccName, bs::error::
    }
 }
 
-bool WalletsManager::PromoteHDWallet(const std::string& walletId
+bool WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
    , const std::function<void(bs::error::ErrorCode result)> &cb)
 {
    bs::sync::PasswordDialogData dialogData;
    dialogData.setValue(PasswordDialogData::Title, tr("Enable Trading"));
    dialogData.setValue(PasswordDialogData::XBT, tr("Authentification Addresses"));
 
-   const auto& promoteHDWalletCb = [this, cb](bs::error::ErrorCode result
+   const auto& enableTradingCB = [this, cb](bs::error::ErrorCode result
       , const std::string &walletId) {
       const auto wallet = getHDWalletById(walletId);
       if (!wallet) {
-         logger_->error("[WalletsManager::PromoteWallet] failed to find wallet {}", walletId);
+         logger_->error("[WalletsManager::EnableXBTTradingInWallet] failed to find wallet {}", walletId);
          if (cb) {
             cb(bs::error::ErrorCode::WalletNotFound);
          }
          return;
       }
       wallet->synchronize([this, cb, result, walletId] {
-         processPromoteHDWallet(result, walletId);
+         processEnableTrading(result, walletId);
          if (cb) {
             cb(result);
          }
       });
    };
-   return signContainer_->promoteHDWallet(walletId, userId_, dialogData, promoteHDWalletCb);
+   return signContainer_->enableTradingInHDWallet(walletId, userId_, dialogData, enableTradingCB);
 }
 
-void WalletsManager::processPromoteHDWallet(bs::error::ErrorCode result, const std::string& walletId)
+void WalletsManager::processEnableTrading(bs::error::ErrorCode result, const std::string& walletId)
 {
    if (result == bs::error::ErrorCode::NoError) {
       auto const wallet = getHDWalletById(walletId);
       if (!wallet) {
-         logger_->error("[WalletsManager::ProcessPromoteWalletID] wallet {} to promote does not exist"
+         logger_->error("[WalletsManager::processEnableTrading] wallet {} does not exist"
             , walletId);
          return;
       }
 
-      logger_->debug("[WalletsManager::ProcessPromoteWalletID] creating sync structure for wallet {}"
+      logger_->debug("[WalletsManager::processEnableTrading] creating sync structure for wallet {}"
                      , walletId);
       wallet->createGroup(bs::hd::CoinType::BlockSettle_Auth, true);
       wallet->createGroup(bs::hd::CoinType::BlockSettle_Settlement, true);
@@ -1687,7 +1687,7 @@ void WalletsManager::processPromoteHDWallet(bs::error::ErrorCode result, const s
       emit walletPromotedToPrimary(walletId);
       emit walletChanged(walletId);
    } else {
-      logger_->error("[WalletsManager::ProcessPromoteWalletID] Wallet {} promotion failed: {}"
+      logger_->error("[WalletsManager::processEnableTrading] Wallet {} promotion failed: {}"
                      , walletId, static_cast<int>(result));
       emit walletPromotionFailed(walletId, result);
    }
@@ -1934,7 +1934,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       prevStateSigner.deserializeState(prevPart);
    }
 
-   if (feePerByte > 0) {  
+   if (feePerByte > 0) {
       size_t baseSize = 0;
       size_t witnessSize = 0;
       for (uint32_t i = 0; i < prevStateSigner.getTxInCount(); ++i) {
@@ -2036,15 +2036,15 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
       for (const auto& recipient : group.second)
       signer.addRecipient(recipient, group.first);
    }
-   
+
    if (inputAmount > (spendVal + fee)) {
       const uint64_t changeVal = inputAmount - (spendVal + fee);
       if (changeAddress.empty()) {
          throw std::invalid_argument("Change address required, but missing");
       }
-      
+
       signer.addRecipient(
-         changeAddress.getRecipient(bs::XBTAmount{ changeVal }), 
+         changeAddress.getRecipient(bs::XBTAmount{ changeVal }),
          changeGroup);
       request.change.value = changeVal;
       request.change.address = changeAddress;

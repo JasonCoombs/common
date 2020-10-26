@@ -99,7 +99,7 @@ namespace bs {
          WalletPtr getDefaultWallet() const;
          GroupPtr getGroupByWalletId(const std::string &walletId) const;
 
-         bool PromoteHDWallet(const std::string& walletId
+         bool EnableXBTTradingInWallet(const std::string& walletId
             , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
          bool CreateCCLeaf(const std::string &cc
             , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
@@ -255,7 +255,7 @@ namespace bs {
          void processCreatedCCLeaf(const std::string &cc, bs::error::ErrorCode result
             , const std::string &walletId);
 
-         void processPromoteHDWallet(bs::error::ErrorCode result, const std::string& walletId);
+         void processEnableTrading(bs::error::ErrorCode result, const std::string& walletId);
          void startTracker(const std::string &cc);
          void updateTracker(const std::shared_ptr<bs::sync::hd::CCLeaf> &ccLeaf);
          void checkTrackerUpdate(const std::string &cc);
