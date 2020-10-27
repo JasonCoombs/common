@@ -66,7 +66,8 @@ namespace bs {
          RequestPasswordForSettlementLeaf,
          RequestPasswordForToken,
          RequestPasswordForRevokeAuthAddress,
-         RequestPasswordForPromoteHDWallet
+         RequestPasswordForEnableTrading,
+         RequestPasswordForPromoteWallet
       };
       Q_ENUM_NS(PasswordInputDialogType)
 

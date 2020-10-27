@@ -183,7 +183,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
       { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
-      { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) }
+      { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) },
+      { DefaultXBTTradeWalletId,        SettingDef(QLatin1String("DefaultXBTTradeWalletId")) }
    };
 }
 

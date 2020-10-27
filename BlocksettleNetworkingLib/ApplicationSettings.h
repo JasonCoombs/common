@@ -139,6 +139,7 @@ public:
       ExtConnPubKey,
       SubmittedAddressXbtLimit,
       ExtConnOwnPubKey,
+      DefaultXBTTradeWalletId,
       _last
    };
 

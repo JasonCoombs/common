@@ -66,9 +66,13 @@ public:
       , const std::vector<bs::wallet::PasswordData> &pwdData = {}
       , bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) = 0;
 
-   using PromoteHDWalletCb = std::function<void(bs::error::ErrorCode, const std::string &leafWalletId)>;
-   virtual bool promoteHDWallet(const std::string& rootWalletId, const BinaryData &userId
-      , bs::sync::PasswordDialogData dialogData = {}, const PromoteHDWalletCb& cb = nullptr) = 0;
+   using UpdateWalletStructureCB = std::function<void(bs::error::ErrorCode, const std::string &leafWalletId)>;
+
+   virtual bool enableTradingInHDWallet(const std::string& rootWalletId, const BinaryData &userId
+      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) = 0;
+
+   virtual bool promoteWalletToPrimary(const std::string& rootWalletId
+      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) = 0;
 
 signals:
    void AuthLeafAdded(const std::string &walletId);

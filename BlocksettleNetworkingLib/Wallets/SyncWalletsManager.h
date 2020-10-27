@@ -90,7 +90,7 @@ namespace bs {
          size_t walletsCount() const { return wallets_.size(); }
          bool hasPrimaryWallet() const;
          HDWalletPtr getPrimaryWallet() const;
-//         std::shared_ptr<hd::DummyWallet> getDummyWallet() const { return hdDummyWallet_; }
+
          std::vector<WalletPtr> getAllWallets() const;
          std::vector<std::string> getHwWallets(
             bs::wallet::HardwareEncKey::WalletType walletType, std::string deviceId = {}) const;
@@ -99,7 +99,9 @@ namespace bs {
          WalletPtr getDefaultWallet() const;
          GroupPtr getGroupByWalletId(const std::string &walletId) const;
 
-         bool PromoteHDWallet(const std::string& walletId
+         bool PromoteWalletToPrimary(const std::string& walletId);
+
+         bool EnableXBTTradingInWallet(const std::string& walletId
             , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
          bool CreateCCLeaf(const std::string &cc
             , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
@@ -170,6 +172,8 @@ namespace bs {
 
          std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;
 
+         std::string getDefaultSpendWalletId() const;
+
       signals:
          void CCLeafCreated(const std::string& ccName);
          void CCLeafCreateFailed(const std::string& ccName, bs::error::ErrorCode result);
@@ -177,7 +181,6 @@ namespace bs {
          void AuthLeafCreated();
 
          void walletPromotedToPrimary(const std::string& walletId);
-         void walletPromotionFailed(const std::string& walletId, bs::error::ErrorCode result);
 
          void walletChanged(const std::string &walletId);
          void walletDeleted(const std::string &walletId);
@@ -255,7 +258,9 @@ namespace bs {
          void processCreatedCCLeaf(const std::string &cc, bs::error::ErrorCode result
             , const std::string &walletId);
 
-         void processPromoteHDWallet(bs::error::ErrorCode result, const std::string& walletId);
+         void processEnableTrading(bs::error::ErrorCode result, const std::string& walletId);
+         void processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId);
+
          void startTracker(const std::string &cc);
          void updateTracker(const std::shared_ptr<bs::sync::hd::CCLeaf> &ccLeaf);
          void checkTrackerUpdate(const std::string &cc);
