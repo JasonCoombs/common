@@ -965,6 +965,9 @@ bool HeadlessContainerListener::RequestPassword(const std::string &rootId, const
          case headless::EnableTradingInWalletType:
             callbacks_->decryptWalletRequest(signer::PasswordDialogType::EnableTrading, dlgData);
             break;
+         case headless::PromoteWalletToPrimaryType:
+            callbacks_->decryptWalletRequest(signer::PasswordDialogType::PromoteToPrimary, dlgData);
+            break;
 
          default:
             logger_->warn("[{}] unknown request for password request: {}", __func__, (int)reqType);
@@ -1417,7 +1420,7 @@ bool HeadlessContainerListener::onPromoteWalletToPrimary(const std::string& clie
       walletsListUpdated();
    };
 
-   RequestPasswordIfNeeded(clientId, request.rootwalletid(), {}, headless::EnableTradingInWalletType
+   RequestPasswordIfNeeded(clientId, request.rootwalletid(), {}, headless::PromoteWalletToPrimaryType
       , request.passworddialogdata(), onPassword);
    return true;
 }

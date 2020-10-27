@@ -93,6 +93,7 @@ public:
       CreateAuthLeaf,
       CreateSettlementLeaf,
       EnableTrading,
+      PromoteWallet,
       EnableAutoSign,
       RevokeAuthAddress,
       SubmitEquityToken,

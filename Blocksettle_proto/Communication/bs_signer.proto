@@ -78,6 +78,7 @@ enum PasswordDialogType
    CreateSettlementLeaf       = 6;
    EnableTrading              = 7;
    RevokeAuthAddress	         = 8;
+   PromoteToPrimary           = 9;
 }
 
 message Packet
