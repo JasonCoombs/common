@@ -69,15 +69,15 @@ enum PacketType
 
 enum PasswordDialogType
 {
-   SignTx                      = 0;
-   SignPartialTx               = 1;
-   SignSettlementTx            = 2;
-   SignSettlementPartialTx     = 3;
-   CreateAuthLeaf              = 4;
-   CreateHDLeaf                = 5;
-   CreateSettlementLeaf        = 6;
-   PromoteHDWallet	       = 7;
-   RevokeAuthAddress	       = 8;
+   SignTx                     = 0;
+   SignPartialTx              = 1;
+   SignSettlementTx           = 2;
+   SignSettlementPartialTx    = 3;
+   CreateAuthLeaf             = 4;
+   CreateHDLeaf               = 5;
+   CreateSettlementLeaf       = 6;
+   EnableTrading              = 7;
+   RevokeAuthAddress	         = 8;
 }
 
 message Packet

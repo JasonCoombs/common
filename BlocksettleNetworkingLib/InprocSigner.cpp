@@ -249,10 +249,17 @@ bool InprocSigner::createHDLeaf(const std::string &rootWalletId, const bs::hd::P
 }
 
 bool InprocSigner::enableTradingInHDWallet(const std::string &, const BinaryData &
-   , bs::sync::PasswordDialogData , const WalletSignerContainer::EnableXBTTradingCb &)
+   , bs::sync::PasswordDialogData , const WalletSignerContainer::UpdateWalletStructureCB &)
 {
    throw std::bad_function_call();
 }
+
+bool InprocSigner::promoteWalletToPrimary(const std::string&
+      , bs::sync::PasswordDialogData, const UpdateWalletStructureCB&)
+{
+   throw std::bad_function_call();
+}
+
 
 void InprocSigner::createSettlementWallet(const bs::Address &authAddr
    , const std::function<void(const SecureBinaryData &)> &cb)

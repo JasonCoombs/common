@@ -196,6 +196,9 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::EnableTradingInWalletType:
       return onEnableTradingInWallet(clientId, packet);
 
+   case headless::PromoteWalletToPrimaryType:
+      return onPromoteWalletToPrimary(clientId, packet);
+
    case headless::SetUserIdType:
       return onSetUserId(clientId, packet);
 
@@ -960,7 +963,7 @@ bool HeadlessContainerListener::RequestPassword(const std::string &rootId, const
             callbacks_->decryptWalletRequest(signer::PasswordDialogType::RevokeAuthAddress, dlgData, txReq);
             break;
          case headless::EnableTradingInWalletType:
-            callbacks_->decryptWalletRequest(signer::PasswordDialogType::PromoteHDWallet, dlgData);
+            callbacks_->decryptWalletRequest(signer::PasswordDialogType::EnableTrading, dlgData);
             break;
 
          default:
@@ -1377,6 +1380,48 @@ bool HeadlessContainerListener::onEnableTradingInWallet(const std::string& clien
    return true;
 }
 
+bool HeadlessContainerListener::onPromoteWalletToPrimary(const std::string& clientId, Blocksettle::Communication::headless::RequestPacket& packet)
+{
+   headless::PromoteWalletToPrimaryRequest request;
+   if (!request.ParseFromString(packet.data())) {
+      logger_->error("[HeadlessContainerListener::onPromoteWalletToPrimary] failed to parse PromoteWalletToPrimaryRequest");
+      return false;
+   }
+
+   const std::string &walletId = request.rootwalletid();
+
+   if (walletsMgr_->getPrimaryWallet() != nullptr) {
+      logger_->error("[HeadlessContainerListener::onPromoteWalletToPrimary] primary wallet already exists");
+      CreatePromoteWalletResponse(clientId, packet.id(), ErrorCode::WalletAlreadyPresent, walletId);
+      return false;
+   }
+
+   const auto hdWallet = walletsMgr_->getHDWalletById(walletId);
+   if (!hdWallet) {
+      logger_->error("[HeadlessContainerListener::onPromoteWalletToPrimary] failed to find root HD wallet by id {}", walletId);
+      CreatePromoteWalletResponse(clientId, packet.id(), ErrorCode::WalletNotFound, walletId);
+      return false;
+   }
+
+   const auto onPassword = [this, hdWallet, walletId, clientId, id = packet.id()]
+      (bs::error::ErrorCode result, const SecureBinaryData &pass)
+   {
+      if (result != ErrorCode::NoError) {
+         logger_->error("[HeadlessContainerListener::onPromoteWalletToPrimary] no password for encrypted wallet");
+         CreatePromoteWalletResponse(clientId, id, result, walletId);
+         return;
+      }
+
+      walletsMgr_->UpdateWalletToPrimary(hdWallet, pass);
+      CreatePromoteWalletResponse(clientId, id, ErrorCode::NoError, walletId);
+      walletsListUpdated();
+   };
+
+   RequestPasswordIfNeeded(clientId, request.rootwalletid(), {}, headless::EnableTradingInWalletType
+      , request.passworddialogdata(), onPassword);
+   return true;
+}
+
 void HeadlessContainerListener::CreateHDLeafResponse(const std::string &clientId, unsigned int id
    , ErrorCode result, const std::shared_ptr<bs::core::hd::Leaf>& leaf)
 {
@@ -1416,7 +1461,24 @@ void HeadlessContainerListener::CreateEnableTradingResponse(const std::string& c
    packet.set_data(response.SerializeAsString());
 
    if (!sendData(packet.SerializeAsString(), clientId)) {
-      logger_->error("[HeadlessContainerListener::CreateEnableTradingResponse] failed to send response PromoteHDWallet packet");
+      logger_->error("[HeadlessContainerListener::CreateEnableTradingResponse] failed to send response EnableTradingInWallet packet");
+   }
+}
+
+void HeadlessContainerListener::CreatePromoteWalletResponse(const std::string& clientId, unsigned int id
+   , ErrorCode result, const std::string& walletId)
+{
+   headless::PromoteWalletToPrimaryResponse response;
+   response.set_rootwalletid(walletId);
+   response.set_errorcode(static_cast<uint32_t>(result));
+
+   headless::RequestPacket packet;
+   packet.set_id(id);
+   packet.set_type(headless::EnableTradingInWalletType);
+   packet.set_data(response.SerializeAsString());
+
+   if (!sendData(packet.SerializeAsString(), clientId)) {
+      logger_->error("[HeadlessContainerListener::CreatePromoteWalletResponse] failed to send response EnableTradingInWallet packet");
    }
 }
 

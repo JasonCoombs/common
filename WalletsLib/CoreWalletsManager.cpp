@@ -366,6 +366,53 @@ bool WalletsManager::deleteWalletFile(const HDWalletPtr &wallet)
    return result;
 }
 
+
+void WalletsManager::UpdateWalletToPrimary(const HDWalletPtr& newWallet, const SecureBinaryData &pwd)
+{
+   const bs::core::WalletPasswordScoped lock(newWallet, pwd);
+   newWallet->createChatPrivKey();
+   newWallet->createGroup(bs::hd::CoinType::BlockSettle_Settlement);
+
+   auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_Auth);
+
+   if (!userId_.empty()) {
+      const auto authGroup = std::dynamic_pointer_cast<bs::core::hd::AuthGroup>(group);
+      if (authGroup) {
+         authGroup->setSalt(userId_);
+         const auto authLeaf = authGroup->createLeaf(AddressEntryType_Default, 0, 10);
+         if (authLeaf) {
+            for (const auto &authAddr : authLeaf->getPooledAddressList()) {
+               try {
+                  newWallet->createSettlementLeaf(authAddr);
+                  authLeaf->getNewExtAddress();
+               }
+               catch (const std::exception &e) {
+                  logger_->error("[core::WalletsManager::UpdateWalletToPrimary] failed to create settlement leaf for {}: {}"
+                     , authAddr.display(), e.what());
+               }
+            }
+         } else {
+            logger_->error("[core::WalletsManager::UpdateWalletToPrimary] failed to create auth leaf");
+         }
+      } else {
+         logger_->error("[core::WalletsManager::UpdateWalletToPrimary] invalid auth group");
+      }
+   }
+
+   group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_CC);
+   if (!ccLeaves_.empty()) {
+      for (const auto &cc : ccLeaves_) {
+         try {
+            group->createLeaf(AddressEntryType_Default, cc);
+         }
+         catch (const std::exception &e) {
+            logger_->error("[core::WalletsManager::UpdateWalletToPrimary] CC leaf {} creation failed: {}"
+               , cc, e.what());
+         }
+      }
+   }
+}
+
 WalletsManager::HDWalletPtr WalletsManager::createWallet(
    const std::string& name, const std::string& description
    , wallet::Seed seed, const std::string &folder
@@ -382,49 +429,10 @@ WalletsManager::HDWalletPtr WalletsManager::createWallet(
    {
       const bs::core::WalletPasswordScoped lock(newWallet, pd.password);
       newWallet->createStructure(createLegacyLeaf);
+   }
 
-      if (primary) {
-         newWallet->createChatPrivKey();
-         newWallet->createGroup(bs::hd::CoinType::BlockSettle_Settlement);
-
-         auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_Auth);
-         if (!userId_.empty()) {
-            const auto authGroup = std::dynamic_pointer_cast<bs::core::hd::AuthGroup>(group);
-            if (authGroup) {
-               authGroup->setSalt(userId_);
-               const auto authLeaf = authGroup->createLeaf(AddressEntryType_Default, 0, 10);
-               if (authLeaf) {
-                  for (const auto &authAddr : authLeaf->getPooledAddressList()) {
-                     try {
-                        newWallet->createSettlementLeaf(authAddr);
-                        authLeaf->getNewExtAddress();
-                     }
-                     catch (const std::exception &e) {
-                        logger_->error("[core::WalletsManager::createWallet] failed to create settlement leaf for {}: {}"
-                           , authAddr.display(), e.what());
-                     }
-                  }
-               } else {
-                  logger_->error("[core::WalletsManager::createWallet] failed to create auth leaf");
-               }
-            } else {
-               logger_->error("[core::WalletsManager::createWallet] invalid auth group");
-            }
-         }
-
-         group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_CC);
-         if (!ccLeaves_.empty()) {
-            for (const auto &cc : ccLeaves_) {
-               try {
-                  group->createLeaf(AddressEntryType_Default, cc);
-               }
-               catch (const std::exception &e) {
-                  logger_->error("[core::WalletsManager::createWallet] CC leaf {} creation failed: {}"
-                     , cc, e.what());
-               }
-            }
-         }
-      }
+   if (primary) {
+      UpdateWalletToPrimary(newWallet, pd.password);
    }
 
    addWallet(newWallet);

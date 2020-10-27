@@ -92,7 +92,7 @@ public:
       ActivateOTP,
       CreateAuthLeaf,
       CreateSettlementLeaf,
-      PromoteWallet,
+      EnableTrading,
       EnableAutoSign,
       RevokeAuthAddress,
       SubmitEquityToken,

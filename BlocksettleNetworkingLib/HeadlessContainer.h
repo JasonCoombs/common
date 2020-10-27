@@ -86,7 +86,10 @@ public:
       , const std::vector<bs::wallet::PasswordData>& = {}, bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) override;
 
    bool enableTradingInHDWallet(const std::string& rootWalletId, const BinaryData &userId
-      , bs::sync::PasswordDialogData dialogData = {}, const EnableXBTTradingCb& cb = nullptr) override;
+      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
+
+   bool promoteWalletToPrimary(const std::string& rootWalletId
+      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
 
    bs::signer::RequestId DeleteHDRoot(const std::string &rootWalletId) override;
    bs::signer::RequestId DeleteHDLeaf(const std::string &leafWalletId) override;
@@ -138,6 +141,7 @@ protected:
    void ProcessPubResolveResponse(unsigned int id, const std::string &data);
    void ProcessCreateHDLeafResponse(unsigned int id, const std::string &data);
    void ProcessEnableTradingInWalletResponse(unsigned int id, const std::string& data);
+   void ProcessPromoteWalletResponse(unsigned int id, const std::string& data);
    void ProcessGetHDWalletInfoResponse(unsigned int id, const std::string &data);
    void ProcessAutoSignActEvent(unsigned int id, const std::string &data);
    void ProcessSyncWalletInfo(unsigned int id, const std::string &data);
@@ -179,8 +183,8 @@ protected:
    std::map<bs::signer::RequestId, std::function<void(const bs::Address &)>>  cbSettlAuthMap_;
    std::map<bs::signer::RequestId, std::function<void(const BinaryData &, const BinaryData &)>>  cbSettlCPMap_;
 
-   std::map<bs::signer::RequestId, CreateHDLeafCb> cbCCreateLeafMap_;
-   std::map<bs::signer::RequestId, EnableXBTTradingCb> cbEnableTradingMap_;
+   std::map<bs::signer::RequestId, CreateHDLeafCb>          cbCCreateLeafMap_;
+   std::map<bs::signer::RequestId, UpdateWalletStructureCB> cbUpdateWalletMap_;
 };
 
 

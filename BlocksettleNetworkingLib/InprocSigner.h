@@ -80,7 +80,9 @@ public:
       , const std::vector<bs::wallet::PasswordData> &pwdData = {}
       , bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) override;
    bool enableTradingInHDWallet(const std::string &, const BinaryData &, bs::sync::PasswordDialogData = {}
-      , const EnableXBTTradingCb& = nullptr) override;
+      , const UpdateWalletStructureCB& = nullptr) override;
+   bool promoteWalletToPrimary(const std::string& rootWalletId
+      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
    bs::signer::RequestId DeleteHDRoot(const std::string &) override;
    bs::signer::RequestId DeleteHDLeaf(const std::string &) override;
    bs::signer::RequestId GetInfo(const std::string &) override;

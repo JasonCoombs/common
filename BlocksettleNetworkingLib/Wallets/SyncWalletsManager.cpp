@@ -1638,6 +1638,36 @@ void WalletsManager::processCreatedCCLeaf(const std::string &ccName, bs::error::
    }
 }
 
+bool WalletsManager::PromoteWalletToPrimary(const std::string& walletId)
+{
+   bs::sync::PasswordDialogData dialogData;
+   dialogData.setValue(PasswordDialogData::Title, tr("Promote to primary"));
+
+   const auto& promoteToPriimaryCB = [this](bs::error::ErrorCode result
+      , const std::string &walletId) {
+      const auto wallet = getHDWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[WalletsManager::PromoteWalletToPrimary CB] failed to find wallet {}", walletId);
+         return;
+      }
+      wallet->synchronize([this, result, walletId] {
+         processPromoteWallet(result, walletId);
+      });
+   };
+   return signContainer_->promoteWalletToPrimary(walletId, dialogData, promoteToPriimaryCB);
+}
+
+void WalletsManager::processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId)
+{
+   if (result == bs::error::ErrorCode::NoError) {
+      emit walletPromotedToPrimary(walletId);
+      emit walletChanged(walletId);
+   } else {
+      logger_->error("[WalletsManager::processPromoteWallet] Wallet {} promotion failed: {}"
+                     , walletId, static_cast<int>(result));
+   }
+}
+
 bool WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
    , const std::function<void(bs::error::ErrorCode result)> &cb)
 {
@@ -1668,28 +1698,10 @@ bool WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
 void WalletsManager::processEnableTrading(bs::error::ErrorCode result, const std::string& walletId)
 {
    if (result == bs::error::ErrorCode::NoError) {
-      auto const wallet = getHDWalletById(walletId);
-      if (!wallet) {
-         logger_->error("[WalletsManager::processEnableTrading] wallet {} does not exist"
-            , walletId);
-         return;
-      }
-
-      logger_->debug("[WalletsManager::processEnableTrading] creating sync structure for wallet {}"
-                     , walletId);
-      wallet->createGroup(bs::hd::CoinType::BlockSettle_Auth, true);
-      wallet->createGroup(bs::hd::CoinType::BlockSettle_Settlement, true);
-
-      for (const auto &leaf : wallet->getLeaves()) {
-         addWallet(leaf, true);
-      }
-
-      emit walletPromotedToPrimary(walletId);
       emit walletChanged(walletId);
    } else {
       logger_->error("[WalletsManager::processEnableTrading] Wallet {} promotion failed: {}"
                      , walletId, static_cast<int>(result));
-      emit walletPromotionFailed(walletId, result);
    }
 }
 

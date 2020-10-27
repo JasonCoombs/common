@@ -90,7 +90,7 @@ namespace bs {
          size_t walletsCount() const { return wallets_.size(); }
          bool hasPrimaryWallet() const;
          HDWalletPtr getPrimaryWallet() const;
-//         std::shared_ptr<hd::DummyWallet> getDummyWallet() const { return hdDummyWallet_; }
+
          std::vector<WalletPtr> getAllWallets() const;
          std::vector<std::string> getHwWallets(
             bs::wallet::HardwareEncKey::WalletType walletType, std::string deviceId = {}) const;
@@ -98,6 +98,8 @@ namespace bs {
          WalletPtr getWalletByAddress(const bs::Address &addr) const;
          WalletPtr getDefaultWallet() const;
          GroupPtr getGroupByWalletId(const std::string &walletId) const;
+
+         bool PromoteWalletToPrimary(const std::string& walletId);
 
          bool EnableXBTTradingInWallet(const std::string& walletId
             , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
@@ -177,7 +179,6 @@ namespace bs {
          void AuthLeafCreated();
 
          void walletPromotedToPrimary(const std::string& walletId);
-         void walletPromotionFailed(const std::string& walletId, bs::error::ErrorCode result);
 
          void walletChanged(const std::string &walletId);
          void walletDeleted(const std::string &walletId);
@@ -256,6 +257,8 @@ namespace bs {
             , const std::string &walletId);
 
          void processEnableTrading(bs::error::ErrorCode result, const std::string& walletId);
+         void processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId);
+
          void startTracker(const std::string &cc);
          void updateTracker(const std::shared_ptr<bs::sync::hd::CCLeaf> &ccLeaf);
          void checkTrackerUpdate(const std::string &cc);
