@@ -172,6 +172,8 @@ namespace bs {
 
          std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;
 
+         std::string getDefaultSpendWalletId() const;
+
       signals:
          void CCLeafCreated(const std::string& ccName);
          void CCLeafCreateFailed(const std::string& ccName, bs::error::ErrorCode result);

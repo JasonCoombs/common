@@ -2089,3 +2089,16 @@ std::vector<std::string> bs::sync::WalletsManager::getHwWallets(bs::wallet::Hard
 
    return hwWallets;
 }
+
+std::string WalletsManager::getDefaultSpendWalletId() const
+{
+   auto walletId = appSettings_->get<std::string>(ApplicationSettings::DefaultXBTTradeWalletId);
+   if (walletId.empty()) {
+      auto primaryWallet = getPrimaryWallet();
+      if (primaryWallet != nullptr) {
+         walletId = primaryWallet->walletId();
+      }
+   }
+
+   return walletId;
+}
