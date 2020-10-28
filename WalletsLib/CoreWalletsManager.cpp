@@ -373,9 +373,8 @@ void WalletsManager::UpdateWalletToPrimary(const HDWalletPtr& newWallet, const S
    newWallet->createChatPrivKey();
    newWallet->createGroup(bs::hd::CoinType::BlockSettle_Settlement);
 
-   auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_Auth);
-
    if (!userId_.empty()) {
+      auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_Auth);
       const auto authGroup = std::dynamic_pointer_cast<bs::core::hd::AuthGroup>(group);
       if (authGroup) {
          authGroup->setSalt(userId_);
@@ -399,7 +398,7 @@ void WalletsManager::UpdateWalletToPrimary(const HDWalletPtr& newWallet, const S
       }
    }
 
-   group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_CC);
+   auto group = newWallet->createGroup(bs::hd::CoinType::BlockSettle_CC);
    if (!ccLeaves_.empty()) {
       for (const auto &cc : ccLeaves_) {
          try {
