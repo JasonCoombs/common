@@ -132,7 +132,6 @@ namespace bs {
             const std::string name_, desc_;
             NetworkType    netType_ = NetworkType::MainNet;
             std::map<bs::hd::Path::Elem, std::shared_ptr<Group>>        groups_;
-            mutable std::map<std::string, std::shared_ptr<bs::sync::Wallet>>  leaves_;
             BinaryData        userId_;
             WalletSignerContainer  *  signContainer_{};
             std::shared_ptr<ArmoryConnection>   armory_;
@@ -143,23 +142,10 @@ namespace bs {
             const bool isOffline_;
 
          private:
-            std::unordered_set<std::string>  scannedLeaves_;
+            mutable std::mutex                                                leavesLock_;
+            mutable std::map<std::string, std::shared_ptr<bs::sync::Wallet>>  leaves_;
          };
 
-
-/*!         class DummyWallet : public Wallet    // Just a container for old-style wallets
-         {
-         public:
-            DummyWallet(const std::shared_ptr<spdlog::logger> &logger)
-               : Wallet(NetworkType::Invalid, "Dummy", tr("Armory Wallets").toStdString()
-                  , "", logger) {}
-
-            size_t getNumLeaves() const override { return leaves_.size(); }
-
-            void add(const std::shared_ptr<bs::sync::Wallet> wallet) {
-               leaves_[wallet->walletId()] = wallet;
-            }
-         };*/
       }  //namespace hd
    }  //namespace sync
 }  //namespace bs

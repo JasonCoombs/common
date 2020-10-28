@@ -163,6 +163,8 @@ size_t hd::Wallet::getNumLeaves() const
 
 std::vector<std::shared_ptr<bs::sync::Wallet>> hd::Wallet::getLeaves() const
 {
+   const std::lock_guard<std::mutex> lock(leavesLock_);
+
    const auto nbLeaves = getNumLeaves();
    if (leaves_.size() != nbLeaves) {
       leaves_.clear();
@@ -184,6 +186,8 @@ std::vector<std::shared_ptr<bs::sync::Wallet>> hd::Wallet::getLeaves() const
 
 std::shared_ptr<bs::sync::Wallet> hd::Wallet::getLeaf(const std::string &id) const
 {
+   const std::lock_guard<std::mutex> lock(leavesLock_);
+
    const auto &itLeaf = leaves_.find(id);
    if (itLeaf == leaves_.end()) {
       return nullptr;
@@ -411,6 +415,8 @@ std::vector<BinaryData> hd::Wallet::encryptionKeys() const
 
 void hd::Wallet::merge(const Wallet& rhs)
 {
+   const std::lock_guard<std::mutex> lock(leavesLock_);
+
    //rudimentary implementation, flesh it out on the go
    for (const auto &leafPair : rhs.leaves_) {
       auto iter = leaves_.find(leafPair.first);
