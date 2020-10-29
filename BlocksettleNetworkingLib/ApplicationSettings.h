@@ -139,7 +139,8 @@ public:
       ExtConnPubKey,
       SubmittedAddressXbtLimit,
       ExtConnOwnPubKey,
-      DefaultXBTTradeWalletId,
+      DefaultXBTTradeWalletIdTestnet,
+      DefaultXBTTradeWalletIdMainnet,
       _last
    };
 
@@ -203,10 +204,15 @@ public:
    QString bootstrapFilePath() const;
    QString bootstrapResourceFileName() const;
 
+   void setDefaultWalletId(const std::string& walletId);
+   std::string getDefaultWalletId() const;
+
 signals:
    void settingChanged(int setting, QVariant value);
 
 private:
+   Setting getDefaultWalletSettingsKey() const;
+
    QVariant getNoLock(Setting s, bool getDefaultValue = false) const;
 
    void SetHomeDir(const QString& path);
