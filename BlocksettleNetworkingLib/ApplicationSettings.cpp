@@ -184,7 +184,8 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
       { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
       { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) },
-      { DefaultXBTTradeWalletId,        SettingDef(QLatin1String("DefaultXBTTradeWalletId")) }
+      { DefaultXBTTradeWalletIdTestnet,        SettingDef(QLatin1String("DefaultXBTTradeWalletIdTestnet")) },
+      { DefaultXBTTradeWalletIdMainnet,        SettingDef(QLatin1String("DefaultXBTTradeWalletIdMainnet")) }
    };
 }
 
@@ -764,4 +765,21 @@ std::string ApplicationSettings::GetBlocksettleSignAddress() const
       default:
          return "";
    }
+}
+
+void ApplicationSettings::setDefaultWalletId(const std::string& walletId)
+{
+   set(getDefaultWalletSettingsKey(), QString::fromStdString(walletId));
+}
+
+std::string ApplicationSettings::getDefaultWalletId() const
+{
+   return get<std::string>(getDefaultWalletSettingsKey());
+}
+
+ApplicationSettings::Setting ApplicationSettings::getDefaultWalletSettingsKey() const
+{
+   return get<NetworkType>(ApplicationSettings::netType) == NetworkType::TestNet
+      ? ApplicationSettings::DefaultXBTTradeWalletIdTestnet
+      : ApplicationSettings::DefaultXBTTradeWalletIdMainnet;
 }
