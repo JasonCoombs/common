@@ -193,6 +193,10 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
    for (int i=0; i < snapshot.cc_products_size(); ++i) {
       OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, snapshot.cc_products(i), timestamp);
    }
+
+   for (int i=0; i < snapshot.futures_size(); ++i) {
+      OnProductSnapshot(bs::network::Asset::Type::Futures, snapshot.futures(i), timestamp);
+   }
 }
 
 void BSMarketDataProvider::OnProductUpdate(const bs::network::Asset::Type& assetType
@@ -244,6 +248,10 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
 
    for (int i=0; i < update.cc_products_size(); ++i) {
       OnProductUpdate(bs::network::Asset::Type::PrivateMarket, update.cc_products(i), timestamp);
+   }
+
+   for (int i=0; i < update.futures_size(); ++i) {
+      OnProductSnapshot(bs::network::Asset::Type::Futures, update.futures(i), timestamp);
    }
 }
 

@@ -215,6 +215,12 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
    if ((at == bs::network::Asset::Undefined) || security.isEmpty()) {
       return;
    }
+
+   if (at == bs::network::Asset::Futures) {
+      // ignore price update for a futures.
+      return;
+   }
+
    double lastPx = 0;
    double bidPrice = 0;
 

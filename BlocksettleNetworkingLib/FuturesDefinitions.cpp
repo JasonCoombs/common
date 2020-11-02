@@ -3,7 +3,7 @@
 #include <map>
 
 static const std::map<std::string, bs::network::FutureDefinitionInfo> definitions = {
-   { "XBTEUR1", { bs::network::Asset::SpotFX, "XBT/EUR"} }
+   { "XBTEUR1", { bs::network::Asset::SpotFX, bs::network::Asset::SpotXBT, "XBT/EUR"} }
 };
 
 bs::network::FutureDefinitionInfo bs::network::getFutureDefinition(const std::string& future)
