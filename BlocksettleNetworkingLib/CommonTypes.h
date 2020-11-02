@@ -77,6 +77,7 @@ namespace bs {
             SpotFX = first,
             SpotXBT,
             PrivateMarket,
+            Futures,
             last
          };
 

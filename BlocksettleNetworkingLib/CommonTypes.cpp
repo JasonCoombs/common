@@ -172,6 +172,7 @@ bs::network::Asset::Type bs::network::Asset::fromCelerProductType(com::celertech
 com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::Asset::toCeler(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return com::celertech::marketmerchant::api::enums::assettype::FX;
+      case Futures:        return com::celertech::marketmerchant::api::enums::assettype::FX;
       case SpotXBT:        return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
       case PrivateMarket:  return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
       default:             return com::celertech::marketmerchant::api::enums::assettype::STRUCTURED_PRODUCT;
@@ -181,6 +182,7 @@ com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::As
 com::celertech::marketdata::api::enums::assettype::AssetType bs::network::Asset::toCelerMDAssetType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return com::celertech::marketdata::api::enums::assettype::FX;
+      case Futures:        return com::celertech::marketdata::api::enums::assettype::FX;
       case SpotXBT:        // fall through
       case PrivateMarket:  // fall through
       default:
@@ -191,6 +193,7 @@ com::celertech::marketdata::api::enums::assettype::AssetType bs::network::Asset:
 com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network::Asset::toCelerProductType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return com::celertech::marketmerchant::api::enums::producttype::SPOT;
+      case Futures:        return com::celertech::marketmerchant::api::enums::producttype::SPOT;
       case SpotXBT:        return com::celertech::marketmerchant::api::enums::producttype::BITCOIN;
       case PrivateMarket:  return com::celertech::marketmerchant::api::enums::producttype::PRIVATE_SHARE;
       default:             return com::celertech::marketmerchant::api::enums::producttype::SPOT;
@@ -200,6 +203,7 @@ com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network
 com::celertech::marketdata::api::enums::producttype::ProductType bs::network::Asset::toCelerMDProductType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return com::celertech::marketdata::api::enums::producttype::SPOT;
+      case Futures:        return com::celertech::marketdata::api::enums::producttype::SPOT;
       case SpotXBT:        return com::celertech::marketdata::api::enums::producttype::BITCOIN;
       case PrivateMarket:  return com::celertech::marketdata::api::enums::producttype::PRIVATE_SHARE;
       default:             return com::celertech::marketdata::api::enums::producttype::SPOT;
@@ -209,6 +213,7 @@ com::celertech::marketdata::api::enums::producttype::ProductType bs::network::As
 const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return "SPOT";
+      case Futures:        return "SPOT";
       case SpotXBT:        return "XBT";
       case PrivateMarket:  return "CC";
       default:       return "";
@@ -218,6 +223,7 @@ const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type a
 const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:   return QT_TR_NOOP("Spot FX");
+      case Futures:  return QT_TR_NOOP("Futures");
       case SpotXBT:  return QT_TR_NOOP("Spot XBT");
       case PrivateMarket:  return QT_TR_NOOP("Private Market");
       default:       return "";
