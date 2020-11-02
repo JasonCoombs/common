@@ -28,6 +28,7 @@ message MDSnapshot
    repeated ProductPriceInfo xbt_products = 2;
    repeated ProductPriceInfo cc_products  = 3;
    int64                     timestamp    = 4;
+   repeated ProductPriceInfo futures      = 5;
 }
 
 enum UpdateType
