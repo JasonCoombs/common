@@ -22,6 +22,7 @@
 #include "CelerSubmitRFQSequence.h"
 #include "CurrencyPair.h"
 #include "FastLock.h"
+#include "FuturesDefinitions.h"
 #include "ProtobufUtils.h"
 
 #include "DownstreamQuoteProto.pb.h"
@@ -649,14 +650,20 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    qrn.quantity = legGroup.qty();
    qrn.product = respgrp.currency();
    qrn.party = respgrp.partyid();
-   qrn.reason = response.reason();
-   qrn.account = response.account();
    qrn.expirationTime = QDateTime::fromMSecsSinceEpoch(response.expiretimeinutcinmillis());
    qrn.celerTimestamp = response.timestampinutcinmillis();
    qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(response.timestampinutcinmillis()).msecsTo(QDateTime::currentDateTime());
 
    qrn.side = bs::network::Side::fromCeler(legGroup.side());
-   qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
+
+   {
+      const auto& definition = bs::network::getFutureDefinition(qrn.security);
+      if (definition.isValid()) {
+         qrn.assetType = bs::network::Asset::Futures;
+      } else {
+         qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
+      }
+   }
 
    switch (response.quotenotificationtype()) {
       case QUOTE_WITHDRAWN:

@@ -58,8 +58,8 @@ bool RFQ::isXbtBuy() const
 QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn, const std::string &_authKey, double price
    , const std::string &txData)
    : authKey(_authKey), reqAuthKey(qrn.requestorAuthPublicKey), settlementId(qrn.settlementId), sessionToken(qrn.sessionToken)
-   , quoteRequestId(qrn.quoteRequestId), security(qrn.security), product(qrn.product), account(qrn.account), transactionData(txData)
-   , assetType(qrn.assetType), validityInS(120)
+   , quoteRequestId(qrn.quoteRequestId), security(qrn.security), product(qrn.product)
+   , transactionData(txData), assetType(qrn.assetType), validityInS(120)
 {
    const auto &baseProduct = security.substr(0, security.find('/'));
    side = bs::network::Side::invert(qrn.side);
@@ -151,15 +151,6 @@ Side::Type Side::invert(Side::Type side) {
    }
 }
 
-bs::network::Asset::Type bs::network::Asset::fromCelerProductType(com::celertech::marketdata::api::enums::producttype::ProductType pt) {
-   switch (pt) {
-      case com::celertech::marketdata::api::enums::producttype::SPOT:           return SpotFX;
-      case com::celertech::marketdata::api::enums::producttype::BITCOIN:        return SpotXBT;
-      case com::celertech::marketdata::api::enums::producttype::PRIVATE_SHARE:  return PrivateMarket;
-      default: return Undefined;
-   }
-}
-
 bs::network::Asset::Type bs::network::Asset::fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt) {
    switch (pt) {
       case com::celertech::marketmerchant::api::enums::producttype::SPOT:           return SpotFX;
@@ -179,17 +170,6 @@ com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::As
    }
 }
 
-com::celertech::marketdata::api::enums::assettype::AssetType bs::network::Asset::toCelerMDAssetType(bs::network::Asset::Type at) {
-   switch (at) {
-      case SpotFX:         return com::celertech::marketdata::api::enums::assettype::FX;
-      case Futures:        return com::celertech::marketdata::api::enums::assettype::FX;
-      case SpotXBT:        // fall through
-      case PrivateMarket:  // fall through
-      default:
-         return com::celertech::marketdata::api::enums::assettype::CRYPTO;
-   }
-}
-
 com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network::Asset::toCelerProductType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:         return com::celertech::marketmerchant::api::enums::producttype::SPOT;
@@ -197,16 +177,6 @@ com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network
       case SpotXBT:        return com::celertech::marketmerchant::api::enums::producttype::BITCOIN;
       case PrivateMarket:  return com::celertech::marketmerchant::api::enums::producttype::PRIVATE_SHARE;
       default:             return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-   }
-}
-
-com::celertech::marketdata::api::enums::producttype::ProductType bs::network::Asset::toCelerMDProductType(bs::network::Asset::Type at) {
-   switch (at) {
-      case SpotFX:         return com::celertech::marketdata::api::enums::producttype::SPOT;
-      case Futures:        return com::celertech::marketdata::api::enums::producttype::SPOT;
-      case SpotXBT:        return com::celertech::marketdata::api::enums::producttype::BITCOIN;
-      case PrivateMarket:  return com::celertech::marketdata::api::enums::producttype::PRIVATE_SHARE;
-      default:             return com::celertech::marketdata::api::enums::producttype::SPOT;
    }
 }
 

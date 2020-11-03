@@ -13,7 +13,6 @@ namespace bs {
       {
          // settlementAssetType - which type will be reported to celer, to
          // trigger specific matching and filling strategy
-
          Asset::Type settlementAssetType;
 
          // displayAssetType what asset type should be used to display data

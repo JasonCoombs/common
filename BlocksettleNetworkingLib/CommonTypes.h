@@ -81,13 +81,9 @@ namespace bs {
             last
          };
 
-         static Type fromCelerProductType(com::celertech::marketdata::api::enums::producttype::ProductType pt);
-
          static Type fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt);
          static com::celertech::marketmerchant::api::enums::assettype::AssetType toCeler(Type at);
-         static com::celertech::marketdata::api::enums::assettype::AssetType toCelerMDAssetType(Type at);
          static com::celertech::marketmerchant::api::enums::producttype::ProductType toCelerProductType(Type at);
-         static com::celertech::marketdata::api::enums::producttype::ProductType toCelerMDProductType(Type at);
          static const char *toCelerSettlementType(Type at);
          static const char *toString(Type at);
       };
@@ -192,8 +188,6 @@ namespace bs {
          std::string requestorAuthPublicKey;
          std::string sessionToken;
          std::string party;
-         std::string reason;
-         std::string account;
          std::string settlementId;
          std::string requestorRecvAddress;
 
@@ -227,7 +221,6 @@ namespace bs {
          std::string quoteRequestId;
          std::string security;
          std::string product;
-         std::string account;
          std::string transactionData;
          std::string receiptAddress;
          Asset::Type assetType;
