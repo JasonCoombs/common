@@ -34,6 +34,7 @@
 
 static const std::string kFutureAlias = "XBT/EUR";
 static const std::string kFutureSecurity = "FUT/EUR";
+static const std::string kFutureXBTProduct = "FUT";
 
 using namespace bs::network;
 using namespace com::celertech::marketmerchant::api::enums::orderstatus;
@@ -217,6 +218,9 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
       }
 
       quote.product = grp.currency();
+      if (quote.product == kFutureXBTProduct) {
+         quote.product = bs::network::XbtCurrency;
+      }
 
       if (quote.quotingType == bs::network::Quote::Tradeable) {
          submittedRFQs_.erase(itRFQ);
@@ -390,6 +394,10 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
       assert(updatedRFQ.security == kFutureAlias);
       updatedRFQ.security = kFutureSecurity;
 
+      if (updatedRFQ.product == bs::network::XbtCurrency) {
+         updatedRFQ.product = kFutureXBTProduct;
+      }
+
       sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), updatedRFQ, logger_, debugTraffic_);
    } else {
       sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
@@ -432,6 +440,11 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
 
       assert(updatedQuote.security == kFutureAlias);
       updatedQuote.security = kFutureSecurity;
+
+      if (updatedQuote.product == bs::network::XbtCurrency) {
+         updatedQuote.product = kFutureXBTProduct;
+      }
+
       sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, updatedQuote, logger_);
    } else {
       sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, logger_);
@@ -518,10 +531,8 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.dealerTransaction = response.dealertransaction();
 
    order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   if (order.security == kFutureSecurity && order.assetType == bs::network::Asset::SpotFX) {
-      order.assetType = bs::network::Asset::Futures;
-      order.security = kFutureAlias;
-   }
+
+   assert(order.assetType != bs::network::Asset::SpotFX);
 
    order.status = mapBtcOrderStatus(response.orderstatus());
    order.pendingStatus = response.info();
@@ -580,6 +591,10 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    if (order.security == kFutureSecurity) {
       order.assetType = bs::network::Asset::Futures;
       order.security = kFutureAlias;
+
+      if (order.product == kFutureXBTProduct) {
+         order.product = bs::network::XbtCurrency;
+      }
    }
 
    order.status = mapFxOrderStatus(response.orderstatus());
@@ -644,6 +659,10 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
 
       assert(updatedQN.security == kFutureAlias);
       updatedQN.security = kFutureSecurity;
+
+      if (updatedQN.product == bs::network::XbtCurrency) {
+         updatedQN.product = kFutureXBTProduct;
+      }
 
       sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), updatedQN, logger_);
    } else {
@@ -714,6 +733,10 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    if (qrn.security == kFutureSecurity && qrn.assetType == bs::network::Asset::SpotFX) {
       qrn.assetType = bs::network::Asset::Futures;
       qrn.security = kFutureAlias;
+
+      if (qrn.product == kFutureXBTProduct) {
+         qrn.product = bs::network::XbtCurrency;
+      }
    }
 
    switch (response.quotenotificationtype()) {
