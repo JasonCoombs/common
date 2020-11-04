@@ -11,7 +11,6 @@
 #include "QuoteProvider.h"
 
 #include "AssetManager.h"
-#include "CelerCancelOrderSequence.h"
 #include "CelerCancelQuoteNotifSequence.h"
 #include "CelerCancelRFQSequence.h"
 #include "CelerClient.h"
@@ -33,7 +32,8 @@
 
 #include <QDateTime>
 
-static const std::string kFutureSecurityDefinition = "XBT/EUR";
+static const std::string kFutureAlias = "XBT/EUR";
+static const std::string kFutureSecurity = "FUT/EUR";
 
 using namespace bs::network;
 using namespace com::celertech::marketmerchant::api::enums::orderstatus;
@@ -125,8 +125,9 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
    quote.side = bs::network::Side::fromCeler(response.side());
 
    quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   if (quote.security == kFutureSecurityDefinition && quote.assetType == bs::network::Asset::SpotFX) {
+   if (quote.security == kFutureSecurity && quote.assetType == bs::network::Asset::SpotFX) {
       quote.assetType = bs::network::Asset::Futures;
+      quote.security = kFutureAlias;
    }
 
    if (quote.assetType == bs::network::Asset::PrivateMarket) {
@@ -381,7 +382,19 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::SubmitRFQ] submitting RFQ with empty account name");
    }
-   auto sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
+   std::shared_ptr<CelerSubmitRFQSequence> sequence;
+
+   if (rfq.assetType == bs::network::Asset::Futures) {
+      auto updatedRFQ = rfq;
+
+      assert(updatedRFQ.security == kFutureAlias);
+      updatedRFQ.security = kFutureSecurity;
+
+      sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), updatedRFQ, logger_, debugTraffic_);
+   } else {
+      sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
+   }
+
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitRFQ] failed to execute CelerSubmitRFQSequence");
    } else {
@@ -395,6 +408,9 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
+
+   assert(quote.assetType != bs::network::Asset::Futures);
+
    auto sequence = std::make_shared<CelerCreateOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, payoutTx, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuote] failed to execute CelerCreateOrderSequence");
@@ -408,7 +424,18 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] accepting FX quote with empty account name");
    }
-   auto sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, logger_);
+
+   std::shared_ptr<CelerCreateFxOrderSequence> sequence;
+
+   if (quote.assetType == bs::network::Asset::Futures) {
+      auto updatedQuote = quote;
+
+      assert(updatedQuote.security == kFutureAlias);
+      updatedQuote.security = kFutureSecurity;
+      sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, updatedQuote, logger_);
+   } else {
+      sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, logger_);
+   }
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] failed to execute CelerCreateFxOrderSequence");
    }
@@ -491,10 +518,10 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.dealerTransaction = response.dealertransaction();
 
    order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   if (order.security == kFutureSecurityDefinition && order.assetType == bs::network::Asset::SpotFX) {
+   if (order.security == kFutureSecurity && order.assetType == bs::network::Asset::SpotFX) {
       order.assetType = bs::network::Asset::Futures;
+      order.security = kFutureAlias;
    }
-
 
    order.status = mapBtcOrderStatus(response.orderstatus());
    order.pendingStatus = response.info();
@@ -549,6 +576,11 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    order.product = response.currency();
    order.side = bs::network::Side::fromCeler(response.side());
    order.assetType = bs::network::Asset::SpotFX;
+
+   if (order.security == kFutureSecurity) {
+      order.assetType = bs::network::Asset::Futures;
+      order.security = kFutureAlias;
+   }
 
    order.status = mapFxOrderStatus(response.orderstatus());
 
@@ -605,7 +637,19 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
       logger_->error("[QuoteProvider::SubmitQuoteNotif] account name not set");
    }
 
-   auto sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), qn, logger_);
+   std::shared_ptr<CelerSubmitQuoteNotifSequence> sequence;
+
+   if (qn.assetType == bs::network::Asset::Futures) {
+      auto updatedQN = qn;
+
+      assert(updatedQN.security == kFutureAlias);
+      updatedQN.security = kFutureSecurity;
+
+      sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), updatedQN, logger_);
+   } else {
+      sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), qn, logger_);
+   }
+
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitQuoteNotif] failed to execute CelerSubmitQuoteNotifSequence");
    } else {
@@ -667,8 +711,9 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    qrn.side = bs::network::Side::fromCeler(legGroup.side());
 
    qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
-   if (qrn.security == kFutureSecurityDefinition && qrn.assetType == bs::network::Asset::SpotFX) {
+   if (qrn.security == kFutureSecurity && qrn.assetType == bs::network::Asset::SpotFX) {
       qrn.assetType = bs::network::Asset::Futures;
+      qrn.security = kFutureAlias;
    }
 
    switch (response.quotenotificationtype()) {

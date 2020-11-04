@@ -113,12 +113,12 @@ private:
    std::string getQuoteRequestCcy(const std::string& id) const;
 
 private:
-   std::shared_ptr<spdlog::logger>  logger_;
-   std::shared_ptr<AssetManager>    assetManager_;
-   std::shared_ptr<BaseCelerClient>     celerClient_;
-   std::unordered_map<std::string, bs::network::RFQ>   submittedRFQs_;
+   std::shared_ptr<spdlog::logger>                    logger_;
+   std::shared_ptr<AssetManager>                      assetManager_;
+   std::shared_ptr<BaseCelerClient>                   celerClient_;
+   std::unordered_map<std::string, bs::network::RFQ>  submittedRFQs_;
 
-   std::unordered_map<std::string, std::string> quoteIdMap_;
+   std::unordered_map<std::string, std::string>                      quoteIdMap_;
    std::unordered_map<std::string, std::unordered_set<std::string>>  quoteIds_;
 
    // key - quoteRequestId
