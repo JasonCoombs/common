@@ -22,7 +22,6 @@
 #include "CelerSubmitRFQSequence.h"
 #include "CurrencyPair.h"
 #include "FastLock.h"
-#include "FuturesDefinitions.h"
 #include "ProtobufUtils.h"
 
 #include "DownstreamQuoteProto.pb.h"
@@ -33,6 +32,8 @@
 #include <chrono>
 
 #include <QDateTime>
+
+static const std::string kFutureSecurityDefinition = "XBT/EUR";
 
 using namespace bs::network;
 using namespace com::celertech::marketmerchant::api::enums::orderstatus;
@@ -121,8 +122,12 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
    quote.quoteId = response.quoteid();
    quote.requestId = response.quoterequestid();
    quote.security = response.securitycode();
-   quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
    quote.side = bs::network::Side::fromCeler(response.side());
+
+   quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
+   if (quote.security == kFutureSecurityDefinition && quote.assetType == bs::network::Asset::SpotFX) {
+      quote.assetType = bs::network::Asset::Futures;
+   }
 
    if (quote.assetType == bs::network::Asset::PrivateMarket) {
       quote.dealerAuthPublicKey = response.dealerreceiptaddress();
@@ -481,10 +486,15 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.price = response.price();
    order.product = response.currency();
    order.side = bs::network::Side::fromCeler(response.side());
-   order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
    order.settlementId = response.settlementid();
    order.reqTransaction = response.requestortransaction();
    order.dealerTransaction = response.dealertransaction();
+
+   order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
+   if (order.security == kFutureSecurityDefinition && order.assetType == bs::network::Asset::SpotFX) {
+      order.assetType = bs::network::Asset::Futures;
+   }
+
 
    order.status = mapBtcOrderStatus(response.orderstatus());
    order.pendingStatus = response.info();
@@ -656,13 +666,9 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
 
    qrn.side = bs::network::Side::fromCeler(legGroup.side());
 
-   {
-      const auto& definition = bs::network::getFutureDefinition(qrn.security);
-      if (definition.isValid()) {
-         qrn.assetType = bs::network::Asset::Futures;
-      } else {
-         qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
-      }
+   qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
+   if (qrn.security == kFutureSecurityDefinition && qrn.assetType == bs::network::Asset::SpotFX) {
+      qrn.assetType = bs::network::Asset::Futures;
    }
 
    switch (response.quotenotificationtype()) {
