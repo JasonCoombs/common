@@ -295,6 +295,9 @@ namespace bs {
 
 
       const std::string XbtCurrency = "XBT";
+      const std::string kFutureAlias = "XBT/EUR";
+      const std::string kFutureSecurity = "FUT/EUR";
+      const std::string kFutureXBTProduct = "FUT";
 
       // fx and xbt
       struct NewTrade
