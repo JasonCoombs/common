@@ -230,7 +230,7 @@ message ArmoryGetOutpointsForAddrListResponse
    }
    repeated OutPoint outpoints = 1;
    uint32 height_cutoff = 2;
-   uint32 zc_index_cutoff = 3;   
+   uint32 zc_index_cutoff = 3;
 }
 
 message ArmoryGetOutputsForOPsRequest
@@ -535,15 +535,16 @@ message GenoaUserRequest
 
 message GenoaOrderData
 {
-   int32  subsystem = 1;
-   double price = 2;
-   string contra_product = 3;
-   double quantity = 4;
-   double contra_quantity = 5;
-   string product = 6;
-   int32  trade_status = 7;
-   uint64 timestamp = 8;
-   string status = 9;
+   int32  subsystem        = 1;
+   double price            = 2;
+   string contra_product   = 3;
+   double quantity         = 4;
+   double contra_quantity  = 5;
+   string product          = 6;
+   int32  trade_status     = 7;
+   uint64 timestamp        = 8;
+   string status           = 9;
+   int32  trade_type       = 10;
 }
 
 message GenoaFindOrdersResponse
