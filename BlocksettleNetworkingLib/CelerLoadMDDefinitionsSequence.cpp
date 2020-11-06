@@ -38,8 +38,6 @@ CelerMessage CelerLoadMDDefinitionsSequence::sendRequest()
    message.messageType = CelerAPI::FindAllSecurityListingsRequestType;
    message.messageData = request.SerializeAsString();
 
-   logger_->debug("[CelerLoadMDDefinitionsSequence::sendRequest] requesting all security definitions");
-
    return message;
 }
 
@@ -57,9 +55,6 @@ bool CelerLoadMDDefinitionsSequence::processResponse(const CelerMessage &message
       logger_->error("[CelerLoadMDDefinitionsSequence::processResponse] failed to parse MultiResponseMessage");
       return false;
    }
-
-   logger_->debug("[CelerLoadMDDefinitionsSequence::processResponse] get {} payloads"
-      , response.payload_size());
 
    for (int i = 0; i < response.payload_size(); i++) {
       const auto& payload = response.payload(i);

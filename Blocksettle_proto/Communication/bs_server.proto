@@ -449,6 +449,7 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+   GenoaRegisterXBT1DayTrade     = 36;
 }
 
 message GenoaConnectedBroadcast
@@ -781,6 +782,8 @@ message GenoaMessage
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
       string                           entity_name                = 37;
+      TradeDataMessage                 xbt1day_trade_request      = 38;
+      GenoaFxTradeResponse             xbt1day_trade_response     = 39;
    }
 }
 
