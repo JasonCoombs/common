@@ -847,11 +847,7 @@ bool hd::Wallet::addPassword(const bs::wallet::PasswordData &pd)
 
 bool hd::Wallet::isPrimary() const
 {
-   if ((getGroup(bs::hd::CoinType::BlockSettle_Auth) != nullptr)
-      && (getGroup(getXBTGroupType()) != nullptr)) {
-      return true;
-   }
-   return false;
+   return getGroup(bs::hd::CoinType::BlockSettle_Settlement) != nullptr;
 }
 
 void hd::Wallet::copyToFile(const std::string &filename)

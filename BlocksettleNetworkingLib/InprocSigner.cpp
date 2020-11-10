@@ -242,7 +242,7 @@ bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet
       logger_->error("[{}] failed to find any associated wallets", __func__);
       return 0;
    }
-   
+
    ArmorySigner::Signer signer(txReq.armorySigner_);
    const auto reqId = seqId_++;
    for (const auto &wallet : wallets) {
@@ -314,11 +314,18 @@ bool InprocSigner::createHDLeaf(const std::string &rootWalletId, const bs::hd::P
    return false;
 }
 
-bool InprocSigner::promoteHDWallet(const std::string &, const BinaryData &
-   , bs::sync::PasswordDialogData , const WalletSignerContainer::PromoteHDWalletCb &)
+bool InprocSigner::enableTradingInHDWallet(const std::string &, const BinaryData &
+   , bs::sync::PasswordDialogData , const WalletSignerContainer::UpdateWalletStructureCB &)
 {
    throw std::bad_function_call();
 }
+
+bool InprocSigner::promoteWalletToPrimary(const std::string&
+      , bs::sync::PasswordDialogData, const UpdateWalletStructureCB&)
+{
+   throw std::bad_function_call();
+}
+
 
 void InprocSigner::createSettlementWallet(const bs::Address &authAddr
    , const std::function<void(const SecureBinaryData &)> &cb)
@@ -405,7 +412,7 @@ bs::signer::RequestId InprocSigner::GetInfo(const std::string &walletId)
 void InprocSigner::syncWalletInfo(const std::function<void(std::vector<bs::sync::WalletInfo>)> &cb)
 {
    std::vector<bs::sync::WalletInfo> result;
-   for (size_t i = 0; i < walletsMgr_->getHDWalletsCount(); ++i) 
+   for (size_t i = 0; i < walletsMgr_->getHDWalletsCount(); ++i)
    {
       const auto hdWallet = walletsMgr_->getHDWallet(i);
       bs::sync::WalletInfo walletInfo;
@@ -439,7 +446,7 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
          groupData.extOnly = group->isExtOnly();
 
          if (groupData.type == bs::hd::CoinType::BlockSettle_Auth) {
-            auto authGroupPtr = 
+            auto authGroupPtr =
                std::dynamic_pointer_cast<bs::core::hd::AuthGroup>(group);
             if (authGroupPtr == nullptr)
                throw std::runtime_error("unexpected group type");
@@ -564,7 +571,7 @@ void InprocSigner::extendAddressChain(
    const std::string &walletId, unsigned count, bool extInt,
    const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &cb)
 {  /***
-   Extend the wallet's account external (extInt == true) or internal 
+   Extend the wallet's account external (extInt == true) or internal
    (extInt == false) chain, return the newly created addresses.
 
    These are not instantiated addresses, but pooled ones. They represent
@@ -606,7 +613,7 @@ void InprocSigner::syncAddressBatch(
       parsedMap = wallet->indexPath(addrSet);
    }
    catch (const AccountException &) {
-      //failure to find even one of the addresses means the wallet chain needs 
+      //failure to find even one of the addresses means the wallet chain needs
       //extended further
       cb(bs::sync::SyncState::Failure);
    }
@@ -646,7 +653,7 @@ void InprocSigner::setSettlementID(const std::string& wltId
    ***/
 
    auto leafPtr = walletsMgr_->getWalletById(wltId);
-   auto settlLeafPtr = 
+   auto settlLeafPtr =
       std::dynamic_pointer_cast<bs::core::hd::SettlementLeaf>(leafPtr);
    if (settlLeafPtr == nullptr) {
       if (cb) {
