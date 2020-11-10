@@ -10,7 +10,11 @@
 */
 #include "WalletsAdapter.h"
 #include <spdlog/spdlog.h>
+#include "CoinSelection.h"
+#include "ProtobufHeadlessUtils.h"
+#include "ScriptRecipient.h"
 #include "SignerClient.h"
+#include "TradesUtils.h"
 #include "UtxoReservation.h"
 #include "Wallets/SyncHDWallet.h"
 #include "WalletUtils.h"
@@ -76,6 +80,12 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
       return true;
    }
    switch (msg.data_case()) {
+   case ArmoryMessage::kStateChanged:
+      topBlock_ = msg.state_changed().top_block();
+      break;
+   case ArmoryMessage::kNewBlock:
+      topBlock_ = msg.new_block().top_block();
+      break;
    case ArmoryMessage::kZcReceived:
       processZCReceived(msg.zc_received());
       break;
@@ -249,6 +259,16 @@ std::shared_ptr<hd::Wallet> WalletsAdapter::getHDRootForLeaf(const std::string &
    return nullptr;
 }
 
+std::shared_ptr<bs::sync::hd::Wallet> WalletsAdapter::getPrimaryWallet() const
+{
+   for (const auto& hdWallet : hdWallets_) {
+      if (hdWallet->isPrimary()) {
+         return hdWallet;
+      }
+   }
+   return nullptr;
+}
+
 void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet)
 {
    if (!wallet) {
@@ -391,13 +411,7 @@ void WalletsAdapter::sendWalletError(const std::string &walletId
 
 void WalletsAdapter::authLeafAdded(const std::string& walletId)
 {
-   std::shared_ptr<bs::sync::hd::Wallet> priWallet;
-   for (const auto& hdWallet : hdWallets_) {
-      if (hdWallet->isPrimary()) {
-         priWallet = hdWallet;
-         break;
-      }
-   }
+   const auto &priWallet = getPrimaryWallet();
    if (!priWallet) {
       logger_->error("[{}] can't find primary wallet", __func__);
       return;
@@ -701,6 +715,9 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return true;
    }
    switch (msg.data_case()) {
+   case WalletsMessage::kSetSettlementFee:
+      settlementFee_ = msg.set_settlement_fee();
+      break;
    case WalletsMessage::kHdWalletGet:
       return processHdWalletGet(env, msg.hd_wallet_get());
    case WalletsMessage::kWalletGet:
@@ -737,6 +754,10 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetReservedUTXOs(env, msg.get_reserved_utxos());
    case WalletsMessage::kUnreserveUtxos:
       return processUnreserveUTXOs(msg.unreserve_utxos());
+   case WalletsMessage::kPayinRequest:
+      return processPayin(env, msg.payin_request());
+   case WalletsMessage::kPayoutRequest:
+      return processPayout(env, msg.payout_request());
    default: break;
    }
    return true;
@@ -1216,6 +1237,13 @@ void WalletsAdapter::processTransactions(uint64_t msgId
       return result;
    };
 
+   const auto& itPayin = payinTXsCbMap_.find(msgId);
+   if (itPayin != payinTXsCbMap_.end()) {
+      itPayin->second(convertTXs());
+      payinTXsCbMap_.erase(itPayin);
+      return;
+   }
+
    auto itId = initialHashes_.find(msgId);
    if (itId != initialHashes_.end()) {
       auto data = itId->second;
@@ -1682,13 +1710,7 @@ bool WalletsAdapter::processAuthKey(const bs::message::Envelope& env
          , msg.SerializeAsString() };
       pushFill(envResp);
    };
-   std::shared_ptr<bs::sync::hd::Wallet> priWallet;
-   for (const auto& hdWallet : hdWallets_) {
-      if (hdWallet->isPrimary()) {
-         priWallet = hdWallet;
-         break;
-      }
-   }
+   const auto &priWallet = getPrimaryWallet();
    if (!priWallet) {
       cbPubKey({});
       return true;
@@ -1739,6 +1761,8 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
          utxo.unserialize(BinaryData::fromString(utxoSer));
          utxos.push_back(std::move(utxo));
       }
+      logger_->debug("[{}] reserved {} UTXOs for {}/{}", __func__, utxos.size()
+         , request.id(), request.sub_id());
       utxoResMgr_->reserve(request.id(), utxos, request.sub_id());
       sendResponse(utxos);
    }
@@ -1770,7 +1794,15 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
          auto utxosCopy = utxos;
          decltype(utxosCopy) filteredUTXOs, foo;
          utxoResMgr_->filter(utxosCopy, foo);
-         filteredUTXOs = bs::selectUtxoForAmount(std::move(utxosCopy), request.amount());
+         const uint64_t amount = request.amount() + settlementFee_ * 230;  //FIXME: not sure if this is the right place to add fee
+         filteredUTXOs = bs::selectUtxoForAmount(std::move(utxosCopy), amount);
+         uint64_t utxoAmount = 0;
+         for (const auto& utxo : filteredUTXOs) {
+            utxoAmount += utxo.getValue();
+         }
+         logger_->debug("[WalletsAdapter::processReserveUTXOs] reserved {} UTXOs"
+            " {} amount={} ({}) for {}/{}", filteredUTXOs.size(), utxoAmount
+            , amount, request.amount(), request.id(), request.sub_id());
          utxoResMgr_->reserve(request.id(), filteredUTXOs, request.sub_id());
          sendResponse(filteredUTXOs);
       };
@@ -1804,5 +1836,309 @@ bool WalletsAdapter::processGetReservedUTXOs(const bs::message::Envelope& env
 bool WalletsAdapter::processUnreserveUTXOs(const WalletsMessage_ReservationKey& request)
 {
    utxoResMgr_->unreserve(request.id(), request.sub_id());
+   return true;
+}
+
+bool WalletsAdapter::processPayin(const bs::message::Envelope& env
+   , const WalletsMessage_PayinRequest& request)
+{
+   const auto& sendResponse = [this, env](const bs::Address &settlementAddr
+      , const bs::core::wallet::TXSignRequest &txReq, const std::string& errorMsg = {})
+   {
+      logger_->debug("[WalletsAdapter::processPayin::sendResponse] {} {}"
+         , settlementAddr.display(), errorMsg);
+      WalletsMessage msg;
+      auto msgResp = msg.mutable_xbt_tx_response();
+      if (!settlementAddr.empty()) {
+         msgResp->set_settlement_address(settlementAddr.display());
+      }
+      if (txReq.isValid()) {
+         *msgResp->mutable_tx_request() = bs::signer::coreTxRequestToPb(txReq);
+      }
+      if (!errorMsg.empty()) {
+         msgResp->set_error_text(errorMsg);
+      }
+      Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+   const auto& inputs = utxoResMgr_->get(request.reserve_id());
+   if (inputs.empty() || !settlementFee_) {
+      logger_->warn("[{}] inputs: {}, settlement fee: {}", __func__, inputs.size()
+         , settlementFee_);
+      sendResponse({}, {}, "no inputs reserved");
+      return true;
+   }
+   uint64_t inputAmount = 0;
+   for (const auto& input : inputs) {
+      inputAmount += input.getValue();
+   }
+   if (inputAmount < request.amount()) {
+      sendResponse({}, {}, fmt::format("invalid inputs amount: {} < {}"
+         , inputAmount, request.amount()));
+      return true;
+   }
+   auto walletIds = utxoResMgr_->getSubIds(request.reserve_id());
+   if (walletIds.empty() || walletIds[0].empty()) {
+      for (const auto& input : inputs) {
+         const auto& inputAddr = bs::Address::fromUTXO(input);
+         const auto& wallet = getWalletByAddress(inputAddr);
+         if (wallet) {
+            walletIds.push_back(wallet->walletId());
+            break;
+         }
+      }
+   }
+   const auto& priWallet = getPrimaryWallet();
+   if (!priWallet) {
+      sendResponse({}, {}, "no primary wallet");
+      return true;
+   }
+   const auto group = std::dynamic_pointer_cast<bs::sync::hd::SettlementGroup>(
+      priWallet->getGroup(bs::hd::BlockSettle_Settlement));
+   if (!group) {
+      sendResponse({}, {}, "no settlement group in primary wallet");
+      return true;
+   }
+   bs::Address ownAuthAddr;
+   try {
+      ownAuthAddr = bs::Address::fromAddressString(request.own_auth_address());
+   }
+   catch (const std::exception&) {
+      sendResponse({}, {}, "invalid own auth address");
+      return true;
+   }
+   const auto &settlLeaf = group->getLeaf(ownAuthAddr);
+   if (!settlLeaf) {
+      sendResponse({}, {}, fmt::format("no settlement leaf for address {}"
+         , ownAuthAddr.display()));
+      return true;
+   }
+   const auto& settlementId = SecureBinaryData::fromString(request.settlement_id());
+   settlLeaf->setSettlementID(settlementId
+      , [this, sendResponse, priWallet, request, settlementId, inputs, walletIds](bool result) {
+      if (!result) {
+         sendResponse({}, {}, "failed to set settlement id");
+         return;
+      }
+      auto cbSettlAddr = [this, sendResponse, inputs, request, walletIds]
+         (const bs::Address& settlAddr)
+      {
+         if (settlAddr.empty()) {
+            sendResponse({}, {}, "invalid settlement address");
+            return;
+         }
+         auto utxos = bs::Address::decorateUTXOsCopy(inputs);
+         std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>> recipientsMap;
+         std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> recVec({
+            settlAddr.getRecipient(bs::XBTAmount{request.amount()}) });
+         recipientsMap.emplace(0, recVec);
+         const auto &payment = PaymentStruct(recipientsMap, 0, settlementFee_, 0);
+         const auto& coinSelection = CoinSelection(nullptr, {}, request.amount(), topBlock_);
+         uint64_t utxoAmount = 0;
+         for (const auto& utxo : utxos) {
+            utxoAmount += utxo.getValue();
+         }
+         logger_->debug("[WalletsAdapter::processPayin] UTXOs have {} for amount {}"
+            , utxoAmount, request.amount());
+
+         try { // since we always use reservation, all supplied inputs should be used
+            UtxoSelection selection;
+            selection = UtxoSelection(utxos);
+            selection.fee_byte_ = settlementFee_;
+            selection.computeSizeAndFee(payment);
+            auto selectedInputs = selection.utxoVec_;
+            auto fee = selection.fee_;
+            bool needChange = true;
+
+            uint64_t inputAmount = 0;
+            for (const auto& utxo : selectedInputs) {
+               inputAmount += utxo.getValue();
+            }
+            const int64_t changeAmount = inputAmount - request.amount() - fee;
+            if (changeAmount < 0) {
+               throw std::runtime_error("negative change amount");
+            }
+            if (changeAmount <= bs::Address::getNativeSegwitDustAmount()) {
+               needChange = false;
+               fee += changeAmount;
+            }
+
+            std::vector<std::shared_ptr<bs::sync::Wallet>> inputXbtWallets;
+            for (const auto& walletId : walletIds) {
+               const auto& wallet = getWalletById(walletId);
+               if (wallet) {
+                  inputXbtWallets.push_back(wallet);
+               }
+               else {
+                  const auto& hdWallet = getHDWalletById(walletId);
+                  if (!hdWallet) {
+                     logger_->warn("[WalletsAdapter::processPayin] failed to find "
+                        "wallet {}", walletId);
+                     sendResponse({}, {}, "invalid input wallets");
+                     return;
+                  }
+                  const auto& xbtGroup = hdWallet->getGroup(hdWallet->getXBTGroupType());
+                  const auto& xbtLeaves = xbtGroup->getAllLeaves();
+                  inputXbtWallets.insert(inputXbtWallets.cend(), xbtLeaves.cbegin()
+                     , xbtLeaves.cend());
+               }
+            }
+            const auto& xbtWallet = inputXbtWallets[0];
+
+            const auto& changeCb = [this, sendResponse, selectedInputs, fee
+               , settlAddr, recVec, inputXbtWallets, xbtWallet]
+               (const bs::Address& changeAddr)
+            {
+               auto txReq = std::make_shared<bs::core::wallet::TXSignRequest>(
+                  bs::sync::wallet::createTXRequest(inputXbtWallets, selectedInputs
+                     , recVec, false, changeAddr, fee, false));
+
+               const auto& cbResolvePubData = [this, settlAddr, sendResponse, txReq
+                  , xbtWallet, changeAddr]
+                  (bs::error::ErrorCode errCode, const Codec_SignerState::SignerState& state)
+               {
+                  try {
+                     txReq->armorySigner_.merge(state);
+                     if (!changeAddr.empty()) {
+                        xbtWallet->setAddressComment(changeAddr
+                           , bs::sync::wallet::Comment::toString(bs::sync::wallet::Comment::ChangeAddress));
+                     }
+                  } catch (const std::exception& e) {
+                     sendResponse(settlAddr, {}, "signer merge failed");
+                     return;
+                  }
+
+                  const auto &cbTXs = [sendResponse, txReq, settlAddr]
+                     (const std::vector<Tx> &txs)
+                  {
+                     for (const auto& tx : txs) {
+                        txReq->armorySigner_.addSupportingTx(tx);
+                     }
+                     if (!txReq->isValid()) {
+                        sendResponse(settlAddr, {}, "invalid pay-in transaction");
+                        return;
+                     }
+                     sendResponse(settlAddr, *txReq);
+                  };
+                  ArmoryMessage msg;
+                  auto msgReq = msg.mutable_get_txs_by_hash();
+                  for (unsigned i = 0; i < txReq->armorySigner_.getTxInCount(); i++) {
+                     auto spender = txReq->armorySigner_.getSpender(i);
+                     msgReq->add_tx_hashes(spender->getOutputHash().toBinStr());
+                  }
+                  Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}
+                     , msg.SerializeAsString(), true };
+                  if (pushFill(envReq)) {
+                     payinTXsCbMap_[envReq.id] = cbTXs;
+                  }
+               };
+               //resolve in all circumstances
+               signerClient_->resolvePublicSpenders(*txReq, cbResolvePubData);
+            };
+
+            if (needChange) {
+               xbtWallet->getNewIntAddress(changeCb);
+            } else {
+               changeCb({});
+            }
+         } catch (const std::exception& e) {
+            sendResponse(settlAddr, {}, fmt::format("internal error: {}", e.what()));
+            return;
+         }
+      };
+      const auto& counterPubKey = SecureBinaryData::fromString(request.counter_auth_pubkey());
+      const bool myKeyFirst = false;
+      priWallet->getSettlementPayinAddress(settlementId, counterPubKey, cbSettlAddr
+         , myKeyFirst);
+   });
+   return true;
+}
+
+bool WalletsAdapter::processPayout(const bs::message::Envelope& env
+   , const WalletsMessage_PayoutRequest& request)
+{
+   const auto& sendResponse = [this, env](const bs::Address& settlementAddr
+      , const bs::core::wallet::TXSignRequest& txReq, const std::string& errorMsg = {})
+   {
+      WalletsMessage msg;
+      auto msgResp = msg.mutable_xbt_tx_response();
+      if (!settlementAddr.empty()) {
+         msgResp->set_settlement_address(settlementAddr.display());
+      }
+      if (txReq.isValid()) {
+         *msgResp->mutable_tx_request() = bs::signer::coreTxRequestToPb(txReq);
+      }
+      if (!errorMsg.empty()) {
+         msgResp->set_error_text(errorMsg);
+      }
+      Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+
+   const auto& priWallet = getPrimaryWallet();
+   if (!priWallet) {
+      sendResponse({}, {}, "no primary wallet");
+      return true;
+   }
+   const auto group = std::dynamic_pointer_cast<bs::sync::hd::SettlementGroup>(
+      priWallet->getGroup(bs::hd::BlockSettle_Settlement));
+   if (!group) {
+      sendResponse({}, {}, "no settlement group in primary wallet");
+      return true;
+   }
+   bs::Address ownAuthAddr;
+   try {
+      ownAuthAddr = bs::Address::fromAddressString(request.own_auth_address());
+   } catch (const std::exception&) {
+      sendResponse({}, {}, "invalid own auth address");
+      return true;
+   }
+   const auto& settlLeaf = group->getLeaf(ownAuthAddr);
+   if (!settlLeaf) {
+      sendResponse({}, {}, fmt::format("no settlement leaf for address {}"
+         , ownAuthAddr.display()));
+      return true;
+   }
+
+   const auto& settlementId = BinaryData::fromString(request.settlement_id());
+   bs::Address recvAddr;
+   if (!request.recv_address().empty()) {
+      try {
+         recvAddr = bs::Address::fromAddressString(request.recv_address());
+      } catch (const std::exception&) {
+         logger_->error("[{}] invalid recv address", __func__);
+         return true;
+      }
+   }
+   if (recvAddr.empty()) {
+      sendResponse({}, {}, "no receiving address");
+      return true;
+   }
+
+   settlLeaf->setSettlementID(settlementId
+      , [this, sendResponse, priWallet, request, settlementId, recvAddr](bool result) {
+      if (!result) {
+         sendResponse({}, {}, "failed to set settlement id");
+         return;
+      }
+      const auto &cbSettlAddr = [this, sendResponse, request, recvAddr]
+         (const bs::Address& settlAddr)
+      {
+         if (settlAddr.empty()) {
+            sendResponse({}, {}, "invalid settlement address");
+            return;
+         }
+
+         const auto& payinTxHash = BinaryData::fromString(request.payin_hash());
+         auto payinUTXO = bs::tradeutils::getInputFromTX(settlAddr, payinTxHash
+            , 0, bs::XBTAmount{ request.amount() });
+
+         const auto &txReq = bs::tradeutils::createPayoutTXRequest(
+            payinUTXO, recvAddr, settlementFee_, topBlock_);
+         sendResponse(settlAddr, txReq);
+      };
+      const auto& cpAuthPubKey = BinaryData::fromString(request.counter_auth_pubkey());
+      priWallet->getSettlementPayinAddress(settlementId, cpAuthPubKey, cbSettlAddr);
+   });
    return true;
 }

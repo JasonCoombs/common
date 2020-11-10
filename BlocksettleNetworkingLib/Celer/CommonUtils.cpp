@@ -111,3 +111,14 @@ bs::network::Order::Status bs::celer::mapFxOrderStatus(com::celertech::marketmer
    default:       return Order::Pending;
    }
 }
+
+bs::network::Order::Status bs::celer::mapBtcOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status)
+{
+   switch (status) {
+   case com::celertech::marketmerchant::api::enums::orderstatus::FILLED:   return Order::Filled;
+   case com::celertech::marketmerchant::api::enums::orderstatus::REJECTED: return Order::Failed;
+   case com::celertech::marketmerchant::api::enums::orderstatus::PENDING_NEW: return Order::Pending;
+   case com::celertech::marketmerchant::api::enums::orderstatus::NEW:      return Order::New;
+   default:       return Order::Pending;
+   }
+}

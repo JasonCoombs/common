@@ -364,6 +364,26 @@ message BsServerMessage
       repeated Order orders = 1;
    }
 
+   message SignXbtHalf
+   {
+      bytes  settlement_id = 1;
+      bytes  unsigned_payin = 2;
+      bytes  payin_hash = 3;
+      uint64 timestamp = 4;
+   }
+
+   message SignedXbtHalf
+   {
+      bytes settlement_id = 1;
+      bytes signed_tx = 2;
+   }
+
+   message XbtTransaction
+   {
+      bytes settlement_id = 1;
+      bytes tx = 2;
+   }
+
    oneof data
    {
       Empty            open_connection = 1;
@@ -386,6 +406,12 @@ message BsServerMessage
       Balance          balance_updated = 19;
       bool             trading_enabled = 20;
       Orders           orders_update = 21;
+      bytes            unsigned_payin_requested = 22;	// settlementId
+      SignXbtHalf      signed_payout_requested = 23;
+      SignXbtHalf      signed_payin_requested = 24;
+      XbtTransaction   send_unsigned_payin = 25;
+      XbtTransaction   send_signed_payin = 26;
+      XbtTransaction   send_signed_payout = 27;
    }
 }
 
@@ -466,7 +492,7 @@ message MatchingMessage
       uint64 timestamp = 4;
       string security = 5;
       string product = 6;
-      string settlement_id = 7;
+      bytes  settlement_id = 7;
       string requester_tx = 8;
       string dealer_tx = 9;
       string pending_status = 10;
@@ -515,22 +541,36 @@ message SettlementMessage
       double price = 3;
    }
 
-   message FailedQuote
+   message FailedSettlement
    {
       string rfq_id = 1;
       string quote_id = 2;
-      string info = 3;
+      string order_id = 3;
+      bytes settlement_id = 4;
+      string info = 5;
+   }
+
+   message SettlementIds
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      bytes  settlement_id = 3;
    }
 
    oneof data
    {
-      SendRFQ      send_rfq = 1;
-      string       rfq_timeout = 2;	// rfq_id
-      string       cancel_rfq = 3;	// rfq_id
-      AcceptRFQ    accept_rfq = 4;
-      Quote        quote = 5;
-      MatchedQuote matched_quote = 6;
-      FailedQuote  failed_quote = 7;
+      SendRFQ           send_rfq = 1;
+      string            rfq_timeout = 2;	// rfq_id
+      string            cancel_rfq = 3;		// rfq_id
+      AcceptRFQ         accept_rfq = 4;
+      Quote             quote = 5;
+      MatchedQuote      matched_quote = 6;
+      FailedSettlement  failed_settlement = 7;
+      SettlementIds     pending_settlement = 8;
+      bytes             handshake_timeout = 9;
+      bytes             settlement_timeout = 10;
+      bytes             settlement_cancelled = 11;
+      SettlementIds     settlement_complete = 12;
    }
 }
 

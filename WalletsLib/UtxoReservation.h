@@ -44,6 +44,7 @@ namespace bs {
       // Get the UTXOs based on the reservation ID.
       [[nodiscard]] std::vector<UTXO> get(const std::string &reserveId
          , const std::string& subId = {}) const;
+      [[nodiscard]] std::vector<std::string> getSubIds(const std::string &reserveId);
 
       // Pass in a vector of UTXOs. If any of the UTXOs are in the wallet ID
       // being queried, remove the UTXOs from the vector.

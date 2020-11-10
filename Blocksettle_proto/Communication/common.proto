@@ -13,6 +13,7 @@ syntax = "proto3";
 // Messages common between systems (e.g. terminal and PB)
 package BlockSettle.Common;
 
+import "Blocksettle_Communication_Internal.proto";
 import "headless.proto";
 
 
@@ -483,7 +484,7 @@ message SignerMessage
 
    message SignTxResponse
    {
-      string id = 1;
+      bytes  id = 1;
       bytes  signed_tx = 2;
       int32  error_code = 3;
       string error_text = 4;
@@ -495,6 +496,35 @@ message SignerMessage
       bytes  user_id = 2;
    }
 
+   message SignSettlementTx
+   {
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 1;
+      bytes  settlement_id = 2;
+      bytes  contra_auth_pubkey = 3;
+      bool   own_key_first = 4;
+      Blocksettle.Communication.Internal.PasswordDialogData details = 5;
+   }
+
+   message AddressResult
+   {
+      bool   success = 1;
+      string address = 2;
+   }
+
+   message GetSettlPayinAddr
+   {
+      string wallet_id = 1;
+      bytes  settlement_id = 2;
+      bytes  contra_auth_pubkey = 3;
+      bool   own_key_first = 4;
+   }
+
+   message SignerState
+   {
+      int32 result = 1;
+      bytes signer_state = 2;
+   }
+   
    oneof data
    {
       NewKeyCompare      new_key_request  = 1;
@@ -531,6 +561,11 @@ message SignerMessage
       SetUserId          set_user_id = 32;
       string             create_settl_wallet = 33;
       bytes              auth_pubkey = 34;
+      SignSettlementTx   sign_settlement_tx = 35;
+      GetSettlPayinAddr  get_settl_payin_addr = 36;
+      AddressResult      payin_address = 37;
+      Blocksettle.Communication.headless.SignTxRequest resolve_pub_spenders = 38;
+      SignerState        resolved_spenders = 39;
    }
 }
 
@@ -711,6 +746,34 @@ message WalletsMessage
       string sub_id = 2;
    }
 
+   message PayinRequest
+   {
+      string own_auth_address = 1;
+      string counter_auth_address = 2;
+      bytes  counter_auth_pubkey = 3;
+      bytes  settlement_id = 4;
+      string reserve_id = 5;
+      uint64 amount = 6;
+   }
+
+   message XbtTxResponse
+   {
+      string settlement_address = 1;
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 2;
+      string error_text = 3;
+   }
+
+   message PayoutRequest
+   {
+      string own_auth_address = 1;
+      bytes  settlement_id = 2;
+      bytes  counter_auth_pubkey = 3;
+      bytes  payin_hash = 4;
+      uint64 amount = 5;
+      string wallet_id = 6;
+      string recv_address = 7;
+   }
+
    oneof data
    {
       Loading             loading = 1;
@@ -747,13 +810,17 @@ message WalletsMessage
       UtxoListRequest     get_utxos = 32;
       UtxoListResponse    utxos = 33;
       string              set_user_id = 34;
-      WalletData          auth_wallet = 35;
-      string              get_auth_key = 36;
-      AuthKey             auth_key = 37;
-      ReserveUTXOs        reserve_utxos = 38;
-      ReservedUTXOs       reserved_utxos = 39;
-      ReservationKey      get_reserved_utxos = 40;
-      ReservationKey      unreserve_utxos = 41;
+      float               set_settlement_fee = 35;
+      WalletData          auth_wallet = 36;
+      string              get_auth_key = 37;
+      AuthKey             auth_key = 38;
+      ReserveUTXOs        reserve_utxos = 39;
+      ReservedUTXOs       reserved_utxos = 40;
+      ReservationKey      get_reserved_utxos = 41;
+      ReservationKey      unreserve_utxos = 42;
+      PayinRequest        payin_request = 43;
+      PayoutRequest       payout_request = 44;
+      XbtTxResponse       xbt_tx_response = 45;
    }
 }
 

@@ -136,7 +136,7 @@ namespace bs {
          QDateTime dateTime;
          std::string security;
          std::string product;
-         std::string settlementId;
+         BinaryData  settlementId;
          std::string reqTransaction;
          std::string dealerTransaction;
          std::string pendingStatus;

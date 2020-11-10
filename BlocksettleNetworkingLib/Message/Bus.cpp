@@ -246,8 +246,8 @@ void Queue_Locking::process()
                // on processing failed, as it's hard to signify the failure: if all adapters return false, or only one.
                // Also semantically broadcasts are not supposed to be re-queued
                for (const auto &adapter : adapters) {
-                  adapter->process(env);
-                  if (accounting_) {
+                  const bool processed = adapter->process(env);
+                  if (accounting_ && processed) {
                      const auto& timeNow = std::chrono::system_clock::now();
                      acc.add(static_cast<int>((*adapter->supportedReceivers().cbegin())->value() + 0x1000)
                         , std::chrono::duration_cast<std::chrono::microseconds>(timeNow - procStart));

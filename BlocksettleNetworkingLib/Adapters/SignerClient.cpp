@@ -10,6 +10,7 @@
 */
 #include "SignerClient.h"
 #include <spdlog/spdlog.h>
+#include "ProtobufHeadlessUtils.h"
 #include "Message/Bus.h"
 #include "Message/Envelope.h"
 
@@ -83,6 +84,10 @@ bool SignerClient::process(const Envelope &env)
       return processAuthPubkey(env.id, msg.auth_pubkey());
    case SignerMessage::kWindowVisibleChanged:
       break;
+   case SignerMessage::kPayinAddress:
+      return processAddressResult(env.id, msg.payin_address());
+   case SignerMessage::kResolvedSpenders:
+      return processSignerState(env.id, msg.resolved_spenders());
    default:
       logger_->debug("[{}] unknown signer message {}", __func__, msg.data_case());
       break;
@@ -256,6 +261,44 @@ bool SignerClient::processAuthPubkey(uint64_t msgId, const std::string& pubKey)
    return true;
 }
 
+bool SignerClient::processAddressResult(uint64_t msgId, const SignerMessage_AddressResult& response)
+{
+   const auto &it = payinAddrMap_.find(msgId);
+   if (it == payinAddrMap_.end()) {
+      logger_->warn("[{}] no mapping for msg #{}, yet", __func__, msgId);
+      return false;
+   }
+   bs::Address settlementAddr;
+   try {
+      settlementAddr = bs::Address::fromAddressString(response.address());
+   }
+   catch (const std::exception&) {
+      logger_->error("[{}] invalid settlement address {}", response.address());
+      return true;
+   }
+   it->second(response.success(), settlementAddr);
+   payinAddrMap_.erase(it);
+   return true;
+}
+
+bool SignerClient::processSignerState(uint64_t msgId
+   , const SignerMessage_SignerState& response)
+{
+   const auto& it = signerStateCbMap_.find(msgId);
+   if (it == signerStateCbMap_.end()) {
+      logger_->warn("[{}] no mapping for msg #{}, yet", __func__, msgId);
+      return false;
+   }
+   Codec_SignerState::SignerState state;
+   if (!state.ParseFromString(response.signer_state())) {
+      logger_->error("[{}] failed to parse signer state", __func__);
+      return true;
+   }
+   it->second(static_cast<bs::error::ErrorCode>(response.result()), state);
+   signerStateCbMap_.erase(it);
+   return true;
+}
+
 void SignerClient::syncWalletInfo(const std::function<void(std::vector<bs::sync::WalletInfo>)> &cb)
 {
    SignerMessage msg;
@@ -277,6 +320,17 @@ void SignerClient::syncAddressBatch(const std::string &walletId,
    Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
    queue_->pushFill(env);
    reqSyncAddrMap_[env.id] = { walletId, std::move(cb) };
+}
+
+bs::signer::RequestId SignerClient::resolvePublicSpenders(const bs::core::wallet::TXSignRequest& txReq
+   , const SignerStateCb& cb)
+{
+   SignerMessage msg;
+   *msg.mutable_resolve_pub_spenders() = bs::signer::coreTxRequestToPb(txReq);
+   Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
+   queue_->pushFill(env);
+   signerStateCbMap_[env.id] = cb;
+   return env.id;
 }
 
 bs::signer::RequestId SignerClient::setUserId(const BinaryData& userId
@@ -393,6 +447,20 @@ void SignerClient::setSettlementID(const std::string &walletId, const SecureBina
    Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
    queue_->pushFill(env);
    reqSettlIdMap_[env.id] = cb;
+}
+
+void SignerClient::getSettlementPayinAddress(const std::string& walletID
+   , const bs::core::wallet::SettlementData& sd, const std::function<void(bool, bs::Address)>& cb)
+{
+   SignerMessage msg;
+   auto msgReq = msg.mutable_get_settl_payin_addr();
+   msgReq->set_wallet_id(walletID);
+   msgReq->set_settlement_id(sd.settlementId.toBinStr());
+   msgReq->set_contra_auth_pubkey(sd.cpPublicKey.toBinStr());
+   msgReq->set_own_key_first(sd.ownKeyFirst);
+   Envelope env{ 0, clientUser_, signerUser_, {}, {}, msg.SerializeAsString(), true };
+   queue_->pushFill(env);
+   payinAddrMap_[env.id] = cb;
 }
 
 void SignerClient::getRootPubkey(const std::string &walletID

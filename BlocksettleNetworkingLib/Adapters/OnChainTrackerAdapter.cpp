@@ -189,12 +189,15 @@ void OnChainTrackerAdapter::connectAuthVerificator()
 void OnChainTrackerAdapter::authAddressVerification()
 {
    if (!authVerificator_ || !authOnline_ || userAddresses_.empty()) {
+      logger_->warn("[{}] not ready: {} {} {}", (authVerificator_ != nullptr)
+         , authOnline_, userAddresses_.empty());
       return;
    }
 
    const auto& cbOPs = [this](const OutpointBatch& batch)
    {
       if (authVerificator_->update(batch) == UINT32_MAX) {
+         logger_->warn("[OnChainTrackerAdapter::authAddressVerification] update failed");
          return;
       }
       for (const auto& addr : userAddresses_) {

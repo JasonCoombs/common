@@ -38,6 +38,7 @@ namespace bs {
 
       bs::network::MDField::Type fromCeler(com::celertech::marketdata::api::enums::marketdataentrytype::MarketDataEntryType);
 
+      bs::network::Order::Status mapBtcOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status);
       bs::network::Order::Status mapFxOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status);
 
    }  //namespace celer

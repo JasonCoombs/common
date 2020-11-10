@@ -29,6 +29,8 @@ namespace BlockSettle {
       class ArmoryMessage_WalletBalanceResponse;
       class ArmoryMessage_ZCReceived;
       class WalletsMessage_AddressComments;
+      class WalletsMessage_PayinRequest;
+      class WalletsMessage_PayoutRequest;
       class WalletsMessage_ReserveUTXOs;
       class WalletsMessage_ReservationKey;
       class WalletsMessage_TXComment;
@@ -98,6 +100,7 @@ private:
    std::shared_ptr<bs::sync::Wallet> getWalletByAddress(const bs::Address &) const;
    std::shared_ptr<bs::sync::hd::Group> getGroupByWalletId(const std::string &) const;
    std::shared_ptr<bs::sync::hd::Wallet> getHDRootForLeaf(const std::string &walletId) const;
+   std::shared_ptr<bs::sync::hd::Wallet> getPrimaryWallet() const;
    void eraseWallet(const std::shared_ptr<bs::sync::Wallet> &);
 
    void addWallet(const std::shared_ptr<bs::sync::Wallet> &);
@@ -152,13 +155,20 @@ private:
       , const BlockSettle::Common::WalletsMessage_ReservationKey&);
    bool processUnreserveUTXOs(const BlockSettle::Common::WalletsMessage_ReservationKey&);
 
+   bool processPayin(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_PayinRequest&);
+   bool processPayout(const bs::message::Envelope&
+      , const BlockSettle::Common::WalletsMessage_PayoutRequest&);
+
 private:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<bs::message::User>     ownUser_, blockchainUser_;
    std::unique_ptr<SignerClient>          signerClient_;
    std::shared_ptr<bs::UtxoReservation>   utxoResMgr_;
 
-   BinaryData                          userId_;
+   BinaryData  userId_;
+   uint32_t    topBlock_{ 0 };
+   float       settlementFee_{ 0 };
    std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_;
    std::unordered_map<std::string, std::shared_ptr<bs::sync::Wallet>>   wallets_;
    std::unordered_map<std::string, std::unordered_set<std::string>>  pendingRegistrations_;
@@ -222,7 +232,8 @@ private:
    };
    std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoSpendableReqs_;
    std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoZcReqs_;
-   std::map<uint64_t, std::function<void(const std::vector<UTXO>&)>> utxoReserveReqs_;
+   std::map<uint64_t, std::function<void(const std::vector<UTXO>&)>>    utxoReserveReqs_;
+   std::map<uint64_t, std::function<void(const std::vector<Tx>& txs)>>  payinTXsCbMap_;
 };
 
 

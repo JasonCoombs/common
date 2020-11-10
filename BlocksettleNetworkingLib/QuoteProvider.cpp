@@ -485,7 +485,7 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.product = response.currency();
    order.side = bs::celer::fromCeler(response.side());
    order.assetType = bs::celer::fromCelerProductType(response.producttype());
-   order.settlementId = response.settlementid();
+   order.settlementId = BinaryData::fromString(response.settlementid());   // hex data passed as is here for compatibility with the old code
    order.reqTransaction = response.requestortransaction();
    order.dealerTransaction = response.dealertransaction();
 
@@ -791,7 +791,7 @@ void QuoteProvider::CleanupXBTOrder(const bs::network::Order& order)
 {
    logger_->debug("[QuoteProvider::CleanupXBTOrder] complete quote: {}", order.quoteId);
 
-   eraseSubmittedXBTQuoteNotification(order.settlementId);
+   eraseSubmittedXBTQuoteNotification(order.settlementId.toBinStr());
 }
 
 void QuoteProvider::saveQuoteReqId(const std::string &quoteReqId, const std::string &quoteId)

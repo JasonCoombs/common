@@ -27,7 +27,9 @@ namespace bs {
 namespace BlockSettle {
    namespace Common {
       class HDWalletData;
+      class SignerMessage_AddressResult;
       class SignerMessage_NewAddressesSynced;
+      class SignerMessage_SignerState;
       class SignerMessage_SyncAddrResult;
       class SignerMessage_WalletData;
       class SignerMessage_WalletsInfo;
@@ -68,8 +70,8 @@ public:
    bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
       , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override { return 0; }
 
-   bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
-      , const SignerStateCb &cb) override { return 0; }
+   bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest&
+      , const SignerStateCb& cb) override;
 
    bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) override { return 0; }
 
@@ -115,9 +117,9 @@ public:
       , const std::function<void(const SecureBinaryData&)>&) override;
    void setSettlementID(const std::string &walletId, const SecureBinaryData &id
       , const std::function<void(bool)> &) override;
-   void getSettlementPayinAddress(const std::string &walletID
-      , const bs::core::wallet::SettlementData &
-      , const std::function<void(bool, bs::Address)> &) override {}
+   void getSettlementPayinAddress(const std::string& walletID
+      , const bs::core::wallet::SettlementData&
+      , const std::function<void(bool, bs::Address)>&) override;
    void getRootPubkey(const std::string &walletID
       , const std::function<void(bool, const SecureBinaryData &)> &) override;
 
@@ -152,6 +154,8 @@ private:
    bool processSetSettlId(uint64_t msgId, bool);
    bool processRootPubKey(uint64_t msgId, const BlockSettle::Common::SignerMessage_RootPubKey &);
    bool processAuthPubkey(uint64_t msgId, const std::string&);
+   bool processAddressResult(uint64_t msgId, const BlockSettle::Common::SignerMessage_AddressResult&);
+   bool processSignerState(uint64_t msgId, const BlockSettle::Common::SignerMessage_SignerState&);
 
 private:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -173,6 +177,8 @@ private:
    std::map<uint64_t, std::function<void(bool)>>                  reqSettlIdMap_;
    std::map<uint64_t, std::function<void(bool, const SecureBinaryData &)>> reqPubKeyMap_;
    std::map<uint64_t, std::function<void(const SecureBinaryData&)>>        settlWltMap_;
+   std::map<uint64_t, std::function<void(bool, bs::Address)>>  payinAddrMap_;
+   std::map<uint64_t, SignerStateCb>   signerStateCbMap_;
 };
 
 

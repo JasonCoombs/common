@@ -145,6 +145,19 @@ std::vector<UTXO> bs::UtxoReservation::get(const std::string &reserveId
    return itSub->second;
 }
 
+std::vector<std::string> bs::UtxoReservation::getSubIds(const std::string& reserveId)
+{
+   std::vector<std::string> result;
+   std::lock_guard<std::mutex> lock(mutex_);
+   const auto& itReserve = byReserveId_.find(reserveId);
+   if (itReserve != byReserveId_.end()) {
+      for (const auto& subId : itReserve->second) {
+         result.push_back(subId.first);
+      }
+   }
+   return result;
+}
+
 // For a given wallet ID, filter out all associated UTXOs from a list of UTXOs.
 // Returns the number of filtered/removed entries.
 size_t bs::UtxoReservation::filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const
