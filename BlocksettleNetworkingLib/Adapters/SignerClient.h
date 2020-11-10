@@ -130,8 +130,10 @@ public:
       , const std::vector<bs::wallet::PasswordData> &pwdData = {}
    , bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) override { return false; }
 
-   bool promoteHDWallet(const std::string& rootWalletId, const BinaryData &userId
-      , bs::sync::PasswordDialogData dialogData = {}, const PromoteHDWalletCb& cb = nullptr) override { return false; }
+   bool promoteWalletToPrimary(const std::string& rootWalletId
+      , bs::sync::PasswordDialogData, const UpdateWalletStructureCB&) override { return false; }
+   bool enableTradingInHDWallet(const std::string& rootWalletId, const BinaryData& userId
+      , bs::sync::PasswordDialogData, const UpdateWalletStructureCB&) override { return false; }
 
    virtual bool isSignerUser(const std::shared_ptr<bs::message::User> &) const;
    virtual bool process(const bs::message::Envelope &);
