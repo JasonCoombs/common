@@ -1503,3 +1503,13 @@ message AuthManaging
       string               user_promoted_to_dealer = 5;
    }
 }
+
+enum ObligationsManagingMessageType
+{
+   InitiateObligationsDeliveryToCustomers = 0;
+};
+
+message ObligationsManaging
+{
+   ObligationsManagingMessageType   message_type = 1;
+}
