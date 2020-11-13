@@ -589,11 +589,20 @@ void BsClient::processCeler(const Response_Celer &response)
 void BsClient::processProxyPb(const Response_ProxyPb &response)
 {
    Blocksettle::Communication::ProxyTerminalPb::Response message;
-   bool result = message.ParseFromString(response.data());
-   if (!result) {
+   if (!message.ParseFromString(response.data())) {
       SPDLOG_LOGGER_ERROR(logger_, "invalid PB message");
       return;
    }
+
+   if (message.data_case() == Blocksettle::Communication::ProxyTerminalPb::Response::kDeliveryRequest) {
+      ProxyTerminalPb::Request request;
+
+      auto data = request.mutable_delivery_response();
+      data->set_displayed_to_user(true);
+
+      sendPbMessage(request.SerializeAsString());
+   }
+
    emit processPbMessage(message);
 }
 
