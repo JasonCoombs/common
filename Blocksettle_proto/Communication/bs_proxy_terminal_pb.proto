@@ -19,13 +19,13 @@ import "bs_types.proto";
 
 enum OtcState
 {
-    OTC_STATE_UNKNOWN = 0;
-    OTC_STATE_FAILED = 1;
-    OTC_STATE_WAIT_BUYER_SIGN = 2;
-    OTC_STATE_WAIT_SELLER_SEAL = 3;
-    OTC_STATE_WAIT_SELLER_SIGN = 4;
-    OTC_STATE_CANCELLED = 5;
-    OTC_STATE_SUCCEED = 6;
+   OTC_STATE_UNKNOWN = 0;
+   OTC_STATE_FAILED = 1;
+   OTC_STATE_WAIT_BUYER_SIGN = 2;
+   OTC_STATE_WAIT_SELLER_SEAL = 3;
+   OTC_STATE_WAIT_SELLER_SIGN = 4;
+   OTC_STATE_CANCELLED = 5;
+   OTC_STATE_SUCCEED = 6;
 }
 
 message Request
@@ -104,20 +104,27 @@ message Request
         string client_order_id = 1;
     }
 
-    oneof data
-    {
-        StartOtc              start_otc            = 1;
-        VerifyOtc             verify_otc           = 2;
-        SealPayinValidity     seal_payin_validity  = 3;
-        ProcessTx             process_tx           = 4;
-        Cancel                cancel               = 5;
+   message DeliveryObligationsResponse
+   {
+      bool     displayed_to_user = 1;
+   }
 
-        XBTUnsignedPayin      unsigned_payin       = 31;
-        XBTSignedPayin        signed_payin         = 32;
-        XBTSignedPayout       signed_payout        = 33;
-        XBTCancelTrade        xbt_cancel           = 34;
-        CCCancelTrade         cc_cancel            = 35;
-    }
+   oneof data
+   {
+      StartOtc             start_otc            = 1;
+      VerifyOtc            verify_otc           = 2;
+      SealPayinValidity    seal_payin_validity  = 3;
+      ProcessTx            process_tx           = 4;
+      Cancel               cancel               = 5;
+
+      XBTUnsignedPayin     unsigned_payin       = 31;
+      XBTSignedPayin       signed_payin         = 32;
+      XBTSignedPayout      signed_payout        = 33;
+      XBTCancelTrade       xbt_cancel           = 34;
+      CCCancelTrade        cc_cancel            = 35;
+
+      DeliveryObligationsResponse   delivery_response = 50;
+   }
 }
 
 message Response
@@ -160,22 +167,28 @@ message Response
         int64   timestamp_ms        = 4;
     }
 
-    // Blotter
+   message DeliveryObligationsRequest
+   {
+      int64    to_deliver           = 1;
+   }
 
-    message UpdateOrders
-    {
-        repeated bs.types.Order orders = 2;
-    }
+   // Blotter
+   message UpdateOrders
+   {
+      repeated bs.types.Order orders = 2;
+   }
 
-    oneof data
-    {
-        StartOtc              start_otc            = 1;
-        UpdateOtcState        update_otc_state     = 2;
+   oneof data
+   {
+      StartOtc       start_otc         = 1;
+      UpdateOtcState update_otc_state  = 2;
 
-        UnsignedPayinRequest  send_unsigned_payin  = 3;
-        SignPayoutRequest     sign_payout          = 4;
-        SignPayinRequest      sign_payin           = 5;
+      UnsignedPayinRequest    send_unsigned_payin  = 3;
+      SignPayoutRequest       sign_payout          = 4;
+      SignPayinRequest        sign_payin           = 5;
 
-        UpdateOrders          update_orders        = 20;
-    }
+      UpdateOrders            update_orders        = 20;
+
+      DeliveryObligationsRequest    delivery_request  = 30;
+   }
 }

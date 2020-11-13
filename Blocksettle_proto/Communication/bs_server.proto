@@ -1385,6 +1385,8 @@ enum ProxyMessageType
    ProxyBlotterUpdates     = 4;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
+   ProxyDeliverObligations = 7;
+   ProxyObligationsTimeout = 8;
 }
 
 message ProxyOnlineUsersMessage
@@ -1401,12 +1403,32 @@ message ProxyUserStatusUpdatedMessage
    bool enabled = 2;
 }
 
+message CustomerObligationsRequest
+{
+   string   email       = 1;
+   int64    to_deliver  = 2;
+};
+
+message CustomerObligationsResponse
+{
+   string   email          = 1;
+   bool     delivered      = 2;
+}
+
+message CustomerObligationsTimeout
+{
+   string   email = 1;
+}
+
 message ProxyMessage
 {
    ProxyMessageType type = 1;
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
+      CustomerObligationsRequest    obligations_request  = 4;
+      CustomerObligationsResponse   obligations_response = 5;
+      CustomerObligationsTimeout    obligations_timeout  = 6;
    }
 }
 
