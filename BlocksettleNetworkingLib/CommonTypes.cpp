@@ -55,23 +55,13 @@ bool RFQ::isXbtBuy() const
 }
 
 
-QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn, const std::string &_authKey, double price
+QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn, const std::string &_authKey, double prc
    , const std::string &txData)
    : authKey(_authKey), reqAuthKey(qrn.requestorAuthPublicKey), settlementId(qrn.settlementId), sessionToken(qrn.sessionToken)
    , quoteRequestId(qrn.quoteRequestId), security(qrn.security), product(qrn.product), account(qrn.account), transactionData(txData)
-   , assetType(qrn.assetType), validityInS(120)
+   , assetType(qrn.assetType), validityInS(120), price(prc), quantity(qrn.quantity)
 {
-   const auto &baseProduct = security.substr(0, security.find('/'));
    side = bs::network::Side::invert(qrn.side);
-
-   if ((side == bs::network::Side::Buy) || ((side == bs::network::Side::Sell) && (product != baseProduct))) {
-      bidPx = offerPx = price;
-      bidSz = offerSz = qrn.quantity;
-   }
-   else {
-      offerPx = bidPx = price;
-      offerSz = bidSz = qrn.quantity;
-   }
 }
 
 

@@ -191,9 +191,9 @@ namespace bs {
          };
          Status status{};
 
-         QDateTime   expirationTime;
+         uint64_t    expirationTime;
          int         timeSkewMs{};
-         uint64_t    celerTimestamp{};
+         uint64_t    timestamp{};
 
          bool empty() const { return quoteRequestId.empty(); }
       };
@@ -215,13 +215,11 @@ namespace bs {
          Side::Type  side;
          int         validityInS{};
 
-         double      bidPx{};
-         double      bidSz{};
-         double      bidFwdPts{};
+         double      price{};
+         double      quantity{};
+         double      bidFwdPts{};   // looks like this field and all ones below are not used
          double      bidContraQty{};
 
-         double      offerPx{};
-         double      offerSz{};
          double      offerFwdPts{};
          double      offerContraQty{};
 

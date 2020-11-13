@@ -429,6 +429,20 @@ message RFQ
    string coin_tx_input = 9;
 }
 
+message IncomingRFQ
+{
+   RFQ rfq = 1;
+   string settlement_id = 2;
+   string session_token = 3;
+   string party = 4;
+   string reason = 5;
+   string account = 6;
+   int32  status = 7;
+   uint64 expiration_ms = 8;
+   uint64 timestamp_ms = 9;
+   int32  time_skew_ms = 10;
+}
+
 message Quote
 {
    string request_id = 1;
@@ -454,6 +468,21 @@ message AcceptRFQ
    string rfq_id = 1;
    Quote  quote = 2;
    bytes  payout_tx = 3;
+}
+
+message ReplyToRFQ
+{
+   Quote  quote = 1;
+   string session_token = 2;
+   string account = 3;
+   string dealer_recv_addr = 4;
+}
+
+message PullRFQReply
+{
+   string settlement_id = 1;
+   string rfq_id = 2;
+   string session_token = 3;
 }
 
 
@@ -522,6 +551,9 @@ message MatchingMessage
       Quote           quote = 12;
       BestQuotedPrice best_quoted_price = 13;
       Order           order = 14;
+      IncomingRFQ     incoming_rfq = 15;
+      ReplyToRFQ      submit_quote_notif = 16;
+      PullRFQReply    pull_quote_notif = 17;
    }
 }
 
@@ -569,8 +601,12 @@ message SettlementMessage
       SettlementIds     pending_settlement = 8;
       bytes             handshake_timeout = 9;
       bytes             settlement_timeout = 10;
-      bytes             settlement_cancelled = 11;
-      SettlementIds     settlement_complete = 12;
+      string            quote_req_timeout = 11;
+      bytes             settlement_cancelled = 12;
+      SettlementIds     settlement_complete = 13;
+      IncomingRFQ       quote_req_notif = 14;
+      ReplyToRFQ        reply_to_rfq = 15;
+      PullRFQReply      pull_rfq_reply = 16;
    }
 }
 

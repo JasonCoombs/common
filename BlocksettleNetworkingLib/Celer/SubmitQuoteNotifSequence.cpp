@@ -62,13 +62,11 @@ CelerMessage SubmitQuoteNotifSequence::submitQuoteNotif()
       }
    }
 
-   if (!qFuzzyIsNull(qn_.bidPx)) {
-      request.set_bidpx(qn_.bidPx);
-      request.set_bidspotpx(qn_.bidPx);
-   }
-   if (!qFuzzyIsNull(qn_.offerPx)) {
-      request.set_offerpx(qn_.offerPx);
-      request.set_offerspotpx(qn_.offerPx);
+   if (!qFuzzyIsNull(qn_.price)) {
+      request.set_bidpx(qn_.price);
+      request.set_bidspotpx(qn_.price);
+      request.set_offerpx(qn_.price);
+      request.set_offerspotpx(qn_.price);
    }
 
    request.set_quotevalidityinsecs(qn_.validityInS);
@@ -88,11 +86,9 @@ CelerMessage SubmitQuoteNotifSequence::submitQuoteNotif()
    if (!qFuzzyIsNull(qn_.offerFwdPts)) {
       group->set_offerforwardpoints(qn_.offerFwdPts);
    }
-   if (!qFuzzyIsNull(qn_.bidSz)) {
-      group->set_bidsize(qn_.bidSz);
-   }
-   if (!qFuzzyIsNull(qn_.offerSz)) {
-      group->set_offersize(qn_.offerSz);
+   if (!qFuzzyIsNull(qn_.quantity)) {
+      group->set_bidsize(qn_.quantity);
+      group->set_offersize(qn_.quantity);
    }
    group->set_currency(qn_.product);
    group->set_settlementdate(QDate::currentDate().toString(Qt::ISODate).toStdString());

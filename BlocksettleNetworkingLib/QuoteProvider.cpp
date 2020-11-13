@@ -656,9 +656,9 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    qrn.party = respgrp.partyid();
    qrn.reason = response.reason();
    qrn.account = response.account();
-   qrn.expirationTime = QDateTime::fromMSecsSinceEpoch(response.expiretimeinutcinmillis());
-   qrn.celerTimestamp = response.timestampinutcinmillis();
-   qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(response.timestampinutcinmillis()).msecsTo(QDateTime::currentDateTime());
+   qrn.expirationTime = response.expiretimeinutcinmillis();
+   qrn.timestamp = response.timestampinutcinmillis();
+   qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(qrn.timestamp).msecsTo(QDateTime::currentDateTime());
 
    qrn.side = bs::celer::fromCeler(legGroup.side());
    qrn.assetType = bs::celer::fromCelerProductType(respgrp.producttype());

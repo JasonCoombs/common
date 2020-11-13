@@ -124,7 +124,7 @@ public:
 
    void setDefault(const bs::Address &addr);
 
-   bs::Address getDefault() const;
+   [[nodiscard]] bs::Address getDefault() const;
    size_t getDefaultIndex() const;
 
    bool HaveAuthWallet() const;
