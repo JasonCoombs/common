@@ -27,7 +27,9 @@ namespace bs {
       class CancelQuoteNotifSequence : public CommandSequence<CancelQuoteNotifSequence>
       {
       public:
-         CancelQuoteNotifSequence(const QString &reqId, const QString &reqSessToken, const std::shared_ptr<spdlog::logger>& logger);
+         [[deprecated]] CancelQuoteNotifSequence(const QString &reqId, const QString &reqSessToken, const std::shared_ptr<spdlog::logger>& logger);
+         CancelQuoteNotifSequence(const std::string& reqId, const std::string& reqSessToken
+            , const std::shared_ptr<spdlog::logger>& logger);
          ~CancelQuoteNotifSequence() noexcept = default;
 
          CancelQuoteNotifSequence(const CancelQuoteNotifSequence&) = delete;
@@ -40,7 +42,8 @@ namespace bs {
       private:
          CelerMessage send();
 
-         QString  reqId_, reqSessToken_;
+         std::string    reqId_, reqSessToken_;
+         size_t   colonPos_{ std::string::npos };
          std::shared_ptr<spdlog::logger> logger_;
       };
 

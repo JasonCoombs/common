@@ -485,6 +485,13 @@ message PullRFQReply
    string session_token = 3;
 }
 
+message QuoteCancelled
+{
+   string rfq_id = 1;
+   string quote_id = 2;
+   bool   by_user = 3;
+}
+
 
 message MatchingMessage
 {
@@ -535,6 +542,21 @@ message MatchingMessage
       string info = 18;
    }
 
+   message OrderReject
+   {
+      string quote_id = 1;
+      string order_id = 2;
+      string reject_text = 3;
+   }
+
+   message QuoteReject
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      string reject_text = 3;
+      int32  reject_code = 4;
+   }
+
    oneof data
    {
       int32           connection_error = 1;
@@ -554,6 +576,9 @@ message MatchingMessage
       IncomingRFQ     incoming_rfq = 15;
       ReplyToRFQ      submit_quote_notif = 16;
       PullRFQReply    pull_quote_notif = 17;
+      QuoteCancelled  quote_cancelled = 18;
+      QuoteReject     quote_reject = 19;
+      OrderReject     order_reject = 20;
    }
 }
 
@@ -607,6 +632,7 @@ message SettlementMessage
       IncomingRFQ       quote_req_notif = 14;
       ReplyToRFQ        reply_to_rfq = 15;
       PullRFQReply      pull_rfq_reply = 16;
+      QuoteCancelled    quote_cancelled = 17;
    }
 }
 
