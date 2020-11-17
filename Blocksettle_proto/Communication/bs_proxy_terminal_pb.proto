@@ -170,6 +170,7 @@ message Response
    message DeliveryObligationsRequest
    {
       int64    to_deliver           = 1;
+      string   bs_address           = 2;
    }
 
    // Blotter

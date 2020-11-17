@@ -78,6 +78,7 @@ enum ArmoryMessageType
    ArmorySettlementsStatus       = 21;
    ArmoryGetSpendableUTXOs       = 22;
    ArmoryUpdateBootstrapData     = 23;
+   ArmoryStartCustomerDelivery   = 24;
 }
 
 enum ArmoryStateData
@@ -258,6 +259,19 @@ message ArmoryGetSpendableUTXOsResponse
    repeated bytes utxos = 1;
 }
 
+message ArmoryStartCustomerDeliveryRequest
+{
+   string delivery_id   = 1;
+   string bs_address    = 2;
+}
+
+message ArmoryStartCustomerDeliveryResponse
+{
+   bool     started     = 1;
+   string   delivery_id = 2;
+   string   bs_address  = 3;
+}
+
 message ArmoryMessage
 {
    ArmoryMessageType type = 1;
@@ -288,6 +302,9 @@ message ArmoryMessage
       ArmoryGetSpendableUTXOsRequest         spendable_utxos_request = 29;
       ArmoryGetSpendableUTXOsResponse        spendable_utxos_response= 30;
       bytes                                  bootstrap_data          = 31;
+
+      ArmoryStartCustomerDeliveryRequest     start_delivery_request  = 32;
+      ArmoryStartCustomerDeliveryResponse    start_delivery_response = 33;
    }
 }
 
@@ -1407,6 +1424,7 @@ message CustomerObligationsRequest
 {
    string   email       = 1;
    int64    to_deliver  = 2;
+   string   bs_address  = 3;
 };
 
 message CustomerObligationsResponse
