@@ -141,6 +141,8 @@ public:
    void signCcAddress(const bs::Address address, const SignCb &cb);
    void confirmCcAddress(const bs::Address address, const BasicCb &cb);
 
+   void submitDeliveryAddress(const bs::Address address);
+
    void cancelActiveSign();
 
    static std::chrono::seconds autheidLoginTimeout();
