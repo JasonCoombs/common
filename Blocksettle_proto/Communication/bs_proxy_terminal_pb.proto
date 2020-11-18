@@ -109,6 +109,11 @@ message Request
       bool     displayed_to_user = 1;
    }
 
+   message BlocksettleDeliveryInstructions
+   {
+      string   user_address   = 1;
+   }
+
    oneof data
    {
       StartOtc             start_otc            = 1;
@@ -123,7 +128,8 @@ message Request
       XBTCancelTrade       xbt_cancel           = 34;
       CCCancelTrade        cc_cancel            = 35;
 
-      DeliveryObligationsResponse   delivery_response = 50;
+      DeliveryObligationsResponse      delivery_response          = 50;
+      BlocksettleDeliveryInstructions  bs_delivery_instructions   = 51;
    }
 }
 

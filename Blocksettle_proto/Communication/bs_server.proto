@@ -1547,9 +1547,22 @@ message AuthManaging
 enum ObligationsManagingMessageType
 {
    InitiateObligationsDeliveryToCustomers = 0;
+   GracePeriodCompletedEvent              = 1;
+   BSDeliveryInstructions                 = 2;
 };
 
 message ObligationsManaging
 {
    ObligationsManagingMessageType   message_type = 1;
+
+   message BSDeliveryInstructions
+   {
+      string user_email    = 1;
+      string user_address  = 2;
+   }
+
+   oneof data
+   {
+      BSDeliveryInstructions  delivery_instructions = 2;
+   }
 }
