@@ -183,6 +183,7 @@ HeadlessContainer::HeadlessContainer(const std::shared_ptr<spdlog::logger> &logg
 {
    qRegisterMetaType<headless::RequestPacket>();
    qRegisterMetaType<std::shared_ptr<bs::sync::hd::Leaf>>();
+   qRegisterMetaType<ConnectionError>("ConnectionError");
 }
 
 bs::signer::RequestId HeadlessContainer::Send(const headless::RequestPacket &packet, bool incSeqNo)
@@ -1444,7 +1445,7 @@ void RemoteSigner::Connect()
          SimpleSocket testSocket(host_.toStdString(), port_.toStdString());
          bool serverUp = false;
 
-         while (std::chrono::steady_clock::now() - now < std::chrono::seconds(5)) {
+         while (std::chrono::steady_clock::now() - now < std::chrono::seconds(20)) {
             if (testSocket.testConnection()) {
                serverUp = true;
                break;
@@ -1462,7 +1463,7 @@ void RemoteSigner::Connect()
 
       //try to read cookie file
       bool haveCookie = false;
-      while (std::chrono::steady_clock::now() - now < std::chrono::seconds(5)) {
+      while (std::chrono::steady_clock::now() - now < std::chrono::seconds(20)) {
          std::string cookiePath = SystemFilePaths::appDataLocation() + "/" + "signerServerID";
          if (bip15xConn->addCookieKeyToKeyStore(cookiePath, serverName)) {
             haveCookie = true;
