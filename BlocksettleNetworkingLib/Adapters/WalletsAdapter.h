@@ -102,6 +102,7 @@ private:
    std::shared_ptr<bs::sync::hd::Wallet> getHDRootForLeaf(const std::string &walletId) const;
    std::shared_ptr<bs::sync::hd::Wallet> getPrimaryWallet() const;
    void eraseWallet(const std::shared_ptr<bs::sync::Wallet> &);
+   bool isAddressUsed(const bs::Address&, const std::string& walletId = {}) const;
 
    void addWallet(const std::shared_ptr<bs::sync::Wallet> &);
    void registerWallet(const std::shared_ptr<bs::sync::Wallet> &);

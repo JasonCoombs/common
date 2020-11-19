@@ -614,6 +614,12 @@ message SettlementMessage
       bytes  settlement_id = 3;
    }
 
+   message PendingSettlement
+   {
+      SettlementIds ids = 1;
+      int32 time_left_ms = 2;
+   }
+
    oneof data
    {
       SendRFQ           send_rfq = 1;
@@ -623,7 +629,7 @@ message SettlementMessage
       Quote             quote = 5;
       MatchedQuote      matched_quote = 6;
       FailedSettlement  failed_settlement = 7;
-      SettlementIds     pending_settlement = 8;
+      PendingSettlement pending_settlement = 8;
       bytes             handshake_timeout = 9;
       bytes             settlement_timeout = 10;
       string            quote_req_timeout = 11;

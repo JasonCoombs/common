@@ -312,6 +312,7 @@ void HeadlessContainer::walletsChanged()
 
 void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string &data)
 {
+   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSignTXResponse] Failed to parse SignTxReply");
@@ -325,12 +326,22 @@ void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string
       signTxMap_.erase(itCb);
       return;
    }
+   const auto itCbSettl = cbSettlementSignTxMap_.find(id);
+   if (itCbSettl != cbSettlementSignTxMap_.end()) {
+      if (itCbSettl->second) {
+         itCbSettl->second(static_cast<bs::error::ErrorCode>(response.errorcode())
+            , BinaryData::fromString(response.signedtx()));
+      }
+      cbSettlementSignTxMap_.erase(itCbSettl);
+      return;
+   }
    hct_->txSigned(id, BinaryData::fromString(response.signedtx())
       , static_cast<bs::error::ErrorCode>(response.errorcode()));
 }
 
 void HeadlessContainer::ProcessSettlementSignTXResponse(unsigned int id, const std::string &data)
 {
+   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSettlementSignTXResponse] Failed to parse reply");
@@ -664,7 +675,9 @@ bs::signer::RequestId HeadlessContainer::signSettlementPayoutTXRequest(const bs:
    if ((txSignReq.armorySigner_.getTxInCount() != 1) ||
       (txSignReq.armorySigner_.getTxOutCount() != 1) ||
       sd.settlementId.empty()) {
-      logger_->error("[HeadlessContainer::signSettlementPayoutTXRequest] Invalid PayoutTXSignRequest");
+      logger_->error("[HeadlessContainer::signSettlementPayoutTXRequest] Invalid"
+         " PayoutTXSignRequest: in:{} out:{} settlId:{}", txSignReq.armorySigner_.getTxInCount()
+         , txSignReq.armorySigner_.getTxOutCount(), sd.settlementId.toHexStr());
       return 0;
    }
    headless::SignSettlementPayoutTxRequest settlementRequest;

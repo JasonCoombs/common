@@ -277,6 +277,33 @@ void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet)
    wallets_.erase(wallet->walletId());
 }
 
+bool WalletsAdapter::isAddressUsed(const bs::Address& addr, const std::string& walletId) const
+{
+   const auto& hasTxNs = [this, addr](const std::map<BinaryData, uint64_t>& txnMap) -> bool
+   {
+      const auto& itTxN = txnMap.find(addr.id());
+      if (itTxN != txnMap.end()) {
+         return (itTxN->second != 0);
+      }
+      return false;
+   };
+
+   if (walletId.empty()) {
+      for (const auto& bal : walletBalances_) {
+         if (hasTxNs(bal.second.addressTxNMap)) {
+            return true;
+         }
+      }
+   }
+   else {
+      const auto& itBal = walletBalances_.find(walletId);
+      if (itBal != walletBalances_.end()) {
+         return hasTxNs(itBal->second.addressTxNMap);
+      }
+   }
+   return false;
+}
+
 void WalletsAdapter::saveWallet(const std::shared_ptr<bs::sync::hd::Wallet> &wallet)
 {
    if (!userId_.empty()) {
@@ -774,7 +801,10 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
    WalletsMessage msg;
    auto msgResp = msg.mutable_hd_wallet();
    msgResp->set_wallet_id(hdWallet->walletId());
+   msgResp->set_name(hdWallet->name());
    msgResp->set_is_primary(hdWallet->isPrimary());
+   msgResp->set_is_offline(hdWallet->isOffline());
+
    for (const auto &group : hdWallet->getGroups()) {
       auto msgGroup = msgResp->add_groups();
       msgGroup->set_type(group->index());
@@ -1845,7 +1875,7 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
    const auto& sendResponse = [this, env](const bs::Address &settlementAddr
       , const bs::core::wallet::TXSignRequest &txReq, const std::string& errorMsg = {})
    {
-      logger_->debug("[WalletsAdapter::processPayin::sendResponse] {} {}"
+      logger_->debug("[WalletsAdapter::processPayin::sendResponse] <{}> {}"
          , settlementAddr.display(), errorMsg);
       WalletsMessage msg;
       auto msgResp = msg.mutable_xbt_tx_response();
@@ -2102,7 +2132,37 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
 
    const auto& settlementId = BinaryData::fromString(request.settlement_id());
    bs::Address recvAddr;
-   if (!request.recv_address().empty()) {
+   if (request.recv_address().empty()) {
+      const auto& xbtGroup = priWallet->getGroup(priWallet->getXBTGroupType());
+      if (!xbtGroup) {
+         logger_->error("[{}] no XBT group in primary wallet", __func__);
+         return true;
+      }
+      const auto& leaves = xbtGroup->getAllLeaves();
+      if (leaves.empty()) {
+         logger_->error("[{}] no XBT leaves in primary wallet", __func__);
+         return true;
+      }
+      const auto& xbtWallet = *leaves.cbegin();
+      for (const auto& addr : xbtWallet->getIntAddressList()) {
+         if (!isAddressUsed(addr, xbtWallet->walletIdInt())) {
+            recvAddr = addr;
+            break;
+         }
+      }
+      if (recvAddr.empty()) {
+         auto& promRecv = std::make_shared<std::promise<bs::Address>>();
+         auto futRecv = promRecv->get_future();
+         xbtWallet->getNewIntAddress([promRecv](const bs::Address& addr) {
+            promRecv->set_value(addr);
+         });
+         recvAddr = futRecv.get();
+      }
+      if (!recvAddr.empty()) {
+         logger_->debug("[{}] obtain recvAddr: {}", __func__, recvAddr.display());
+      }
+   }
+   else {
       try {
          recvAddr = bs::Address::fromAddressString(request.recv_address());
       } catch (const std::exception&) {
