@@ -79,6 +79,8 @@ enum ArmoryMessageType
    ArmoryGetSpendableUTXOs       = 22;
    ArmoryUpdateBootstrapData     = 23;
    ArmoryStartCustomerDelivery   = 24;
+   ArmoryCleanupCustomerDelivery = 25;
+   ArmoryGetTradingLeafInfo      = 26;
 }
 
 enum ArmoryStateData
@@ -272,6 +274,11 @@ message ArmoryStartCustomerDeliveryResponse
    string   bs_address  = 3;
 }
 
+message ArmoryTradingLeafInfo
+{
+   uint32   address_count = 1;
+}
+
 message ArmoryMessage
 {
    ArmoryMessageType type = 1;
@@ -303,8 +310,10 @@ message ArmoryMessage
       ArmoryGetSpendableUTXOsResponse        spendable_utxos_response= 30;
       bytes                                  bootstrap_data          = 31;
 
-      ArmoryStartCustomerDeliveryRequest     start_delivery_request  = 32;
-      ArmoryStartCustomerDeliveryResponse    start_delivery_response = 33;
+      ArmoryStartCustomerDeliveryRequest     start_delivery_request        = 32;
+      ArmoryStartCustomerDeliveryResponse    start_delivery_response       = 33;
+      bool                                   delivery_monitoring_stopped   = 34;
+      ArmoryTradingLeafInfo                  trading_leaf_info             = 35;
    }
 }
 

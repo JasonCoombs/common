@@ -268,6 +268,7 @@ enum RequestFileType
    GenerateCCSeedRequestFileType          = 2;
    CCInitialDistributionRequestFileType   = 3;
    CreateCCDefinitionRequestFileType      = 4;
+   CreateDeliveryTxRequestFileType        = 5;
 }
 
 
@@ -344,6 +345,7 @@ message PendingRequestsInfo
    int32 revoke_auth_address     = 2;
    int32 generate_cc_seed        = 3;
    int32 cc_initial_distribution = 4;
+   int32 delivery_tx             = 5;
 }
 
 
