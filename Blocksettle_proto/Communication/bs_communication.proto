@@ -182,7 +182,7 @@ message BootstrapData
 message CreateDeliveryTx
 {
    required float    fee_rate             = 1;
-   required uint32   user_address_count   = 2;
+   required uint32   used_address_count   = 2;
 
    message Spender
    {

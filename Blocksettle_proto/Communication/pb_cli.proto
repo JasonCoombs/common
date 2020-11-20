@@ -36,6 +36,7 @@ enum CLIRequestType
    BroadcastBSAuthRevokeTX          = 24;
    DeliverObligations               = 25;
    CreateOfflineDeliveryRequest     = 26;
+   BSDeliveryTransactionType        = 27;
 }
 
 enum ArmoryConnectionState
