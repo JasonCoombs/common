@@ -1558,6 +1558,7 @@ enum ObligationsManagingMessageType
    InitiateObligationsDeliveryToCustomers = 0;
    GracePeriodCompletedEvent              = 1;
    BSDeliveryInstructions                 = 2;
+   CleanupObligationsData                 = 3;
 };
 
 message ObligationsManaging

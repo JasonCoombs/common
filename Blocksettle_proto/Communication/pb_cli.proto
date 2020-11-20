@@ -37,6 +37,7 @@ enum CLIRequestType
    DeliverObligations               = 25;
    CreateOfflineDeliveryRequest     = 26;
    BSDeliveryTransactionType        = 27;
+   CleanupObligationsRequest        = 28;
 }
 
 enum ArmoryConnectionState
