@@ -278,8 +278,6 @@ namespace bs {
          double   value;
          QString  desc;
 
-         static Type fromCeler(com::celertech::marketdata::api::enums::marketdataentrytype::MarketDataEntryType mdType);
-
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
       };
