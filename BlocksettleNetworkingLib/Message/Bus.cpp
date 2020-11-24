@@ -88,20 +88,18 @@ bool Router::isDefaultRouted(const bs::message::Envelope &env) const
 
 std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::message::Envelope &env) const
 {
-   std::vector<std::shared_ptr<bs::message::Adapter>> result;
+   std::set<std::shared_ptr<bs::message::Adapter>> result;
    if (supervisor_ && !supervisor_->process(env)) {
       logger_->debug("[Router::process] msg {} skipped by supervisor", env.id);
       return {};
    }
    if (!env.receiver || env.receiver->isBroadcast()) {
       for (const auto &adapter : adapters_) {
-         if (adapter.first == env.sender->value()) {
+         if (!env.sender->isSystem() && (adapter.first == env.sender->value())) {
             continue;
          }
-         result.push_back(adapter.second);
+         result.insert(adapter.second);
       }
-      auto last = std::unique(result.begin(), result.end());
-      result.erase(last, result.end());
    } else {
       if (isDefaultRouted(env)) {
          if (defaultRoute_) {
@@ -125,7 +123,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
       }
    }
-   return result;
+   return { result.cbegin(), result.cend() };
 }
 
 void Router::reset()

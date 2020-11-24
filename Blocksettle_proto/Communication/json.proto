@@ -1,0 +1,67 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2018 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package BlockSettle.API.JSON;
+import "common.proto";
+import "terminal.proto";
+
+
+message EnvelopeIn
+{
+   string id = 1;
+   oneof message
+   {
+      Common.SignerMessage       signer = 2;
+      Terminal.MatchingMessage   matching = 3;
+      Terminal.AssetsMessage     assets = 4;
+      Terminal.MktDataMessage    market_data = 5;
+      Terminal.MDHistMessage     md_hist = 6;
+      Common.ArmoryMessage       blockchain = 7;
+      Common.WalletsMessage      wallets = 8;
+      Common.OnChainTrackMessage on_chain_tracker = 9;
+      Terminal.SettlementMessage settlement = 10;
+      Terminal.ChatMessage       chat = 11;
+   }
+}
+
+message EnvelopeOut
+{
+   string id = 1;
+   oneof message
+   {
+      Common.SignerMessage       signer = 2;
+      Terminal.MatchingMessage   matching = 3;
+      Terminal.AssetsMessage     assets = 4;
+      Terminal.MktDataMessage    market_data = 5;
+      Terminal.MDHistMessage     md_hist = 6;
+      Common.ArmoryMessage       blockchain = 7;
+      Common.WalletsMessage      wallets = 8;
+      Common.OnChainTrackMessage on_chain_tracker = 9;
+      Terminal.SettlementMessage settlement = 10;
+      Terminal.ChatMessage       chat = 11;
+   }
+}
+
+message ConnectedResponse
+{
+   bool   wallets_ready = 1;
+   int32  blockchain_state = 2;
+   uint32 top_block = 3;
+   int32  signer_state = 4;
+}
+
+message ErrorResponse
+{
+   string id = 1;
+   string error_text = 2;
+   int32  error_code = 3;
+}

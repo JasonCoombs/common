@@ -95,12 +95,8 @@ enum SettingIndex
    SetIdx_LoginApiKey = 65;
    SetIdx_AutoQuoting = 66;
    SetIdx_AutoSigning = 67;
-//   SetIdx_ExtConnName = 68;
-//   SetIdx_ExtConnHost = 79;
    SetIdx_ExtConnPort = 70;
-   SetIdx_ExtConnPubKey = 71;
    SetIdx_SubmittedAddrXbtLimit = 72;
-//   SetIdx_ExtConnOwnPubKey = 73;
    SetIdx_BlockSettleSignAddress = 100;
 }
 
@@ -243,6 +239,11 @@ message SettingsMessage
       repeated CCDefinition cc_definitions = 3;
    }
 
+   message PubKeyList
+   {
+      repeated bytes pub_keys = 1;
+   }
+
    oneof data
    {
       SettingsRequest    get_request  = 1;
@@ -272,6 +273,8 @@ message SettingsMessage
       bytes              load_bootstrap = 25;
       BootstrapData      bootstrap = 26;
       Empty              get_bootstrap = 27;
+      bytes              api_privkey = 28;
+      PubKeyList         api_client_keys = 29;
    }
 }
 

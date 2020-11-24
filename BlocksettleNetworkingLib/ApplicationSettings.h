@@ -176,6 +176,7 @@ public:
    static QString appSubDir();
 
    QString GetSettingsPath() const;
+   QString AppendToWritableDir(const QString& filename) const;
 
    QString  GetHomeDir() const;
    QString  GetBackupDir() const;
@@ -223,7 +224,6 @@ private:
    void SetBitcoinsDir(const QString& path);
    void SetDBDir(const QString& path);
 
-   QString AppendToWritableDir(const QString &filename) const;
    static bs::LogLevel parseLogLevel(QString);
 
    QString getPath(const SettingDef &s) const;

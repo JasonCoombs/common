@@ -178,7 +178,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) },
       { ExtConnName,             SettingDef(QLatin1String("ExtConnName")) },
       { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
-      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
+      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort"), 4567) },
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
       { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
       { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) },
