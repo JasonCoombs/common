@@ -1411,8 +1411,6 @@ enum ProxyMessageType
    ProxyBlotterUpdates     = 4;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
-   ProxyDeliverObligations = 7;
-   ProxyObligationsTimeout = 8;
 }
 
 message ProxyOnlineUsersMessage
@@ -1429,33 +1427,12 @@ message ProxyUserStatusUpdatedMessage
    bool enabled = 2;
 }
 
-message CustomerObligationsRequest
-{
-   string   email       = 1;
-   int64    to_deliver  = 2;
-   string   bs_address  = 3;
-};
-
-message CustomerObligationsResponse
-{
-   string   email          = 1;
-   bool     delivered      = 2;
-}
-
-message CustomerObligationsTimeout
-{
-   string   email = 1;
-}
-
 message ProxyMessage
 {
    ProxyMessageType type = 1;
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
-      CustomerObligationsRequest    obligations_request  = 4;
-      CustomerObligationsResponse   obligations_response = 5;
-      CustomerObligationsTimeout    obligations_timeout  = 6;
    }
 }
 
@@ -1559,6 +1536,7 @@ enum ObligationsManagingMessageType
    GracePeriodCompletedEvent              = 1;
    BSDeliveryInstructions                 = 2;
    CleanupObligationsData                 = 3;
+   LoadCustomerObligations                = 4;
 };
 
 message ObligationsManaging
@@ -1571,8 +1549,23 @@ message ObligationsManaging
       string user_address  = 2;
    }
 
+   message CustomerObligationsRequest
+   {
+      string   email       = 1;
+   };
+
+   message CustomerObligationsResponse
+   {
+      string   email          = 1;
+      int64    to_deliver     = 2;
+      string   bs_address     = 3;
+      double   cutoff_price   = 4;
+   }
+
    oneof data
    {
-      BSDeliveryInstructions  delivery_instructions = 2;
+      BSDeliveryInstructions        delivery_instructions      = 2;
+      CustomerObligationsRequest    load_obligations_request   = 3;
+      CustomerObligationsResponse   load_obligations_response  = 4;
    }
 }

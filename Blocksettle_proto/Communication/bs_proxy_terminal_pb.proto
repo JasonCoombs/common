@@ -104,11 +104,6 @@ message Request
         string client_order_id = 1;
     }
 
-   message DeliveryObligationsResponse
-   {
-      bool     displayed_to_user = 1;
-   }
-
    message BlocksettleDeliveryInstructions
    {
       string   user_address   = 1;
@@ -128,7 +123,6 @@ message Request
       XBTCancelTrade       xbt_cancel           = 34;
       CCCancelTrade        cc_cancel            = 35;
 
-      DeliveryObligationsResponse      delivery_response          = 50;
       BlocksettleDeliveryInstructions  bs_delivery_instructions   = 51;
    }
 }
@@ -177,12 +171,14 @@ message Response
    {
       int64    to_deliver           = 1;
       string   bs_address           = 2;
+      double   price                = 3;
    }
 
    // Blotter
    message UpdateOrders
    {
-      repeated bs.types.Order orders = 2;
+      repeated bs.types.Order       orders      = 2;
+      DeliveryObligationsRequest    obligation  = 3;
    }
 
    oneof data
@@ -195,7 +191,5 @@ message Response
       SignPayinRequest        sign_payin           = 5;
 
       UpdateOrders            update_orders        = 20;
-
-      DeliveryObligationsRequest    delivery_request  = 30;
    }
 }

@@ -594,15 +594,6 @@ void BsClient::processProxyPb(const Response_ProxyPb &response)
       return;
    }
 
-   if (message.data_case() == Blocksettle::Communication::ProxyTerminalPb::Response::kDeliveryRequest) {
-      ProxyTerminalPb::Request request;
-
-      auto data = request.mutable_delivery_response();
-      data->set_displayed_to_user(true);
-
-      sendPbMessage(request.SerializeAsString());
-   }
-
    emit processPbMessage(message);
 }
 
