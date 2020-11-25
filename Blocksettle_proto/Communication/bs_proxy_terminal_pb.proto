@@ -178,6 +178,11 @@ message Response
    message UpdateOrders
    {
       repeated bs.types.Order       orders      = 2;
+   }
+
+   message UpdateOrdersAndObligations
+   {
+      repeated bs.types.Order       orders      = 2;
       DeliveryObligationsRequest    obligation  = 3;
    }
 
@@ -190,6 +195,8 @@ message Response
       SignPayoutRequest       sign_payout          = 4;
       SignPayinRequest        sign_payin           = 5;
 
-      UpdateOrders            update_orders        = 20;
+      // update_orders - deprecated after 0.91.2
+      UpdateOrders                  update_orders              = 20;
+      UpdateOrdersAndObligations    update_orders_obligations  = 21;
    }
 }
