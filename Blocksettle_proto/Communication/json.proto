@@ -30,6 +30,7 @@ message EnvelopeIn
       Common.OnChainTrackMessage on_chain_tracker = 9;
       Terminal.SettlementMessage settlement = 10;
       Terminal.ChatMessage       chat = 11;
+      Terminal.BsServerMessage   bs_server = 12;
    }
 }
 
@@ -48,6 +49,7 @@ message EnvelopeOut
       Common.OnChainTrackMessage on_chain_tracker = 9;
       Terminal.SettlementMessage settlement = 10;
       Terminal.ChatMessage       chat = 11;
+      Terminal.BsServerMessage   bs_server = 12;
       ConnectedResponse          connected = 20;
       ErrorResponse              error = 21;
    }
