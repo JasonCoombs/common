@@ -150,6 +150,22 @@ message LoadAddressListForFundResponse
    repeated string address = 1;
 }
 
+message LoadUserDeliveryAddressRequest
+{
+   repeated string user_email = 1;
+}
+
+message LoadUserDeliveryAddressResponse
+{
+   message DeliveryAddressData
+   {
+      string user_email    = 1;
+      string user_address  = 2;
+   }
+
+   repeated DeliveryAddressData user_data = 1;
+}
+
 message StorageAddressMessage
 {
    oneof data
@@ -185,6 +201,9 @@ message StorageAddressMessage
 
       LoadAddressListForFundRequest    load_addresses_for_fund = 20;
       LoadAddressListForFundResponse   addresses_for_fund_list = 21;
+
+      LoadUserDeliveryAddressRequest   load_user_delivery_addresses  = 22;
+      LoadUserDeliveryAddressResponse  user_delivery_addresses       = 23;
    }
 }
 
