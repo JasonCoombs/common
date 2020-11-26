@@ -1534,7 +1534,6 @@ enum ObligationsManagingMessageType
 {
    InitiateObligationsDeliveryToCustomers = 0;
    GracePeriodCompletedEvent              = 1;
-   BSDeliveryInstructions                 = 2;
    CleanupObligationsData                 = 3;
    LoadCustomerObligations                = 4;
 };
@@ -1542,12 +1541,6 @@ enum ObligationsManagingMessageType
 message ObligationsManaging
 {
    ObligationsManagingMessageType   message_type = 1;
-
-   message BSDeliveryInstructions
-   {
-      string user_email    = 1;
-      string user_address  = 2;
-   }
 
    message CustomerObligationsRequest
    {
@@ -1564,7 +1557,6 @@ message ObligationsManaging
 
    oneof data
    {
-      BSDeliveryInstructions        delivery_instructions      = 2;
       CustomerObligationsRequest    load_obligations_request   = 3;
       CustomerObligationsResponse   load_obligations_response  = 4;
    }

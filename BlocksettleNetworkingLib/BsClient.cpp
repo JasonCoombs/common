@@ -636,13 +636,3 @@ void BsClient::processTradingEnabledStatus(bool tradingEnabled)
 {
    emit tradingStatusChanged(tradingEnabled);
 }
-
-void BsClient::submitDeliveryAddress(const bs::Address address)
-{
-   ProxyTerminalPb::Request request;
-
-   auto data = request.mutable_bs_delivery_instructions();
-   data->set_user_address(address.display());
-
-   sendPbMessage(request.SerializeAsString());
-}

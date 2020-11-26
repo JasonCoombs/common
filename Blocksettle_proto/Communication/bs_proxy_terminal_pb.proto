@@ -104,11 +104,6 @@ message Request
         string client_order_id = 1;
     }
 
-   message BlocksettleDeliveryInstructions
-   {
-      string   user_address   = 1;
-   }
-
    oneof data
    {
       StartOtc             start_otc            = 1;
@@ -122,8 +117,6 @@ message Request
       XBTSignedPayout      signed_payout        = 33;
       XBTCancelTrade       xbt_cancel           = 34;
       CCCancelTrade        cc_cancel            = 35;
-
-      BlocksettleDeliveryInstructions  bs_delivery_instructions   = 51;
    }
 }
 
