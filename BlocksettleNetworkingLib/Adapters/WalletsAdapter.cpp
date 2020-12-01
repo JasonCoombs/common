@@ -877,6 +877,24 @@ bool WalletsAdapter::processWalletGet(const Envelope &env
 bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
    , const WalletsMessage_WalletsListRequest& request)
 {
+   const auto& mapGroup = [](const std::shared_ptr<bs::sync::hd::Group>& grp)
+   {
+      bs::sync::HDWalletData::Group hdGroup;
+      hdGroup.description = grp->description();
+      hdGroup.name = grp->name();
+      hdGroup.type = static_cast<bs::hd::CoinType>(grp->index());
+      return hdGroup;
+   };
+   const auto& mapLeaf = [](const std::shared_ptr<bs::sync::hd::Leaf>& leaf)
+   {
+      bs::sync::HDWalletData::Leaf hdLeaf;
+      hdLeaf.ids = leaf->internalIds();
+      hdLeaf.name = leaf->shortName();
+      hdLeaf.description = leaf->description();
+      hdLeaf.extOnly = leaf->extOnly();
+      hdLeaf.path = leaf->path();
+      return hdLeaf;
+   };
    std::vector<bs::sync::HDWalletData> result;
    for (const auto& wallet : hdWallets_) {
       bs::sync::HDWalletData hdWallet;
@@ -885,14 +903,33 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
       hdWallet.primary = wallet->isPrimary();
       hdWallet.offline = wallet->isOffline();
 
+      if (request.auth_group()) {
+         const auto& grp = wallet->getGroup(bs::hd::BlockSettle_Auth);
+         if (grp) {
+            auto hdGroup = mapGroup(grp);
+            for (const auto& leaf : grp->getLeaves()) {
+               hdGroup.leaves.push_back(mapLeaf(leaf));
+            }
+            hdWallet.groups.push_back(hdGroup);
+         }
+      }
+
+      if (request.cc_group()) {
+         const auto& grp = wallet->getGroup(bs::hd::BlockSettle_CC);
+         if (grp) {
+            auto hdGroup = mapGroup(grp);
+            for (const auto& leaf : grp->getLeaves()) {
+               hdGroup.leaves.push_back(mapLeaf(leaf));
+            }
+            hdWallet.groups.push_back(hdGroup);
+         }
+      }
+
       const auto& xbtGroup = wallet->getGroup(wallet->getXBTGroupType());
       if (!xbtGroup) {
          continue;
       }
-      bs::sync::HDWalletData::Group hdGroup;
-      hdGroup.description = xbtGroup->description();
-      hdGroup.name = xbtGroup->name();
-      hdGroup.type = static_cast<bs::hd::CoinType>(xbtGroup->index());
+      auto hdGroup = mapGroup(xbtGroup);
 
       if (!wallet->canMixLeaves()) {
          // HW wallets marked as offline too, make sure to check that first
@@ -909,13 +946,7 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
             if (((purpose == bs::hd::Purpose::Native) && request.hardware() && request.native_sw())
                || ((purpose == bs::hd::Purpose::Nested) && request.hardware() && request.native_sw())
                || ((purpose == bs::hd::Purpose::NonSegWit) && request.hardware() && request.legacy() && leafBalance)) {
-               bs::sync::HDWalletData::Leaf hdLeaf;
-               hdLeaf.ids = leaf->internalIds();
-               hdLeaf.name = leaf->shortName();
-               hdLeaf.description = leaf->description();
-               hdLeaf.extOnly = leaf->extOnly();
-               hdLeaf.path = leaf->path();
-               hdGroup.leaves.push_back(hdLeaf);
+               hdGroup.leaves.push_back(mapLeaf(leaf));
             }
          }
          hdWallet.groups.push_back(hdGroup);
@@ -923,26 +954,14 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
       }
       else if (wallet->isOffline()) {
          for (const auto& leaf : xbtGroup->getLeaves()) {
-            bs::sync::HDWalletData::Leaf hdLeaf;
-            hdLeaf.ids = leaf->internalIds();
-            hdLeaf.name = leaf->shortName();
-            hdLeaf.description = leaf->description();
-            hdLeaf.extOnly = leaf->extOnly();
-            hdLeaf.path = leaf->path();
-            hdGroup.leaves.push_back(hdLeaf);
+            hdGroup.leaves.push_back(mapLeaf(leaf));
          }
          hdWallet.groups.push_back(hdGroup);
          result.push_back(hdWallet);
       }
       else if (request.full()) {
          for (const auto& leaf : xbtGroup->getLeaves()) {
-            bs::sync::HDWalletData::Leaf hdLeaf;
-            hdLeaf.ids = leaf->internalIds();
-            hdLeaf.name = leaf->shortName();
-            hdLeaf.description = leaf->description();
-            hdLeaf.extOnly = leaf->extOnly();
-            hdLeaf.path = leaf->path();
-            hdGroup.leaves.push_back(hdLeaf);
+            hdGroup.leaves.push_back(mapLeaf(leaf));
          }
          hdWallet.groups.push_back(hdGroup);
          result.push_back(hdWallet);

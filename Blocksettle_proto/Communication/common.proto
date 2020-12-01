@@ -695,6 +695,8 @@ message WalletsMessage
       bool   nested_sw = 5;
       bool   hardware = 6;
       bool   watch_only = 7;
+      bool   auth_group = 8;
+      bool   cc_group = 9;
    }
 
    message WalletsListResponse
