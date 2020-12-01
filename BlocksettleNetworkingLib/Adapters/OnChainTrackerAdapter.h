@@ -24,6 +24,7 @@ namespace BlockSettle {
       class ArmoryMessage_UTXOs;
       class ArmoryMessage_WalletRegistered;
       class OnChainTrackMessage_AuthAddresses;
+      class WalletsMessage_WalletData;
    }
 }
 class AddrVerificatorCallbacks;
@@ -62,6 +63,7 @@ public:
    OnChainTrackerAdapter(const std::shared_ptr<spdlog::logger>&
       , const std::shared_ptr<bs::message::User>& ownUser
       , const std::shared_ptr<bs::message::User>& userBlockchain
+      , const std::shared_ptr<bs::message::User>& userWallet
       , const std::shared_ptr<OnChainExternalPlug>&);
    ~OnChainTrackerAdapter() override = default;
 
@@ -88,12 +90,13 @@ private:
       , const BlockSettle::Common::ArmoryMessage_OutpointsForAddrList&);
    bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
+   bool processAuthWallet(const BlockSettle::Common::WalletsMessage_WalletData&);
    bool processAuthAddresses(const BlockSettle::Common::OnChainTrackMessage_AuthAddresses&);
    void sendVerifiedAuthAddresses();
 
 private:
    std::shared_ptr<spdlog::logger>        logger_;
-   std::shared_ptr<bs::message::User>     user_, userBlockchain_;
+   std::shared_ptr<bs::message::User>     user_, userBlockchain_, userWallet_;
    std::shared_ptr<OnChainExternalPlug>   extPlug_;
    std::shared_ptr<CcTrackerClient>       ccTracker_;
 

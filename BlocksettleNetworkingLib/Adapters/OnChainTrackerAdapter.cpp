@@ -106,9 +106,10 @@ private:
 OnChainTrackerAdapter::OnChainTrackerAdapter(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<bs::message::User> &user
    , const std::shared_ptr<bs::message::User> &userBlockchain
+   , const std::shared_ptr<bs::message::User>& userWallet
    , const std::shared_ptr<OnChainExternalPlug> &extPlug)
    : logger_(logger), user_(user), userBlockchain_(userBlockchain)
-   , extPlug_(extPlug)
+   , userWallet_(userWallet), extPlug_(extPlug)
 {
    extPlug->setParent(this, user_);
 }
@@ -138,6 +139,18 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
       default: break;
       }
    }
+   else if (env.sender->value() == userWallet_->value()) {
+      WalletsMessage msg;
+      if (!msg.ParseFromString(env.message)) {
+         logger_->error("[{}] failed to parse wallets msg #{}", __func__, env.id);
+         return true;
+      }
+      switch (msg.data_case()) {
+         case WalletsMessage::kAuthWallet:
+            return processAuthWallet(msg.auth_wallet());
+         default: break;
+      }
+   }
    else if (env.receiver && (env.receiver->value() == user_->value())) {
       OnChainTrackMessage msg;
       if (!msg.ParseFromString(env.message)) {
@@ -147,6 +160,9 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
       switch (msg.data_case()) {
       case OnChainTrackMessage::kSetAuthAddresses:
          return processAuthAddresses(msg.set_auth_addresses());
+      case OnChainTrackMessage::kGetVerifiedAuthAddresses:
+         sendVerifiedAuthAddresses();
+         break;
       default: break;
       }
    }
@@ -315,8 +331,20 @@ bool OnChainTrackerAdapter::processUTXOs(uint64_t msgId
    return true;
 }
 
+bool OnChainTrackerAdapter::processAuthWallet(const WalletsMessage_WalletData& authWallet)
+{
+   OnChainTrackMessage_AuthAddresses msg;
+   msg.set_wallet_id(authWallet.wallet_id());
+   for (const auto& addr : authWallet.used_addresses()) {
+      msg.add_addresses(addr.address());
+   }
+   return processAuthAddresses(msg);
+}
+
 bool OnChainTrackerAdapter::processAuthAddresses(const OnChainTrackMessage_AuthAddresses& request)
 {
+   logger_->debug("[{}] adding {} auth addresses from {}", __func__
+      , request.addresses_size(), request.wallet_id());
    for (const auto& addr : request.addresses()) {
       try {
          userAddresses_.insert(bs::Address::fromAddressString(addr));

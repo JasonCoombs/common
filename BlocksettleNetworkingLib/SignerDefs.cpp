@@ -327,8 +327,10 @@ BlockSettle::Common::HDWalletData bs::sync::HDWalletData::toCommonMessage() cons
          for (const auto &id : leaf.ids) {
             msgLeaf->add_ids(id);
          }
-         msgLeaf->set_path(leaf.path.toString());
-         msgLeaf->set_name(leaf.name);
+         if (leaf.path.length()) {
+            msgLeaf->set_path(leaf.path.toString());
+            msgLeaf->set_name(leaf.name);
+         }
          msgLeaf->set_desc(leaf.description);
          msgLeaf->set_ext_only(leaf.extOnly);
          if (!leaf.extraData.empty()) {

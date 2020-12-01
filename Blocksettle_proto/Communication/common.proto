@@ -847,6 +847,7 @@ message OnChainTrackMessage
       AuthAddresses set_auth_addresses = 2;
       AuthState     auth_state = 3;
       AuthAddresses verified_auth_addresses = 4;
+      Empty         get_verified_auth_addresses = 5;
    }
 }
 
