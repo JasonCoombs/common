@@ -2170,7 +2170,7 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
          }
       }
       if (recvAddr.empty()) {
-         auto& promRecv = std::make_shared<std::promise<bs::Address>>();
+         const auto& promRecv = std::make_shared<std::promise<bs::Address>>();
          auto futRecv = promRecv->get_future();
          xbtWallet->getNewIntAddress([promRecv](const bs::Address& addr) {
             promRecv->set_value(addr);
