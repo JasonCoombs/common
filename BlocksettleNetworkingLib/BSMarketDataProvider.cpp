@@ -196,6 +196,8 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
 
    for (int i=0; i < snapshot.futures_size(); ++i) {
       OnProductSnapshot(bs::network::Asset::Type::Futures, snapshot.futures(i), timestamp);
+      // XXX - for now we just duplicate prices, cash settled shoudl get own price stream
+      OnProductSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.futures(i), timestamp);
    }
 }
 
@@ -251,7 +253,9 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
    }
 
    for (int i=0; i < update.futures_size(); ++i) {
-      OnProductSnapshot(bs::network::Asset::Type::Futures, update.futures(i), timestamp);
+      OnProductUpdate(bs::network::Asset::Type::Futures, update.futures(i), timestamp);
+      // XXX - for now we just duplicate prices, cash settled shoudl get own price stream
+      OnProductUpdate(bs::network::Asset::Type::CashSettledFutures, update.futures(i), timestamp);
    }
 }
 
