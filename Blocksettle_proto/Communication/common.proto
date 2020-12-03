@@ -524,6 +524,12 @@ message SignerMessage
       int32 result = 1;
       bytes signer_state = 2;
    }
+
+   message AutoSign
+   {
+      string wallet_id = 1;
+      bool   enable = 2;	//add limits here, maybe?
+   }
    
    oneof data
    {
@@ -566,6 +572,7 @@ message SignerMessage
       AddressResult      payin_address = 37;
       Blocksettle.Communication.headless.SignTxRequest resolve_pub_spenders = 38;
       SignerState        resolved_spenders = 39;
+      AutoSign           auto_sign = 40;
    }
 }
 
