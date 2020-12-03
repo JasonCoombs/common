@@ -78,6 +78,7 @@ namespace bs {
             SpotXBT,
             PrivateMarket,
             Futures,
+            CashSettledFutures,
             last
          };
 
