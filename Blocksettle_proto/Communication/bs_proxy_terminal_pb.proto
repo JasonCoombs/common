@@ -104,6 +104,13 @@ message Request
         string client_order_id = 1;
     }
 
+    message FutureRequest
+    {
+        int32 side = 1;
+        double price = 2;
+        uint64 amount = 3;
+    }
+
    oneof data
    {
       StartOtc             start_otc            = 1;
@@ -117,6 +124,7 @@ message Request
       XBTSignedPayout      signed_payout        = 33;
       XBTCancelTrade       xbt_cancel           = 34;
       CCCancelTrade        cc_cancel            = 35;
+      FutureRequest        future_request       = 36;
    }
 }
 
