@@ -174,7 +174,7 @@ const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type a
 const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:   return QT_TR_NOOP("Spot FX");
-      case Futures:  return QT_TR_NOOP("Futures");
+      case Futures:  return QT_TR_NOOP("1day Deliverable");
       case SpotXBT:  return QT_TR_NOOP("Spot XBT");
       case PrivateMarket:  return QT_TR_NOOP("Private Market");
       default:       return "";
