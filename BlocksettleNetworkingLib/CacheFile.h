@@ -13,22 +13,16 @@
 
 #include <unordered_map>
 #include <atomic>
-#include <QObject>
-#include <QReadWriteLock>
-#include <QWaitCondition>
-#include <QMutex>
-#include <QThreadPool>
-#include <QTimer>
+#include <shared_mutex>
+#include <thread>
 #include <lmdbpp.h>
 #include "AsyncClient.h"
 #include "BinaryData.h"
 #include "TxClasses.h"
 
 
-class CacheFile : public QObject
+class CacheFile
 {
-   Q_OBJECT
-
 public:
    CacheFile(const std::string &filename, size_t nbElemLimit = 10000);
    ~CacheFile();
@@ -49,12 +43,11 @@ private:
    LMDB     *  db_ = nullptr;
    std::shared_ptr<LMDBEnv>  dbEnv_;
    std::map<BinaryData, BinaryData> map_, mapModified_;
-   mutable QReadWriteLock  rwLock_;
-   mutable QWaitCondition  wcModified_;
-   mutable QMutex          mtxModified_;
-   std::atomic_bool        stopped_;
-   QThreadPool             threadPool_;
-   QTimer                  saveTimer_;
+   std::thread thread_;
+   std::condition_variable    cvSave_;
+   mutable std::mutex         cvMutex_;
+   mutable std::shared_mutex  rwMutex_;
+   std::atomic_bool           stopped_{ false };
 };
 
 
