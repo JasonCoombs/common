@@ -480,6 +480,7 @@ enum GenoaType
    GenoaRegisterXBT1DayCashSettledTrade   = 37;
 
    GenoaSendCutoffPrice          = 38;
+   GenoaSimulateDayCloseEvent    = 39;
 }
 
 message GenoaConnectedBroadcast
@@ -825,13 +826,14 @@ message GenoaMessage
 
 enum GenoaServerType
 {
-   GenoaServerResponse        = 0;
-   GenoaServerNewClient       = 1;
-   GenoaServerUpdBalance      = 2;
-   GenoaServerUpdTrdStatus    = 3;
-   GenoaServerXbtTrdStatus    = 4;
-   GenoaServerNewCcSeed       = 5;
-   GenoaServerNewCCDeposit    = 6;
+   GenoaServerResponse           = 0;
+   GenoaServerNewClient          = 1;
+   GenoaServerUpdBalance         = 2;
+   GenoaServerUpdTrdStatus       = 3;
+   GenoaServerXbtTrdStatus       = 4;
+   GenoaServerNewCcSeed          = 5;
+   GenoaServerNewCCDeposit       = 6;
+   GenoaTradingDayClosedSignal   = 7;
 }
 
 message GenoaServerClientRequest
