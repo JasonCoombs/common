@@ -13,6 +13,7 @@ syntax = "proto3";
 package Blocksettle.Server.Matching;
 
 import "bs_server.proto";
+import "bs_types.proto";
 
 message XbtMatchedRequest
 {
@@ -174,6 +175,18 @@ message UserPropertiesSet
    repeated UserProperty properties = 3;
 }
 
+message RFSMarketOrder
+{
+   string         user_email = 1;
+
+   // XBT/EUR
+   string         product     = 2;
+   uint64         xbt_amount  = 3;
+   bs.types.Side  side        = 4;
+
+   double         user_expected_price = 5;
+}
+
 message MatchingMessage
 {
    oneof data {
@@ -197,5 +210,7 @@ message MatchingMessage
       CCTradeResponse            cc_trade_response = 26;
       CCCancelRequest            cc_cancel = 27;
       UserPropertiesSet          user_prop_set = 30;
+
+      RFSMarketOrder             rfs_market_order = 40;
    }
 }

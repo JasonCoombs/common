@@ -475,7 +475,9 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
-   GenoaRegisterXBT1DayTrade     = 36;
+
+   GenoaRegisterXBT1DayDeliverableTrade   = 36;
+   GenoaRegisterXBT1DayCashSettledTrade   = 37;
 }
 
 message GenoaConnectedBroadcast
@@ -808,8 +810,12 @@ message GenoaMessage
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
       string                           entity_name                = 37;
-      TradeDataMessage                 xbt1day_trade_request      = 38;
-      GenoaFxTradeResponse             xbt1day_trade_response     = 39;
+
+      TradeDataMessage                 xbt1day_deliverable_trade_request   = 38;
+      GenoaFxTradeResponse             xbt1day_deliverable_trade_response  = 39;
+
+      TradeDataMessage                 xbt1day_cash_settled_trade_request  = 40;
+      GenoaFxTradeResponse             xbt1day_cash_settled_trade_response = 41;
    }
 }
 
@@ -1559,5 +1565,36 @@ message ObligationsManaging
    {
       CustomerObligationsRequest    load_obligations_request   = 3;
       CustomerObligationsResponse   load_obligations_response  = 4;
+   }
+}
+
+message PriceStreamManaging
+{
+   enum MessageType
+   {
+      GetBestOfferingPriceForOrder = 0;
+   };
+
+   message GetBestOfferRequest
+   {
+      int64    xbt_amount = 1;
+   }
+
+   message GetBestOfferResponse
+   {
+      int64    xbt_amount = 1;
+
+      double   offer = 2;
+      double   bid   = 3;
+
+      string   offering_account_email = 4;
+   }
+
+   MessageType   message_type = 1;
+
+   oneof data
+   {
+      GetBestOfferRequest  get_best_price_offer = 2;
+      GetBestOfferResponse best_price_offer     = 3;
    }
 }
