@@ -821,6 +821,7 @@ message GenoaMessage
       GenoaFxTradeResponse             xbt1day_cash_settled_trade_response = 41;
 
       double                           cutoff_price   = 42;
+      bool                             day_closed     = 43;
    }
 }
 
