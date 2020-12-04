@@ -62,8 +62,8 @@ public:
 public:
    std::vector<std::string> currencies();
    virtual std::vector<std::string> privateShares(bool forceExternal = false);
-   virtual double getBalance(const std::string& currency, const std::shared_ptr<bs::sync::Wallet> &wallet = nullptr) const;
-   bool checkBalance(const std::string &currency, double amount) const;
+   virtual double getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const;
+   bool checkBalance(const std::string &currency, double amount, bool includeZc) const;
    double getPrice(const std::string& currency) const;
    double getTotalAssets();
    double getCashTotal();

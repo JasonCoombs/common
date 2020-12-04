@@ -53,11 +53,17 @@ void AssetManager::init()
    connect(celerClient_.get(), &CelerClientQt::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
 }
 
-double AssetManager::getBalance(const std::string& currency, const std::shared_ptr<bs::sync::Wallet> &wallet) const
+double AssetManager::getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const
 {
    if (walletsManager_ && (currency == bs::network::XbtCurrency)) {
       if (wallet == nullptr) {
+         if (includeZc) {
+            return walletsManager_->getSpendableBalance() + walletsManager_->getUnconfirmedBalance();
+         }
          return walletsManager_->getSpendableBalance();
+      }
+      if (includeZc) {
+         return wallet->getSpendableBalance() + wallet->getUnconfirmedBalance();
       }
       return wallet->getSpendableBalance();
    }
@@ -97,12 +103,12 @@ double AssetManager::getPrice(const std::string& currency) const
    return 0.0;
 }
 
-bool AssetManager::checkBalance(const std::string &currency, double amount) const
+bool AssetManager::checkBalance(const std::string &currency, double amount, bool includeZc) const
 {
    if (currency.empty()) {
       return false;
    }
-   const auto balance = getBalance(currency);
+   const auto balance = getBalance(currency, includeZc, nullptr);
    return ((amount <= balance) || qFuzzyCompare(amount, balance));
 }
 
@@ -271,7 +277,7 @@ double AssetManager::getCashTotal()
    double total = 0;
 
    for (const auto &currency : currencies()) {
-      total += getBalance(currency) * getPrice(currency);
+      total += getBalance(currency, false, nullptr) * getPrice(currency);
    }
    return total;
 }
@@ -281,7 +287,7 @@ double AssetManager::getCCTotal()
    double total = 0;
 
    for (const auto &ccSec : ccSecurities_) {
-      total += getBalance(ccSec.first) * getPrice(ccSec.first);
+      total += getBalance(ccSec.first, false, nullptr) * getPrice(ccSec.first);
    }
    return total;
 }
