@@ -478,6 +478,8 @@ enum GenoaType
 
    GenoaRegisterXBT1DayDeliverableTrade   = 36;
    GenoaRegisterXBT1DayCashSettledTrade   = 37;
+
+   GenoaSendCutoffPrice          = 38;
 }
 
 message GenoaConnectedBroadcast
@@ -816,6 +818,8 @@ message GenoaMessage
 
       TradeDataMessage                 xbt1day_cash_settled_trade_request  = 40;
       GenoaFxTradeResponse             xbt1day_cash_settled_trade_response = 41;
+
+      double                           cutoff_price   = 42;
    }
 }
 
