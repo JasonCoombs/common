@@ -175,6 +175,14 @@ namespace bs {
       };
 
 
+      struct FutureRequest
+      {
+         bs::XBTAmount amount;
+         double price{};
+         bs::network::Side::Type side{};
+      };
+
+
       struct SecurityDef {
          Asset::Type assetType;
       };

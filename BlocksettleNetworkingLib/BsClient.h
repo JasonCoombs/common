@@ -166,6 +166,8 @@ public slots:
 
    void findEmailHash(const std::string &email);
 
+   void sendFutureRequest(const bs::network::FutureRequest &details);
+
 signals:
    void startLoginDone(bool success, const std::string &errorMsg);
    void authorizeDone(AuthorizeError error, const std::string &email);
