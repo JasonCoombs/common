@@ -163,12 +163,15 @@ std::vector<std::string> bs::UtxoReservation::getSubIds(const std::string& reser
 size_t bs::UtxoReservation::filter(std::vector<UTXO> &utxos, std::vector<UTXO> &filtered) const
 {
    filtered.clear();
+   if (utxos.empty()) {
+      return 0;
+   }
    size_t nbFiltered = 0;
    std::lock_guard<std::mutex> lock(mutex_);
 
    auto it = utxos.begin();
    while (it != utxos.end()) {
-      if (reserved_.find(*it) != reserved_.end()) {
+      if ((reserved_.find(*it) != reserved_.end()) || !it->isInitialized()) {
          filtered.push_back(*it);
          it = utxos.erase(it);
          nbFiltered++;

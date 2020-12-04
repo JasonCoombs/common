@@ -1838,31 +1838,70 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
          sendResponse({});
          return true;
       }
-      const auto& cbFilter = [this, sendResponse, request](const std::vector<UTXO>& utxos)
+      const auto& responded = std::make_shared<bool>(false);
+      const auto& accUTXOs = std::make_shared<std::vector<UTXO>>();
+      const auto& cbFilter = [this, sendResponse, request, responded, accUTXOs]
+         (const std::vector<UTXO>& utxos)
       {
+         if (*responded) {
+            return;
+         }
          auto utxosCopy = utxos;
-         decltype(utxosCopy) filteredUTXOs, foo;
+         if (!accUTXOs->empty() && accUTXOs->at(0).isInitialized()) {
+            utxosCopy.insert(utxosCopy.end(), accUTXOs->cbegin(), accUTXOs->cend());
+         }
+         decltype(utxosCopy) foo;
          utxoResMgr_->filter(utxosCopy, foo);
          const uint64_t amount = request.amount() + settlementFee_ * 230;  //FIXME: not sure if this is the right place to add fee
-         filteredUTXOs = bs::selectUtxoForAmount(std::move(utxosCopy), amount);
+         const auto &filteredUTXOs = bs::selectUtxoForAmount(utxosCopy, amount);
          uint64_t utxoAmount = 0;
          for (const auto& utxo : filteredUTXOs) {
             utxoAmount += utxo.getValue();
+         }
+         if (utxoAmount < amount) {
+            if (request.use_zc() && accUTXOs->empty()) { // 1 more invocation will follow
+               if (!utxos.empty()) {
+                  accUTXOs->insert(accUTXOs->end(), utxos.cbegin(), utxos.cend());
+               }
+               else {
+                  accUTXOs->push_back({});
+               }
+               return;
+            }
+            logger_->warn("[WalletsAdapter::processReserveUTXOs] insufficient"
+               " amount {} < {}", utxoAmount, amount);
+            sendResponse({});
+            *responded = true;
+            return;
          }
          logger_->debug("[WalletsAdapter::processReserveUTXOs] reserved {} UTXOs"
             " {} amount={} ({}) for {}/{}", filteredUTXOs.size(), utxoAmount
             , amount, request.amount(), request.id(), request.sub_id());
          utxoResMgr_->reserve(request.id(), filteredUTXOs, request.sub_id());
          sendResponse(filteredUTXOs);
+         *responded = true;
       };
       ArmoryMessage msgSpendable;
       auto msgReq = msgSpendable.mutable_get_spendable_utxos();
       for (const auto& walletId : wallet->internalIds()) {
          msgReq->add_wallet_ids(walletId);
       }
-      Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}, msgSpendable.SerializeAsString(), true };
+      Envelope envReq{ 0, ownUser_, blockchainUser_, {}, {}
+         , msgSpendable.SerializeAsString(), true };
       if (pushFill(envReq)) {
          utxoReserveReqs_[envReq.id] = cbFilter;
+      }
+      if (request.use_zc()) {
+         ArmoryMessage msgZC;
+         auto msgReq = msgSpendable.mutable_get_zc_utxos();
+         for (const auto& walletId : wallet->internalIds()) {
+            msgReq->add_wallet_ids(walletId);
+         }
+         Envelope envReqZC{ 0, ownUser_, blockchainUser_, {}, {}
+            , msgZC.SerializeAsString(), true };
+         if (pushFill(envReqZC)) {
+            utxoReserveReqs_[envReqZC.id] = cbFilter;
+         }
       }
    }
    return true;

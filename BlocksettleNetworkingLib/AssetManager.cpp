@@ -195,7 +195,7 @@ bs::network::Asset::Type AssetManager::GetAssetTypeForSecurity(const std::string
 
 void AssetManager::onWalletChanged()
 {
-   act_->onBalanceChanged(bs::network::XbtCurrency, getBalance(bs::network::XbtCurrency));
+   act_->onBalanceChanged(bs::network::XbtCurrency);
    act_->onTotalChanged();
 }
 
@@ -360,7 +360,7 @@ void AssetManager::onAccountBalanceLoaded(const std::string& currency, double va
       return;
    }
    balances_[currency] = value;
-   act_->onBalanceChanged(currency, value);
+   act_->onBalanceChanged(currency);
    act_->onTotalChanged();
 }
 

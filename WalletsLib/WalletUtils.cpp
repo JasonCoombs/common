@@ -17,7 +17,7 @@ using namespace bs;
 
 std::vector<UTXO> bs::selectUtxoForAmount(const std::vector<UTXO> &utxos, uint64_t amount)
 {
-   if (amount == std::numeric_limits<uint64_t>::max()) {
+   if ((amount == std::numeric_limits<uint64_t>::max()) || utxos.empty()) {
       return utxos;
    }
    else if (amount == 0) {

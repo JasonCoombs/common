@@ -738,8 +738,9 @@ message WalletsMessage
       string id = 1;
       string sub_id = 2;
       uint64 amount = 3;
-      bool   partial = 4;	// optional
-      repeated bytes utxos = 5;	// optional
+      bool   use_ZC = 4;
+      bool   partial = 5;	// optional
+      repeated bytes utxos = 6;	// optional
    }
 
    message ReservedUTXOs
