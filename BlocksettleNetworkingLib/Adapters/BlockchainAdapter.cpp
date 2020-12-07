@@ -126,10 +126,11 @@ void BlockchainAdapter::start()
       sendLoadingBC();
       init(armoryPtr_.get());
       feeEstimationsCache_ = std::make_shared<BitcoinFeeCache>(logger_, armoryPtr_);
+      onStateChanged(armoryPtr_->state());
    }
    else {
       ArmoryMessage msg;
-      msg.mutable_settings_request();  // broadcast ask for someone to provide settings
+      msg.mutable_settings_request();  // broadcast - ask for someone to provide settings
       bs::message::Envelope env{ 0, user_, nullptr, {}, {}
          , msg.SerializeAsString(), true };
       pushFill(env);
@@ -149,6 +150,16 @@ void BlockchainAdapter::sendLoadingBC()
    ArmoryMessage msg;
    msg.mutable_loading();
    Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(env);
+}
+
+void BlockchainAdapter::sendState(ArmoryState st)
+{
+   ArmoryMessage msg;
+   auto msgState = msg.mutable_state_changed();
+   msgState->set_state(static_cast<int32_t>(st));
+   msgState->set_top_block(armory_->topBlock());
+   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
 
@@ -258,13 +269,7 @@ void BlockchainAdapter::onStateChanged(ArmoryState st)
       [[clang::fallthrough]];
    default:    break;
    }
-
-   ArmoryMessage msg;
-   auto msgState = msg.mutable_state_changed();
-   msgState->set_state(static_cast<int32_t>(st));
-   msgState->set_top_block(armory_->topBlock());
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
-   pushFill(env);
+   sendState(st);
 }
 
 void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool online)

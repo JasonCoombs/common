@@ -495,7 +495,6 @@ void WalletsAdapter::processWalletRegistered(const std::string &walletId)
          break;
       }
       pendingRegistrations_.erase(wallet.first);
-      logger_->debug("[{}] continue after reg {} ({})", __func__, wallet.second->walletId(), walletId);
       wallet.second->onRegistered();
 
       const auto &unconfTgts = wallet.second->unconfTargets();

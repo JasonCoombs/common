@@ -91,6 +91,7 @@ protected:
 
    void sendReady();
    void sendLoadingBC();
+   void sendState(ArmoryState);
    bool processSettings(const BlockSettle::Common::ArmoryMessage_Settings &);
 
    bool processPushTxRequest(const bs::message::Envelope &
