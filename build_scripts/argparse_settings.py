@@ -17,9 +17,10 @@ from component_configurator import Configurator
 class ArgparseSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '2.1'
-        self._package_name = 'Argparse' + self._version
-        self._package_url = 'https://github.com/p-ranav/argparse/archive/v' + self._version + '.zip'
+        self._version = 'de4db870058c37b6094bc5ccb03c9ea45708c855'
+        self._package_name = 'args' + self._version
+        # self._package_url = 'https://github.com/p-ranav/argparse/archive/v' + self._version + '.zip'
+        self._package_url = 'https://github.com/Taywee/args/archive/' + self._version + '.zip'
 
     def get_package_name(self):
         return self._package_name
@@ -43,7 +44,7 @@ class ArgparseSettings(Configurator):
         return os.path.join(self._project_settings.get_common_build_dir(), 'Argparse')
 
     def get_unpacked_argparse_sources_dir(self):
-        return os.path.join(self._project_settings.get_sources_dir(), 'argparse-' + self._version)
+        return os.path.join(self._project_settings.get_sources_dir(), 'args-' + self._version)
 
     def install(self):
         self.filter_copy(self.get_unpacked_argparse_sources_dir(), self.get_install_dir())
