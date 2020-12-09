@@ -33,7 +33,7 @@ struct SslServerConnectionParams
 
    // If set, client's IP address will be read from x-forwarded-for header value if possible.
    // Last IP address in a list will be used - https://en.wikipedia.org/wiki/X-Forwarded-For#Format
-   bool trustForwardedForHeader{};
+   bool trustForwardedForHeader{false};
 
    // If set, clients connection must use client certificate
    bool requireClientCert{false};

@@ -1588,6 +1588,12 @@ message ObligationsManaging
 
 message PriceStreamManaging
 {
+   enum PriceBookType
+   {
+      CashSettlePriceBook = 0;
+      DeliverablePriceBook = 1;
+   }
+
    enum MessageType
    {
       GetBestOfferingPriceForOrder = 0;
@@ -1595,17 +1601,24 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      int64    xbt_amount = 1;
+      int64          xbt_amount = 1;
+      PriceBookType  price_book = 2;
    }
 
    message GetBestOfferResponse
    {
       int64    xbt_amount = 1;
 
-      double   offer = 2;
-      double   bid   = 3;
+      message PriceOffer
+      {
+         string   owner = 1;
+         double   price = 2;
+      }
 
-      string   offering_account_email = 4;
+      PriceOffer  offer = 2;
+      PriceOffer  bid   = 3;
+
+      bool        offer_exists = 4;
    }
 
    MessageType   message_type = 1;
