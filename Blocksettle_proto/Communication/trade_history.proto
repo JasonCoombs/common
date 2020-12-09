@@ -33,6 +33,7 @@ enum TradeHistoryRequestType
    // LoadEODSnapshotRequestType - send DateContainer as payload to get EOD for all days since that date
    // response EODSnapshotResponse
    LoadEODSnapshotRequestType                   = 7;
+   LoadAllFuturesPriceBookRequestType           = 8;
 }
 
 enum TradeHistoryResponseType
@@ -54,6 +55,8 @@ enum TradeHistoryResponseType
    EODSavedUpdateType                           = 10;
    // EODSnapshotResponseType - payload is EODSnapshotResponse
    EODSnapshotResponseType                      = 11;
+   LoadFuturesPriceBookResponseType             = 12;
+   PriceBookUpdateType                          = 13;
 }
 
 message TradeHistoryRequest
@@ -215,4 +218,29 @@ message EODSnapshotResponse
    DateContainer           since_date     = 1;
    repeated EODSavedUpdate eod            = 2;
    string                  debug_message  = 3;
+}
+
+enum PriceBookType
+{
+   CashSettlePriceBook  = 0;
+   DeliverablePriceBook = 1;
+}
+
+message LoadPriceBookRequest
+{
+   PriceBookType  book_type = 1;
+}
+
+message PriceBookUpdate
+{
+   message Entry
+   {
+      string volume  = 1;
+      double bid     = 2;
+      double ask     = 3;
+   }
+
+   string         product_name   = 1;
+   PriceBookType  book_type      = 2;
+   repeated Entry prices         = 3;
 }

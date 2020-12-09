@@ -1069,6 +1069,7 @@ enum TradeHistType
    TradeHistRequestEODSnapshot      = 10;
    TradeHistorySetInitialPrice      = 11;
    TradeHistEODEvent                = 12;
+   TradeHistPriceBookUpdate         = 13;
 }
 
 message TradeDataMessage
@@ -1244,20 +1245,21 @@ message TradeHistMessage
 {
    TradeHistType type = 1;
    oneof data {
-      bytes                                     fx_trade          = 2;
-      bytes                                     xbt_trade         = 3;
-      bytes                                     cc_trade          = 4;
-      TradeHistResponse                         response          = 5;
-      TradeHistRequest                          hist_request      = 6;
-      bytes                                     last_trade        = 7;
-      TradeHistBuySellResponse                  buy_sell_trades   = 8;
-      TradeHistSnapshotResponse                 trades_snapshot   = 9;
-      TradeHistPricesResponse                   prices            = 10;
-      Communication.TradeHistory.DateContainer  eod_request       = 11;
-      bytes                                     eod_data          = 12;
-      TradeHistEODSnapshotResponse              eod_snapshot      = 13;
-      SetInitialPriceRequest                    set_initial_price = 14;
-      TradeHistEODUpdate                        eod_update        = 15;
+      bytes                                        fx_trade          = 2;
+      bytes                                        xbt_trade         = 3;
+      bytes                                        cc_trade          = 4;
+      TradeHistResponse                            response          = 5;
+      TradeHistRequest                             hist_request      = 6;
+      bytes                                        last_trade        = 7;
+      TradeHistBuySellResponse                     buy_sell_trades   = 8;
+      TradeHistSnapshotResponse                    trades_snapshot   = 9;
+      TradeHistPricesResponse                      prices            = 10;
+      Communication.TradeHistory.DateContainer     eod_request       = 11;
+      bytes                                        eod_data          = 12;
+      TradeHistEODSnapshotResponse                 eod_snapshot      = 13;
+      SetInitialPriceRequest                       set_initial_price = 14;
+      TradeHistEODUpdate                           eod_update        = 15;
+      Communication.TradeHistory.PriceBookUpdate   price_book_update = 16;
    }
 }
 
