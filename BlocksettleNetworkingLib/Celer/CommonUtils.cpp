@@ -64,8 +64,8 @@ com::celertech::marketdata::api::enums::assettype::AssetType bs::celer::toCelerM
 {
    switch (at) {
    case bs::network::Asset::SpotFX:         return com::celertech::marketdata::api::enums::assettype::FX;
-   case bs::network::Asset::SpotXBT:        [[fallthrough]]
-   case bs::network::Asset::PrivateMarket:  [[fallthrough]]
+   case bs::network::Asset::SpotXBT: [[fallthrough]];
+   case bs::network::Asset::PrivateMarket: [[fallthrough]];
    default:
       return com::celertech::marketdata::api::enums::assettype::CRYPTO;
    }
@@ -106,7 +106,7 @@ bs::network::Order::Status bs::celer::mapFxOrderStatus(com::celertech::marketmer
    switch (status) {
    case com::celertech::marketmerchant::api::enums::orderstatus::FILLED:   return Order::Filled;
    case com::celertech::marketmerchant::api::enums::orderstatus::REJECTED: return Order::Failed;
-   case com::celertech::marketmerchant::api::enums::orderstatus::PENDING_NEW: [[fallthrough]]
+   case com::celertech::marketmerchant::api::enums::orderstatus::PENDING_NEW: [[fallthrough]];
    case com::celertech::marketmerchant::api::enums::orderstatus::NEW:      return Order::New;
    default:       return Order::Pending;
    }

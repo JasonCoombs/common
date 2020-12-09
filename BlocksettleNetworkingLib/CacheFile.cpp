@@ -70,7 +70,7 @@ void CacheFile::stop()
 
 void CacheFile::read()
 {  // use write lock, as we're writing to in-mem map here, not reading it
-   std::unique_lock<std::shared_mutex> lock(rwMutex_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadOnly);
    auto dbIter = db_->begin();
 
@@ -109,7 +109,7 @@ void CacheFile::read()
 
 void CacheFile::write()
 {
-   std::unique_lock<std::shared_mutex> lock(rwMutex_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadWrite);
    std::unique_lock<std::mutex> lockModif(cvMutex_);
    for (const auto &entry : mapModified_) {
@@ -158,12 +158,12 @@ void CacheFile::saver()
 void CacheFile::purge()
 {  // simple purge - without LRU/MRU counters
    {
-      std::shared_lock<std::shared_mutex> lock(rwMutex_);
+      std::unique_lock<std::mutex> lock(rwMutex_);
       if (map_.size() < nbMaxElems_) {
          return;
       }
    }
-   std::unique_lock<std::shared_mutex> lock(rwMutex_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadWrite);
    while (!stopped_ && (map_.size() >= nbMaxElems_)) {
       const auto entry = map_.begin();
@@ -179,7 +179,7 @@ void CacheFile::purge()
 
 BinaryData CacheFile::get(const BinaryData &key) const
 {
-   std::shared_lock<std::shared_mutex> lock(rwMutex_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    auto it = map_.find(key);
    if (it == map_.end()) {
       if (inMem_) {
@@ -200,7 +200,7 @@ BinaryData CacheFile::get(const BinaryData &key) const
 void CacheFile::put(const BinaryData &key, const BinaryData &val)
 {
    if (inMem_) {
-      std::unique_lock<std::shared_mutex> lock(rwMutex_);
+      std::unique_lock<std::mutex> lock(rwMutex_);
       map_[key] = val;
    }
    else {

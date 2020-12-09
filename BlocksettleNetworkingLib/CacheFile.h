@@ -13,7 +13,6 @@
 
 #include <unordered_map>
 #include <atomic>
-#include <shared_mutex>
 #include <thread>
 #include <lmdbpp.h>
 #include "AsyncClient.h"
@@ -46,7 +45,7 @@ private:
    std::thread thread_;
    std::condition_variable    cvSave_;
    mutable std::mutex         cvMutex_;
-   mutable std::shared_mutex  rwMutex_;
+   mutable std::mutex         rwMutex_;
    std::atomic_bool           stopped_{ false };
 };
 
