@@ -569,7 +569,8 @@ bs::signer::RequestId HeadlessContainer::signTXRequest(const bs::core::wallet::T
 }
 
 void HeadlessContainer::signTXRequest(const bs::core::wallet::TXSignRequest& txReq
-   , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>& cb
+   , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
+      , const std::string& errorReason)>& cb
    , TXSignMode mode, bool keepDuplicatedRecipients)
 {
    if (!txReq.isValid()) {

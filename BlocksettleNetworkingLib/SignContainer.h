@@ -94,7 +94,8 @@ public:
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
 
    virtual void signTXRequest(const bs::core::wallet::TXSignRequest&
-      , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)> &
+      , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
+         , const std::string& errorReason)> &
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
 
    virtual bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &

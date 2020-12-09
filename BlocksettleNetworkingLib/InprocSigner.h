@@ -13,6 +13,7 @@
 
 #include "WalletSignerContainer.h"
 #include <vector>
+#include "CoreHDWallet.h"
 
 namespace spdlog {
    class logger;
@@ -33,11 +34,14 @@ class InprocSigner : public WalletSignerContainer
 {
    Q_OBJECT
 public:
+   using PasswordLock = std::unique_ptr<bs::core::WalletPasswordScoped>;
+   using PwdLockCb = std::function<PasswordLock(const std::string& walletId)>;
+
    InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &
       , const std::shared_ptr<spdlog::logger> &
-      , const std::string &walletsPath, NetworkType);
+      , const std::string &walletsPath, NetworkType, const PwdLockCb& cb = nullptr);
    InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &
-      , const std::shared_ptr<spdlog::logger> &);
+      , const std::shared_ptr<spdlog::logger> &, const PwdLockCb& cb = nullptr);
    ~InprocSigner() noexcept override = default;
 
    void Start() override;
@@ -50,13 +54,11 @@ public:
    [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
    void signTXRequest(const bs::core::wallet::TXSignRequest&
-      , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>&
+      , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode, const std::string& errorReason)>&
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
 
    bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &
-      , TXSignMode
-      , bool
+      , const bs::sync::PasswordDialogData &, TXSignMode, bool
       , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> &) override;
 
    bs::signer::RequestId signSettlementPartialTXRequest(const bs::core::wallet::TXSignRequest &
@@ -137,6 +139,7 @@ private:
    NetworkType       netType_ = NetworkType::Invalid;
    bs::signer::RequestId   seqId_ = 1;
    bool           inited_ = false;
+   PwdLockCb   pwLockCb_{ nullptr };
 };
 
 #endif // INPROC_SIGNER_H

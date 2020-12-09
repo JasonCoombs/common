@@ -9,7 +9,6 @@
 
 */
 #include "InprocSigner.h"
-#include <QTimer>
 #include <spdlog/spdlog.h>
 #include "Address.h"
 #include "CoreWalletsManager.h"
@@ -18,15 +17,15 @@
 
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &mgr
    , const std::shared_ptr<spdlog::logger> &logger, const std::string &walletsPath
-   , NetworkType netType)
+   , NetworkType netType, const PwdLockCb& cb)
    : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
-   , walletsMgr_(mgr), walletsPath_(walletsPath), netType_(netType)
+   , walletsMgr_(mgr), walletsPath_(walletsPath), netType_(netType), pwLockCb_(cb)
 { }
 
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &wallet
-   , const std::shared_ptr<spdlog::logger> &logger)
+   , const std::shared_ptr<spdlog::logger> &logger, const PwdLockCb& cb)
    : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
-   , walletsPath_({}), netType_(wallet->networkType())
+   , walletsPath_({}), netType_(wallet->networkType()), pwLockCb_(cb)
 {
    walletsMgr_ = std::make_shared<bs::core::WalletsManager>(logger);
    walletsMgr_->addWallet(wallet);
@@ -104,20 +103,18 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
          }
          signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
       }
-      QTimer::singleShot(1, [this, reqId, signedTx] {
-         emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      });
+      emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
    }
    catch (const std::exception &e) {
-      QTimer::singleShot(1, [this, reqId, reason = std::string(e.what())] {
-         emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, reason);
-      });
+      logger_->error("[{}] failed to sign: {}", __func__, e.what());
+      emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
    }
    return reqId;
 }
 
 void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignReq
-   , const std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>&cb
+   , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
+      , const std::string& errorReason)>& cb
    , TXSignMode mode, bool keepDuplicatedRecipients)
 {
    if (!txSignReq.isValid()) {
@@ -144,6 +141,7 @@ void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignRe
    const auto reqId = seqId_++;
    try {
       BinaryData signedTx;
+      PasswordLock pwLock = pwLockCb_ ? std::move(pwLockCb_(wallets.front()->walletId())) : nullptr;
       if (mode == TXSignMode::Full) {
          if (wallets.size() == 1) {
             signedTx = wallets.front()->signTXRequest(txSignReq);
@@ -184,12 +182,15 @@ void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignRe
 }
 
 bs::signer::RequestId InprocSigner::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txReq
-   , const bs::sync::PasswordDialogData &
-   , SignContainer::TXSignMode
-   , bool
-   , const std::function<void (bs::error::ErrorCode, const BinaryData &)> &)
+   , const bs::sync::PasswordDialogData &, SignContainer::TXSignMode mode, bool keepDups
+   , const std::function<void (bs::error::ErrorCode, const BinaryData &)> &cb)
 {
-   return signTXRequest(txReq);
+   const auto& cbWrap = [cb](BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)
+   {
+      cb(result, signedTX);
+   };
+   signTXRequest(txReq, cbWrap, mode, keepDups);
+   return seqId_++;
 }
 
 bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &txReq
@@ -208,20 +209,18 @@ bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core
 
    const auto reqId = seqId_++;
    try {
+      PasswordLock pwLock = pwLockCb_ ? std::move(pwLockCb_(wallet->walletId())) : nullptr;
       const auto signedTx = wallet->signSettlementTXRequest(txReq, sd);
-      QTimer::singleShot(1, [this, reqId, signedTx] {
-         emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      });
       if (cb) {
          cb(bs::error::ErrorCode::NoError, signedTx);
       }
+      emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
    } catch (const std::exception &e) {
-      QTimer::singleShot(1, [this, reqId, reason = std::string(e.what())] {
-         emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, reason);
-      });
+      logger_->error("[{}] {}", __func__, e.what());
       if (cb) {
          cb(bs::error::ErrorCode::InternalError, {});
       }
+      emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
    }
    return reqId;
 }
@@ -405,7 +404,7 @@ bs::signer::RequestId InprocSigner::GetInfo(const std::string &walletId)
    }
    const auto reqId = seqId_++;
    const bs::hd::WalletInfo walletInfo(hdWallet);
-   QTimer::singleShot(1, [this, reqId, walletInfo] { emit QWalletInfo(reqId, walletInfo); });
+   emit QWalletInfo(reqId, walletInfo);
    return reqId;
 }
 

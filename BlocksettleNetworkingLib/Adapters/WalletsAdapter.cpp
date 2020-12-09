@@ -1948,11 +1948,15 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
       Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
       pushFill(envResp);
    };
+   if (!settlementFee_) {
+      logger_->warn("[{}] no settlement fee", __func__);
+      sendResponse({}, {}, "no settlement fee");
+      return true;
+   }
    const auto& inputs = utxoResMgr_->get(request.reserve_id());
-   if (inputs.empty() || !settlementFee_) {
-      logger_->warn("[{}] inputs: {}, settlement fee: {}", __func__, inputs.size()
-         , settlementFee_);
-      sendResponse({}, {}, "no inputs reserved");
+   if (inputs.empty()) {
+      logger_->warn("[{}] inputs: {}", __func__, inputs.size());
+      sendResponse({}, {}, "no inputs reserved for " + request.reserve_id());
       return true;
    }
    uint64_t inputAmount = 0;
