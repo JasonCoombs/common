@@ -144,16 +144,6 @@ bs::network::MDFields GetMDFields(const Blocksettle::Communication::BlocksettleM
    return result;
 }
 
-void BSMarketDataProvider::OnProductSnapshot(const bs::network::Asset::Type& assetType
-   , const Blocksettle::Communication::BlocksettleMarketData::ProductPriceInfo& productInfo
-   , double timestamp)
-{
-   callbacks_->onMDSecurityReceived(productInfo.product_name(), {assetType});
-   auto fields = GetMDFields(productInfo);
-   fields.emplace_back(bs::network::MDField{bs::network::MDField::MDTimestamp, timestamp, {}});
-   callbacks_->onMDUpdate(assetType, productInfo.product_name(), GetMDFields(productInfo));
-}
-
 void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
 {
    Blocksettle::Communication::BlocksettleMarketData::MDSnapshot snapshot;
@@ -194,11 +184,8 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
       OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, snapshot.cc_products(i), timestamp);
    }
 
-   //for (int i=0; i < snapshot.futures_size(); ++i) {
-     // OnProductSnapshot(bs::network::Asset::Type::Futures, snapshot.futures(i), timestamp);
-      // XXX - for now we just duplicate prices, cash settled shoudl get own price stream
-      //OnProductSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.futures(i), timestamp);
-   //}
+   OnPriceBookSnapshot(bs::network::Asset::Type::Futures, snapshot.deliverable(), timestamp);
+   OnPriceBookSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.cash_settled(), timestamp);
 }
 
 void BSMarketDataProvider::OnProductUpdate(const bs::network::Asset::Type& assetType
@@ -210,6 +197,45 @@ void BSMarketDataProvider::OnProductUpdate(const bs::network::Asset::Type& asset
       fields.emplace_back(bs::network::MDField{bs::network::MDField::MDTimestamp, timestamp, {}});
       callbacks_->onMDUpdate(assetType, productInfo.product_name(), fields);
    }
+}
+
+void BSMarketDataProvider::OnProductSnapshot(const bs::network::Asset::Type& assetType
+   , const Blocksettle::Communication::BlocksettleMarketData::ProductPriceInfo& productInfo
+   , double timestamp)
+{
+   callbacks_->onMDSecurityReceived(productInfo.product_name(), {assetType});
+   auto fields = GetMDFields(productInfo);
+   fields.emplace_back(bs::network::MDField{bs::network::MDField::MDTimestamp, timestamp, {}});
+   callbacks_->onMDUpdate(assetType, productInfo.product_name(), GetMDFields(productInfo));
+}
+
+void BSMarketDataProvider::OnPriceBookSnapshot(const bs::network::Asset::Type& assetType
+      , const Blocksettle::Communication::BlocksettleMarketData::PriceBook& priceBookInfo
+      , double timestamp)
+{
+   callbacks_->onMDSecurityReceived(priceBookInfo.product_name(), {assetType});
+   OnPriceBookUpdate(assetType, priceBookInfo, timestamp);
+}
+
+void BSMarketDataProvider::OnPriceBookUpdate(const bs::network::Asset::Type& assetType
+   , const Blocksettle::Communication::BlocksettleMarketData::PriceBook& priceBookInfo
+   , double timestamp)
+{
+   // MD update
+   {
+      bs::network::MDFields mdFields;
+      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, priceBookInfo.prices(0).ask(), QString()} );
+      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, priceBookInfo.prices(0).bid(), QString()} );
+
+      if (!qFuzzyIsNull(priceBookInfo.last_price())) {
+         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceLast, priceBookInfo.last_price(), QString()} );
+      }
+
+      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::DailyVolume, priceBookInfo.volume(), QString()} );
+      callbacks_->onMDUpdate(assetType, priceBookInfo.product_name(), mdFields);
+   }
+
+   // price book update
 }
 
 void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
@@ -252,11 +278,8 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
       OnProductUpdate(bs::network::Asset::Type::PrivateMarket, update.cc_products(i), timestamp);
    }
 
-   //for (int i=0; i < update.futures_size(); ++i) {
-     // OnProductUpdate(bs::network::Asset::Type::Futures, update.futures(i), timestamp);
-      // XXX - for now we just duplicate prices, cash settled shoudl get own price stream
-      //OnProductUpdate(bs::network::Asset::Type::CashSettledFutures, update.futures(i), timestamp);
-   //}
+   OnPriceBookUpdate(bs::network::Asset::Type::Futures, update.deliverable(), timestamp);
+   OnPriceBookUpdate(bs::network::Asset::Type::CashSettledFutures, update.cash_settled(), timestamp);
 }
 
 void BSMarketDataProvider::OnNewTradeUpdate(const std::string& data)
