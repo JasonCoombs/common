@@ -21,6 +21,7 @@
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
+#include "bs_proxy_terminal_pb.pb.h"
 #include "com/celertech/piggybank/api/subledger/DownstreamSubLedgerProto.pb.h"
 
 
@@ -365,6 +366,17 @@ void AssetManager::onAccountBalanceLoaded(const std::string& currency, double va
    emit balanceChanged(currency);
 }
 
+void AssetManager::onMessageFromPB(const ProxyTerminalPb::Response &response)
+{
+   switch (response.data_case()) {
+      case Blocksettle::Communication::ProxyTerminalPb::Response::kUpdateOrdersObligations:
+         processUpdateOrders(response.update_orders_obligations());
+         break;
+      default:
+         break;
+   }
+}
+
 void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
 {
    auto currentTime = QDateTime::currentDateTimeUtc();
@@ -384,5 +396,21 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
 
    if (emitUpdate) {
       emit xbtPriceChanged(ccy);
+   }
+}
+
+void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg)
+{
+   int64_t netDeliverableBalanceXbt = 0;
+   for (const auto &order : msg.orders()) {
+      if (order.trade_type() == bs::network::Asset::Futures && order.status() == bs::types::ORDER_STATUS_PENDING) {
+         auto sign = order.quantity() > 0 ? 1 : -1;
+         auto amount = bs::XBTAmount(std::abs(order.quantity()));
+         netDeliverableBalanceXbt += sign * static_cast<int64_t>(amount.GetValue());
+      }
+   }
+   if (netDeliverableBalanceXbt != netDeliverableBalanceXbt_) {
+      netDeliverableBalanceXbt_ = netDeliverableBalanceXbt;
+      emit netDeliverableBalanceChanged();
    }
 }

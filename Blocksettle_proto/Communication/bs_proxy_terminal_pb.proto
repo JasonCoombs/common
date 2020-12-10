@@ -109,6 +109,7 @@ message Request
         int32 side = 1;
         double price = 2;
         uint64 amount = 3;
+        string client_order_id = 4;
     }
 
    oneof data
@@ -187,6 +188,16 @@ message Response
       DeliveryObligationsRequest    obligation  = 3;
    }
 
+   message FutureResponse
+   {
+      string      client_order_id       = 1;
+      bool        success               = 2;
+      string      error_msg             = 3;
+      int32       side                  = 4;
+      double      price                 = 5;
+      uint64      amount                = 6;
+   }
+
    oneof data
    {
       StartOtc       start_otc         = 1;
@@ -195,6 +206,7 @@ message Response
       UnsignedPayinRequest    send_unsigned_payin  = 3;
       SignPayoutRequest       sign_payout          = 4;
       SignPayinRequest        sign_payin           = 5;
+      FutureResponse          future_response      = 6;
 
       // update_orders - deprecated after 0.91.2
       UpdateOrders                  update_orders              = 20;

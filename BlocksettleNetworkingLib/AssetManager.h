@@ -20,6 +20,15 @@
 #include <QMutex>
 #include <QObject>
 
+namespace Blocksettle {
+   namespace Communication {
+      namespace ProxyTerminalPb {
+         class Response;
+         class Response_UpdateOrdersAndObligations;
+      }
+   }
+}
+
 namespace spdlog {
    class logger;
 }
@@ -57,6 +66,7 @@ public:
    double getCCTotal();
    uint64_t getCCLotSize(const std::string &cc) const;
    bs::Address getCCGenesisAddr(const std::string &cc) const;
+   int64_t netDeliverableBalanceXbt() const { return netDeliverableBalanceXbt_; }
 
    bool hasSecurities() const { return securitiesReceived_; }
    std::vector<QString> securities(bs::network::Asset::Type = bs::network::Asset::Undefined) const;
@@ -74,6 +84,7 @@ signals:
    void fxBalanceCleared();
 
    void balanceChanged(const std::string& currency);
+   void netDeliverableBalanceChanged();
 
    void totalChanged();
    void securitiesChanged();
@@ -84,6 +95,7 @@ signals:
     void onMDSecurityReceived(const std::string &security, const bs::network::SecurityDef &sd);
     void onMDSecuritiesReceived();
     void onAccountBalanceLoaded(const std::string& currency, double value);
+    void onMessageFromPB(const Blocksettle::Communication::ProxyTerminalPb::Response &response);
 
  private slots:
    void onCelerConnected();
@@ -95,6 +107,7 @@ protected:
 
 private:
   void sendUpdatesOnXBTPrice(const std::string& ccy);
+  void processUpdateOrders(const Blocksettle::Communication::ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg);
 
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
@@ -113,6 +126,8 @@ protected:
    std::string assignedAccount_;
 
    std::unordered_map<std::string, QDateTime>  xbtPriceUpdateTimes_;
+
+   int64_t netDeliverableBalanceXbt_{};
 };
 
 #endif // __ASSET__MANAGER_H__
