@@ -136,6 +136,7 @@ protected:
    bool walletsReady_{ false };
    bool registrationComplete_{ false };
    std::atomic_bool  suspended_{ true };
+   std::shared_ptr<std::atomic_bool>   stopped_;
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;
    std::map<uint64_t, bs::message::Envelope> requestsPool_;
    std::mutex                                mtxReqPool_;

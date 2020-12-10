@@ -44,10 +44,12 @@ BlockchainAdapter::BlockchainAdapter(const std::shared_ptr<spdlog::logger> &logg
    , const std::shared_ptr<bs::message::User> &user
    , const std::shared_ptr<ArmoryConnection> &armory) //pre-inited armory connection [optional]
    : logger_(logger), user_(user), armoryPtr_(armory)
+   , stopped_(std::make_shared<std::atomic_bool>(false))
 {}
 
 BlockchainAdapter::~BlockchainAdapter()
 {
+   *stopped_ = true;
    cleanup();
 }
 
@@ -673,7 +675,7 @@ bool BlockchainAdapter::processUnconfTarget(const bs::message::Envelope &env
 bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
    , const ArmoryMessage_WalletIDs &request)
 {
-   const auto &cbTxNs = [this, env]
+   const auto &cbTxNs = [this, env, stopped = stopped_]
       (const std::map<std::string, CombinedCounts> &txns)
    {
       ArmoryMessage msg;
@@ -686,6 +688,9 @@ bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
             msgByAddr->set_address(byAddr.first.toBinStr());
             msgByAddr->set_txn(byAddr.second);
          }
+      }
+      if (*stopped) {
+         return;
       }
       Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
       pushFill(envResp);
@@ -701,12 +706,15 @@ bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
 bool BlockchainAdapter::processBalance(const bs::message::Envelope &env
    , const ArmoryMessage_WalletIDs &request)
 {
-   const auto &cbBal = [this, env]
+   const auto &cbBal = [this, env, stopped = stopped_]
       (const std::map<std::string, CombinedBalances> &bals)
    {
       ArmoryMessage msg;
       auto msgResp = msg.mutable_wallet_balance_response();
       for (const auto &bal : bals) {
+         if (*stopped) {
+            return;
+         }
          auto msgByWallet = msgResp->add_balances();
          msgByWallet->set_wallet_id(bal.first);
          if (bal.second.walletBalanceAndCount_.size() == 4) {
@@ -720,6 +728,9 @@ bool BlockchainAdapter::processBalance(const bs::message::Envelope &env
                "balance received for {}", bal.first);
          }
          for (const auto &byAddr : bal.second.addressBalances_) {
+            if (*stopped_) {
+               return;
+            }
             auto msgByAddr = msgByWallet->add_addr_balances();
             msgByAddr->set_address(byAddr.first.toBinStr());
             if (byAddr.second.size() == 3) {
@@ -815,7 +826,7 @@ void BlockchainAdapter::sendBroadcastTimeout(const std::string &timeoutId)
 bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
    , const ArmoryMessage_TXHashes &request)
 {
-   const auto &cb = [this, env]
+   const auto &cb = [this, env, stopped = stopped_]
       (const AsyncClient::TxBatchResult &txBatch, std::exception_ptr)
    {
       ArmoryMessage msg;
@@ -825,7 +836,11 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
             continue;
          }
          msgResp->add_transactions(tx.second->serialize().toBinStr());
-      }             // broadcast intentionally even as a reply to some request
+      }
+      if (*stopped) {
+         return;
+      }
+      // broadcast intentionally even as a reply to some request
       Envelope envResp{ env.id, user_, nullptr, {}, {}, msg.SerializeAsString() };
       pushFill(envResp);
    };
@@ -847,10 +862,10 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
       walletId = filter.substr(0, posDot);
       addrStr = filter.substr(posDot + 1);
    }
-   const auto &cbLedger = [this, env, filter, walletId]
+   const auto &cbLedger = [this, env, filter, walletId, stopped = stopped_]
       (const std::shared_ptr<AsyncClient::LedgerDelegate> &delegate)
    {
-      const auto &cbPage = [this, delegate, env, filter, walletId]
+      const auto &cbPage = [this, delegate, env, filter, walletId, stopped]
          (ReturnMessage<uint64_t> pageCntReturn)
       {
          uint32_t pageCnt = 0;
@@ -861,10 +876,10 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
             return;
          }
          for (uint32_t page = 0; page < pageCnt; ++page) {
-            if (suspended_) {
+            if (*stopped || suspended_) {
                return;
             }
-            const auto &cbEntries = [this, env, filter, page, pageCnt, walletId]
+            const auto &cbEntries = [this, env, filter, page, pageCnt, walletId, stopped]
                (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
             {
                try {
@@ -900,6 +915,9 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
                      for (const auto &addr : entry.addresses) {
                         msgEntry->add_addresses(addr.display());
                      }
+                  }
+                  if (*stopped) {
+                     return;
                   }
                   Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
                   pushFill(envResp);
@@ -989,7 +1007,7 @@ bool BlockchainAdapter::processFeeLevels(const bs::message::Envelope& env
       else if (level > 1008) {
          level = 1008;
       }
-      const auto& cbFee = [this, env, level, result, size=request.levels_size()]
+      const auto& cbFee = [this, env, level, result, size=request.levels_size(), stopped = stopped_]
          (float fee)
       {
          if (fee == std::numeric_limits<float>::infinity()) {
@@ -1016,6 +1034,9 @@ bool BlockchainAdapter::processFeeLevels(const bs::message::Envelope& env
                respData->set_level(pair.first);
                respData->set_fee(pair.second);
             }
+            if (*stopped) {
+               return;
+            }
             Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
             pushFill(envResp);
          }
@@ -1035,7 +1056,7 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
    for (const auto& walletId : request.wallet_ids()) {
       walletIDs.push_back(walletId);
    }
-   const auto& cbTxOutList = [this, env, walletIDs]
+   const auto& cbTxOutList = [this, env, walletIDs, stopped = stopped_]
       (const std::vector<UTXO>& txOutList)
    {
       ArmoryMessage msg;
@@ -1045,6 +1066,9 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
       }
       for (const auto& utxo : txOutList) {
          msgResp->add_utxos(utxo.serialize().toBinStr());
+      }
+      if (*stopped) {
+         return;
       }
       Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
       pushFill(envResp);
@@ -1069,7 +1093,8 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
 bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
    , const ArmoryMessage_GetOutpointsForAddrList& request)
 {
-   auto cbOutpoints = [this, env] (const OutpointBatch& outpointBatch)
+   auto cbOutpoints = [this, env, stopped = stopped_]
+      (const OutpointBatch& outpointBatch)
    {
       ArmoryMessage msg;
       auto msgResp = msg.mutable_out_points();
@@ -1088,6 +1113,9 @@ bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
             inputData->set_spent(outpoint.isSpent_);
             inputData->set_spender_hash(outpoint.spenderHash_.toBinStr());
          }
+      }
+      if (*stopped) {
+         return;
       }
       bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
          , msg.SerializeAsString() };
@@ -1126,10 +1154,10 @@ void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& req
       itWallet->second.registered = true;
    }
    const auto& entries = std::make_shared<std::vector<bs::TXEntry>>();
-   const auto& cbLedger = [this, request, itWallet, entries]
+   const auto& cbLedger = [this, request, itWallet, entries, stopped = stopped_]
       (const std::shared_ptr<AsyncClient::LedgerDelegate>& delegate)
    {
-      const auto& cbPage = [this, delegate, request, itWallet, entries]
+      const auto& cbPage = [this, delegate, request, itWallet, entries, stopped]
          (ReturnMessage<uint64_t> pageCntReturn)
       {
          uint32_t pageCnt = 0;
@@ -1140,10 +1168,10 @@ void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& req
             return;
          }
          for (uint32_t page = 0; page < pageCnt; ++page) {
-            if (suspended_) {
+            if (*stopped || suspended_) {
                return;
             }
-            const auto& cbEntries = [this, request, page, pageCnt, itWallet, entries]
+            const auto& cbEntries = [this, request, page, pageCnt, itWallet, entries, stopped]
                (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
             {
                try {
@@ -1182,6 +1210,9 @@ void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& req
                      for (const auto& addr : entry.addresses) {
                         msgEntry->add_addresses(addr.display());
                      }
+                  }
+                  if (*stopped) {
+                     return;
                   }
                   Envelope envResp{ request.env.id, user_, request.env.sender, {}, {}, msg.SerializeAsString() };
                   pushFill(envResp);
