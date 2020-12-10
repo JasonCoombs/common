@@ -1502,13 +1502,14 @@ message WebClientMessage
 
 enum RelayUser
 {
-   UserUnknown = 0;
-   UserPrivateBridge = 1;
-   UserStorage = 2;
-   UserCCTracker = 3;
-   UserCeler = 4;
-   UserGenoa = 5;
-   UserTradeHist = 6;
+   UserUnknown          = 0;
+   UserPrivateBridge    = 1;
+   UserStorage          = 2;
+   UserCCTracker        = 3;
+   UserCeler            = 4;
+   UserGenoa            = 5;
+   UserTradeHist        = 6;
+   StreamPriceOffering  = 7;
 }
 
 message RelayedMessage
