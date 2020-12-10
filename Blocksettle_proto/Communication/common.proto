@@ -530,6 +530,16 @@ message SignerMessage
       string wallet_id = 1;
       bool   enable = 2;	//add limits here, maybe?
    }
+
+   message DialogRequest
+   {
+      int32 dialog_type = 1;
+      message KeyValue {
+         string key = 1;
+         string value = 2;
+      }
+      repeated KeyValue data = 2;
+   }
    
    oneof data
    {
@@ -573,6 +583,7 @@ message SignerMessage
       Blocksettle.Communication.headless.SignTxRequest resolve_pub_spenders = 38;
       SignerState        resolved_spenders = 39;
       AutoSign           auto_sign = 40;
+      DialogRequest      dialog_request = 41;
    }
 }
 
