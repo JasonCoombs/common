@@ -107,7 +107,7 @@ class ZeroMQSettings(Configurator):
 
         command = ['./configure',
                    '--enable-libunwind=no',
-                   '--enable_drafts=no',
+                   '--enable-drafts=no',
                    '--verbose',
                    '--prefix',
                    self.get_install_dir(),
