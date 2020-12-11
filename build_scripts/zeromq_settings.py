@@ -68,6 +68,7 @@ class ZeroMQSettings(Configurator):
         command.append('cmake')
         command.append(self.get_unpacked_sources_dir())
         command.append('-DZMQ_BUILD_TESTS=OFF')
+        command.append('-DENABLE_DRAFTS=OFF')
 
         if self._project_settings.get_link_mode() == 'shared':
             command.append('-DBUILD_STATIC=OFF')
@@ -106,6 +107,7 @@ class ZeroMQSettings(Configurator):
 
         command = ['./configure',
                    '--enable-libunwind=no',
+                   '--enable_drafts=no',
                    '--verbose',
                    '--prefix',
                    self.get_install_dir(),
