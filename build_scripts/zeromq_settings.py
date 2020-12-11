@@ -18,7 +18,7 @@ from component_configurator import Configurator
 class ZeroMQSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '4.3.2'
+        self._version = '4.3.3'
         self._script_revision = '3'
 
         if settings.on_windows():
@@ -82,7 +82,7 @@ class ZeroMQSettings(Configurator):
                 command.append('-DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('-DCMAKE_C_FLAGS_RELWITHDEBINFO="/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/MT /O2 /Ob2 /D NDEBUG"')
-                
+
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
         if self._project_settings.on_windows():
