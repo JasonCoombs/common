@@ -11,10 +11,12 @@
 #ifndef __BS_COMMON_TYPES_H__
 #define __BS_COMMON_TYPES_H__
 
-#include <QObject>
 #include <QDateTime>
+#include <QObject>
 #include <QString>
+
 #include "Address.h"
+
 #include "com/celertech/marketmerchant/api/enums/SideProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/AssetTypeProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
@@ -23,6 +25,8 @@
 #include "com/celertech/marketdata/api/enums/AssetTypeProto.pb.h"
 #include "com/celertech/marketdata/api/enums/ProductTypeProto.pb.h"
 #include "com/celertech/marketdata/api/enums/MarketDataEntryTypeProto.pb.h"
+
+#include "bs_types.pb.h"
 
 #ifndef NDEBUG
 #include <stdexcept>
@@ -64,8 +68,13 @@ namespace bs {
 
          static Type fromCeler(com::celertech::marketmerchant::api::enums::side::Side side);
          static com::celertech::marketmerchant::api::enums::side::Side toCeler(Type side);
+
+         static Type fromBS(const bs::types::Side& side);
+         static bs::types::Side toBS(const Type& side);
+
          static const char *toString(Type side);
          static const char *responseToString(Type side);
+
          static Type invert(Type side);
       };
 

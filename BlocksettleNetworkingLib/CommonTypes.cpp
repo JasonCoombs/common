@@ -94,18 +94,42 @@ bs::network::MDInfo bs::network::MDField::get(const MDFields &fields)
 
 Side::Type Side::fromCeler(com::celertech::marketmerchant::api::enums::side::Side side) {
    switch (side) {
-      case com::celertech::marketmerchant::api::enums::side::BUY:    return Buy;
-      case com::celertech::marketmerchant::api::enums::side::SELL:   return Sell;
+   case com::celertech::marketmerchant::api::enums::side::BUY:    return Buy;
+   case com::celertech::marketmerchant::api::enums::side::SELL:   return Sell;
    }
    return Undefined;
 }
 
 com::celertech::marketmerchant::api::enums::side::Side Side::toCeler(Side::Type side) {
    switch (side) {
-      case Buy:   return com::celertech::marketmerchant::api::enums::side::BUY;
-      case Sell:
-      default:    return com::celertech::marketmerchant::api::enums::side::SELL;
+   case Buy:   return com::celertech::marketmerchant::api::enums::side::BUY;
+   case Sell:
+   default:    return com::celertech::marketmerchant::api::enums::side::SELL;
    }
+}
+
+Side::Type Side::fromBS(const bs::types::Side& side)
+{
+   switch (side) {
+   case bs::types::Side::SIDE_BUY:
+      return Side::Buy;
+   case bs::types::Side::SIDE_SELL:
+      return Side::Sell;
+   }
+
+   return Side::Undefined;
+}
+
+bs::types::Side Side::toBS(const Side::Type& side)
+{
+   switch(side) {
+   case Side::Buy:
+      return bs::types::Side::SIDE_BUY;
+   case Side::Sell:
+      return bs::types::Side::SIDE_SELL;
+   }
+
+   return bs::types::Side::SIDE_INVALID;
 }
 
 const char *Side::toString(Side::Type side) {

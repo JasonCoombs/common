@@ -106,10 +106,9 @@ message Request
 
     message FutureRequest
     {
-        int32 side = 1;
-        double price = 2;
-        uint64 amount = 3;
-        string client_order_id = 4;
+        bs.types.Side   side     = 1;
+        double          price    = 2;
+        uint64          amount   = 3;
     }
 
    oneof data
@@ -190,12 +189,11 @@ message Response
 
    message FutureResponse
    {
-      string      client_order_id       = 1;
-      bool        success               = 2;
-      string      error_msg             = 3;
-      int32       side                  = 4;
-      double      price                 = 5;
-      uint64      amount                = 6;
+      bool           success     = 1;
+      string         error_msg   = 2;
+      bs.types.Side  side        = 3;
+      double         price       = 4;
+      uint64         amount      = 5;
    }
 
    oneof data

@@ -175,7 +175,7 @@ void BsClient::sendFutureRequest(const bs::network::FutureRequest &details)
 {
    ProxyTerminalPb::Request request;
    auto futureRequest = request.mutable_future_request();
-   futureRequest->set_side(static_cast<int>(details.side));
+   futureRequest->set_side(bs::network::Side::toBS(details.side));
    futureRequest->set_price(details.price);
    futureRequest->set_amount(details.amount.GetValue());
    sendPbMessage(request.SerializeAsString());
