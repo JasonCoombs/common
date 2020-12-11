@@ -68,18 +68,22 @@ WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsM
 
 WalletInfo::WalletInfo(const bs::sync::WalletInfo &hdWallet, QObject *parent)
 {
-/*   initFromRootWallet(hdWallet);
-   initEncKeys(hdWallet);
+   if ((hdWallet.format != bs::sync::WalletFormat::HD) || (hdWallet.ids.size() != 1)) {
+      throw std::runtime_error("invalid wallet info supplied");
+   }
+   walletId_ = QString::fromStdString(hdWallet.ids.at(0));
+   rootId_ = walletId_;
+   name_ = QString::fromStdString(hdWallet.name);
+   desc_ = QString::fromStdString(hdWallet.description);
 
-   if (walletsMgr_) {
-      connect(walletsMgr_.get(), &bs::sync::WalletsManager::walletMetaChanged, this, [this, hdWallet]
-      (const std::string &walletId) {
-         if (walletId == hdWallet->walletId()) {
-            initFromRootWallet(hdWallet);
-            initEncKeys(hdWallet);
-         }
-      });
-   }*/   //TODO: reimplement
+   for (const auto& encKey : hdWallet.encryptionKeys) {
+      encKeys_ << QString::fromStdString(encKey.toBinStr());
+   }
+   for (const auto& encType : hdWallet.encryptionTypes) {
+      encTypes_ << encType;
+   }
+   keyRank_ = hdWallet.encryptionRank;
+   emit walletChanged();
 }
 
 WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsMgr
