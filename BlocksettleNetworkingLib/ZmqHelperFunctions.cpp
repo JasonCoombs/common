@@ -11,8 +11,11 @@
 #include "ZmqHelperFunctions.h"
 #include "MessageHolder.h"
 
+
 #ifndef WIN32
-#  include <arpa/inet.h>
+   #include <arpa/inet.h>
+#else
+   #include <Winsock2.h>
 #endif
 
 #include <zmq.h>
