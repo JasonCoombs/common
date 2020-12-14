@@ -68,6 +68,8 @@ public:
    bool SendDataToClient(const std::string& clientId, const std::string& data) override;
    bool SendDataToAllClients(const std::string&) override;
 
+   bool closeClient(const std::string& clientId) override;
+
    static int callbackHelper(struct lws *wsi, int reason, void *user, void *in, size_t len);
 
 private:
@@ -101,8 +103,9 @@ private:
    std::atomic_bool stopped_{};
    lws_context *context_{};
 
-   std::recursive_mutex mutex_;
-   std::queue<WsServerDataToSend> packets_;
+   std::recursive_mutex             mutex_;
+   std::queue<WsServerDataToSend>   packets_;
+   std::queue<std::string>          forceClosingClients_;
 
    // Fields accessible from listener thread only
    std::map<std::string, WsServerClientData> clients_;

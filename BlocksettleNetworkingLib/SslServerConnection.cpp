@@ -149,10 +149,14 @@ int SslServerConnection::callback(lws *wsi, int reason, void *user, void *in, si
          return 0;
       }
       case LWS_CALLBACK_EVENT_WAIT_CANCELLED: {
-         std::queue<WsServerDataToSend> packets;
-         {  std::lock_guard<std::recursive_mutex> lock(mutex_);
+         decltype(packets_)               packets;
+         decltype(forceClosingClients_)   forceClosingClients;
+         {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
             std::swap(packets, packets_);
+            std::swap(forceClosingClients, forceClosingClients_);
          }
+
          while (!packets.empty()) {
             auto data = std::move(packets.front());
             packets.pop();
@@ -175,6 +179,22 @@ int SslServerConnection::callback(lws *wsi, int reason, void *user, void *in, si
             client.packets.push(std::move(data.packet));
             lws_callback_on_writable(client.wsi);
          }
+
+         while (!forceClosingClients.empty()) {
+            auto clientId = std::move(forceClosingClients.front());
+            forceClosingClients.pop();
+
+            auto clientIt = clients_.find(clientId);
+            if (clientIt != clients_.end()) {
+               SPDLOG_LOGGER_DEBUG(logger_, "force close client {}", bs::toHex(clientId));
+               auto clientWsi = clientIt->second.wsi;
+               if (clientWsi) {
+                  lws_close_reason(clientWsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+                  lws_set_timeout(clientWsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
+               }
+            }
+         }
+
          break;
       }
 
@@ -266,7 +286,8 @@ std::string SslServerConnection::nextClientId()
 bool SslServerConnection::SendDataToClient(const std::string &clientId, const std::string &data)
 {
    WsServerDataToSend toSend{clientId, WsRawPacket(data)};
-   {  std::lock_guard<std::recursive_mutex> lock(mutex_);
+   {
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
       packets_.push(std::move(toSend));
    }
    lws_cancel_service(context_);
@@ -283,4 +304,14 @@ int SslServerConnection::callbackHelper(lws *wsi, int reason, void *user, void *
    auto context = lws_get_context(wsi);
    auto server = static_cast<SslServerConnection*>(lws_context_user(context));
    return server->callback(wsi, reason, user, in, len);
+}
+
+bool SslServerConnection::closeClient(const std::string &clientId)
+{
+   {
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
+      forceClosingClients_.push(clientId);
+   }
+   lws_cancel_service(context_);
+   return true;
 }
