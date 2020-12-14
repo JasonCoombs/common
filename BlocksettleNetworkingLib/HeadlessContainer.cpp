@@ -890,7 +890,8 @@ bs::signer::RequestId HeadlessContainer::DeleteHDLeaf(const std::string &leafWal
    return 0;
 }
 
-bs::signer::RequestId HeadlessContainer::customDialogRequest(bs::signer::ui::GeneralDialogType signerDialog, const QVariantMap &data)
+bs::signer::RequestId HeadlessContainer::customDialogRequest(bs::signer::ui::GeneralDialogType signerDialog
+   , const QVariantMap &data)
 {
    // serialize variant data
    QByteArray ba;

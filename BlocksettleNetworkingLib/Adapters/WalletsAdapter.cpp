@@ -760,6 +760,8 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processGetIntAddresses(env, msg.get_int_addresses());
    case WalletsMessage::kGetUsedAddresses:
       return processGetUsedAddresses(env, msg.get_used_addresses());
+   case WalletsMessage::kCreateExtAddress:
+      return processCreateExtAddress(env, msg.create_ext_address());
    case WalletsMessage::kGetAddrComments:
       return processGetAddrComments(env, msg.get_addr_comments());
    case WalletsMessage::kSetAddrComments:
@@ -1054,7 +1056,7 @@ bool WalletsAdapter::processGetExtAddresses(const bs::message::Envelope &env, co
       const auto &index = wallet->getAddressIndex(addr);
       addresses.push_back({ addr, index, wallet->getWalletIdForAddress(addr) });
    }
-   return sendAddresses(env, addresses);
+   return sendAddresses(env, wallet->walletId(), addresses);
 }
 
 bool WalletsAdapter::processGetIntAddresses(const bs::message::Envelope &env, const std::string &walletId)
@@ -1069,7 +1071,7 @@ bool WalletsAdapter::processGetIntAddresses(const bs::message::Envelope &env, co
       const auto &index = wallet->getAddressIndex(addr);
       addresses.push_back({ addr, index, wallet->getWalletIdForAddress(addr) });
    }
-   return sendAddresses(env, addresses);
+   return sendAddresses(env, wallet->walletId(), addresses);
 }
 
 bool WalletsAdapter::processGetUsedAddresses(const bs::message::Envelope &env, const std::string &walletId)
@@ -1084,14 +1086,15 @@ bool WalletsAdapter::processGetUsedAddresses(const bs::message::Envelope &env, c
       const auto &index = wallet->getAddressIndex(addr);
       addresses.push_back({addr, index, wallet->getWalletIdForAddress(addr) });
    }
-   return sendAddresses(env, addresses);
+   return sendAddresses(env, wallet->walletId(), addresses);
 }
 
 bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env
-   , const std::vector<bs::sync::Address> &addrs)
+   , const std::string &walletId, const std::vector<bs::sync::Address> &addrs)
 {
    WalletsMessage msg;
    auto msgResp = msg.mutable_wallet_addresses();
+   msgResp->set_wallet_id(walletId);
    for (const auto &addr : addrs) {
       auto addrResp = msgResp->add_addresses();
       addrResp->set_address(addr.address.display());
@@ -1100,6 +1103,38 @@ bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env
    }
    Envelope envResp{ env.id, ownUser_, env.sender, {}, {}, msg.SerializeAsString() };
    return pushFill(envResp);
+}
+
+bool WalletsAdapter::processCreateExtAddress(const bs::message::Envelope& env
+   , const std::string& walletId)
+{
+   auto wallet = getWalletById(walletId);
+   if (!wallet) {
+      const auto& hdWallet = getHDWalletById(walletId);
+      if (!hdWallet) {
+         logger_->error("[{}] failed to find wallet {}", __func__, walletId);
+         sendAddresses(env, walletId, {});
+         return true;
+      }
+      const auto& xbtGroup = hdWallet->getGroup(hdWallet->getXBTGroupType());
+      if (!xbtGroup) {
+         logger_->error("[{}] no XBT group in wallet {}", __func__, walletId);
+         sendAddresses(env, walletId, {});
+         return true;
+      }
+      wallet = xbtGroup->getLeaf(bs::hd::Purpose::Native);
+      if (!wallet) {
+         logger_->error("[{}] no native XBT leaf in wallet {}", __func__, walletId);
+         sendAddresses(env, walletId, {});
+         return true;
+      }
+   }
+   const auto& cbAddress = [env, wallet, this](const bs::Address&)
+   {  // send all ext addresses - the new one should be included as the last
+      processGetExtAddresses(env, wallet->walletId());
+   };
+   wallet->getNewExtAddress(cbAddress);
+   return true;
 }
 
 bool WalletsAdapter::processGetAddrComments(const bs::message::Envelope &env
