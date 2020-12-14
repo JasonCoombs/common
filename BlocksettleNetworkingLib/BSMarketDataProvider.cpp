@@ -224,8 +224,10 @@ void BSMarketDataProvider::OnPriceBookUpdate(const bs::network::Asset::Type& ass
    // MD update
    {
       bs::network::MDFields mdFields;
-      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, priceBookInfo.prices(0).ask(), QString()} );
-      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, priceBookInfo.prices(0).bid(), QString()} );
+      for (const auto &price : priceBookInfo.prices()) {
+         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, price.ask(), QString::fromStdString(price.volume())} );
+         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, price.bid(), QString::fromStdString(price.volume())} );
+      }
 
       if (!qFuzzyIsNull(priceBookInfo.last_price())) {
          mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceLast, priceBookInfo.last_price(), QString()} );
