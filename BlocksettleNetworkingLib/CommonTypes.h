@@ -294,7 +294,7 @@ namespace bs {
          };
          Type     type;
          double   value;
-         QString  desc;
+         QString  levelQuantity;
 
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
