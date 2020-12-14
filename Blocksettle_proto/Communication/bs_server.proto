@@ -1625,8 +1625,8 @@ message PriceStreamManaging
 
       message PriceOffer
       {
-         string   owner = 1;
-         double   price = 2;
+         string   owner_entity_name = 1;
+         double   price             = 2;
       }
 
       PriceOffer  offer = 2;
