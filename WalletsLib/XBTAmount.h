@@ -63,6 +63,10 @@ namespace bs {
       {
          return (value_ > other.value_);
       }
+      bool operator < (const XBTAmount& other) const
+      {
+         return (value_ < other.value_);
+      }
 
       XBTAmount operator + (const XBTAmount &other) const
       {
