@@ -776,6 +776,17 @@ message UserEntityInfo
    string entity_name   = 2;
 }
 
+message AffectedEntities
+{
+   repeated string entity_name = 1;
+}
+
+message CutoffPriceProcessingResult
+{
+   bool              result            = 1;
+   AffectedEntities  affected_entities = 2;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -819,8 +830,8 @@ message GenoaMessage
       TradeDataMessage                 xbt1day_cash_settled_trade_request  = 40;
       GenoaFxTradeResponse             xbt1day_cash_settled_trade_response = 41;
 
-      double                           cutoff_price   = 42;
-      bool                             day_closed     = 43;
+      double                           cutoff_price               = 42;
+      CutoffPriceProcessingResult      cutoff_processing_result   = 43;
    }
 }
 
@@ -1287,24 +1298,25 @@ message SettlementTxMessage
 
 enum TerminalMessageType
 {
-   TerminalUnknownType           = 0;
-   TerminalSendBlotterUpdate     = 1;
-   TerminalUnsignedPayinRequest  = 2;
-   TerminalSignedPayinRequest    = 3;
-   TerminalSignedPayoutRequest   = 4;
-   TerminalXBTTradeCancel        = 5;
-   TerminalCCTradeCancel         = 6;
-   TerminalOtcStart              = 10;
-   TerminalOtcVerify             = 11;
-   TerminalOtcSealPayin          = 12;
-   TerminalOtcTxProcess          = 13;
-   TerminalOtcCancel             = 14;
-   TerminalOtcUpdate             = 15;
-   TerminalUpdateBalance         = 16;
-   TerminalOTCcVerify            = 17;
-   TerminalOTCcAccept            = 18;
-   TerminalOTCcTrade             = 19;
-   TerminalRFSOrder              = 20;
+   TerminalUnknownType              = 0;
+   TerminalSendBlotterUpdate        = 1;
+   TerminalUnsignedPayinRequest     = 2;
+   TerminalSignedPayinRequest       = 3;
+   TerminalSignedPayoutRequest      = 4;
+   TerminalXBTTradeCancel           = 5;
+   TerminalCCTradeCancel            = 6;
+   TerminalOtcStart                 = 10;
+   TerminalOtcVerify                = 11;
+   TerminalOtcSealPayin             = 12;
+   TerminalOtcTxProcess             = 13;
+   TerminalOtcCancel                = 14;
+   TerminalOtcUpdate                = 15;
+   TerminalUpdateBalance            = 16;
+   TerminalOTCcVerify               = 17;
+   TerminalOTCcAccept               = 18;
+   TerminalOTCcTrade                = 19;
+   TerminalRFSOrder                 = 20;
+   TerminalUpdateBlotterForEntities = 21;
 }
 
 message PreimageData {
@@ -1435,6 +1447,7 @@ message TerminalMessage
       TerminalOTCcSignedTX          otcc_tx                    = 17;
       RFSMarketOrder                rfs_market_order           = 18;
       RFSMarketOrderResponse        rfs_market_order_response  = 19;
+      AffectedEntities              entities_to_update         = 20;
    }
 }
 
