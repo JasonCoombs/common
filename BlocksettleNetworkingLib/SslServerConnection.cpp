@@ -34,6 +34,9 @@ namespace {
 
    const std::string kAllClientsId = "<TO_ALL>";
 
+   // Do not disconnect banned clients immediately so they have chance to receive pending messages
+   const int kForcedDisconnectTimeSeconds = 1;
+
 } // namespace
 
 SslServerConnection::SslServerConnection(const std::shared_ptr<spdlog::logger>& logger, SslServerConnectionParams params)
@@ -188,10 +191,8 @@ int SslServerConnection::callback(lws *wsi, int reason, void *user, void *in, si
             if (clientIt != clients_.end()) {
                SPDLOG_LOGGER_DEBUG(logger_, "force close client {}", bs::toHex(clientId));
                auto clientWsi = clientIt->second.wsi;
-               if (clientWsi) {
-                  lws_close_reason(clientWsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
-                  lws_set_timeout(clientWsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_SYNC);
-               }
+               lws_close_reason(clientWsi, LWS_CLOSE_STATUS_PROTOCOL_ERR, nullptr, 0);
+               lws_set_timeout(clientWsi, PENDING_TIMEOUT_USER_OK, kForcedDisconnectTimeSeconds);
             }
          }
 
