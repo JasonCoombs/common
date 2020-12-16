@@ -1,0 +1,46 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Communication.ApiServerPb;
+
+import "bs_types.proto";
+
+message Request
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string ip_addr = 3;
+    }
+
+    oneof data
+    {
+        CheckApiKey check_api_key = 1;
+    }
+}
+
+message Response
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string entity_name = 3;
+        bs.types.ApiKeyError error = 4;
+    }
+
+    oneof data
+    {
+        CheckApiKey check_api_key = 1;
+    }
+}
