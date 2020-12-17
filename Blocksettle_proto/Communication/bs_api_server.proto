@@ -28,10 +28,15 @@ message Request
         bs.types.Side side = 3;
     }
 
+    message LoadOrders
+    {
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
+        LoadOrders load_orders = 12;
     }
 }
 
@@ -50,9 +55,15 @@ message Response
         double price = 4;
     }
 
+    message LoadOrders
+    {
+        repeated bs.types.Order orders = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
+        LoadOrders load_orders = 12;
     }
 }

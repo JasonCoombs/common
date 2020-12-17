@@ -582,7 +582,8 @@ message GenoaFindOrdersResponse
 {
    bool   loaded = 1;
    string error_text = 2;
-   repeated GenoaOrderData orders = 3;
+   string entity_name = 3;
+   repeated GenoaOrderData orders = 4;
 }
 
 message GenoaTradingStatusResponse
