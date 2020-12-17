@@ -35,11 +35,17 @@ message Request
         string entity_name = 1;
     }
 
+    message LoadBalance
+    {
+        string entity_name = 1;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
         MarketOrder market_order = 2;
         LoadOrders load_orders = 3;
+        LoadBalance load_balance = 4;
     }
 }
 
@@ -65,10 +71,17 @@ message Response
         Blocksettle.Communication.ApiServer.Response.LoadOrders result = 2;
     }
 
+    message LoadBalance
+    {
+        string entity_name = 1;
+        Blocksettle.Communication.ApiServer.Response.LoadBalance result = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
         MarketOrder market_order = 2;
         LoadOrders load_orders = 3;
+        LoadBalance load_balance = 4;
     }
 }

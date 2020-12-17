@@ -32,11 +32,16 @@ message Request
     {
     }
 
+    message LoadBalance
+    {
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
+        LoadBalance load_balance = 13;
     }
 }
 
@@ -60,10 +65,16 @@ message Response
         repeated bs.types.Order orders = 1;
     }
 
+    message LoadBalance
+    {
+        repeated bs.types.Balance balances = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
+        LoadBalance load_balance = 13;
     }
 }
