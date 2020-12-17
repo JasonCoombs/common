@@ -11,6 +11,7 @@
 #ifndef WALLETS_ADAPTER_H
 #define WALLETS_ADAPTER_H
 
+#include <mutex>
 #include "Address.h"
 #include "BinaryData.h"
 #include "HDPath.h"
@@ -101,11 +102,17 @@ private:
    std::shared_ptr<bs::sync::hd::Group> getGroupByWalletId(const std::string &) const;
    std::shared_ptr<bs::sync::hd::Wallet> getHDRootForLeaf(const std::string &walletId) const;
    std::shared_ptr<bs::sync::hd::Wallet> getPrimaryWallet() const;
-   void eraseWallet(const std::shared_ptr<bs::sync::Wallet> &);
+   void eraseWallet(const std::shared_ptr<bs::sync::hd::Wallet>&);
+   void eraseWallet(const std::shared_ptr<bs::sync::Wallet> &, bool unregister = true);
    bool isAddressUsed(const bs::Address&, const std::string& walletId = {}) const;
 
    void addWallet(const std::shared_ptr<bs::sync::Wallet> &);
    void registerWallet(const std::shared_ptr<bs::sync::Wallet> &);
+   void scanWallet(const std::shared_ptr<bs::sync::Wallet>&, bool isExt);
+   void processScanRegistered(const std::shared_ptr<bs::sync::Wallet>&
+      , const std::string &scanId);
+   void resumeScan(const std::shared_ptr<bs::sync::Wallet>&
+      , const std::string& scanId, const BlockSettle::Common::ArmoryMessage_AddressTxNsResponse&);
    void registerWallet(const std::shared_ptr<bs::sync::hd::Wallet> &);
    void processWalletRegistered(const std::string &walletId);
 
@@ -168,10 +175,11 @@ private:
    std::unique_ptr<SignerClient>          signerClient_;
    std::shared_ptr<bs::UtxoReservation>   utxoResMgr_;
 
+   std::mutex  mtx_;
    BinaryData  userId_;
    uint32_t    topBlock_{ 0 };
    float       settlementFee_{ 0 };
-   std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_;
+   std::vector<std::shared_ptr<bs::sync::hd::Wallet>> hdWallets_, prevHdWallets_;
    std::unordered_map<std::string, std::shared_ptr<bs::sync::Wallet>>   wallets_;
    std::unordered_map<std::string, std::unordered_set<std::string>>  pendingRegistrations_;
    std::unordered_set<std::string>     walletNames_;
@@ -214,6 +222,8 @@ private:
       bool  addrTxNUpdated{ false };
    };
    std::unordered_map<std::string, BalanceData> walletBalances_;
+
+   std::unordered_map<std::string, std::set<BinaryData>> activeScanAddrs_;
 
    struct TXDetailData {
       bs::message::Envelope      env;

@@ -45,15 +45,14 @@ Wallet::~Wallet()
    }
 }
 
-const std::string& Wallet::walletIdInt(void) const
+std::string Wallet::walletIdInt(void) const
 {
    /***
    Overload this if your wallet class supports internal chains.
    A wallet object without an internal chain should throw a
    runtime error.
    ***/
-
-   throw std::runtime_error("no internal chain");
+   throw std::runtime_error("not supported");
 }
 
 void Wallet::synchronize(const std::function<void()> &cbDone)

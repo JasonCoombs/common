@@ -78,6 +78,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          break;
       case ArmoryMessage::kRegisterWallet:
          return processRegisterWallet(env, msg.register_wallet());
+      case ArmoryMessage::kUnregisterWallets:
+         return processUnregisterWallets(env, msg.unregister_wallets());
       case ArmoryMessage::kTxPush:
          return processPushTxRequest(env, msg.tx_push());
       case ArmoryMessage::kTxPushTimeout:
@@ -628,6 +630,32 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
       reqByRegId_[regId] = env;
    }
    return true;
+}
+
+bool BlockchainAdapter::processUnregisterWallets(const bs::message::Envelope& env
+   , const ArmoryMessage_WalletIDs& request)
+{
+   ArmoryMessage msg;
+   auto msgResp = msg.mutable_unregister_wallets();
+   for (const auto& walletId : request.wallet_ids()) {
+      const auto& itWallet = wallets_.find(walletId);
+      if (itWallet == wallets_.end()) {
+         logger_->warn("[{}] unknown wallet {}", __func__, walletId);
+         continue;
+      }
+      if (itWallet->second.wallet) {
+         itWallet->second.wallet->unregister();
+         msgResp->add_wallet_ids(walletId);
+      }
+      else {
+         logger_->warn("[{}] wallet for {} not set", __func__, walletId);
+      }
+      wallets_.erase(itWallet);
+      regMap_.erase(walletId);
+   }
+   bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
+      , msg.SerializeAsString() };
+   return pushFill(envResp);
 }
 
 std::string BlockchainAdapter::registerWallet(const std::string &walletId

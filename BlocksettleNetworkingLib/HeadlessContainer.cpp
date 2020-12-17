@@ -1168,25 +1168,23 @@ void HeadlessContainer::syncAddressBatch(
    const std::string &walletId, const std::set<BinaryData>& addrSet,
    std::function<void(bs::sync::SyncState)> cb)
 {
-   QMetaObject::invokeMethod(this, [this, walletId, addrSet, cb] {
-      headless::SyncAddressesRequest request;
-      request.set_wallet_id(walletId);
-      for (const auto &addr : addrSet) {
-         request.add_addresses(addr.toBinStr());
-      }
+   headless::SyncAddressesRequest request;
+   request.set_wallet_id(walletId);
+   for (const auto &addr : addrSet) {
+      request.add_addresses(addr.toBinStr());
+   }
 
-      headless::RequestPacket packet;
-      packet.set_type(headless::SyncAddressesType);
-      packet.set_data(request.SerializeAsString());
-      const auto reqId = Send(packet);
-      if (!reqId) {
-         if (cb) {
-            cb(bs::sync::SyncState::Failure);
-         }
-         return;
+   headless::RequestPacket packet;
+   packet.set_type(headless::SyncAddressesType);
+   packet.set_data(request.SerializeAsString());
+   const auto reqId = Send(packet);
+   if (!reqId) {
+      if (cb) {
+         cb(bs::sync::SyncState::Failure);
       }
-      cbSyncAddrsMap_[reqId] = cb;
-   });
+      return;
+   }
+   cbSyncAddrsMap_[reqId] = cb;
 }
 
 void HeadlessContainer::ProcessUpdateStatus(const std::string &data)
@@ -2034,8 +2032,6 @@ void LocalSigner::Start()
 
 bool LocalSigner::Stop()
 {
-
-
    RemoteSigner::Stop();
 
    if (headlessProcess_) {

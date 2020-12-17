@@ -120,8 +120,8 @@ namespace bs {
 
          virtual void synchronize(const std::function<void()> &cbDone);
 
-         virtual const std::string& walletId(void) const = 0;
-         virtual const std::string& walletIdInt(void) const;
+         virtual std::string walletId(void) const = 0;
+         virtual std::string walletIdInt(void) const;
 
          virtual std::string name() const { return walletName_; }
          virtual std::string shortName() const { return name(); }
@@ -129,6 +129,7 @@ namespace bs {
          virtual void setDescription(const std::string &) = 0;
          virtual core::wallet::Type type() const { return core::wallet::Type::Bitcoin; }
          virtual bool hasId(const std::string &id) const { return (walletId() == id); }
+         virtual bool hasScanId(const std::string&) const { return false; }
 
          virtual void setArmory(const std::shared_ptr<ArmoryConnection> &);
          virtual void setUserId(const BinaryData &) {}
@@ -177,6 +178,7 @@ namespace bs {
          virtual std::vector<bs::Address> getUsedAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getExtAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getIntAddressList() const { return usedAddresses_; }
+         virtual std::vector<std::pair<bs::Address, std::string>> getAddressPool() const { return {}; }
          virtual bool isExternalAddress(const bs::Address &) const { return true; }
          virtual size_t getUsedAddressCount() const { return usedAddresses_.size(); }
          virtual size_t getExtAddressCount() const { return usedAddresses_.size(); }

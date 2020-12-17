@@ -128,6 +128,24 @@ void WalletsAdapter::startWalletsSync()
 {
    const auto &cbWalletsReceived = [this](const std::vector<bs::sync::WalletInfo> &wallets)
    {
+      std::vector<std::shared_ptr<hd::Wallet>> deletedWallets;
+      for (const auto& hdWallet : prevHdWallets_) {
+         const auto& itWallet = std::find_if(wallets.cbegin(), wallets.cend()
+            , [walletId=hdWallet->walletId()](const bs::sync::WalletInfo &wi) {
+            if (wi.format == bs::sync::WalletFormat::HD) {
+               return (std::find(wi.ids.cbegin(), wi.ids.cend(), walletId) != wi.ids.cend());
+            }
+            return false;
+         });
+         if (itWallet == wallets.end()) {
+            logger_->debug("[WalletsAdapter::startWalletsSync] {} deleted", hdWallet->walletId());
+            deletedWallets.push_back(hdWallet);
+         }
+      }
+      for (const auto& hdWallet : deletedWallets) {
+         eraseWallet(hdWallet);
+      }
+
       for (const auto &wallet : wallets) {
          loadingWallets_.insert(*wallet.ids.cbegin());
       }
@@ -269,10 +287,43 @@ std::shared_ptr<bs::sync::hd::Wallet> WalletsAdapter::getPrimaryWallet() const
    return nullptr;
 }
 
-void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet)
+void WalletsAdapter::eraseWallet(const std::shared_ptr<hd::Wallet>& hdWallet)
+{
+   ArmoryMessage msg;
+   auto msgReq = msg.mutable_unregister_wallets();
+   const auto& leaves = hdWallet->getLeaves();
+   for (const auto& leaf : leaves) {
+      for (const auto& id : leaf->internalIds()) {
+         msgReq->add_wallet_ids(id);
+      }
+      eraseWallet(leaf, false);
+   }
+   Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+   pushFill(env);
+   const auto& wi = bs::sync::WalletInfo::fromWallet(hdWallet);
+   WalletsMessage msgWlt;
+   wi.toCommonMsg(*msgWlt.mutable_wallet_deleted());
+   env = Envelope{ 0, ownUser_, nullptr, {}, {}, msgWlt.SerializeAsString() };
+   pushFill(env);
+   std::remove_if(hdWallets_.begin(), hdWallets_.end()
+      , [hdWallet](const std::shared_ptr<hd::Wallet>& w) {
+         return (hdWallet->walletId() == w->walletId());
+      });
+}
+
+void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet, bool unregister)
 {
    if (!wallet) {
       return;
+   }
+   if (unregister) {
+      ArmoryMessage msg;
+      auto msgReq = msg.mutable_unregister_wallets();
+      for (const auto& walletId : wallet->internalIds()) {
+         msgReq->add_wallet_ids(walletId);
+      }
+      Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+      pushFill(env);
    }
    wallets_.erase(wallet->walletId());
 }
@@ -367,6 +418,130 @@ void WalletsAdapter::registerWallet(const std::shared_ptr<Wallet> &wallet)
    }
 }
 
+void WalletsAdapter::scanWallet(const std::shared_ptr<Wallet>& wallet, bool isExt)
+{
+   const auto& leaf = std::dynamic_pointer_cast<bs::sync::hd::Leaf>(wallet);
+   if (!leaf) {
+      logger_->error("[{}] can't scan non-HD leaves ({})", __func__, wallet->walletId());
+      return;
+   }
+
+   const auto& walletId = isExt ? leaf->walletScanId() : leaf->walletScanIdInt();
+
+   const auto& cbExtAddrChain = [this, leaf, isExt, walletId]
+      (const std::vector<std::pair<bs::Address, std::string>>&addrVec)
+   {
+      auto& curScanBatch = activeScanAddrs_[walletId];
+      curScanBatch.clear();
+      ArmoryMessage msg;
+      auto msgReq = msg.mutable_register_wallet();
+      msgReq->set_wallet_id(walletId);
+      msgReq->set_as_new(false);
+      std::set<std::string> indices;
+      for (auto& addrPair : addrVec) {
+         const auto& addr = addrPair.first.prefixed();
+         msgReq->add_addresses(addr.toBinStr());
+         curScanBatch.insert(addr);
+         indices.insert(addrPair.second);
+      }
+      Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+      pushFill(env);
+      logger_->debug("[WalletsAdapter::scanWallet] {}: {} addresses from {} to {}"
+         , walletId, curScanBatch.size(), *indices.cbegin(), *indices.rbegin());
+   };
+   const auto& itScan = activeScanAddrs_.find(walletId);
+   if (itScan == activeScanAddrs_.end()) {   // first invocation
+      if (!wallet->getUsedAddressCount()) {
+         std::vector<std::pair<bs::Address, std::string>> addrVec;
+         for (const auto& pooledAddr : wallet->getAddressPool()) {
+            const bool isAddrExt = (pooledAddr.second[0] == '0');
+            if (isExt == isAddrExt) {
+               addrVec.push_back(pooledAddr);
+            }
+         }
+         cbExtAddrChain(addrVec);
+      }
+      else {   // existing wallet - no need to scan
+         return;
+      }
+   }
+   else {
+      signerClient_->extendAddressChain(wallet->walletId(), isExt ?
+         leaf->extAddressPoolSize() : leaf->intAddressPoolSize(), isExt, cbExtAddrChain);
+   }
+}
+
+void WalletsAdapter::processScanRegistered(const std::shared_ptr<bs::sync::Wallet>&
+   , const std::string &scanId)
+{
+   ArmoryMessage msg;
+   auto msgReq = msg.mutable_addr_txn_request();
+   msgReq->add_wallet_ids(scanId);
+   Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+   pushFill(env);
+}
+
+void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
+   , const std::string& scanId, const ArmoryMessage_AddressTxNsResponse& countMap)
+{
+   const auto& leaf = std::dynamic_pointer_cast<bs::sync::hd::Leaf>(wallet);
+   if (!leaf) {
+      logger_->error("[{}] can't scan non-HD leaves ({})", __func__, wallet->walletId());
+      return;
+   }
+   if (countMap.wallet_txns_size() != 1) {
+      logger_->error("[{}] invalid countMap size: {} for {}", __func__
+         , countMap.wallet_txns_size(), scanId);
+      return;
+   }
+
+   const auto& itActiveAddrs = activeScanAddrs_.find(scanId);
+   if (itActiveAddrs == activeScanAddrs_.end()) {
+      logger_->error("[{}] {} is not in progress", __func__, scanId);
+      return;
+   }
+
+   const auto& stopScan = [this, scanId]
+   {
+      logger_->debug("[WalletsAdapter::resumeScan] {} complete", scanId);
+      activeScanAddrs_.erase(scanId);
+      ArmoryMessage msg;
+      auto msgReq = msg.mutable_unregister_wallets();
+      msgReq->add_wallet_ids(scanId);
+      Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
+      pushFill(env);
+   };
+   if (!countMap.wallet_txns(0).txns_size()) {
+      stopScan();
+   }
+   else {
+      std::set<BinaryData> activeAddrs;
+      for (const auto& activeAddr : countMap.wallet_txns(0).txns()) {
+         activeAddrs.insert(BinaryData::fromString(activeAddr.address()));
+      }
+      const bool isFullBatch = (activeAddrs.size() > (itActiveAddrs->second.size() / 5)); //FIXME if needed
+      const auto& cbSyncAddrs = [this, leaf, scanId, isFullBatch, stopScan]
+         (bs::sync::SyncState state)
+      {
+         if (!isFullBatch) {  // no more scans will follow
+            stopScan();
+         }
+         if (state != bs::sync::SyncState::Success) {
+            return;
+         }
+         leaf->synchronize([this, leaf, scanId, isFullBatch] {
+            if (isFullBatch) {
+               scanWallet(leaf, (leaf->walletScanId() == scanId));
+            }
+            registerWallet(leaf);
+         });
+      };
+      logger_->debug("[{}] adding {} new addresses to {}", __func__
+         , activeAddrs.size(), wallet->walletId());
+      signerClient_->syncAddressBatch(wallet->walletId(), activeAddrs, cbSyncAddrs);
+   }
+}
+
 void WalletsAdapter::registerWallet(const std::shared_ptr<bs::sync::hd::Wallet> &hdWallet)
 {
    for (const auto &leaf : hdWallet->getLeaves()) {
@@ -380,7 +555,9 @@ void WalletsAdapter::registerWallet(const std::shared_ptr<bs::sync::hd::Wallet> 
 
 void WalletsAdapter::reset()
 {
+   std::unique_lock<std::mutex> lock(mtx_);
    userId_.clear();
+   prevHdWallets_.swap(hdWallets_);
    hdWallets_.clear();
    wallets_.clear();
    walletNames_.clear();
@@ -411,6 +588,7 @@ void WalletsAdapter::sendWalletReady(const std::string &walletId)
    if ((itReg == pendingRegistrations_.end()) || itReg->second.empty()) {
       const auto& wallet = getWalletById(walletId);
       if (wallet) {
+         pendingRegistrations_.erase(wallet->walletId());
          for (const auto& wltId : wallet->internalIds()) {
             readyWallets_.insert(wltId);
          }
@@ -486,6 +664,10 @@ void WalletsAdapter::processWalletRegistered(const std::string &walletId)
 {
    logger_->debug("[{}] {}", __func__, walletId);
    for (const auto &wallet : wallets_) {
+      if (wallet.second->hasScanId(walletId)) {
+         processScanRegistered(wallet.second, walletId);
+         return;
+      }
       if (!wallet.second->hasId(walletId)) {
          continue;
       }
@@ -499,7 +681,8 @@ void WalletsAdapter::processWalletRegistered(const std::string &walletId)
 
       const auto &unconfTgts = wallet.second->unconfTargets();
       const auto &itUnconfTgt = unconfTgts.find(walletId);
-      if (!balanceEnabled() || (itUnconfTgt == unconfTgts.end())) {
+      if (!balanceEnabled() || (itUnconfTgt == unconfTgts.end())
+         || (wallet.second->type() == bs::core::wallet::Type::ColorCoin)) {
          sendWalletReady(wallet.second->walletId());
       }
       else {
@@ -533,6 +716,17 @@ void WalletsAdapter::processUnconfTgtSet(const std::string &walletId)
 void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &response)
 {
    for (const auto &byWallet : response.wallet_txns()) {
+      bool isScan = false;
+      for (const auto& wallet : wallets_) {
+         if (wallet.second->hasScanId(byWallet.wallet_id())) {
+            resumeScan(wallet.second, byWallet.wallet_id(), response);
+            isScan = true;
+            break;
+         }
+      }
+      if (isScan) {
+         continue;
+      }
       auto &balanceData = walletBalances_[byWallet.wallet_id()];
       balanceData.addrTxNUpdated = true;
       for (const auto &txn : byWallet.txns()) {
@@ -565,7 +759,8 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
       balanceData.walletBalance.totalBalance = byWallet.full_balance();
       balanceData.walletBalance.unconfirmedBalance = byWallet.unconfirmed_balance();
 //      balanceData.walletBalance.spendableBalance = byWallet.spendable_balance();
-      balanceData.walletBalance.spendableBalance = balanceData.walletBalance.totalBalance - balanceData.walletBalance.unconfirmedBalance;
+      balanceData.walletBalance.spendableBalance = balanceData.walletBalance.totalBalance
+         - balanceData.walletBalance.unconfirmedBalance;
       balanceData.addrCount = byWallet.address_count();
       balanceData.addrBalanceUpdated = true;
       for (const auto &addrBal : byWallet.addr_balances()) {
@@ -604,45 +799,22 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
 
 void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
 {
-   const auto &cb = [this, walletId](bs::sync::SyncState st)
-   {
-      walletBalances_[walletId].addrTxNUpdated = true;
-      const auto& wallet = getWalletById(walletId);
-      if (!wallet) {
-         logger_->error("[WalletsAdapter::sendTrackAddrRequest] unknown wallet {}", walletId);
-         return;
-      }
-      if (st == bs::sync::SyncState::Success) {
-         const auto &cbSync = [this, wallet, walletId]
-         {
-            pendingRegistrations_[wallet->walletId()].insert(walletId + ".bal");
-            sendBalanceRequest(walletId);
-            //TODO: top up if needed
-         };
-         wallet->synchronize(cbSync);
-      }
-      else {
-         pendingRegistrations_[wallet->walletId()].erase(walletId + ".tar");
-         sendWalletReady(wallet->walletId());
-      }
-   };
-
-   const auto &balanceData = walletBalances_[walletId];
+   const auto& balanceData = walletBalances_[walletId];
    if (!balanceData.addrTxNUpdated || !balanceData.addrBalanceUpdated) {
       return;  // wait for both requests to complete first
    }
-   const auto &wallet = getWalletById(walletId);
+   const auto& wallet = getWalletById(walletId);
    if (!wallet) {
       logger_->error("[{}] can't find wallet for {}", __func__, walletId);
       return;
    }
    std::set<BinaryData> usedAddrSet;
-   for (const auto &addrPair : balanceData.addressTxNMap) {
+   for (const auto& addrPair : balanceData.addressTxNMap) {
       if (addrPair.second != 0) {
          usedAddrSet.insert(addrPair.first);
       }
    }
-   for (const auto &addrPair : balanceData.addressBalanceMap) {
+   for (const auto& addrPair : balanceData.addressBalanceMap) {
       if (usedAddrSet.find(addrPair.first) != usedAddrSet.end()) {
          continue;   // skip already added addresses
       }
@@ -652,11 +824,39 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
    }
 
    std::set<BinaryData> usedAndRegAddrs;
-   const auto &regAddresses = wallet->allAddresses();
+   const auto& regAddresses = wallet->allAddresses();
    std::set_intersection(regAddresses.cbegin(), regAddresses.cend()
       , usedAddrSet.cbegin(), usedAddrSet.cend()
       , std::inserter(usedAndRegAddrs, usedAndRegAddrs.end()));
-   signerClient_->syncAddressBatch(walletId, usedAndRegAddrs, cb);
+
+   const auto &cb = [this, walletId, usedAndRegAddrs](bs::sync::SyncState st)
+   {
+      walletBalances_[walletId].addrTxNUpdated = true;
+      const auto& wallet = getWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[WalletsAdapter::sendTrackAddrRequest] unknown wallet {}", walletId);
+         return;
+      }
+      const bool isExt = (wallet->walletId() == walletId);
+      if (st == bs::sync::SyncState::Success) {
+         const auto &cbSync = [this, wallet, walletId]
+         {
+            pendingRegistrations_[wallet->walletId()].insert(walletId + ".bal");
+            sendBalanceRequest(walletId);
+            sendWalletReady(walletId);
+            //TODO: top up if needed
+         };
+         wallet->synchronize(cbSync);
+      }
+      else {
+         pendingRegistrations_[wallet->walletId()].erase(walletId + ".tar");
+         sendWalletReady(wallet->walletId());
+      }
+      if (st != bs::sync::SyncState::Failure) {
+         scanWallet(wallet, isExt);
+      }
+   };
+   signerClient_->syncAddressBatch(wallet->walletId(), usedAndRegAddrs, cb);
 }
 
 void WalletsAdapter::sendTxNRequest(const std::string &walletId)
@@ -1007,8 +1207,11 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
       logger_->error("[{}] wallet {} not found", __func__, walletId);
       return true;
    }
-   if (readyWallets_.find(walletId) == readyWallets_.end()) {
-      return false;  // postpone processing until wallet will become ready
+   {
+      std::unique_lock<std::mutex> lock(mtx_);
+      if (readyWallets_.find(walletId) == readyWallets_.end()) {
+         return false;  // postpone processing until wallet will become ready
+      }
    }
    WalletsMessage msg;
    auto msgResp = msg.mutable_wallet_balances();

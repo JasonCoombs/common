@@ -109,7 +109,7 @@ namespace bs {
                }
             }
 
-            void setWCT(WalletCallbackTarget *);
+            [[deprecated]] void setWCT(WalletCallbackTarget *);
 
             //settlement shenanigans
             void getSettlementPayinAddress(const SecureBinaryData &settlId

@@ -21,9 +21,10 @@ ThreadedAdapter::ThreadedAdapter()
 
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
+   continueExecution_ = false;
    decltype(pendingEnvelopes_) cleanQueue;
    pendingEnvelopes_.swap(cleanQueue);
-   continueExecution_ = false;
+   pendingEnvelopesEvent_.SetEvent();
    if (processingThread_.joinable()) {
       pendingEnvelopesEvent_.SetEvent();
       processingThread_.join();

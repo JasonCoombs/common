@@ -98,6 +98,8 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_TXPushRequest &);
    bool processRegisterWallet(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_RegisterWallet &);
+   bool processUnregisterWallets(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_WalletIDs&);
    bool processUnconfTarget(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_WalletUnconfirmedTarget &);
    bool processGetTxNs(const bs::message::Envelope &

@@ -25,6 +25,7 @@
 // BST-2747: Require 1 conf for external addresses too
 const uint32_t kExtConfCount = 1;
 const uint32_t kIntConfCount = 1;
+static const std::string& kScanSuffix{ ".scan" };
 
 using namespace bs::sync;
 
@@ -174,14 +175,6 @@ void hd::Leaf::onRefresh(const std::vector<BinaryData> &ids, bool online)
                it->second();
                refreshCallbacks_.erase(it);
             }
-         }
-      }
-   }
-
-   if (!scanRegId_.empty()) {
-      for (const auto &id : ids) {
-         if (scanRegId_ == id.toBinStr()) {
-            resumeScan(id.toBinStr());
          }
       }
    }
@@ -342,12 +335,12 @@ void hd::Leaf::reset()
    unconfTgtRegIds_.clear();
 }
 
-const std::string& hd::Leaf::walletId() const
+std::string hd::Leaf::walletId() const
 {
    return walletId_;
 }
 
-const std::string& hd::Leaf::walletIdInt() const
+std::string hd::Leaf::walletIdInt() const
 {
    if (isExtOnly_)
       throw std::runtime_error("not internal chain");
@@ -366,6 +359,16 @@ const std::string& hd::Leaf::walletIdInt() const
       }
    }
    return walletIdInt_;
+}
+
+std::string bs::sync::hd::Leaf::walletScanId() const
+{
+   return walletId() + kScanSuffix;
+}
+
+std::string bs::sync::hd::Leaf::walletScanIdInt() const
+{
+   return walletIdInt() + kScanSuffix;
 }
 
 std::string hd::Leaf::description() const
@@ -406,6 +409,16 @@ bool hd::Leaf::containsHiddenAddress(const bs::Address &addr) const
 {
    FastLock locker{addressPoolLock_};
    return (poolByAddr_.find(addr) != poolByAddr_.end());
+}
+
+std::vector<std::pair<bs::Address, std::string>> bs::sync::hd::Leaf::getAddressPool() const
+{
+   std::vector<std::pair<bs::Address, std::string>> result;
+   result.reserve(addressPool_.size());
+   for (const auto& poolPair : addressPool_) {
+      result.push_back({ poolPair.second, poolPair.first.path.toString() });
+   }
+   return result;
 }
 
 size_t hd::Leaf::getAddressPoolSize() const
@@ -673,125 +686,6 @@ void hd::Leaf::topUpAddressPool(bool extInt, const std::function<void()> &cb)
       walletId(), lookup, extInt, fillUpAddressPoolCallback);
 }
 
-void hd::Leaf::scan(const std::function<void(bs::sync::SyncState)> &cb)
-{
-   if (!armory_) {
-      if (type() != core::wallet::Type::Settlement) {
-         logger_->error("[sync::hd::Leaf::scan] armory is not set");
-      }
-      cb(bs::sync::SyncState::Failure);
-      return;
-   }
-   if (!signContainer_) {
-      logger_->error("[sync::hd::Leaf::scan] no sign container set");
-      cb(bs::sync::SyncState::NothingToDo);
-      return;
-   }
-   if (!scanWallet_) {
-      const auto &cbTrackAddrChain = [this, cb](bs::sync::SyncState st) {
-         if (st == bs::sync::SyncState::Success) {
-            scanWallet_ = armory_->instantiateWallet(walletId() + "_scan");
-            scan(cb);
-         }
-      };
-      getAddressTxnCounts([this, cbTrackAddrChain] {
-         trackChainAddressUse(cbTrackAddrChain);
-      });
-      return;
-   }
-
-   const auto &cbExtAddrChain = [this, cb]
-      (const std::vector<std::pair<bs::Address, std::string>>& addrVec)
-   {
-      if (!scanWallet_) {
-         SPDLOG_LOGGER_ERROR(logger_, "scanWallet_ is not set");
-         return;
-      }
-      std::vector<BinaryData> addrHashes;
-      for (auto& addrPair : addrVec) {
-         addrHashes.push_back(addrPair.first.prefixed());
-      }
-      scanRegId_ = scanWallet_->registerAddresses(addrHashes, false);
-      cbScanMap_[scanRegId_] = cb;
-   };
-
-   const unsigned int nbLookup = scanExt_ ? extAddressPoolSize_ : intAddressPoolSize_;
-   signContainer_->extendAddressChain(walletId(), nbLookup, scanExt_, cbExtAddrChain);
-}
-
-void hd::Leaf::resumeScan(const std::string &refreshId)
-{
-   const auto &cbIt = cbScanMap_.find(refreshId);
-   if (cbIt == cbScanMap_.end()) {
-      logger_->error("[sync::hd::Leaf::resumeScan] failed to find scan callback for id {}", refreshId);
-      return;
-   }
-   const auto cb = cbIt->second;
-   cbScanMap_.erase(refreshId);
-
-   const auto &cbTxNs = [this, cb](const std::map<std::string, CombinedCounts> &countMap) {
-      if (countMap.size() != 1) {
-         logger_->warn("[hd::Leaf::resumeScan] invalid countMap size: {}", countMap.size());
-         if (cb) {
-            cb(bs::sync::SyncState::Failure);
-         }
-         return;
-      }
-      if (!scanWallet_) {
-         logger_->warn("[hd::Leaf::resumeScan] scanWallet_ is null");
-         if (cb) {
-            cb(bs::sync::SyncState::Failure);
-         }
-         return;
-      }
-      const auto itCounts = countMap.find(scanWallet_->walletID());
-      if (itCounts == countMap.end()) {
-         logger_->warn("[hd::Leaf::resumeScan] invalid countMap (scan wallet id not found)");
-         if (cb) {
-            cb(bs::sync::SyncState::Failure);
-         }
-         return;
-      }
-
-      const auto &lbdCompleteScan = [this, cb](bs::sync::SyncState state) {
-         logger_->debug("[hd::Leaf::resumeScan] completing scan with state {} and {} address[es]"
-            , (int)state, activeScannedAddresses_.size());
-         synchronize([this] {
-            logger_->debug("[hd::Leaf::resumeScan] synchronized after scan is complete");
-            if (wct_) {
-               wct_->addressAdded(walletId());
-            }
-         });
-         if (cb) {
-            cb(state);
-         }
-         scanExt_ = true;
-         activeScannedAddresses_.clear();
-         scanWallet_.reset();
-         cbScanMap_.clear();
-      };
-      if (itCounts->second.addressTxnCounts_.empty()) {
-         logger_->debug("[hd::Leaf::resumeScan] ext: {} found no more active addresses", scanExt_);
-         if (scanExt_) {
-            if (isExtOnly_) {
-               signContainer_->syncAddressBatch(walletId(), activeScannedAddresses_, lbdCompleteScan);
-               return;
-            }
-            scanExt_ = false;
-         }
-         else {
-            signContainer_->syncAddressBatch(walletId(), activeScannedAddresses_, lbdCompleteScan);
-            return;
-         }
-      }
-      for (const auto &addr : itCounts->second.addressTxnCounts_) {
-         activeScannedAddresses_.insert(addr.first);
-      }
-      scan(cb);
-   };
-   armory_->getCombinedTxNs({ scanWallet_->walletID() }, cbTxNs);
-}
-
 hd::Leaf::AddrPoolKey hd::Leaf::getAddressIndexForAddr(const BinaryData &addr) const
 {
    const auto itIndex = addrToIndex_.find(addr);
@@ -860,6 +754,11 @@ bool hd::Leaf::getLedgerDelegateForAddress(const bs::Address &addr
 bool hd::Leaf::hasId(const std::string &id) const
 {
    return ((walletId() == id) || (!isExtOnly_ && (walletIdInt() == id)));
+}
+
+bool bs::sync::hd::Leaf::hasScanId(const std::string& id) const
+{
+   return ((walletScanId() == id) || (!isExtOnly_ && (walletScanIdInt() == id)));
 }
 
 int hd::Leaf::addAddress(const bs::Address &addr, const std::string &index, bool sync)

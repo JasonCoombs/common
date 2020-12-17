@@ -49,8 +49,10 @@ namespace bs {
 
             void init(bool force = false) override;
 
-            const std::string& walletId() const override;
-            const std::string& walletIdInt() const override;
+            std::string walletId() const override;
+            std::string walletIdInt() const override;
+            std::string walletScanId() const;
+            std::string walletScanIdInt() const;
 
             std::string description() const override;
             void setDescription(const std::string &desc) override { desc_ = desc; }
@@ -61,6 +63,7 @@ namespace bs {
             bs::wallet::KeyRank encryptionRank() const override { return encryptionRank_; }
             bool hasExtOnlyAddresses() const override { return isExtOnly_; }
             bool hasId(const std::string &) const override;
+            bool hasScanId(const std::string&) const override;
 
             bool getSpendableTxOutList(const ArmoryConnection::UTXOsCb &, uint64_t val, bool excludeReservation) override;
             std::vector<UTXO> getIncompleteUTXOs() const override;
@@ -73,10 +76,13 @@ namespace bs {
 
             std::vector<bs::Address> getExtAddressList() const override { return extAddresses_; }
             std::vector<bs::Address> getIntAddressList() const override { return intAddresses_; }
+            std::vector<std::pair<bs::Address, std::string>> getAddressPool() const override;
 
             size_t getExtAddressCount() const override { return extAddresses_.size(); }
             size_t getIntAddressCount() const override { return intAddresses_.size(); }
             size_t getAddressPoolSize() const;
+            size_t extAddressPoolSize() const { return extAddressPoolSize_; }
+            size_t intAddressPoolSize() const { return intAddressPoolSize_; }
 
             bool isExternalAddress(const bs::Address &) const override;
             void getNewExtAddress(const CbAddress &) override;
@@ -107,7 +113,6 @@ namespace bs {
             std::vector<BinaryData> getAddrHashesInt() const;
 
             virtual void merge(const std::shared_ptr<Wallet> &) override;
-            void scan(const std::function<void(bs::sync::SyncState)> &cb) override;
 
             virtual std::vector<std::string> setUnconfirmedTarget(void);
 
@@ -193,17 +198,10 @@ namespace bs {
             [[deprecated]] std::mutex  regMutex_;
             [[deprecated]] std::vector<std::string> unconfTgtRegIds_;
 
-            [[deprecated]] std::unordered_map<std::string, std::function<void(bs::sync::SyncState)>>  cbScanMap_;
-            [[deprecated]] std::shared_ptr<AsyncClient::BtcWallet>   scanWallet_;
-            [[deprecated]] std::string scanRegId_;
-            [[deprecated]] bool  scanExt_ = true;
-            [[deprecated]] std::set<BinaryData> activeScannedAddresses_;
-
          private:
             void createAddress(const CbAddress &, bool isInternal = false);
             AddrPoolKey getAddressIndexForAddr(const BinaryData &addr) const;
             AddrPoolKey addressIndex(const bs::Address &) const;
-            [[deprecated]] void resumeScan(const std::string &refreshId);
          };
 
 
