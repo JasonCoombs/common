@@ -184,7 +184,7 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
       OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, snapshot.cc_products(i), timestamp);
    }
 
-   OnPriceBookSnapshot(bs::network::Asset::Type::Futures, snapshot.deliverable(), timestamp);
+   OnPriceBookSnapshot(bs::network::Asset::Type::DeliverableFutures, snapshot.deliverable(), timestamp);
    OnPriceBookSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.cash_settled(), timestamp);
 }
 
@@ -280,7 +280,7 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
       OnProductUpdate(bs::network::Asset::Type::PrivateMarket, update.cc_products(i), timestamp);
    }
 
-   OnPriceBookUpdate(bs::network::Asset::Type::Futures, update.deliverable(), timestamp);
+   OnPriceBookUpdate(bs::network::Asset::Type::DeliverableFutures, update.deliverable(), timestamp);
    OnPriceBookUpdate(bs::network::Asset::Type::CashSettledFutures, update.cash_settled(), timestamp);
 }
 

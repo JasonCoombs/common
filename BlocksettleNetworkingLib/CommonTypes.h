@@ -86,7 +86,7 @@ namespace bs {
             SpotFX = first,
             SpotXBT,
             PrivateMarket,
-            Futures,
+            DeliverableFutures,
             CashSettledFutures,
             last
          };
@@ -96,6 +96,9 @@ namespace bs {
          static com::celertech::marketmerchant::api::enums::producttype::ProductType toCelerProductType(Type at);
          static const char *toCelerSettlementType(Type at);
          static const char *toString(Type at);
+
+         static bool isSpotType(const Type type);
+         static bool isFuturesType(const Type type);
       };
 
 

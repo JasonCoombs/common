@@ -123,7 +123,7 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
 
    quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
    if (quote.security == bs::network::kFutureSecurity && quote.assetType == bs::network::Asset::SpotFX) {
-      quote.assetType = bs::network::Asset::Futures;
+      quote.assetType = bs::network::Asset::DeliverableFutures;
       quote.security = bs::network::kFutureAlias;
    }
 
@@ -384,7 +384,7 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
    }
    std::shared_ptr<CelerSubmitRFQSequence> sequence;
 
-   if (rfq.assetType == bs::network::Asset::Futures) {
+   if (rfq.assetType == bs::network::Asset::DeliverableFutures) {
       auto updatedRFQ = rfq;
 
       assert(updatedRFQ.security == bs::network::kFutureAlias);
@@ -413,7 +413,7 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
 
-   assert(quote.assetType != bs::network::Asset::Futures);
+   assert(quote.assetType != bs::network::Asset::DeliverableFutures);
 
    auto sequence = std::make_shared<CelerCreateOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, payoutTx, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
@@ -431,7 +431,7 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
 
    std::shared_ptr<CelerCreateFxOrderSequence> sequence;
 
-   if (quote.assetType == bs::network::Asset::Futures) {
+   if (quote.assetType == bs::network::Asset::DeliverableFutures) {
       auto updatedQuote = quote;
 
       assert(updatedQuote.security == bs::network::kFutureAlias);
@@ -585,7 +585,7 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    order.assetType = bs::network::Asset::SpotFX;
 
    if (order.security == bs::network::kFutureSecurity) {
-      order.assetType = bs::network::Asset::Futures;
+      order.assetType = bs::network::Asset::DeliverableFutures;
       order.security = bs::network::kFutureAlias;
 
       if (order.product == bs::network::kFutureXBTProduct) {
@@ -650,7 +650,7 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
 
    std::shared_ptr<CelerSubmitQuoteNotifSequence> sequence;
 
-   if (qn.assetType == bs::network::Asset::Futures) {
+   if (qn.assetType == bs::network::Asset::DeliverableFutures) {
       auto updatedQN = qn;
 
       assert(updatedQN.security == bs::network::kFutureAlias);
@@ -727,7 +727,7 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
 
    qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
    if (qrn.security == bs::network::kFutureSecurity && qrn.assetType == bs::network::Asset::SpotFX) {
-      qrn.assetType = bs::network::Asset::Futures;
+      qrn.assetType = bs::network::Asset::DeliverableFutures;
       qrn.security = bs::network::kFutureAlias;
 
       if (qrn.product == bs::network::kFutureXBTProduct) {
