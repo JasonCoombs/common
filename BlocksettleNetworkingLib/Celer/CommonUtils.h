@@ -17,11 +17,15 @@
 #include "com/celertech/marketmerchant/api/enums/OrderStatusProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
 #include "com/celertech/marketmerchant/api/enums/MarketDataEntryTypeProto.pb.h"
-
 #include "com/celertech/marketdata/api/enums/AssetTypeProto.pb.h"
 #include "com/celertech/marketdata/api/enums/ProductTypeProto.pb.h"
 #include "com/celertech/marketdata/api/enums/MarketDataEntryTypeProto.pb.h"
 
+namespace spdlog {
+   class logger;
+}
+class ServerConnection;
+class ZmqContext;
 
 namespace bs {
    namespace celer {
@@ -41,6 +45,8 @@ namespace bs {
       bs::network::Order::Status mapBtcOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status);
       bs::network::Order::Status mapFxOrderStatus(com::celertech::marketmerchant::api::enums::orderstatus::OrderStatus status);
 
+      std::shared_ptr<ServerConnection> createServerConnection(const std::shared_ptr<spdlog::logger>&
+         , const std::shared_ptr<ZmqContext>&);
    }  //namespace celer
 }  //namespace bs
 
