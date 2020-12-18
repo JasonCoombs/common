@@ -324,7 +324,7 @@ void bs::core::hd::HWGroup::initLeafXpub(
    //no derivation path is passed to the account, it will use the pub root as is
    auto accTypePtr = std::make_shared<AccountType_BIP32>(std::vector<uint32_t>());
 
-   std::set<unsigned> nodes = { BIP32_LEGACY_OUTER_ACCOUNT_DERIVATIONID, BIP32_LEGACY_INNER_ACCOUNT_DERIVATIONID };
+   std::set<unsigned> nodes = { BIP32_OUTER_ACCOUNT_DERIVATIONID, BIP32_INNER_ACCOUNT_DERIVATIONID };
    accTypePtr->setNodes(nodes);
    accTypePtr->setAddressTypes(leaf->addressTypes());
    accTypePtr->setDefaultAddressType(leaf->defaultAddressType());

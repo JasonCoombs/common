@@ -17,6 +17,7 @@ SET(CPP_FOR_SWIG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../ArmoryDB/cppForSwig)
 SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/Accounts.cpp
    ${CPP_FOR_SWIG_ROOT}/Addresses.cpp
+   ${CPP_FOR_SWIG_ROOT}/ArmoryBackups.cpp
    ${CPP_FOR_SWIG_ROOT}/AssetEncryption.cpp
    ${CPP_FOR_SWIG_ROOT}/Assets.cpp
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.cpp
@@ -107,6 +108,7 @@ ENDIF (WIN32)
 SET (HEADERS
    ${CPP_FOR_SWIG_ROOT}/Accounts.h
    ${CPP_FOR_SWIG_ROOT}/Addresses.h
+   ${CPP_FOR_SWIG_ROOT}/ArmoryBackups.h
    ${CPP_FOR_SWIG_ROOT}/AssetEncryption.h
    ${CPP_FOR_SWIG_ROOT}/Assets.h
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.h

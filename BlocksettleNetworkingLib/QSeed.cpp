@@ -8,33 +8,41 @@
 **********************************************************************************
 
 */
+#include "QSeed.h"
 #include <QFile>
 #include <QVariant>
 #include <QStandardPaths>
-
+#include <QTextStream>
+#include "ArmoryBackups.h"
 #include "WalletBackupFile.h"
-#include "QSeed.h"
-#include "QTextStream"
 
 using namespace bs::wallet;
 
-bs::wallet::QSeed::QNetworkType QSeed::toQNetworkType(NetworkType netType) { return static_cast<QNetworkType>(netType); }
-NetworkType QSeed::fromQNetworkType(QNetworkType netType) { return static_cast<NetworkType>(netType); }
+bs::wallet::QSeed::QNetworkType QSeed::toQNetworkType(NetworkType netType)
+{
+   return static_cast<QNetworkType>(netType);
+}
 
+NetworkType QSeed::fromQNetworkType(QNetworkType netType)
+{
+   return static_cast<NetworkType>(netType);
+}
 
 QSeed QSeed::fromPaperKey(const QString &key, QNetworkType netType)
 {
    QSeed seed;
-   try 
-   {
+   try {
       const auto seedLines = key.split(QLatin1String("\n"), QString::SkipEmptyParts);
-      if (seedLines.count() == 2) 
-      {
-         EasyCoDec::Data easyData = { seedLines[0].toStdString(), seedLines[1].toStdString() };
-         seed = bs::core::wallet::Seed::fromEasyCodeChecksum(easyData, fromQNetworkType(netType));
+      if (seedLines.count() == 2) {
+         const auto& decoded = ArmoryBackups::BackupEasy16::decode({ seedLines[0].toStdString()
+            , seedLines[1].toStdString() });
+         if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
+            != ArmoryBackups::BackupType::BIP32_Seed_Structured) {
+            throw std::invalid_argument("invalid backup type " + std::to_string(decoded.checksumIndexes_.at(0)));
+         }
+         seed = QSeed(decoded.data_, fromQNetworkType(netType));
       }
-      else 
-      {
+      else {
          throw std::runtime_error("invalid seed string line count");
       }
    }
@@ -42,7 +50,6 @@ QSeed QSeed::fromPaperKey(const QString &key, QNetworkType netType)
       seed.lastError_ = tr("Failed to parse wallet key: %1").arg(QLatin1String(e.what()));
       throw std::runtime_error("unexpected seed string");
    }
-
    return seed;
 }
 
@@ -62,13 +69,24 @@ QSeed QSeed::fromDigitalBackup(const QString &filename, QNetworkType netType)
          seed.lastError_ = tr("Digital Backup file %1 corrupted").arg(filename);
       }
       else {
-         seed = bs::core::wallet::Seed::fromEasyCodeChecksum(wdb.seed, fromQNetworkType(netType));
+         try {
+            const auto& decoded = ArmoryBackups::BackupEasy16::decode({ wdb.seed.part1
+               , wdb.seed.part2 });
+            if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
+               != ArmoryBackups::BackupType::BIP32_Seed_Structured) {
+               throw std::invalid_argument("invalid backup type "
+                  + std::to_string(decoded.checksumIndexes_.at(0)));
+            }
+            seed = QSeed(decoded.data_, fromQNetworkType(netType));
+         }
+         catch (const std::exception& e) {
+            seed.lastError_ = tr("Failed to decode wallet seed: %1").arg(QLatin1String(e.what()));
+         }
       }
    }
    else {
       seed.lastError_ = tr("Failed to read Digital Backup file %1").arg(filename);
    }
-
    return seed;
 }
 
@@ -78,11 +96,3 @@ QSeed bs::wallet::QSeed::fromMnemonicWordList(const QString &sentence,
    return bs::core::wallet::Seed::fromBip39(sentence.toStdString(),
       fromQNetworkType(netType), dictionaries);
 }
-
-QString QSeed::lastError() const
-{
-   return lastError_;
-}
-
-
-
