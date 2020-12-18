@@ -788,6 +788,14 @@ message CutoffPriceProcessingResult
    AffectedEntities  affected_entities = 2;
 }
 
+message XBT1DayTradeResult
+{
+   string   cl_ord_id      = 1;
+   bool     matched        = 2;
+   string   error_text     = 3;
+}
+
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -826,10 +834,10 @@ message GenoaMessage
       string                           entity_name                = 37;
 
       TradeDataMessage                 xbt1day_deliverable_trade_request   = 38;
-      GenoaFxTradeResponse             xbt1day_deliverable_trade_response  = 39;
+      XBT1DayTradeResult               xbt1day_deliverable_trade_response  = 39;
 
       TradeDataMessage                 xbt1day_cash_settled_trade_request  = 40;
-      GenoaFxTradeResponse             xbt1day_cash_settled_trade_response = 41;
+      XBT1DayTradeResult               xbt1day_cash_settled_trade_response = 41;
 
       double                           cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
