@@ -201,8 +201,8 @@ const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type a
 const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
    switch (at) {
    case SpotFX:               return QT_TR_NOOP("Spot FX");
-   case DeliverableFutures:   return QT_TR_NOOP("Deliverable 1-Day XBT");
-   case CashSettledFutures:   return QT_TR_NOOP("Non-Deliverable Perpetual XBT");
+   case DeliverableFutures:   return QT_TR_NOOP("XBT 1-day deliverable");
+   case CashSettledFutures:   return QT_TR_NOOP("XBT 1-day rolling");
    case SpotXBT:              return QT_TR_NOOP("Spot XBT");
    case PrivateMarket:        return QT_TR_NOOP("Private Market");
    default:                   return "";
