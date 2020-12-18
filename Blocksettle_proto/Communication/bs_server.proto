@@ -582,7 +582,8 @@ message GenoaFindOrdersResponse
 {
    bool   loaded = 1;
    string error_text = 2;
-   repeated GenoaOrderData orders = 3;
+   string entity_name = 3;
+   repeated GenoaOrderData orders = 4;
 }
 
 message GenoaTradingStatusResponse
@@ -1315,7 +1316,6 @@ enum TerminalMessageType
    TerminalOTCcVerify               = 17;
    TerminalOTCcAccept               = 18;
    TerminalOTCcTrade                = 19;
-   TerminalRFSOrder                 = 20;
    TerminalUpdateBlotterForEntities = 21;
 }
 
@@ -1408,25 +1408,6 @@ message TerminalUpdateBalanceMessage
    repeated bs.types.Balance balances = 1;
 }
 
-message RFSMarketOrder
-{
-   // XBT/EUR
-   uint64         xbt_amount  = 1;
-   bs.types.Side  side        = 2;
-
-   double         user_expected_price = 3;
-}
-
-message RFSMarketOrderResponse
-{
-   // XBT/EUR
-   uint64         xbt_amount     = 1;
-   bs.types.Side  side           = 2;
-   double         order_price    = 3;
-   bool           matched        = 4;
-   string         error_message  = 5;
-}
-
 message TerminalMessage
 {
    TerminalMessageType  type           = 1;
@@ -1445,8 +1426,6 @@ message TerminalMessage
       TerminalUpdateBalanceMessage  update_balance_message     = 15;
       TerminalOTCcVerifyRequest     otcc_verify                = 16;
       TerminalOTCcSignedTX          otcc_tx                    = 17;
-      RFSMarketOrder                rfs_market_order           = 18;
-      RFSMarketOrderResponse        rfs_market_order_response  = 19;
       AffectedEntities              entities_to_update         = 20;
    }
 }

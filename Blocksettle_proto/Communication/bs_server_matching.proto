@@ -175,6 +175,27 @@ message UserPropertiesSet
    repeated UserProperty properties = 3;
 }
 
+message RFSMarketOrder
+{
+   string entity_name                 = 1;
+   // XBT/EUR
+   uint64         xbt_amount          = 2;
+   bs.types.Side  side                = 3;
+
+   double         user_expected_price = 4;
+}
+
+message RFSMarketOrderResponse
+{
+   string entity_name            = 1;
+   // XBT/EUR
+   uint64         xbt_amount     = 2;
+   bs.types.Side  side           = 3;
+   double         order_price    = 4;
+   bool           matched        = 5;
+   string         error_message  = 6;
+}
+
 message MatchingMessage
 {
    oneof data {
@@ -198,5 +219,13 @@ message MatchingMessage
       CCTradeResponse            cc_trade_response = 26;
       CCCancelRequest            cc_cancel = 27;
       UserPropertiesSet          user_prop_set = 30;
+   }
+}
+
+message MatchingMarketMessage
+{
+   oneof data {
+      RFSMarketOrder             rfs_market_order = 1;
+      RFSMarketOrderResponse     rfs_market_order_response = 2;
    }
 }
