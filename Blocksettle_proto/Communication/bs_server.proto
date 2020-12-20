@@ -980,7 +980,7 @@ enum CelerType
    CelerRegisterCCDefinition     = 33;
 }
 
-message CelerSavedTrade
+message SavedTradeInfoMessage
 {
    string product = 1;
    double price = 2;
