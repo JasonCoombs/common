@@ -14,9 +14,11 @@ package Blocksettle.Communication.TradeHistory;
 
 enum TradeHistoryTradeType
 {
-   FXTradeType    = 0;
-   XBTTradeType   = 1;
-   PMTradeType    = 2;
+   FXTradeType                = 0;
+   XBTTradeType               = 1;
+   PMTradeType                = 2;
+   OneDayDeliverableTradeType = 3;
+   OneDayCashSettledTradeType = 4;
 }
 
 enum TradeHistoryRequestType
@@ -112,6 +114,16 @@ message PMTradeRecord
 {
    double   price       = 1;
    uint64   amount      = 2;
+   string   product     = 3;
+   bool     is_sell     = 4;
+   uint64   timestamp   = 5;
+   string   trade_id    = 6;
+}
+
+message OnedayTradeRecord
+{
+   double   price       = 1;
+   uint64   xbt_amount  = 2;
    string   product     = 3;
    bool     is_sell     = 4;
    uint64   timestamp   = 5;
