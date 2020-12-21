@@ -35,7 +35,6 @@ enum TradeHistoryRequestType
    // LoadEODSnapshotRequestType - send DateContainer as payload to get EOD for all days since that date
    // response EODSnapshotResponse
    LoadEODSnapshotRequestType                   = 7;
-   LoadAllFuturesPriceBookRequestType           = 8;
 }
 
 enum TradeHistoryResponseType
@@ -236,11 +235,6 @@ enum PriceBookType
 {
    CashSettlePriceBook  = 0;
    DeliverablePriceBook = 1;
-}
-
-message LoadPriceBookRequest
-{
-   PriceBookType  book_type = 1;
 }
 
 message PriceBookUpdate

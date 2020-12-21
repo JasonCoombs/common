@@ -1080,16 +1080,18 @@ enum TradeHistType
    TradeHistSaveFxTrade             = 1;
    TradeHistSaveXbtTrade            = 2;
    TradeHistSaveCcTrade             = 3;
-   TradeHistSaveTradeResult         = 4;
-   TradeHistRequestLastTrade        = 5;
-   TradeHistRequestLastBuySellTrade = 6;
-   TradeHistRequestSnapshot         = 7;
-   TradeHistRequestCcPrices         = 8;
-   TradeHistRequestEOD              = 9;
-   TradeHistRequestEODSnapshot      = 10;
-   TradeHistorySetInitialPrice      = 11;
-   TradeHistEODEvent                = 12;
-   TradeHistPriceBookUpdate         = 13;
+   TradeHistSaveCashSettledTrade    = 4;
+   TradeHistSaveDeliverableTrade    = 5;
+   TradeHistSaveTradeResult         = 6;
+   TradeHistRequestLastTrade        = 7;
+   TradeHistRequestLastBuySellTrade = 8;
+   TradeHistRequestSnapshot         = 9;
+   TradeHistRequestCcPrices         = 10;
+   TradeHistRequestEOD              = 11;
+   TradeHistRequestEODSnapshot      = 12;
+   TradeHistorySetInitialPrice      = 13;
+   TradeHistEODEvent                = 14;
+   TradeHistPriceBookUpdate         = 15;
 }
 
 message TradeDataMessage
@@ -1265,9 +1267,7 @@ message TradeHistMessage
 {
    TradeHistType type = 1;
    oneof data {
-      bytes                                        fx_trade          = 2;
-      bytes                                        xbt_trade         = 3;
-      bytes                                        cc_trade          = 4;
+      bytes                                        serialized_trade  = 2;
       TradeHistResponse                            response          = 5;
       TradeHistRequest                             hist_request      = 6;
       bytes                                        last_trade        = 7;
