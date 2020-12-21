@@ -36,12 +36,18 @@ message Request
     {
     }
 
+    message Subscribe
+    {
+        string product_name = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
+        Subscribe subscribe = 14;
     }
 }
 
@@ -70,11 +76,34 @@ message Response
         repeated bs.types.Balance balances = 1;
     }
 
+    message Subscribe
+    {
+        string product_name = 1;
+        bool success = 2;
+        string error_msg = 3;
+    }
+
+    message MarketData
+    {
+        message Item
+        {
+            string quantity = 1;
+            double bid = 2;
+            double ask = 3;
+        }
+
+        string product_name = 1;
+        repeated Item items = 2;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
+        Subscribe subscribe = 14;
+
+        MarketData market_data = 50;
     }
 }

@@ -105,6 +105,12 @@ void BSMarketDataProvider::OnDisconnected()
 
 void BSMarketDataProvider::OnError(DataConnectionListener::DataConnectionError errorCode)
 {
+   // Can't stop connection from callback.
+   // FIXME: Do not use qApp here.
+   QMetaObject::invokeMethod(qApp, [this] {
+      mdConnection_ = nullptr;
+      callbacks_->disconnected();
+   });
 }
 
 bool BSMarketDataProvider::IsConnectionActive() const
