@@ -1578,7 +1578,7 @@ enum ObligationsManagingMessageType
 
 message ObligationsManaging
 {
-   ObligationsManagingMessageType   message_type = 1;
+   ObligationsManagingMessageType   type = 1;
 
    message CustomerObligationsRequest
    {
