@@ -64,9 +64,11 @@ message UpdateHeader
 
 enum MDTradeType
 {
-   FXTradeType    = 0;
-   XBTTradeType   = 1;
-   PMTradeType    = 2;
+   FXTradeType                = 0;
+   XBTTradeType               = 1;
+   PMTradeType                = 2;
+   OneDayCashSettledTradeType = 3;
+   OneDayDeliverableTradeType = 4;
 }
 
 message MDTradeRecord

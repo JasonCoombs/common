@@ -168,7 +168,7 @@ bs::network::Asset::Type bs::network::Asset::fromCelerProductType(com::celertech
 com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::Asset::toCeler(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:               return com::celertech::marketmerchant::api::enums::assettype::FX;
-      case Futures:              return com::celertech::marketmerchant::api::enums::assettype::FX;
+      case DeliverableFutures:   return com::celertech::marketmerchant::api::enums::assettype::FX;
       case CashSettledFutures:   return com::celertech::marketmerchant::api::enums::assettype::FX;
       case SpotXBT:              return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
       case PrivateMarket:        return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
@@ -179,7 +179,7 @@ com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::As
 com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network::Asset::toCelerProductType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:               return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-      case Futures:              return com::celertech::marketmerchant::api::enums::producttype::SPOT;
+      case DeliverableFutures:   return com::celertech::marketmerchant::api::enums::producttype::SPOT;
       case CashSettledFutures:   return com::celertech::marketmerchant::api::enums::producttype::SPOT;
       case SpotXBT:              return com::celertech::marketmerchant::api::enums::producttype::BITCOIN;
       case PrivateMarket:        return com::celertech::marketmerchant::api::enums::producttype::PRIVATE_SHARE;
@@ -190,7 +190,7 @@ com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network
 const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type at) {
    switch (at) {
       case SpotFX:               return "SPOT";
-      case Futures:              return "SPOT";
+      case DeliverableFutures:   return "SPOT";
       case CashSettledFutures:   return "SPOT";
       case SpotXBT:              return "XBT";
       case PrivateMarket:        return "CC";
@@ -200,13 +200,32 @@ const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type a
 
 const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
    switch (at) {
-      case SpotFX:               return QT_TR_NOOP("Spot FX");
-      case Futures:              return QT_TR_NOOP("1day Deliverable");
-      case CashSettledFutures:   return QT_TR_NOOP("1day Cash Settled");
-      case SpotXBT:              return QT_TR_NOOP("Spot XBT");
-      case PrivateMarket:        return QT_TR_NOOP("Private Market");
-      default:                   return "";
+   case SpotFX:               return QT_TR_NOOP("Spot FX");
+   case DeliverableFutures:   return QT_TR_NOOP("XBT 1-day deliverable");
+   case CashSettledFutures:   return QT_TR_NOOP("XBT 1-day rolling");
+   case SpotXBT:              return QT_TR_NOOP("Spot XBT");
+   case PrivateMarket:        return QT_TR_NOOP("Private Market");
+   default:                   return "";
    }
+}
+
+bool bs::network::Asset::isSpotType(const Type type)
+{
+   switch(type) {
+   case SpotFX:
+   case SpotXBT:
+   case PrivateMarket:
+      return true;
+   case CashSettledFutures:
+   case DeliverableFutures:
+   default:
+      return false;
+   }
+}
+
+bool bs::network::Asset::isFuturesType(const Type type)
+{
+   return !isSpotType(type);
 }
 
 bool bs::network::isTradingEnabled(UserType userType)

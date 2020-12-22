@@ -223,7 +223,7 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
       return;
    }
 
-   if (at == bs::network::Asset::Futures) {
+   if (bs::network::Asset::isFuturesType(at)) {
       // ignore price update for a futures.
       return;
    }
@@ -403,7 +403,7 @@ void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrd
 {
    int64_t netDeliverableBalanceXbt = 0;
    for (const auto &order : msg.orders()) {
-      if (order.trade_type() == bs::network::Asset::Futures && order.status() == bs::types::ORDER_STATUS_PENDING) {
+      if (order.trade_type() == bs::network::Asset::DeliverableFutures && order.status() == bs::types::ORDER_STATUS_PENDING) {
          auto sign = order.quantity() > 0 ? 1 : -1;
          auto amount = bs::XBTAmount(std::abs(order.quantity()));
          netDeliverableBalanceXbt += sign * static_cast<int64_t>(amount.GetValue());
