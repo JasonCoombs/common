@@ -26,6 +26,7 @@ message Request
         uint64 xbt_amount = 1;
         double user_expected_price = 2;
         bs.types.Side side = 3;
+        string product_name = 4;
     }
 
     message LoadOrders

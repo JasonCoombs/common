@@ -183,6 +183,7 @@ message RFSMarketOrder
    bs.types.Side  side                = 3;
 
    double         user_expected_price = 4;
+   int32          type                = 5;
 }
 
 message RFSMarketOrderResponse
