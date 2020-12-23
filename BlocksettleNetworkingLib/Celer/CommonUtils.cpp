@@ -9,6 +9,9 @@
 
 */
 #include "CommonUtils.h"
+#include "Celer/StreamServerConnection.h"
+#include "ServerConnection.h"
+#include "ZmqContext.h"
 
 using namespace bs::network;
 
@@ -121,4 +124,11 @@ bs::network::Order::Status bs::celer::mapBtcOrderStatus(com::celertech::marketme
    case com::celertech::marketmerchant::api::enums::orderstatus::NEW:      return Order::New;
    default:       return Order::Pending;
    }
+}
+
+
+std::shared_ptr<ServerConnection> bs::celer::createServerConnection(const std::shared_ptr<spdlog::logger>& logger
+   , const std::shared_ptr<ZmqContext>& zmqContext)
+{
+   return std::make_shared<CelerStreamServerConnection>(logger, zmqContext);
 }
