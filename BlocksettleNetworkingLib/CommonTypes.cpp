@@ -92,6 +92,12 @@ bs::network::MDInfo bs::network::MDField::get(const MDFields &fields)
    return mdInfo;
 }
 
+bool bs::network::MDField::isIndicativeForFutures() const
+{
+   // used for bid/offer only
+   return levelQuantity == QStringLiteral("1");
+}
+
 Side::Type Side::fromCeler(com::celertech::marketmerchant::api::enums::side::Side side) {
    switch (side) {
    case com::celertech::marketmerchant::api::enums::side::BUY:    return Buy;

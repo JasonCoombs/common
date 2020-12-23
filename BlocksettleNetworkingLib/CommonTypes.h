@@ -301,6 +301,8 @@ namespace bs {
 
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
+         // used for bid/offer only
+         bool           isIndicativeForFutures() const;
       };
 
 
