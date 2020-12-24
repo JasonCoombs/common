@@ -926,11 +926,13 @@ message MktDataUpdateMessage
 {
    message MktDataField
    {
-      int32  type = 1;
-      double value = 2;
+      int32  type             = 1;
+      double value            = 2;
+      string level_quantity   = 3;
    }
-   int32  asset = 1;
-   string security = 2;
+   int32  asset      = 1;
+   string security   = 2;
+
    repeated MktDataField fields = 3;
 }
 
