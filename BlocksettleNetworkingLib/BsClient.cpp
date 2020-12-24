@@ -178,6 +178,7 @@ void BsClient::sendFutureRequest(const bs::network::FutureRequest &details)
    futureRequest->set_side(bs::network::Side::toBS(details.side));
    futureRequest->set_price(details.price);
    futureRequest->set_amount(details.amount.GetValue());
+   futureRequest->set_type(details.type);
    sendPbMessage(request.SerializeAsString());
 }
 

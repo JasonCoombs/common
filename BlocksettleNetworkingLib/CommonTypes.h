@@ -192,6 +192,7 @@ namespace bs {
          bs::XBTAmount amount;
          double price{};
          bs::network::Side::Type side{};
+         bs::network::Asset::Type type{};
       };
 
 

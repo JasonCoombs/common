@@ -109,6 +109,7 @@ message Request
         bs.types.Side   side     = 1;
         double          price    = 2;
         uint64          amount   = 3;
+        int32           type     = 4;
     }
 
    oneof data
