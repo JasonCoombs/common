@@ -29,7 +29,6 @@ public:
 
 private:
    CelerMessage subscribeToMD();
-   CelerMessage subscribeToMDStat();
 
    std::string currencyPair_;
    bs::network::Asset::Type assetType_;

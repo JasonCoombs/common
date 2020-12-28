@@ -17,8 +17,7 @@ using namespace com::celertech::marketmerchant::api::enums::marketdataupdatetype
 CelerSubscribeToMDSequence::CelerSubscribeToMDSequence(const std::string& currencyPair, bs::network::Asset::Type at, const std::shared_ptr<spdlog::logger>& logger)
  : CelerCommandSequence("CelerSubscribeToMDSequence",
       {
-         { false, nullptr, &CelerSubscribeToMDSequence::subscribeToMD},
-         { false, nullptr, &CelerSubscribeToMDSequence::subscribeToMDStat}
+         { false, nullptr, &CelerSubscribeToMDSequence::subscribeToMD}
       })
    , currencyPair_(currencyPair)
    , assetType_(at)
@@ -52,26 +51,6 @@ CelerMessage CelerSubscribeToMDSequence::subscribeToMD()
 
    CelerMessage message;
    message.messageType = CelerAPI::MarketDataRequestType;
-   message.messageData = request.SerializeAsString();
-
-   return message;
-}
-
-CelerMessage CelerSubscribeToMDSequence::subscribeToMDStat()
-{
-   MarketStatisticRequest request;
-   reqId_ = GetUniqueId();
-
-   request.set_marketstatisticrequestid(reqId_);
-   request.set_marketdatarequesttype(SNAPSHOT_PLUS_UPDATES);
-   request.set_securitycode(currencyPair_);
-   request.set_securityid(currencyPair_);
-   request.set_assettype(bs::network::Asset::toCeler(assetType_));
-   request.set_producttype(bs::network::Asset::toCelerProductType(assetType_));
-//   logger_->debug("MDStats req: {}", request.DebugString());
-
-   CelerMessage message;
-   message.messageType = CelerAPI::MarketStatsRequestType;
    message.messageData = request.SerializeAsString();
 
    return message;
