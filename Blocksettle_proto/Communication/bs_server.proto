@@ -480,6 +480,8 @@ enum GenoaType
    GenoaRegisterXBT1DayCashSettledTrade   = 37;
 
    GenoaSendCutoffPrice          = 38;
+
+   GenoaLoadDeliveryObligations  = 39;
 }
 
 message GenoaConnectedBroadcast
@@ -1572,9 +1574,11 @@ message AuthManaging
 
 enum ObligationsManagingMessageType
 {
-   InitiateObligationsDeliveryToCustomers = 0;
-   GracePeriodCompletedEvent              = 1;
-   LoadCustomerObligations                = 2;
+   SendCutoffPriceRequest     = 0;
+   GracePeriodCompletedEvent  = 1;
+   LoadCustomerObligations    = 2;
+   // LoadDeliveryObligations - load all obligations from genoa
+   LoadDeliveryObligations    = 3;
 };
 
 message ObligationsManaging
