@@ -109,6 +109,10 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processGetUTXOs(env, msg.get_rbf_utxos(), false, true);
       case ArmoryMessage::kGetOutPoints:
          return processGetOutpoints(env, msg.get_out_points());
+      case ArmoryMessage::kGetSpentness:
+         return processSpentnessRequest(env, msg.get_spentness());
+      case ArmoryMessage::kGetOutputsForOps:
+         return processGetOutputsForOPs(env, msg.get_outputs_for_ops());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -365,9 +369,17 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
 {
    ArmoryMessage msg;
    auto zcInv = msg.mutable_zc_invalidated();
-   for (const auto &id : ids) {
-      zcInv->add_tx_hashes(id.toBinStr());
-   }
+   for (const auto& id : ids) {
+      zcInv->add_tx_hashes(id.toBinStr());   //TODO: maybe add only pending TXs?
+      const auto &itPending = pushedZCs_.find(id);
+      if (itPending != pushedZCs_.end()) {
+         pushedZCs_.erase(itPending);
+      }  // If the TX was invalidated without being received in mempool, this could
+      else {
+         logger_->warn("[{}] unknown ZC {}", __func__, id.toHexStr(true));
+      }
+   }     // be a sign of some rare and severe issue. Otherwise it will be removed
+
    bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
    pushFill(env);
 }
@@ -412,7 +424,25 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
    ArmoryMessage msg;
    auto msgZC = msg.mutable_zc_received();
    msgZC->set_request_id(requestId);
+   bool pushedByUs = false;
+   const auto& itPending = pendingTxMap_.find(requestId);
+   if (itPending != pendingTxMap_.end() && !requestId.empty()) {
+      if (itPending->second.resultReported) {
+         logger_->debug("[BlockchainAdapter::onZCReceived] TX push result already reported on {}"
+            , requestId);
+         return;
+      }
+
+      pushedByUs = true;
+      itPending->second.resultReported = true;
+      if (!itPending->second.monitored) {
+         pendingTxMap_.erase(itPending);
+      }
+   }
+
    for (const auto &entry : mergedEntries) {
+      pushedZCs_.erase(entry.txHash);
+
       auto msgTX = msgZC->add_tx_entries();
       msgTX->set_tx_hash(entry.txHash.toBinStr());
       for (const auto& walletId : entry.walletIds) {
@@ -495,6 +525,32 @@ namespace KnownBitcoinCoreErrors
 void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
    , const BinaryData &txHash, int errCode, const std::string &errMsg)
 {
+   pushedZCs_.erase(txHash);
+   PushTxData pushData;
+   const auto itPending = pendingTxMap_.find(requestId);
+   if (itPending == pendingTxMap_.end()) {
+      logger_->warn("[BlockchainAdapter::onTxBroadcastError] get unexpected TX error {} : {}. {} : {}"
+         , errCode, errMsg
+         , requestId, txHash.toHexStr(true));
+   }
+   else {
+      pushData = itPending->second;
+
+      if (pushData.resultReported) {
+         logger_->error("[BlockchainAdapter::onTxBroadcastError] result already reported on {} : {}"
+            , requestId, txHash.toHexStr(true));
+         return;
+      }
+
+      if (!itPending->second.monitored) {
+         pendingTxMap_.erase(itPending);
+      } else {
+         itPending->second.resultReported = true;
+      }
+   }
+
+   bs::message::Envelope env{ pushData.env.id, user_, pushData.env.sender, {}, {}, {} };
+   pendingTxMap_.erase(itPending);
    receivedZCs_.insert(requestId);
    ArmoryMessage msg;
    auto msgResp = msg.mutable_tx_push_result();
@@ -563,7 +619,7 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
          "errCode: {}. Unhandled error", requestId, txHashString, errMsg, errCode);
       msgResp->set_result(ArmoryMessage::PushTxOtherError);
    }
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   env.message = msg.SerializeAsString();
    pushFill(env);
 }
 
@@ -585,7 +641,23 @@ void BlockchainAdapter::onBroadcastTimeout(const std::string &timeoutId)
       receivedZCs_.erase(itReceived);
       return;
    }
+
+   {
+      std::unique_lock<std::mutex> lock(mtxReqPool_);
+      for (const auto& txSingle : pendingTxMap_) {
+         if (!txSingle.second.resultReported) {
+            const auto& env = txSingle.second.env;
+            requestsPool_.emplace(env.id, env);
+         }
+      }
+   }
+
    logger_->info("[BlockchainAdapter::onBroadcastTimeout] {}",timeoutId);
+   ArmoryMessage msg;
+   msg.set_tx_push_timeout(timeoutId);
+   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(env);
+
    suspend();
    reconnect();
 }
@@ -612,15 +684,8 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
    };
    Wallet wallet;
    wallet.asNew = request.as_new();
-   try {
-      for (const auto &addrStr : request.addresses()) {
-         wallet.addresses.push_back(BinaryData::fromString(addrStr));
-      }
-   }
-   catch (const std::exception &e) {
-      logger_->error("[BlockchainAdapter::processRegisterWallet] failed to deser"
-         " address: {}", e.what());
-      sendError();
+   for (const auto &addrStr : request.addresses()) {
+      wallet.addresses.push_back(BinaryData::fromString(addrStr));
    }
    const auto &regId = registerWallet(request.wallet_id(), wallet);
    if (regId.empty()) {
@@ -805,6 +870,8 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
       return pushFill(envResp);
    };
 
+   const bool monitored = !request.push_id().empty();
+   PushTxData pushTxData{ env, request.push_id(), monitored };
    std::vector<BinaryData> txToPush;
    txToPush.reserve(request.txs_to_push_size());
    for (const auto &tx : request.txs_to_push()) {
@@ -825,15 +892,39 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
             return sendError("TX hash mismatch");
          }
       }
+      if (pushedZCs_.find(txHash) != pushedZCs_.end()) {
+         logger_->error("[BlockchainAdapter::processPushTxRequest] TX already"
+            " pushed - {} ignored", txHash.toHexStr(true));
+         continue;
+      }
+
       txToPush.push_back(binTX);
+      pushTxData.txs.push_back(binTX);
+      pushedZCs_.insert(txHash);
+
+      if (monitored) {
+         const auto &itWallet = wallets_.find(request.push_id());
+
+         if (itWallet != wallets_.end()) {
+            logger_->error("[BlockchainAdapter::processPushTxRequest] TX already"
+               " pushed with id {} - {} ignored", request.push_id()
+               , txHash.toHexStr(true));
+            continue;
+         }
+      }
    }
 
+   if (txToPush.empty()) {
+      logger_->error("[BlockchainAdapter::processPushTxRequest] nothing to push");
+      return sendError("nothing to push");
+   }
    const auto &pushRequestId = (txToPush.size() == 1) ?
       armory_->pushZC(txToPush.at(0)) : armory_->pushZCs(txToPush);
    if (pushRequestId.empty()) {
       logger_->error("[BlockchainAdapter::processPushTxRequest] failed to push TX");
       return sendError("failed to push");
    }
+   pendingTxMap_[pushRequestId] = pushTxData;
    sendBroadcastTimeout(pushRequestId);
 
    logger_->debug("[BlockchainAdapter::processPushTxRequest] pushed id {} for"
@@ -862,7 +953,7 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
       for (const auto &tx : txBatch) {
          if (!tx.second) {
             continue;
-         }
+         }  //FIXME: add txHeight serialization
          msgResp->add_transactions(tx.second->serialize().toBinStr());
       }
       if (*stopped) {
@@ -1169,6 +1260,170 @@ bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
    } else {
       if (!armory_->getOutpointsFor(addrVec, cbOutpoints, request.height()
          , request.zc_index())) {
+         return false;
+      }
+   }
+   return true;
+}
+
+bool BlockchainAdapter::processSpentnessRequest(const bs::message::Envelope& env
+   , const ArmoryMessage_GetSpentness& request)
+{
+   std::map<BinaryData, std::set<uint32_t>> inputs;
+   for (int i = 0; i < request.outpoints_size(); ++i) {
+      const auto opData = request.outpoints(i);
+      const auto txHash = BinaryData::fromString(opData.tx_hash());
+      for (int j = 0; j < opData.out_indices_size(); ++j) {
+         inputs[txHash].insert(opData.out_indices(j));
+      }
+   }
+   const auto& sendSpentness = [this, env, inputs, stopped = stopped_]
+   (const std::map<BinaryData, std::map<unsigned int, SpentnessResult>>& map
+      , const std::string& errMsg = {})
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_spentness();
+      if (errMsg.empty()) {
+         for (const auto& input : inputs) {
+            std::string outpoints;
+            for (const auto& op : input.second) {
+               outpoints += std::to_string(op) + " ";
+            }
+            if (*stopped) {
+               return;
+            }
+            logger_->debug("[BlockchainAdapter::processSpentnessRequest] input"
+               " {}, outpoints: {}", input.first.toHexStr(true), outpoints);
+         }
+         for (const auto& input : map) {
+            auto inputData = msgResp->add_inputs();
+            inputData->set_utxo_hash(input.first.toBinStr());
+            for (const auto& spentness : input.second) {
+               logger_->debug("[BlockchainAdapter::processSpentnessRequest] UTXO"
+                  " {}: idx: {}, TXhash: {}, height: {}", input.first.toHexStr(true)
+                  , spentness.first, spentness.second.spender_.toHexStr(true)
+                  , spentness.second.height_);
+               auto spentnessData = inputData->add_spentness();
+               spentnessData->set_out_index(spentness.first);
+               spentnessData->set_tx_hash(spentness.second.spender_.toBinStr());
+               spentnessData->set_height(spentness.second.height_);
+               spentnessData->set_state(static_cast<ArmoryMessage_Spentness_State>(spentness.second.state_));
+            }
+         }
+      } else {
+         msgResp->set_error_text(errMsg);
+      }
+      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
+         , msg.SerializeAsString() };
+      if (pushFill(envResp)) {
+         std::unique_lock<std::mutex> lock(mtxReqPool_);
+         requestsPool_.erase(env.id);
+      }
+   };
+
+   const auto cbSpentness = [this, sendSpentness, request, stopped = stopped_]
+   (const std::map<BinaryData, std::map<unsigned int, SpentnessResult>>& map
+      , std::exception_ptr ePtr)
+   {
+      if (ePtr != nullptr) {
+         try {
+            std::rethrow_exception(ePtr);
+         } catch (const std::exception& e) {
+            sendSpentness({}, e.what());
+            return;
+         }
+      }
+      if (!request.allow_zc()) {
+         sendSpentness(map);
+         return;
+      }
+      bool found = false;
+      for (const auto& input : map) {
+         for (const auto& spentness : input.second) {
+            if (*stopped) {
+               return;
+            }
+            if (spentness.second.state_ == OutputSpentnessState::Spent) {
+               found = true;
+               break;
+            }
+         }
+      }
+      if (found) {
+         sendSpentness(map);
+         return;
+      }
+
+      const auto& cbZcSpentness = [this, sendSpentness, request]
+      (const std::map<BinaryData, std::map<unsigned int, SpentnessResult>>& zcMap
+         , std::exception_ptr ePtr)
+      {
+         if (ePtr != nullptr) {
+            try {
+               std::rethrow_exception(ePtr);
+            } catch (const std::exception& e) {
+               sendSpentness({}, e.what());
+               return;
+            }
+         }
+         sendSpentness(zcMap);
+      };
+      const auto& txHash = BinaryData::fromString(request.tx_hash());
+      const std::map<BinaryData, std::set<uint32_t>> zcInputs{ { txHash, {0} } };
+      logger_->debug("[BlockchainAdapter::processSpentnessRequest] calling"
+         " ZC spentness for {}", txHash.toHexStr(true));
+      armory_->getSpentnessForZcOutputs(zcInputs, cbZcSpentness);
+   };
+
+   {
+      std::unique_lock<std::mutex> lock(mtxReqPool_);
+      requestsPool_[env.id] = env;
+   }
+   armory_->getSpentnessForOutputs(inputs, cbSpentness);
+   return true;
+}
+
+bool BlockchainAdapter::processGetOutputsForOPs(const bs::message::Envelope& env
+   , const ArmoryMessage_GetOutputsForOPs& request)
+{
+   auto cbOutputs = [this, env, reqId = request.request_id(), stopped = stopped_]
+   (const std::vector<UTXO>& utxos, std::exception_ptr eptr)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_outputs_for_ops();
+      msgResp->set_request_id(reqId);
+      if (!eptr) {
+         for (const auto& utxo : utxos) {
+            msgResp->add_utxos(utxo.serialize().toBinStr());
+         }
+      }
+      if (*stopped) {
+         return;
+      }
+      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
+         , msg.SerializeAsString() };
+      if (pushFill(envResp)) {
+         std::unique_lock<std::mutex> lock(mtxReqPool_);
+         requestsPool_.erase(env.id);
+      }
+   };
+   {
+      std::unique_lock<std::mutex> lock(mtxReqPool_);
+      requestsPool_[env.id] = env;
+   }
+   std::map<BinaryData, std::set<uint32_t>> outpoints;
+   for (int i = 0; i < request.outpoints_size(); ++i) {
+      const auto& outpoint = request.outpoints(i);
+      auto& indices = outpoints[BinaryData::fromString(outpoint.tx_hash())];
+      for (int j = 0; j < outpoint.out_indices_size(); ++j) {
+         indices.insert(outpoint.out_indices(j));
+      }
+   }
+   if (outpoints.empty()) {
+      cbOutputs({}, nullptr);
+   } else {
+      if (!armory_->getOutputsForOutpoints(outpoints, request.with_zc(), cbOutputs)) {
+         SPDLOG_LOGGER_ERROR(logger_, "getOutputsForOutpoints failed");
          return false;
       }
    }

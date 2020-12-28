@@ -38,6 +38,12 @@ message TXEntry
    repeated string addresses = 8;
    uint64 recv_time = 9;
    uint32 nb_conf = 10;
+   bool   by_us = 11;
+}
+
+message OutPoints {
+   bytes tx_hash = 1;
+   repeated uint32 out_indices = 2;
 }
 
 
@@ -62,6 +68,18 @@ message ArmoryMessage
       string db_dir = 10;
       string cache_file_name = 11;
    }
+
+   enum ArmoryStateData
+   {
+      ArmoryStateOffline = 0;
+      ArmoryStateConnecting = 1;
+      ArmoryStateCancelled = 2;
+      ArmoryStateConnected = 3;
+      ArmoryStateScanning = 4;
+      ArmoryStateError = 5;
+      ArmoryStateClosing = 6;
+      ArmoryStateReady = 7;
+   }	//TODO: use this enum in the message below
 
    message State
    {
@@ -98,7 +116,7 @@ message ArmoryMessage
    {
       repeated bytes tx_hashes = 1;
    }
-
+   
    message ZCReceived
    {
       string request_id = 1;
@@ -135,6 +153,7 @@ message ArmoryMessage
       bytes  tx_hash = 3;
       PushTxResult result = 4;
       string error_message = 5;
+      bool   pushed_by_us = 6;	//?
    }
 
    message WalletUnconfirmedTarget
@@ -264,6 +283,48 @@ message ArmoryMessage
       uint32 zc_index_cutoff = 3;   
    }
 
+   message GetSpentness
+   {
+      repeated OutPoints outpoints = 1;
+      bool  allow_ZC = 2;
+      bytes tx_hash = 3;
+   }
+
+   message Spentness
+   {
+      enum State {
+         Unknown = 0;
+         Unspent = 1;
+         Spent = 2;
+         Invalid = 3;
+      }
+      message Spentness {
+         message SpentnessData {
+            uint32 out_index = 1;
+            bytes tx_hash = 2;
+            uint32 height = 3;
+            State  state = 4;
+         }
+         bytes utxo_hash = 1;
+         repeated SpentnessData spentness = 2;
+      }
+      repeated Spentness inputs = 1;
+      string error_text = 2;
+   }
+
+   message GetOutputsForOPs
+   {
+      repeated OutPoints outpoints = 1;
+      bool with_ZC = 2;
+      string request_id = 3;
+   }
+
+   message OutputsForOPs
+   {
+      repeated bytes utxos = 1;
+      string request_id = 2;
+   }
+
    oneof data
    {
       Loading           loading = 1;
@@ -306,6 +367,10 @@ message ArmoryMessage
       UTXOs             utxos = 39;
       GetOutpointsForAddrList get_out_points = 40;
       OutpointsForAddrList    out_points = 41;
+      GetSpentness      get_spentness = 42;
+      Spentness         spentness = 43;
+      GetOutputsForOPs  get_outputs_for_ops = 44;
+      OutputsForOPs     outputs_for_ops = 45;
    }
 }
 

@@ -28,6 +28,8 @@ namespace BlockSettle {
    namespace Common {
       class ArmoryMessage_FeeLevelsRequest;
       class ArmoryMessage_GetOutpointsForAddrList;
+      class ArmoryMessage_GetOutputsForOPs;
+      class ArmoryMessage_GetSpentness;
       class ArmoryMessage_RegisterWallet;
       class ArmoryMessage_Settings;
       class ArmoryMessage_TXHashes;
@@ -117,6 +119,10 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_WalletIDs&, bool zc = false, bool rbf = false);
    bool processGetOutpoints(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_GetOutpointsForAddrList&);
+   bool processSpentnessRequest(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_GetSpentness&);
+   bool processGetOutputsForOPs(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_GetOutputsForOPs&);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -154,6 +160,15 @@ protected:
    };
    std::unordered_map<std::string, AddressHistRequest>   addressSubscriptions_;
 
+   struct PushTxData {
+      bs::message::Envelope   env;
+      std::string       pushId;
+      bool              monitored{ false };
+      std::vector<BinaryData> txs;
+      bool              resultReported{ false };
+   };
+   std::unordered_map<std::string, PushTxData>   pendingTxMap_;
+   std::set<BinaryData> pushedZCs_;
    std::unordered_set<std::string>  receivedZCs_;
 
 private:
