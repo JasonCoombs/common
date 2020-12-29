@@ -38,7 +38,6 @@ message TXEntry
    repeated string addresses = 8;
    uint64 recv_time = 9;
    uint32 nb_conf = 10;
-   bool   by_us = 11;
 }
 
 message OutPoints {
@@ -150,7 +149,7 @@ message ArmoryMessage
    {
       string request_id = 1;
       string push_id = 2;
-      bytes  tx_hash = 3;
+      repeated bytes tx_hashes = 3;
       PushTxResult result = 4;
       string error_message = 5;
       bool   pushed_by_us = 6;	//?

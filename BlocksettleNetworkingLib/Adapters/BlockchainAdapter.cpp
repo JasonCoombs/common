@@ -375,9 +375,6 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
       if (itPending != pushedZCs_.end()) {
          pushedZCs_.erase(itPending);
       }  // If the TX was invalidated without being received in mempool, this could
-      else {
-         logger_->warn("[{}] unknown ZC {}", __func__, id.toHexStr(true));
-      }
    }     // be a sign of some rare and severe issue. Otherwise it will be removed
 
    bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
@@ -424,19 +421,53 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
    ArmoryMessage msg;
    auto msgZC = msg.mutable_zc_received();
    msgZC->set_request_id(requestId);
-   bool pushedByUs = false;
-   const auto& itPending = pendingTxMap_.find(requestId);
-   if (itPending != pendingTxMap_.end() && !requestId.empty()) {
-      if (itPending->second.resultReported) {
-         logger_->debug("[BlockchainAdapter::onZCReceived] TX push result already reported on {}"
-            , requestId);
-         return;
-      }
 
-      pushedByUs = true;
-      itPending->second.resultReported = true;
-      if (!itPending->second.monitored) {
-         pendingTxMap_.erase(itPending);
+   ArmoryMessage msgPushTxResult;
+   auto msgResult = msgPushTxResult.mutable_tx_push_result();
+   msgResult->set_result(ArmoryMessage_PushTxResult_PushTxSuccess);
+
+   const auto& sendNotOurResult = [this, &msgPushTxResult, msgResult, mergedEntries]
+   {
+      msgResult->set_pushed_by_us(false);
+      msgResult->set_result(ArmoryMessage_PushTxResult_PushTxSuccess);
+      for (const auto& entry : mergedEntries) {
+         msgResult->add_tx_hashes(entry.txHash.toBinStr());
+         if (msgResult->push_id().empty() && !entry.walletIds.empty()) {
+            msgResult->set_push_id(*entry.walletIds.cbegin());
+         }
+      }
+      Envelope env{ 0, user_, nullptr, {}, {}, msgPushTxResult.SerializeAsString() };
+      pushFill(env);
+   };
+   if (requestId.empty()) {
+      sendNotOurResult();
+   }
+   else {
+      const auto& itPending = pendingTxMap_.find(requestId);
+      if (itPending == pendingTxMap_.end()) {
+         sendNotOurResult();
+      }
+      else {
+         if (itPending->second.resultReported) {
+            logger_->debug("[BlockchainAdapter::onZCReceived] TX push result already reported on {}"
+               , requestId);
+            return;
+         }
+         itPending->second.resultReported = true;
+
+         msgResult->set_push_id(itPending->second.pushId);
+         msgResult->set_request_id(requestId);
+         msgResult->set_pushed_by_us(true);
+         for (const auto& entry : mergedEntries) {
+            msgResult->add_tx_hashes(entry.txHash.toBinStr());
+         }
+         Envelope envResp{ itPending->second.env.id, user_, itPending->second.env.sender
+            , {}, {}, msgPushTxResult.SerializeAsString() };
+         pushFill(envResp);
+
+         if (!itPending->second.monitored) {
+            pendingTxMap_.erase(itPending);
+         }
       }
    }
 
@@ -555,7 +586,7 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
    ArmoryMessage msg;
    auto msgResp = msg.mutable_tx_push_result();
    msgResp->set_request_id(requestId);
-   msgResp->set_tx_hash(txHash.toBinStr());
+   msgResp->add_tx_hashes(txHash.toBinStr());
    msgResp->set_error_message(errMsg);
 
    const auto &txHashString = txHash.toHexStr(true);
@@ -902,7 +933,7 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
       pushTxData.txs.push_back(binTX);
       pushedZCs_.insert(txHash);
 
-      if (monitored) {
+/*      if (monitored) {
          const auto &itWallet = wallets_.find(request.push_id());
 
          if (itWallet != wallets_.end()) {
@@ -911,7 +942,7 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
                , txHash.toHexStr(true));
             continue;
          }
-      }
+      }*/
    }
 
    if (txToPush.empty()) {
