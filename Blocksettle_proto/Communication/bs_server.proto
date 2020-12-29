@@ -1619,12 +1619,12 @@ message ObligationsManaging
 
    message CustomerObligationsRequest
    {
-      string   email       = 1;
+      string   entity_name    = 1;
    };
 
    message CustomerObligationsResponse
    {
-      string   email          = 1;
+      string   entity_name    = 1;
       int64    to_deliver     = 2;
       string   bs_address     = 3;
       double   cutoff_price   = 4;
