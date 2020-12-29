@@ -34,9 +34,7 @@ enum CLIRequestType
    SetConfigType                    = 22;
    MigrateUserIds                   = 23;
    BroadcastBSAuthRevokeTX          = 24;
-   DeliverObligations               = 25;
-   CreateOfflineDeliveryRequest     = 26;
-   BSDeliveryTransactionType        = 27;
+   BSDeliveryTransactionType        = 25;
 }
 
 enum ArmoryConnectionState

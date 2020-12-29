@@ -1591,10 +1591,7 @@ message AuthManaging
 enum ObligationsManagingMessageType
 {
    SendCutoffPriceRequest     = 0;
-   GracePeriodCompletedEvent  = 1;
-   LoadCustomerObligations    = 2;
-   // LoadDeliveryObligations - load all obligations from genoa
-   LoadDeliveryObligations    = 3;
+   LoadCustomerObligations    = 1;
 };
 
 message ObligationsManaging
