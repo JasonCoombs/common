@@ -482,6 +482,8 @@ enum GenoaType
    GenoaSendCutoffPrice          = 38;
 
    GenoaLoadDeliveryObligations  = 39;
+
+   GenoaSetDeliveryAddress       = 40;
 }
 
 message GenoaConnectedBroadcast
@@ -797,6 +799,11 @@ message XBT1DayTradeResult
    string   error_text     = 3;
 }
 
+message ObligationDeliveryAddress
+{
+   string trade_id            = 1;
+   string bs_delivery_address = 2;
+}
 
 message GenoaMessage
 {
@@ -843,6 +850,8 @@ message GenoaMessage
 
       double                           cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
+
+      ObligationDeliveryAddress        obligation_address         = 44;
    }
 }
 
