@@ -799,10 +799,16 @@ message XBT1DayTradeResult
    string   error_text     = 3;
 }
 
-message ObligationDeliveryAddress
+message SetDeliveryAddress
 {
    string trade_id            = 1;
    string bs_delivery_address = 2;
+}
+
+message SetDeliveryAddressResponse
+{
+   string   trade_id = 1;
+   bool     result   = 2;
 }
 
 message GenoaMessage
@@ -851,7 +857,8 @@ message GenoaMessage
       double                           cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
 
-      ObligationDeliveryAddress        obligation_address         = 44;
+      SetDeliveryAddress               set_delivery_address          = 44;
+      SetDeliveryAddressResponse       set_delivery_address_response = 45;
    }
 }
 
