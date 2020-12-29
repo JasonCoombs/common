@@ -811,6 +811,22 @@ message SetDeliveryAddressResponse
    bool     result   = 2;
 }
 
+message LoadedGenoaObligationData
+{
+   string entity_name         = 1;
+   string product             = 2;
+   string trade_id            = 3;
+   string bs_delivery_address = 4;
+   double price               = 5;
+   double xbt_amount          = 6;
+}
+
+message LoadAllObligationsResponse
+{
+   bool                                loaded      = 1;
+   repeated LoadedGenoaObligationData  obligation  = 2;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -859,6 +875,9 @@ message GenoaMessage
 
       SetDeliveryAddress               set_delivery_address          = 44;
       SetDeliveryAddressResponse       set_delivery_address_response = 45;
+
+      LoadAllObligationsResponse       loaded_obligations            = 46;
+
    }
 }
 
