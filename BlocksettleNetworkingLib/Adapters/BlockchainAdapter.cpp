@@ -565,7 +565,7 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
          , requestId, txHash.toHexStr(true));
    }
    else {
-      pushData = itPending->second;
+      pushData = itPending->second; 
 
       if (pushData.resultReported) {
          logger_->error("[BlockchainAdapter::onTxBroadcastError] result already reported on {} : {}"
@@ -581,7 +581,6 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
    }
 
    bs::message::Envelope env{ pushData.env.id, user_, pushData.env.sender, {}, {}, {} };
-   pendingTxMap_.erase(itPending);
    receivedZCs_.insert(requestId);
    ArmoryMessage msg;
    auto msgResp = msg.mutable_tx_push_result();
