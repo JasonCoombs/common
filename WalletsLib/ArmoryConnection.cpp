@@ -1084,7 +1084,8 @@ void ArmoryConnection::onRefresh(const std::vector<BinaryData>& ids)
    });
 }
 
-void ArmoryConnection::onZCsReceived(const std::string& requestId, const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
+void ArmoryConnection::onZCsReceived(const std::string& requestId
+   , const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
 {
    const auto newEntries = bs::TXEntry::fromLedgerEntries(entries);
 

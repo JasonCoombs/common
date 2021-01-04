@@ -64,6 +64,9 @@ void ThreadedAdapter::processingRoutine()
       if (envelope == nullptr) {
          continue;
       }
+      if (!continueExecution_) {
+         break;
+      }
       if (!processEnvelope(*envelope)) {
          FastLock locker{ pendingEnvelopesLock_ };
          pendingEnvelopes_.emplace(envelope);
