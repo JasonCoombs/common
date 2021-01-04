@@ -166,6 +166,20 @@ message LoadUserDeliveryAddressResponse
    repeated DeliveryAddressData user_data = 1;
 }
 
+message SetUserDeliveryAddressRequest
+{
+   string   user_email     = 1;
+   string   user_address   = 2;
+}
+
+message SetUserDeliveryAddressResponse
+{
+   string   user_email     = 1;
+   string   user_address   = 2;
+   bool     success        = 3;
+   string   error_msg      = 4;
+}
+
 message StorageAddressMessage
 {
    oneof data
@@ -204,6 +218,9 @@ message StorageAddressMessage
 
       LoadUserDeliveryAddressRequest   load_user_delivery_addresses  = 22;
       LoadUserDeliveryAddressResponse  user_delivery_addresses       = 23;
+
+      SetUserDeliveryAddressRequest    set_user_delivery_address          = 24;
+      SetUserDeliveryAddressResponse   set_user_delivery_address_response = 25;
    }
 }
 
