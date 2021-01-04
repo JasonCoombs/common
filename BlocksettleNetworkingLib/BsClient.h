@@ -143,6 +143,8 @@ public:
 
    void cancelActiveSign();
 
+   void setFuturesDeliveryAddr(const std::string &addr);
+
    static std::chrono::seconds autheidLoginTimeout();
    static std::chrono::seconds autheidAuthAddressTimeout();
    static std::chrono::seconds autheidCcAddressTimeout();

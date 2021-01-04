@@ -112,6 +112,11 @@ message Request
         int32           type     = 4;
     }
 
+    message DeliveryAddress
+    {
+        string          addr     = 1;
+    }
+
    oneof data
    {
       StartOtc             start_otc            = 1;
@@ -119,6 +124,7 @@ message Request
       SealPayinValidity    seal_payin_validity  = 3;
       ProcessTx            process_tx           = 4;
       Cancel               cancel               = 5;
+      DeliveryAddress      delivery_address     = 7;
 
       XBTUnsignedPayin     unsigned_payin       = 31;
       XBTSignedPayin       signed_payin         = 32;
@@ -197,6 +203,12 @@ message Response
       uint64         amount      = 5;
    }
 
+   message DeliveryAddress
+   {
+      bool           success     = 1;
+      string         error_msg   = 2;
+   }
+
    oneof data
    {
       StartOtc       start_otc         = 1;
@@ -206,6 +218,7 @@ message Response
       SignPayoutRequest       sign_payout          = 4;
       SignPayinRequest        sign_payin           = 5;
       FutureResponse          future_response      = 6;
+      DeliveryAddress         delivery_address     = 7;
 
       // update_orders - deprecated after 0.91.2
       UpdateOrders                  update_orders              = 20;

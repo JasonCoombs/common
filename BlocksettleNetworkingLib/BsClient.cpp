@@ -374,6 +374,14 @@ void BsClient::cancelActiveSign()
    }
 }
 
+void BsClient::setFuturesDeliveryAddr(const std::string &addr)
+{
+   ProxyTerminalPb::Request request;
+   auto deliveryMessage = request.mutable_delivery_address();
+   deliveryMessage->set_addr(addr);
+   sendPbMessage(request.SerializeAsString());
+}
+
 // static
 std::chrono::seconds BsClient::autheidLoginTimeout()
 {
