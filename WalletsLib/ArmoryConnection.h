@@ -54,6 +54,7 @@ namespace bs {
       bool        merged{};
       std::chrono::time_point<std::chrono::steady_clock> recvTime{};
       std::vector<bs::Address>   addresses;
+      uint32_t    nbConf{};
 
       bool operator==(const TXEntry &other) const { return (txHash == other.txHash); }
       void merge(const TXEntry &);
@@ -126,7 +127,7 @@ public:
    virtual void onLedgerForAddress(const bs::Address &, const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
 
 protected:
-   ArmoryConnection  * armory_ = nullptr;
+   ArmoryConnection* armory_{ nullptr };
 };
 
 // The class is used as a callback that processes asynchronous Armory events.
@@ -187,6 +188,8 @@ public:
       , const std::function<void(const std::map<std::string, CombinedCounts> &)> &);
 
    bool getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &); // result to ACT
+   bool getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &
+      , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &);
    virtual bool getWalletsLedgerDelegate(const LedgerDelegateCb &);
 
    bool getSpendableTxOutListForValue(const std::vector<std::string> &walletIds, uint64_t

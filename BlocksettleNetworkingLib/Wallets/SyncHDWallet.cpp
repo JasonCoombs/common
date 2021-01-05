@@ -25,7 +25,7 @@ using namespace bs::sync;
 
 hd::Wallet::Wallet(const bs::sync::WalletInfo &info, WalletSignerContainer *container
    , const std::shared_ptr<spdlog::logger> &logger)
-   : walletId_(info.id), name_(info.name), desc_(info.description)
+   : walletId_(*info.ids.cbegin()), name_(info.name), desc_(info.description)
    , netType_(info.netType)
    , signContainer_(container), logger_(logger)
    , isOffline_(info.watchOnly)
@@ -94,16 +94,16 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
          for (const auto &leafData : grpData.leaves) {
             auto leaf = group->getLeaf(leafData.path);
             if (!leaf) {
-               leaf = group->createLeaf(leafData.path, leafData.id);
+               leaf = group->createLeaf(leafData.path, *leafData.ids.cbegin());
             }
             if (!leaf) {
                LOG(logger_, error, "[hd::Wallet::synchronize] failed to create leaf {}/{} with id {}"
-                  , (uint32_t)grpData.type, leafData.path.toString(), leafData.id);
+                  , (uint32_t)grpData.type, leafData.path.toString(), *leafData.ids.cbegin());
                continue;
             }
             if (grpData.type == bs::hd::CoinType::BlockSettle_Settlement) {
                if (leafData.extraData.empty()) {
-                  throw std::runtime_error("no extra data for settlement leaf " + leafData.id);
+                  throw std::runtime_error("no extra data for settlement leaf " + *leafData.ids.cbegin());
                }
                const auto settlGroup = std::dynamic_pointer_cast<hd::SettlementGroup>(group);
                if (!settlGroup) {

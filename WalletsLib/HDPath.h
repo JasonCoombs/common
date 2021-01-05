@@ -73,6 +73,7 @@ namespace bs {
 
 
       enum Purpose : Path::Elem {
+         Unknown     = 0,
          Native      = 84, // BIP84
          Nested      = 49, // BIP49
          NonSegWit   = 44, // BIP44

@@ -11,5 +11,719 @@
 syntax = "proto3";
 
 package BlockSettle.Terminal;
+import "common.proto";
 
 
+message Empty {}
+
+message CCDefinition
+{
+   string security_id = 1;
+   string product = 2;
+   string genesis_address = 3;
+   uint64 lot_size = 4;
+}
+
+
+enum SettingIndex
+{
+   SetIdx_Initialized = 0;
+   SetIdx_RunLocalArmory = 1;
+   SetIdx_NetType = 2;
+   SetIdx_ArmoryDbName = 3;
+   SetIdx_ArmoryDbIP = 4;
+   SetIdx_ArmoryDbPort = 5;
+   SetIdx_ArmoryPathName = 6;
+   SetIdx_Environment = 7;
+   SetIdx_ChatDbFile = 8;
+   SetIdx_SavedUsername = 9;
+   SetIdx_SignerIndex = 10;
+   SetIdx_SignerOfflineDir = 11;
+   SetIdx_AutoSignSpendLimit = 12;
+   SetIdx_LaunchToTray = 13;
+   SetIdx_MinimizeToTray = 14;
+   SetIdx_CloseToTray = 15;
+   SetIdx_NotifyOnTX = 16;
+   SetIdx_DefaultAuthAddr = 17;
+   SetIdx_NbAuthAddrsVisible = 18;
+   SetIdx_LogDefault = 19;
+   SetIdx_LogMessages = 20;
+   SetIdx_TxCacheFileName = 21;
+   SetIdx_NbBackupFilesKeep = 22;
+   SetIdx_AQScripts = 23;
+   SetIdx_LastAQScript = 24;
+   SetIdx_DropQuoteNotif = 25;
+   SetIdx_GUI_MainGeom = 26;
+   SetIdx_GUI_MainTab = 27;
+   SetIdx_Filter_MD_RFQ = 28;
+   SetIdx_Filter_MD_RFQ_Portfolio = 29;
+   SetIdx_Filter_MD_QN = 30;
+   SetIdx_Filter_MD_QN_cnt = 31;
+   SetIdx_ChangeLog_BaseURL = 32;
+   SetIdx_Binaries_DownloadURL = 33;
+   SetIdx_ResetPasswordURL = 34;
+   SetIdx_GetAccount_ProdURL = 35;
+   SetIdx_GetAccount_TestURL = 36;
+   SetIdx_GetStartedGuideURL = 37;
+   SetIdx_WalletFiltering = 38;
+   SetIdx_Limit_FxRFQ = 39;
+   SetIdx_Limit_XbtRFQ = 40;
+   SetIdx_Limit_CcRFQ = 41;
+   SetIdx_NoNotifyRFQ = 42;
+   SetIdx_PriceUpdateInterval = 43;
+   SetIdx_ShowQuoted = 44;
+   SetIdx_AdvancedTXisDefault = 45;
+   SetIdx_TxFilter = 46;
+   SetIdx_SubscribeMDatStart = 47;
+   SetIdx_MDLicenseAccepted = 48;
+   SetIdx_AuthPrivKey = 49;
+   SetIdx_jwtUsername = 50;
+   SetIdx_LocalSignerPubKeyPath = 51;
+   SetIdx_RemoteSigners = 52;
+   SetIdx_RememberLogin = 53;
+   SetIdx_ArmoryServers = 54;
+   SetIdx_TwoWaySignerAuth = 55;
+   SetIdx_ChartProduct = 56;
+   SetIdx_ChartTimeframe = 57;
+   SetIdx_ChartCandleCount = 58;
+   SetIdx_LastAQDir = 59;
+   SetIdx_HideLegacyWalletWarn = 60;
+   SetIdx_DetailedSettlDisalogByDef = 61;
+   SetIdx_AutoStartRFQScript = 62;
+   SetIdx_CurrentRFQScript = 63;
+   SetIdx_ShowInfoWidget = 64;
+   SetIdx_LoginApiKey = 65;
+   SetIdx_AutoQuoting = 66;
+   SetIdx_AutoSigning = 67;
+   SetIdx_ExtConnPort = 70;
+   SetIdx_SubmittedAddrXbtLimit = 72;
+   SetIdx_BlockSettleSignAddress = 100;
+}
+
+enum SettingType
+{
+   SettingType_Unknown = 0;
+   SettingType_String  = 1;
+   SettingType_Int     = 2;
+   SettingType_UInt    = 3;
+   SettingType_UInt64  = 4;
+   SettingType_Bool    = 5;
+   SettingType_Float   = 6;
+   SettingType_Rect    = 10;
+   SettingType_Strings = 11;
+   SettingType_StrMap  = 12;
+}
+
+enum SettingSource
+{
+   SettingSource_Unknown = 0;
+   SettingSource_Local   = 1;
+}
+
+message SettingRequest
+{
+   SettingSource source = 1;
+   SettingIndex  index  = 2;
+   SettingType   type   = 3;
+}
+
+message StrKeyVal {
+   string key   = 1;
+   string value = 2;
+}
+
+
+message SettingResponse
+{
+   SettingRequest request = 1;
+
+   message RectData {
+      int32 left   = 1;
+      int32 top    = 2;
+      int32 width  = 3;
+      int32 height = 4;
+   }
+
+   message Strings {
+      repeated string strings = 1;
+   }
+
+   message StrMap {
+      repeated StrKeyVal key_vals = 1;
+   }
+
+   oneof data
+   {
+      string s    = 2;
+      int32  i    = 3;
+      uint32 ui   = 4;
+      uint64 ui64 = 5;
+      bool   b    = 6;
+      double f    = 7;
+      RectData rect = 10;
+      Strings  strings = 11;
+      StrMap   key_vals = 12;
+   }
+}
+
+message SettingsMessage
+{
+   message SettingsRequest
+   {
+      repeated SettingRequest requests = 1;
+   }
+
+   message SettingsResponse
+   {
+      repeated SettingResponse responses = 1;
+   }
+
+   message ArmoryServer
+   {
+      int32  network_type = 1;
+      string server_name  = 2;
+      string server_address = 3;
+      string server_port = 4;
+      string server_key = 5;
+      bool   run_locally = 6;
+      bool   one_way_auth = 7;
+      bytes  password = 8;
+   }
+
+   message ArmoryServers
+   {
+      repeated ArmoryServer servers = 1;
+      int32 idx_current = 2;
+      int32 idx_connected = 3;
+   }
+
+   message ArmoryServerUpdate
+   {
+      ArmoryServer server = 1;
+      int32 index = 2;
+   }
+
+   message SignerServer
+   {
+      string id = 1;
+      string name = 2;
+      bool   is_local = 3;
+      int32  network_type = 4;
+      string host = 5;
+      string port = 6;
+      string key = 7;
+      string remote_keys_dir = 8;
+      string remote_keys_file = 9;
+      repeated StrKeyVal client_keys = 10;
+      string home_dir = 11;
+      double auto_sign_spend_limit = 12;
+   }
+
+   message SignerServers
+   {
+      repeated SignerServer servers = 1;
+      int32  idx_current = 2;
+      string own_key = 3;
+   }
+
+   message SignerSetKey
+   {
+      string server_id = 1;
+      string new_key = 2;
+   }
+
+   message BootstrapData
+   {
+      bool loaded = 1;
+      repeated string auth_validations = 2;
+      repeated CCDefinition cc_definitions = 3;
+   }
+
+   message PubKeyList
+   {
+      repeated bytes pub_keys = 1;
+   }
+
+   oneof data
+   {
+      SettingsRequest    get_request  = 1;
+      SettingsResponse   get_response = 2;
+      SettingsResponse   put_request = 3;
+      SettingsResponse   settings_updated = 4;
+      ArmoryServer       armory_server = 5;
+      int32              set_armory_server = 6;	// by index
+      Empty              armory_servers_get = 7;
+      ArmoryServers      armory_servers = 8;
+      ArmoryServer       add_armory_server = 9;
+      int32              del_armory_server = 10;
+      ArmoryServerUpdate upd_armory_server = 11;
+      Empty              signer_request = 12;
+      SignerServer       signer_response = 13;
+      SignerSetKey       signer_set_key = 14;
+      Empty              signer_reset = 15;
+      Empty              signer_servers_get = 16;
+      SignerServers      signer_servers = 17;
+      int32              set_signer_server = 18;
+      SignerServer       add_signer_server = 19;
+      int32              del_signer_server = 20;
+      Empty              state_get = 21;
+      SettingsResponse   state = 22;
+      SettingsRequest    reset = 23;
+      SettingsResponse   reset_to_state = 24;
+      bytes              load_bootstrap = 25;
+      BootstrapData      bootstrap = 26;
+      Empty              get_bootstrap = 27;
+      bytes              api_privkey = 28;
+      PubKeyList         api_client_keys = 29;
+   }
+}
+
+
+message AdministrativeMessage
+{
+   oneof data
+   {
+      Empty start = 1;
+      Empty stop  = 2;
+      Empty restart = 3;
+      int32 component_created = 4;
+      int32 component_loading = 5;
+      int32 component_ready = 6;
+   }
+}
+
+
+message TradeSettings
+{
+   uint64 xbt_tier1_limit = 1;
+   uint32 xbt_price_band = 2;
+   uint32 auth_reqd_settl_trades = 3;
+   uint32 auth_submit_addr_limit = 4;
+   uint32 dealer_auth_submit_addr_limit = 5;
+}
+
+message BsServerMessage
+{
+   message StartLoginResult
+   {
+      string login = 1;
+      bool   success = 2;
+      string error_text = 3;
+   }
+
+   message LoginResult
+   {
+      string login = 1;
+      int32  status = 2;
+      int32  user_type = 3;
+      string error_text = 4;
+      string celer_login = 5;
+      bytes  chat_token = 6;
+      bytes  chat_token_signature = 7;
+      bytes  bootstrap_signed_data = 8;
+      bool   enabled = 9;
+      float  fee_rate = 10;
+      TradeSettings trade_settings = 11;
+   }
+
+   message MatchingData
+   {
+      int32  message_type = 1;
+      bytes  data = 2;
+   }
+
+   message SubmitCCAddress
+   {
+      string address = 1;
+      uint32 seed = 2;
+      string product = 3;
+   }
+
+   message SubmitCCResult
+   {
+      string address = 1;
+      string success = 2;
+      string error_text = 3;
+   }
+
+   message Balance
+   {
+      string currency = 1;
+      double value = 2;
+   }
+
+   message Orders
+   {
+      message Order {
+         int32  status = 1;
+         string status_text = 2;
+         string product  = 3;
+         string contra_product = 4;
+         bool   buy = 5;
+         double quantity = 6;
+         double price = 7;
+         uint64 timestamp = 8;
+      }
+      repeated Order orders = 1;
+   }
+
+   message SignXbtHalf
+   {
+      bytes  settlement_id = 1;
+      bytes  unsigned_payin = 2;
+      bytes  payin_hash = 3;
+      uint64 timestamp = 4;
+   }
+
+   message SignedXbtHalf
+   {
+      bytes settlement_id = 1;
+      bytes signed_tx = 2;
+   }
+
+   message XbtTransaction
+   {
+      bytes settlement_id = 1;
+      bytes tx = 2;
+   }
+
+   oneof data
+   {
+      Empty            open_connection = 1;
+      Empty            connected = 2;
+      Empty            disconnected = 3;
+      string           start_login = 4;
+      Empty            cancel_last_login = 5;
+      StartLoginResult start_login_result = 6;
+      LoginResult      login_result = 7;
+      Empty            close_connection = 8;
+      Common.NewKeyCompare pub_new_key_request  = 10;
+      bool             pub_new_key_response = 11;
+      string           timeout = 12;
+      MatchingData     send_matching = 13;
+      MatchingData     recv_matching = 14;
+      SubmitCCAddress  submit_cc_address = 15;
+      SubmitCCResult   submit_cc_result = 16;
+      string           submit_auth_address = 17;
+      int32	       submit_auth_result = 18;
+      Balance          balance_updated = 19;
+      bool             trading_enabled = 20;
+      Orders           orders_update = 21;
+      bytes            unsigned_payin_requested = 22;	// settlementId
+      SignXbtHalf      signed_payout_requested = 23;
+      SignXbtHalf      signed_payin_requested = 24;
+      XbtTransaction   send_unsigned_payin = 25;
+      XbtTransaction   send_signed_payin = 26;
+      XbtTransaction   send_signed_payout = 27;
+   }
+}
+
+
+message RFQ
+{
+   string id = 1;
+   string security = 2;
+   string product = 3;
+   int32  asset_type = 4;
+   bool   buy = 5;
+   double quantity = 6;
+   string auth_pub_key = 7;
+   string receipt_address = 8;
+   string coin_tx_input = 9;
+}
+
+message IncomingRFQ
+{
+   RFQ rfq = 1;
+   string settlement_id = 2;
+   string session_token = 3;
+   string party = 4;
+   string reason = 5;
+   string account = 6;
+   int32  status = 7;
+   uint64 expiration_ms = 8;
+   uint64 timestamp_ms = 9;
+   int32  time_skew_ms = 10;
+}
+
+message Quote
+{
+   string request_id = 1;
+   string quote_id = 2;
+   string security = 3;
+   string product = 4;
+   double price = 5;
+   double quantity = 6;
+   bool   buy = 7;
+   int32  asset_type = 8;
+   int32  quoting_type = 9;
+   string req_auth_pub_key = 10;
+   string deal_auth_pub_key = 11;
+   string settlement_id = 12;
+   string dealer_tx = 13;
+   uint64 expiration_time = 14;
+   int32  time_skew_ms = 15;
+   uint64 timestamp = 16;
+}
+
+message AcceptRFQ
+{
+   string rfq_id = 1;
+   Quote  quote = 2;
+   bytes  payout_tx = 3;
+}
+
+message ReplyToRFQ
+{
+   Quote  quote = 1;
+   string session_token = 2;
+   string account = 3;
+   string dealer_recv_addr = 4;
+}
+
+message PullRFQReply
+{
+   string settlement_id = 1;
+   string rfq_id = 2;
+   string session_token = 3;
+}
+
+message QuoteCancelled
+{
+   string rfq_id = 1;
+   string quote_id = 2;
+   bool   by_user = 3;
+}
+
+
+message MatchingMessage
+{
+   message Login
+   {
+      string matching_login = 1;
+      string terminal_login = 2;
+   }
+
+   message LoggedIn
+   {
+      int32  user_type = 1;
+      string user_id = 2;
+      string user_name = 3;
+   }
+
+   message SubmittedAuthAddresses
+   {
+      repeated string addresses = 1;
+   }
+
+   message BestQuotedPrice
+   {
+      string quote_req_id = 1;
+      double price = 2;
+      bool   own = 3;
+   }
+
+   message Order
+   {
+      string cl_order_id = 1;
+      string exchange_id = 2;
+      string quote_id = 3;
+      uint64 timestamp = 4;
+      string security = 5;
+      string product = 6;
+      bytes  settlement_id = 7;
+      string requester_tx = 8;
+      string dealer_tx = 9;
+      string pending_status = 10;
+      double quantity = 11;
+      double left_qty = 12;
+      double price = 13;
+      double avg_price = 14;
+      bool   buy = 15;
+      int32  asset_type = 16;
+      int32  status = 17;
+      string info = 18;
+   }
+
+   message OrderReject
+   {
+      string quote_id = 1;
+      string order_id = 2;
+      string reject_text = 3;
+   }
+
+   message QuoteReject
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      string reject_text = 3;
+      int32  reject_code = 4;
+   }
+
+   oneof data
+   {
+      int32           connection_error = 1;
+      Login           login = 2;
+      LoggedIn        logged_in = 3;
+      Empty           logout = 4;
+      Empty           logged_out = 5;
+      Empty           get_submitted_auth_addresses = 6;
+      SubmittedAuthAddresses submitted_auth_addresses = 7;
+      string          submit_auth_address = 8;
+      RFQ             send_rfq = 9;
+      AcceptRFQ       accept_rfq = 10;
+      string          cancel_rfq = 11;
+      Quote           quote = 12;
+      BestQuotedPrice best_quoted_price = 13;
+      Order           order = 14;
+      IncomingRFQ     incoming_rfq = 15;
+      ReplyToRFQ      submit_quote_notif = 16;
+      PullRFQReply    pull_quote_notif = 17;
+      QuoteCancelled  quote_cancelled = 18;
+      QuoteReject     quote_reject = 19;
+      OrderReject     order_reject = 20;
+   }
+}
+
+
+message SettlementMessage
+{
+   message SendRFQ
+   {
+      RFQ rfq = 1;
+      string reserve_id = 2;
+   }
+
+   message MatchedQuote
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      double price = 3;
+   }
+
+   message FailedSettlement
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      string order_id = 3;
+      bytes settlement_id = 4;
+      string info = 5;
+   }
+
+   message SettlementIds
+   {
+      string rfq_id = 1;
+      string quote_id = 2;
+      bytes  settlement_id = 3;
+   }
+
+   message PendingSettlement
+   {
+      SettlementIds ids = 1;
+      int32 time_left_ms = 2;
+   }
+
+   oneof data
+   {
+      SendRFQ           send_rfq = 1;
+      string            rfq_timeout = 2;	// rfq_id
+      string            cancel_rfq = 3;		// rfq_id
+      AcceptRFQ         accept_rfq = 4;
+      Quote             quote = 5;
+      MatchedQuote      matched_quote = 6;
+      FailedSettlement  failed_settlement = 7;
+      PendingSettlement pending_settlement = 8;
+      bytes             handshake_timeout = 9;
+      bytes             settlement_timeout = 10;
+      string            quote_req_timeout = 11;
+      bytes             settlement_cancelled = 12;
+      SettlementIds     settlement_complete = 13;
+      IncomingRFQ       quote_req_notif = 14;
+      ReplyToRFQ        reply_to_rfq = 15;
+      PullRFQReply      pull_rfq_reply = 16;
+      QuoteCancelled    quote_cancelled = 17;
+   }
+}
+
+
+message AssetsMessage
+{
+   message SubmittedAuthAddresses
+   {
+      repeated string addresses = 1;
+   }
+
+   message Balance
+   {
+      string currency = 1;
+      double value = 2;
+   }
+
+   oneof data
+   {
+      Empty                  loaded = 1;
+      CCDefinition           cc_definition = 2;
+      SubmittedAuthAddresses submitted_auth_addrs = 3;
+      string                 submit_auth_address = 4;
+      Balance                balance = 5;
+   }
+}
+
+
+message MktDataMessage
+{
+   message SecurityInfo
+   {
+      string name = 1;
+      int32  asset_type = 2;
+   }
+
+   message Prices
+   {
+      SecurityInfo security = 1;
+      uint64 timestamp = 2;
+      double bid = 3;
+      double ask = 4;
+      double last = 5;
+      double volume = 6;
+   }
+
+   message Trade
+   {
+      string product = 1;
+      double price = 2;
+      double amount = 3;
+      uint64 timestamp = 4;
+   }
+
+   oneof data
+   {
+      Empty        accept_md_agreement = 1;
+      Empty        md_agreement_accepted = 2;
+      int32        start_connection = 3;	// environment
+      Empty        connected = 4;
+      Empty        disconnected = 5;
+      SecurityInfo new_security = 6;
+      Empty        all_instruments_received = 7;
+      Prices       price_update = 8;
+      Trade        trade = 9;
+   }
+}
+
+
+message MDHistMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}
+
+
+message ChatMessage
+{
+   oneof data
+   {
+      Empty placeholder = 1;
+   }
+}

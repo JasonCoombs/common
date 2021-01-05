@@ -12,6 +12,7 @@
 #define __BS_QWALLETINFO_H__
 
 #include <QObject>
+#include "SignerDefs.h"
 #include "headless.pb.h"
 #include "QSeed.h"
 
@@ -55,9 +56,10 @@ public:
 
    // used in signer
    WalletInfo(std::shared_ptr<bs::core::hd::Wallet> hdWallet, QObject *parent = nullptr);
-   WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &
+   [[deprecated]] WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<bs::sync::hd::Wallet> &, QObject *parent = nullptr);
-   WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &
+   WalletInfo(const bs::sync::WalletInfo &, QObject *parent = nullptr);
+   [[deprecated]] WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<bs::sync::Wallet> &, QObject *parent = nullptr);
 
    WalletInfo(const WalletInfo &other);

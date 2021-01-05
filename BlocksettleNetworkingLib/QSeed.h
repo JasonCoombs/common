@@ -50,16 +50,18 @@ public:
 
    // for qml
    QSeed(bool isTestNet)
-      : Seed(
-         CryptoPRNG::generateRandom(32),
-         isTestNet ? NetworkType::TestNet : NetworkType::MainNet)
+      : Seed(CryptoPRNG::generateRandom(32)
+         , isTestNet ? NetworkType::TestNet : NetworkType::MainNet)
    {}
 
    QSeed(const QString &seed, QNetworkType netType)
-      : Seed(SecureBinaryData::fromString(seed.toStdString()), fromQNetworkType(netType)) {}
+      : Seed(SecureBinaryData::fromString(seed.toStdString()), fromQNetworkType(netType))
+   {}
+   QSeed(const SecureBinaryData& seed, NetworkType netType) : Seed(seed, netType)
+   {}
 
    // copy constructors and operator= uses parent implementation
-   QSeed(const Seed &seed) : Seed(seed){}
+   QSeed(const Seed &seed) : Seed(seed) {}
    QSeed(const QSeed &other) : QSeed(static_cast<Seed>(other)) {}
    QSeed& operator= (const QSeed &other) { Seed::operator=(other); return *this;}
 
@@ -72,9 +74,9 @@ public:
    QString part2() const { return QString::fromStdString(toEasyCodeChecksum().part2); }
    QString walletId() const { return QString::fromStdString(getWalletId()); }
 
-   QString lastError() const;
-
+   QString lastError() const { return lastError_; }
    QNetworkType networkType() { return toQNetworkType(Seed::networkType()); }
+
 private:
    QString lastError_;
 };

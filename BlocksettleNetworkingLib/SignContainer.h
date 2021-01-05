@@ -59,9 +59,10 @@ public:
    };
    using PasswordType = SecureBinaryData;
 
-   enum ConnectionError
+   enum ConnectionError //TODO: rename to ConnectionStatus
    {
-      NoError,
+      NoError, // TODO: rename to Connected
+      Ready,   // AKA authenticated
       UnknownError,
       SocketFailed,
       HostNotFound,
@@ -89,7 +90,12 @@ public:
       , const Codec_SignerState::SignerState &)>;
 
    // If wallet is offline serialize request and write to file with path TXSignRequest::offlineFilePath
-   virtual bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+   [[deprecated]] virtual bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
+
+   virtual void signTXRequest(const bs::core::wallet::TXSignRequest&
+      , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
+         , const std::string& errorReason)> &
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
 
    virtual bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
@@ -127,7 +133,7 @@ public:
    virtual void syncNewAddress(const std::string &walletId, const std::string &index
       , const std::function<void(const bs::Address &)> &);
    virtual void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
-      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &, bool persistent = true) = 0;
+      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) = 0;
 
    const OpMode &opMode() const { return mode_; }
    virtual bool isReady() const { return true; }
@@ -145,7 +151,7 @@ signals:
    void ready();
    void Error(bs::signer::RequestId id, std::string error);
    void TXSigned(bs::signer::RequestId id, BinaryData signedTX, bs::error::ErrorCode result, const std::string &errorReason = {});
-   // emited only for local signer
+   // emitted only for local signer
    void windowVisibilityChanged(bool visible);
 
    void QWalletInfo(unsigned int id, const bs::hd::WalletInfo &);

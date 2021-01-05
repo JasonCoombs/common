@@ -79,7 +79,7 @@ namespace bs {
          WalletsManager(WalletsManager&&) = delete;
          WalletsManager& operator = (WalletsManager&&) = delete;
 
-         void setSignContainer(const std::shared_ptr<WalletSignerContainer> &container);
+         [[deprecated]] void setSignContainer(const std::shared_ptr<WalletSignerContainer> &container);
          void reset();
 
          bool syncWallets(const CbProgress &cb = nullptr);

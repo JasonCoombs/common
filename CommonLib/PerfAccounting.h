@@ -19,7 +19,7 @@ namespace bs {
          void addQueueTime(const std::chrono::microseconds &interval);
          void reset();
 
-         void report(const std::shared_ptr<spdlog::logger> &
+         void report(const std::shared_ptr<spdlog::logger> &, const std::string &name
             , const std::map<int, std::string> &keyMapping);
 
       private:

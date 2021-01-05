@@ -98,7 +98,7 @@ void WalletsManager::reset()
 void WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::function<void()> &cbDone)
 {
    logger_->debug("[WalletsManager::syncWallets] syncing wallet {} ({} {})"
-      , info.id, info.name, (int)info.format);
+      , *info.ids.cbegin(), info.name, (int)info.format);
 
    switch (info.format) {
    case bs::sync::WalletFormat::HD:
@@ -118,7 +118,7 @@ void WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::fun
          }
       } catch (const std::exception &e) {
          logger_->error("[WalletsManager::syncWallets] failed to create HD wallet "
-            "{}: {}", info.id, e.what());
+            "{}: {}", *info.ids.cbegin(), e.what());
          cbDone();
       }
       break;
@@ -144,11 +144,11 @@ bool WalletsManager::syncWallets(const CbProgress &cb)
 
    const auto &cbWalletInfo = [this, cb](const std::vector<bs::sync::WalletInfo> &wi) {
       auto walletIds = std::make_shared<std::unordered_set<std::string>>();
-      for (const auto &info : wi)
-         walletIds->insert(info.id);
-
       for (const auto &info : wi) {
-         const auto &cbDone = [this, walletIds, id = info.id, total = wi.size(), cb]
+         walletIds->insert(*info.ids.cbegin());
+      }
+      for (const auto &info : wi) {
+         const auto &cbDone = [this, walletIds, id = *info.ids.cbegin(), total = wi.size(), cb]
          {
             walletIds->erase(id);
             if (cb)
@@ -1048,7 +1048,7 @@ void WalletsManager::onWalletsListUpdated()
    const auto &cbSyncWallets = [this](const std::vector<bs::sync::WalletInfo> &wi) {
       std::map<std::string, bs::sync::WalletInfo> hdWallets;
       for (const auto &info : wi) {
-         hdWallets[info.id] = info;
+         hdWallets[*info.ids.cbegin()] = info;
       }
       for (const auto &hdWallet : hdWallets) {
          const auto &itHdWallet = std::find_if(hdWallets_.cbegin(), hdWallets_.cend()

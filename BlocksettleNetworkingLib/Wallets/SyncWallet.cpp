@@ -45,15 +45,14 @@ Wallet::~Wallet()
    }
 }
 
-const std::string& Wallet::walletIdInt(void) const
+std::string Wallet::walletIdInt(void) const
 {
    /***
    Overload this if your wallet class supports internal chains.
    A wallet object without an internal chain should throw a
    runtime error.
    ***/
-
-   throw std::runtime_error("no internal chain");
+   throw std::runtime_error("not supported");
 }
 
 void Wallet::synchronize(const std::function<void()> &cbDone)
@@ -714,6 +713,11 @@ void Wallet::onRefresh(const std::vector<BinaryData> &ids, bool online)
    }
 }
 
+void Wallet::onRegistered()
+{
+   init();
+}
+
 std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConnection> &armory, bool asNew)
 {
    setArmory(armory);
@@ -731,6 +735,22 @@ std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConn
       logger_->error("[bs::sync::Wallet::registerWallet] no armory");
    }
    return {};
+}
+
+Wallet::WalletRegData Wallet::regData() const
+{
+   WalletRegData result;
+   const auto &addrHashes = getAddrHashes();
+   result[walletId()] = addrHashes;
+   registeredAddresses_.insert(addrHashes.begin(), addrHashes.end());
+   logger_->debug("[bs::sync::Wallet::regData] wallet {}, {} addresses = {}"
+      , walletId(), getAddrHashes().size(), regId_);
+   return result;
+}
+
+Wallet::UnconfTgtData Wallet::unconfTargets() const
+{
+   return { { walletId(), 1 } };
 }
 
 void Wallet::unregisterWallet()
@@ -762,7 +782,6 @@ void Wallet::init(bool force)
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::string> &walletsIds
    , const std::vector<UTXO> &inputs
-   , const std::vector<std::string> &inputIndices
    , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
    , bool allowBroadcasts, const bs::Address &changeAddr
    , const std::string &changeIndex
@@ -832,20 +851,6 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       walletIds.push_back(wallet->walletId());
    }
 
-   std::vector<std::string> inputIndices;
-   for (const auto &utxo : inputs) {
-      auto inputAddress = bs::Address::fromUTXO(utxo);
-      std::string inputIndex;
-      for (const auto &wallet : wallets) {
-         inputIndex = wallet->getAddressIndex(inputAddress);
-         if (!inputIndex.empty()) {
-            break;
-         }
-      }
-      // inputIndex could be empty (for example for P2WSH payout input)
-      inputIndices.push_back(inputIndex);
-   }
-
    std::string changeIndex;
    if (changeAddr.isValid()) {
       for (const auto &wallet : wallets) {
@@ -860,7 +865,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
       }
    }
 
-   return createTXRequest(walletIds, inputs, inputIndices, recipients, allowBroadcasts, changeAddr, changeIndex, fee, isRBF);
+   return createTXRequest(walletIds, inputs, recipients, allowBroadcasts, changeAddr, changeIndex, fee, isRBF);
 }
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets

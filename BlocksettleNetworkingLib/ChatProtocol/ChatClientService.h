@@ -15,7 +15,7 @@
 
 #include <QObject>
 
-#include "CelerClient.h"
+#include "Celer/CelerClient.h"
 #include "ChatProtocol/ServiceThread.h"
 #include "ChatProtocol/ChatClientLogic.h"
 #include "BIP15xHelpers.h"

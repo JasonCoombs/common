@@ -54,7 +54,7 @@ bool WalletsManager::loadWallets(NetworkType netType, const std::string &wallets
          continue;
       }
       try {
-         logger_->debug("Loading BIP44 wallet from {}", file);
+         logger_->debug("[{}] loading BIP44 wallet from {}", __func__, file);
          const auto wallet = std::make_shared<hd::Wallet>(file, netType
             , walletsPath, controlPassphrase, logger_);
          current++;
@@ -62,12 +62,14 @@ bool WalletsManager::loadWallets(NetworkType netType, const std::string &wallets
             cbProgress(current, totalCount);
          }
          if ((netType != NetworkType::Invalid) && (netType != wallet->networkType())) {
-            logger_->warn("[{}] Network type mismatch: loading {}, wallet has {}", __func__, (int)netType, (int)wallet->networkType());
+            logger_->warn("[{}] network type mismatch: loading {}, wallet has {}"
+               , __func__, (int)netType, (int)wallet->networkType());
          }
          saveWallet(wallet);
       }
       catch (const std::exception &e) {
-         logger_->warn("Failed to load BIP44 wallet: {}", e.what());
+         logger_->warn("[{}] failed to load BIP44 wallet from {}: {}", __func__
+            , file, e.what());
 
          if (!strncmp(e.what(), wrongControlPasswordException, strlen(wrongControlPasswordException))) {
             return false;

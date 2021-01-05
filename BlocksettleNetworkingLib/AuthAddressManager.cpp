@@ -16,7 +16,7 @@
 #include "ApplicationSettings.h"
 #include "ArmoryConnection.h"
 #include "BsClient.h"
-#include "CelerClient.h"
+#include "Celer/CelerClient.h"
 #include "CheckRecipSigner.h"
 #include "ClientClasses.h"
 #include "FastLock.h"
@@ -30,7 +30,12 @@ using namespace Blocksettle::Communication;
 
 AuthAddressManager::AuthAddressManager(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<ArmoryConnection> &armory)
-   : QObject(nullptr), logger_(logger), armory_(armory)
+   : QObject(nullptr), logger_(logger), armory_(armory), authCT_(this)
+{}
+
+AuthAddressManager::AuthAddressManager(const std::shared_ptr<spdlog::logger>& logger
+   , AuthCallbackTarget *act)
+   : logger_(logger), authCT_(act)
 {}
 
 void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSettings
@@ -63,7 +68,7 @@ void AuthAddressManager::initLogin(const std::shared_ptr<BaseCelerClient> &celer
    tradeSettings_ = tradeSettings;
 }
 
-const std::shared_ptr<bs::TradeSettings>& AuthAddressManager::tradeSettings() const
+std::shared_ptr<bs::TradeSettings> AuthAddressManager::tradeSettings() const
 {
    return tradeSettings_;
 }
@@ -88,18 +93,19 @@ bool AuthAddressManager::setup()
       return false;
    }
 
-   addressVerificator_ = std::make_shared<AddressVerificator>(logger_, armory_
-      , [this](const bs::Address &address, AddressVerificationState state)
-   {
-      if (!addressVerificator_) {
-         logger_->error("[AuthAddressManager::setup] Failed to create AddressVerificator object");
-         return;
-      }
+   if (armory_) {
+      addressVerificator_ = std::make_shared<AddressVerificator>(logger_, armory_
+         , [this](const bs::Address& address, AddressVerificationState state)
+      {
+         if (!addressVerificator_) {
+            logger_->error("[AuthAddressManager::setup] Failed to create AddressVerificator object");
+            return;
+         }
 
-      logger_->info("Address verification on chain {} for {}", to_string(state), address.display());
-      SetValidationState(address, state);
-   });
-
+         logger_->info("Address verification on chain {} for {}", to_string(state), address.display());
+         SetValidationState(address, state);
+      });
+   }
    SetBSAddressList(bsAddressList_);
    return true;
 }
@@ -109,7 +115,7 @@ void AuthAddressManager::onAuthWalletChanged()
    SetAuthWallet();
    addresses_.clear();
    tryVerifyWalletAddresses();
-   emit AuthWalletChanged();
+   authCT_->authWalletChanged();
 }
 
 AuthAddressManager::~AuthAddressManager() noexcept
@@ -147,10 +153,7 @@ AuthAddressManager::ReadyError AuthAddressManager::readyError() const
    if (!HaveBSAddressList()) {
       return ReadyError::MissingAddressList;
    }
-   if (!armory_) {
-      return ReadyError::MissingArmoryPtr;
-   }
-   if (!armory_->isOnline()) {
+   if (armory_ && !armory_->isOnline()) {
       return ReadyError::ArmoryOffline;
    }
 
@@ -199,16 +202,16 @@ void AuthAddressManager::onTXSigned(unsigned int id, BinaryData signedTX, bs::er
 
    if (result == bs::error::ErrorCode::NoError) {
       if (BroadcastTransaction(signedTX)) {
-         emit AuthRevokeTxSent();
+         authCT_->authRevokeTxSent();
       }
       else {
-         emit Error(tr("Failed to broadcast transaction"));
+         authCT_->onError(tr("Failed to broadcast transaction").toStdString());
       }
    }
    else {
       logger_->error("[AuthAddressManager::onTXSigned] TX signing failed: {} {}"
          , bs::error::ErrorCodeToString(result).toStdString(), errorReason);
-      emit Error(tr("Transaction sign error: %1").arg(bs::error::ErrorCodeToString(result)));
+      authCT_->onError(tr("Transaction sign error: %1").arg(bs::error::ErrorCodeToString(result)).toStdString());
    }
 }
 
@@ -217,25 +220,25 @@ bool AuthAddressManager::RevokeAddress(const bs::Address &address)
    const auto state = GetState(address);
    if ((state != AuthAddressState::Verifying) && (state != AuthAddressState::Verified)) {
       logger_->warn("[AuthAddressManager::RevokeAddress] attempting to revoke from incorrect state {}", (int)state);
-      emit Error(tr("incorrect state"));
+      authCT_->onError(tr("incorrect state").toStdString());
       return false;
    }
    if (!signingContainer_) {
       logger_->error("[AuthAddressManager::RevokeAddress] can't revoke without signing container");
-      emit Error(tr("Missing signing container"));
+      authCT_->onError(tr("Missing signing container").toStdString());
       return false;
    }
 
    if (!addressVerificator_) {
       SPDLOG_LOGGER_ERROR(logger_, "addressVerificator_ is null");
-      emit Error(tr("Missing address verificator"));
+      authCT_->onError(tr("Missing address verificator").toStdString());
       return false;
    }
 
    const auto revokeData = addressVerificator_->getRevokeData(address);
    if (revokeData.first.empty() || !revokeData.second.isInitialized()) {
       logger_->error("[AuthAddressManager::RevokeAddress] failed to obtain revocation data");
-      emit Error(tr("Missing revocation input"));
+      authCT_->onError(tr("Missing revocation input").toStdString());
       return false;
    }
 
@@ -243,7 +246,7 @@ bool AuthAddressManager::RevokeAddress(const bs::Address &address)
       , revokeData.second, revokeData.first);
    if (!reqId) {
       logger_->error("[AuthAddressManager::RevokeAddress] failed to send revocation data");
-      emit Error(tr("Failed to send revoke"));
+      authCT_->onError(tr("Failed to send revoke").toStdString());
       return false;
    }
    signIdsRevoke_.insert(reqId);
@@ -258,13 +261,13 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
    bsClientPtr->signAuthAddress(address, [this, address, bsClient] (const BsClient::SignResponse &response) {
       if (response.userCancelled) {
          logger_->error("[AuthAddressManager::ConfirmSubmitForVerification sign cb] signing auth address cancelled: {}", response.errorMsg);
-         emit AuthAddressSubmitCancelled(QString::fromStdString(address.display()));
+         authCT_->authAddressSubmitCancelled(address);
          return;
       }
 
       if (!response.success) {
          logger_->error("[AuthAddressManager::ConfirmSubmitForVerification sign cb] signing auth address failed: {}", response.errorMsg);
-         emit AuthAddressSubmitError(QString::fromStdString(address.display()), bs::error::AuthAddressSubmitResult::AuthRequestSignFailed);
+         authCT_->authAddressSubmitError(address, bs::error::AuthAddressSubmitResult::AuthRequestSignFailed);
          return;
       }
 
@@ -279,7 +282,7 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
       bsClientPtr->confirmAuthAddress(address, [this, address] (bs::error::AuthAddressSubmitResult submitResult) {
          if (submitResult != bs::error::AuthAddressSubmitResult::Success) {
             logger_->error("[AuthAddressManager::ConfirmSubmitForVerification confirm cb] confirming auth address failed: {}", static_cast<int>(submitResult));
-            emit AuthAddressSubmitError(QString::fromStdString(address.display()), submitResult);
+            authCT_->authAddressSubmitError(address, submitResult);
             return;
          }
 
@@ -353,8 +356,8 @@ void AuthAddressManager::VerifyWalletAddressesFunction()
    addressVerificator_->startAddressVerification();
 
    if (updated) {
-      emit VerifiedAddressListUpdated();
-      emit AddressListUpdated();
+      authCT_->verifiedAddressListUpdated();
+      authCT_->addressListUpdated();
    }
 }
 
@@ -375,8 +378,8 @@ void AuthAddressManager::ClearAddressList()
    }
 
    if (adressListChanged) {
-      emit AddressListUpdated();
-      emit VerifiedAddressListUpdated();
+      authCT_->addressListUpdated();
+      authCT_->verifiedAddressListUpdated();
    }
 }
 
@@ -399,7 +402,7 @@ void AuthAddressManager::onWalletChanged(const std::string &walletId)
 
    if (listUpdated && addressVerificator_) {
       addressVerificator_->startAddressVerification();
-      emit AddressListUpdated();
+      authCT_->addressListUpdated();
    }
 }
 
@@ -507,19 +510,24 @@ void AuthAddressManager::SetValidationState(const bs::Address &addr, AddressVeri
    }
 
    SetExplicitState(addr, mappedState);
+   bool updateAddrState = true;
 
    if (mappedState == AuthAddressState::Verified
-      && (  prevState == AuthAddressState::Verifying
+      && (prevState == AuthAddressState::Verifying
          || prevState == AuthAddressState::Submitted)) {
-      emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), tr("Verified"));
-      emit VerifiedAddressListUpdated();
-   } else if (   (mappedState == AuthAddressState::Revoked || mappedState == AuthAddressState::RevokedByBS)
+      authCT_->addrVerifiedOrRevoked(addr, AuthAddressState::Verified);
+      authCT_->verifiedAddressListUpdated();
+      updateAddrState = false;
+   } else if ((mappedState == AuthAddressState::Revoked || mappedState == AuthAddressState::RevokedByBS)
               && (prevState == AuthAddressState::Verified)) {
-      emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), tr("Revoked"));
+      authCT_->addrVerifiedOrRevoked(addr, AuthAddressState::Revoked);
+      updateAddrState = false;
    }
 
-   emit AddrStateChanged();
-   emit AddressListUpdated();
+   if (updateAddrState) {
+      authCT_->addrStateChanged(addr, mappedState);
+   }
+   authCT_->addressListUpdated();
 }
 
 bool AuthAddressManager::BroadcastTransaction(const BinaryData& transactionData)
@@ -531,7 +539,7 @@ void AuthAddressManager::setDefault(const bs::Address &addr)
 {
    defaultAddr_ = addr;
    settings_->set(ApplicationSettings::defaultAuthAddr, QString::fromStdString(addr.display()));
-   emit VerifiedAddressListUpdated();
+   authCT_->verifiedAddressListUpdated();
 }
 
 bs::Address AuthAddressManager::getDefault() const
@@ -669,7 +677,7 @@ void AuthAddressManager::SetBSAddressList(const std::unordered_set<std::string>&
    }
 
    // Emit signal without holding lock
-   emit gotBsAddressList();
+   authCT_->bsAddressList();
 }
 
 void AuthAddressManager::onStateChanged(ArmoryState)
@@ -685,8 +693,8 @@ void AuthAddressManager::markAsSubmitted(const bs::Address &address)
 
    SetExplicitState(address, AuthAddressState::Submitted);
 
-   emit AddressListUpdated();
-   emit AuthAddressSubmitSuccess(QString::fromStdString(address.display()));
+   authCT_->addressListUpdated();
+   authCT_->authAddressSubmitSuccess(address);
 }
 
 template <typename TVal> TVal AuthAddressManager::lookup(const bs::Address &key, const std::map<bs::Address, TVal> &container) const
@@ -703,7 +711,7 @@ void AuthAddressManager::onWalletCreated()
    auto authLeaf = walletsManager_->getAuthWallet();
 
    if (authLeaf != nullptr) {
-      emit AuthWalletCreated(QString::fromStdString(authLeaf->walletId()));
+      authCT_->authWalletCreated(authLeaf->walletId());
    } else {
       logger_->error("[AuthAddressManager::onWalletCreated] we should be able to get auth wallet at this point");
    }

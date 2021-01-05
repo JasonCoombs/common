@@ -17,7 +17,7 @@ using namespace bs;
 
 std::vector<UTXO> bs::selectUtxoForAmount(const std::vector<UTXO> &utxos, uint64_t amount)
 {
-   if (amount == std::numeric_limits<uint64_t>::max()) {
+   if ((amount == std::numeric_limits<uint64_t>::max()) || utxos.empty()) {
       return utxos;
    }
    else if (amount == 0) {
@@ -32,7 +32,7 @@ std::vector<UTXO> bs::selectUtxoForAmount(const std::vector<UTXO> &utxos, uint64
    auto remainingAmount = static_cast<int64_t>(amount);
    auto begin = inputs.begin();
    for (; begin != inputs.end() && remainingAmount > 0; ++begin) {
-      auto value = static_cast<int64_t>(begin->getValue());
+      const auto value = static_cast<int64_t>(begin->getValue());
       if (remainingAmount > value) {
          remainingAmount -= value;
          continue;

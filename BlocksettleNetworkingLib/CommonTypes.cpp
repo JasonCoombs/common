@@ -55,26 +55,19 @@ bool RFQ::isXbtBuy() const
 }
 
 
-QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn, const std::string &_authKey, double price
-   , const std::string &txData)
-   : authKey(_authKey), reqAuthKey(qrn.requestorAuthPublicKey), settlementId(qrn.settlementId), sessionToken(qrn.sessionToken)
+QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn
+   , const std::string &_authKey, double prc, const std::string &txData)
+   : authKey(_authKey), reqAuthKey(qrn.requestorAuthPublicKey)
+   , settlementId(qrn.settlementId), sessionToken(qrn.sessionToken)
    , quoteRequestId(qrn.quoteRequestId), security(qrn.security), product(qrn.product)
    , transactionData(txData), assetType(qrn.assetType), validityInS(120)
 {
-   const auto &baseProduct = security.substr(0, security.find('/'));
    side = bs::network::Side::invert(qrn.side);
-
-   if ((side == bs::network::Side::Buy) || ((side == bs::network::Side::Sell) && (product != baseProduct))) {
-      bidPx = offerPx = price;
-      bidSz = offerSz = qrn.quantity;
-   }
-   else {
-      offerPx = bidPx = price;
-      offerSz = bidSz = qrn.quantity;
-   }
 }
 
-MDField MDField::get(const MDFields &fields, MDField::Type type) {
+
+MDField MDField::get(const MDFields &fields, MDField::Type type)
+{
    for (const auto &field : fields) {
       if (field.type == type) {
          return field;
@@ -98,47 +91,9 @@ bool bs::network::MDField::isIndicativeForFutures() const
    return levelQuantity == QStringLiteral("1");
 }
 
-Side::Type Side::fromCeler(com::celertech::marketmerchant::api::enums::side::Side side) {
-   switch (side) {
-   case com::celertech::marketmerchant::api::enums::side::BUY:    return Buy;
-   case com::celertech::marketmerchant::api::enums::side::SELL:   return Sell;
-   }
-   return Undefined;
-}
 
-com::celertech::marketmerchant::api::enums::side::Side Side::toCeler(Side::Type side) {
-   switch (side) {
-   case Buy:   return com::celertech::marketmerchant::api::enums::side::BUY;
-   case Sell:
-   default:    return com::celertech::marketmerchant::api::enums::side::SELL;
-   }
-}
-
-Side::Type Side::fromBS(const bs::types::Side& side)
+const char *Side::toString(Side::Type side)
 {
-   switch (side) {
-   case bs::types::Side::SIDE_BUY:
-      return Side::Buy;
-   case bs::types::Side::SIDE_SELL:
-      return Side::Sell;
-   }
-
-   return Side::Undefined;
-}
-
-bs::types::Side Side::toBS(const Side::Type& side)
-{
-   switch(side) {
-   case Side::Buy:
-      return bs::types::Side::SIDE_BUY;
-   case Side::Sell:
-      return bs::types::Side::SIDE_SELL;
-   }
-
-   return bs::types::Side::SIDE_INVALID;
-}
-
-const char *Side::toString(Side::Type side) {
    switch (side) {
       case Buy:   return QT_TR_NOOP("BUY");
       case Sell:  return QT_TR_NOOP("SELL");
@@ -146,7 +101,8 @@ const char *Side::toString(Side::Type side) {
    }
 }
 
-const char *Side::responseToString(Side::Type side) {
+const char *Side::responseToString(Side::Type side)
+{
    switch (side) {
       case Buy:   return QT_TR_NOOP("Offer");
       case Sell:  return QT_TR_NOOP("Bid");
@@ -154,7 +110,8 @@ const char *Side::responseToString(Side::Type side) {
    }
 }
 
-Side::Type Side::invert(Side::Type side) {
+Side::Type Side::invert(Side::Type side)
+{
    switch (side) {
       case Buy:   return Sell;
       case Sell:  return Buy;
@@ -162,49 +119,8 @@ Side::Type Side::invert(Side::Type side) {
    }
 }
 
-bs::network::Asset::Type bs::network::Asset::fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt) {
-   switch (pt) {
-      case com::celertech::marketmerchant::api::enums::producttype::SPOT:           return SpotFX;
-      case com::celertech::marketmerchant::api::enums::producttype::BITCOIN:        return SpotXBT;
-      case com::celertech::marketmerchant::api::enums::producttype::PRIVATE_SHARE:  return PrivateMarket;
-      default: return Undefined;
-   }
-}
-
-com::celertech::marketmerchant::api::enums::assettype::AssetType bs::network::Asset::toCeler(bs::network::Asset::Type at) {
-   switch (at) {
-      case SpotFX:               return com::celertech::marketmerchant::api::enums::assettype::FX;
-      case DeliverableFutures:   return com::celertech::marketmerchant::api::enums::assettype::FX;
-      case CashSettledFutures:   return com::celertech::marketmerchant::api::enums::assettype::FX;
-      case SpotXBT:              return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
-      case PrivateMarket:        return com::celertech::marketmerchant::api::enums::assettype::CRYPTO;
-      default:                   return com::celertech::marketmerchant::api::enums::assettype::STRUCTURED_PRODUCT;
-   }
-}
-
-com::celertech::marketmerchant::api::enums::producttype::ProductType bs::network::Asset::toCelerProductType(bs::network::Asset::Type at) {
-   switch (at) {
-      case SpotFX:               return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-      case DeliverableFutures:   return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-      case CashSettledFutures:   return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-      case SpotXBT:              return com::celertech::marketmerchant::api::enums::producttype::BITCOIN;
-      case PrivateMarket:        return com::celertech::marketmerchant::api::enums::producttype::PRIVATE_SHARE;
-      default:                   return com::celertech::marketmerchant::api::enums::producttype::SPOT;
-   }
-}
-
-const char *bs::network::Asset::toCelerSettlementType(bs::network::Asset::Type at) {
-   switch (at) {
-      case SpotFX:               return "SPOT";
-      case DeliverableFutures:   return "SPOT";
-      case CashSettledFutures:   return "SPOT";
-      case SpotXBT:              return "XBT";
-      case PrivateMarket:        return "CC";
-      default:                   return "";
-   }
-}
-
-const char *bs::network::Asset::toString(bs::network::Asset::Type at) {
+const char *bs::network::Asset::toString(bs::network::Asset::Type at)
+{
    switch (at) {
    case SpotFX:               return QT_TR_NOOP("Spot FX");
    case DeliverableFutures:   return QT_TR_NOOP("XBT 1-day deliverable");

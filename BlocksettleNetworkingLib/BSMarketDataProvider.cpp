@@ -192,6 +192,8 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
 
    OnPriceBookSnapshot(bs::network::Asset::Type::DeliverableFutures, snapshot.deliverable(), timestamp);
    OnPriceBookSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.cash_settled(), timestamp);
+
+   callbacks_->allSecuritiesReceived();
 }
 
 void BSMarketDataProvider::OnProductUpdate(const bs::network::Asset::Type& assetType
