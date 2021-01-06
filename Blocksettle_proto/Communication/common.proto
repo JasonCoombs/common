@@ -206,9 +206,15 @@ message ArmoryMessage
       bool disable_cache = 2;
    }
 
+   message TX
+   {
+      bytes  tx = 1;
+      uint32 height = 2;
+   }
+
    message Transactions
    {
-      repeated bytes transactions = 1;
+      repeated TX transactions = 1;
    }
 
    message LedgerEntries

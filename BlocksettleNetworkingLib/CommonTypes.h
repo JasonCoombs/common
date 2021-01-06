@@ -14,7 +14,6 @@
 #include <QDateTime>
 #include <QObject>
 #include <QString>
-
 #include "Address.h"
 
 #ifndef NDEBUG
