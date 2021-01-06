@@ -1516,8 +1516,9 @@ void WalletsAdapter::processTransactions(uint64_t msgId
    const auto &convertTXs = [response]() -> std::vector<Tx>
    {
       std::vector<Tx> result;
-      for (const auto &txSer : response.transactions()) {
-         const Tx tx(BinaryData::fromString(txSer));
+      for (const auto &txData : response.transactions()) {
+         const Tx tx(BinaryData::fromString(txData.tx()));
+         tx.setTxHeight(txData.height());
          result.emplace_back(tx);
       }
       return result;

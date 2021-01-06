@@ -14,7 +14,6 @@
 using namespace bs::message;
 
 ThreadedAdapter::ThreadedAdapter()
-   : continueExecution_(std::make_shared<std::atomic_bool>(true))
 {
    // start thread
    processingThread_ = std::thread(&ThreadedAdapter::processingRoutine, this);
@@ -22,7 +21,7 @@ ThreadedAdapter::ThreadedAdapter()
 
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
-   *continueExecution_ = false;
+   continueExecution_ = false;
    decltype(pendingEnvelopes_) cleanQueue;
    pendingEnvelopes_.swap(cleanQueue);
    pendingEnvelopesEvent_.SetEvent();
@@ -39,10 +38,10 @@ bool ThreadedAdapter::process(const Envelope &envelope)
 
 void ThreadedAdapter::processingRoutine()
 {
-   while (*continueExecution_) {
+   while (continueExecution_) {
       pendingEnvelopesEvent_.WaitForEvent();
 
-      if (!*continueExecution_) {
+      if (!continueExecution_) {
          break;
       }
 
@@ -63,9 +62,6 @@ void ThreadedAdapter::processingRoutine()
 
       if (envelope == nullptr) {
          continue;
-      }
-      if (!*continueExecution_) {
-         break;
       }
       if (!processEnvelope(*envelope)) {
          FastLock locker{ pendingEnvelopesLock_ };
