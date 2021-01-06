@@ -62,6 +62,12 @@ message WalletMessage
       repeated string addresses = 2;
    }
 
+   message Addresses
+   {
+      string wallet_id = 1;
+      repeated string addresses = 2;
+   }
+
    oneof data {
       Empty                                  wallet_reload           = 1;
       string                                 wallet_loaded           = 2;	// wallet id
@@ -69,6 +75,8 @@ message WalletMessage
       Blocksettle.Communication.pbcli.LoadUTXOResponse utxos         = 4;
       bool                                   get_all_utxo            = 5;
       bytes                                  bootstrap_data          = 6;
+      uint32                                 get_new_trading_addrs   = 7;
+      Addresses                              trading_addresses       = 8;
    }
 }
 
