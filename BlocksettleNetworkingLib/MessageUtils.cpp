@@ -10,7 +10,6 @@
 */
 #include "MessageUtils.h"
 #include "terminal.pb.h"
-#include "bs_types.pb.h"
 
 using namespace bs::message;
 using namespace BlockSettle::Terminal;
