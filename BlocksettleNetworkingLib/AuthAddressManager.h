@@ -48,9 +48,9 @@ class ApplicationSettings;
 class ArmoryConnection;
 class BsClient;
 class BaseCelerClient;
+class HeadlessContainer;
 class RequestReplyCommand;
 class ResolverFeed_AuthAddress;
-class SignContainer;
 
 
 struct AuthCallbackTarget
@@ -111,7 +111,7 @@ public:
 
    [[deprecated]] void init(const std::shared_ptr<ApplicationSettings> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
-      , const std::shared_ptr<SignContainer> &);
+      , const std::shared_ptr<HeadlessContainer> &);
    [[deprecated]] void initLogin(const std::shared_ptr<BaseCelerClient> &,
       const std::shared_ptr<bs::TradeSettings> &);
 
@@ -251,7 +251,7 @@ protected:
    std::unordered_set<std::string>           bsAddressList_;
    std::shared_ptr<bs::sync::Wallet>         authWallet_;
 
-   std::shared_ptr<SignContainer>      signingContainer_;
+   std::shared_ptr<HeadlessContainer>  signingContainer_;
    std::unordered_set<unsigned int>    signIdsRevoke_;
    std::shared_ptr<bs::TradeSettings>  tradeSettings_;
 

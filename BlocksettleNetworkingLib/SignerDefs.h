@@ -117,7 +117,7 @@ namespace sync {
       std::vector<std::string>   ids;
       std::string name;
       std::string description;
-      NetworkType netType;
+      ::NetworkType  netType;
       bool        watchOnly;
 
       std::vector<bs::wallet::EncryptionType>   encryptionTypes;
@@ -234,7 +234,7 @@ namespace sync {
          std::vector<Leaf> leaves;
       };
 
-      NetworkType netType = NetworkType::Invalid;
+      ::NetworkType netType = ::NetworkType::Invalid;
       std::string id;
       std::string name;
       std::string description;
@@ -290,11 +290,11 @@ namespace sync {
       exportHDLeafToPbMessage(const std::shared_ptr<bs::core::hd::Leaf> &leaf);
 
    bs::wallet::EncryptionType mapFrom(const Blocksettle::Communication::headless::EncryptionType &);
-   NetworkType mapFrom(const Blocksettle::Communication::headless::NetworkType &);
+   ::NetworkType mapFrom(const Blocksettle::Communication::headless::NetworkType &);
    bs::sync::WalletFormat mapFrom(const Blocksettle::Communication::headless::WalletFormat &);
 
    Blocksettle::Communication::headless::EncryptionType mapFrom(bs::wallet::EncryptionType);
-   Blocksettle::Communication::headless::NetworkType mapFrom(NetworkType);
+   Blocksettle::Communication::headless::NetworkType mapFrom(::NetworkType);
 
 }  //namespace sync
 } // bs

@@ -11,6 +11,7 @@
 #include "WalletSignerContainer.h"
 
 
-WalletSignerContainer::WalletSignerContainer(const std::shared_ptr<spdlog::logger> &logger, OpMode opMode)
-  : SignContainer(logger, opMode)
+WalletSignerContainer::WalletSignerContainer(const std::shared_ptr<spdlog::logger> &logger
+   , SignerCallbackTarget *sct, OpMode opMode)
+  : SignContainer(logger, sct, opMode)
 {}

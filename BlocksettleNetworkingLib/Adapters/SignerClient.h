@@ -37,7 +37,7 @@ namespace BlockSettle {
    }
 }
 
-class SignerClient : public WalletSignerContainer
+class SignerClient : public WalletSignerContainer, public SignerCallbackTarget
 {
 public:
    SignerClient(const std::shared_ptr<spdlog::logger> &

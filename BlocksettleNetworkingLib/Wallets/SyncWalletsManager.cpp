@@ -16,6 +16,7 @@
 #include "ColoredCoinLogic.h"
 #include "ColoredCoinServer.h"
 #include "FastLock.h"
+#include "HeadlessContainer.h"
 #include "SyncHDWallet.h"
 
 #include <QCoreApplication>
@@ -37,7 +38,7 @@ bool isCCNameCorrect(const std::string& ccName)
    return true;
 }
 
-WalletsManager::WalletsManager(const std::shared_ptr<spdlog::logger>& logger
+bs::sync::WalletsManager::WalletsManager(const std::shared_ptr<spdlog::logger>& logger
    , const std::shared_ptr<ApplicationSettings>& appSettings
    , const std::shared_ptr<ArmoryConnection> &armory
    , const std::shared_ptr<CcTrackerClient> &trackerClient)
@@ -54,7 +55,7 @@ WalletsManager::WalletsManager(const std::shared_ptr<spdlog::logger>& logger
    thread_ = std::thread(&WalletsManager::threadFunction, this);
 }
 
-WalletsManager::~WalletsManager() noexcept
+bs::sync::WalletsManager::~WalletsManager() noexcept
 {
    validityFlag_.reset();
 
@@ -73,16 +74,18 @@ WalletsManager::~WalletsManager() noexcept
    cleanup();
 }
 
-void WalletsManager::setSignContainer(const std::shared_ptr<WalletSignerContainer> &container)
+void bs::sync::WalletsManager::setSignContainer(const std::shared_ptr<WalletSignerContainer> &container)
 {
    signContainer_ = container;
-
-   connect(signContainer_.get(), &WalletSignerContainer::AuthLeafAdded, this, &WalletsManager::onAuthLeafAdded);
-   connect(signContainer_.get(), &WalletSignerContainer::walletsListUpdated, this, &WalletsManager::onWalletsListUpdated);
-   connect(signContainer_.get(), &WalletSignerContainer::walletsStorageDecrypted, this, &WalletsManager::onWalletsListUpdated);
+   const auto hct = dynamic_cast<QtHCT*>(container->cbTarget());
+   if (hct) {
+      connect(hct, &QtHCT::AuthLeafAdded, this, &WalletsManager::onAuthLeafAdded);
+      connect(hct, &QtHCT::walletsListUpdated, this, &WalletsManager::onWalletsListUpdated);
+//      connect(hct, &QtHCT::SignerCallbackTarget, this, &WalletsManager::onWalletsListUpdated);
+   }
 }
 
-void WalletsManager::reset()
+void bs::sync::WalletsManager::reset()
 {
    QMutexLocker lock(&mtxWallets_);
    wallets_.clear();
@@ -95,7 +98,7 @@ void WalletsManager::reset()
    emit walletChanged("");
 }
 
-void WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::function<void()> &cbDone)
+void bs::sync::WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::function<void()> &cbDone)
 {
    logger_->debug("[WalletsManager::syncWallets] syncing wallet {} ({} {})"
       , *info.ids.cbegin(), info.name, (int)info.format);
@@ -136,7 +139,7 @@ void WalletsManager::syncWallet(const bs::sync::WalletInfo &info, const std::fun
    }
 }
 
-bool WalletsManager::syncWallets(const CbProgress &cb)
+bool bs::sync::WalletsManager::syncWallets(const CbProgress &cb)
 {
    if (syncState_ == WalletsSyncState::Running) {
       return false;
@@ -187,12 +190,12 @@ bool WalletsManager::syncWallets(const CbProgress &cb)
    return true;
 }
 
-bool WalletsManager::isSynchronising() const
+bool bs::sync::WalletsManager::isSynchronising() const
 {
    return syncState_ == WalletsSyncState::Running;
 }
 
-bool WalletsManager::isWalletsReady() const
+bool bs::sync::WalletsManager::isWalletsReady() const
 {
    if (syncState_ == WalletsSyncState::Synced  && hdWallets_.empty()) {
       return true;
@@ -200,12 +203,12 @@ bool WalletsManager::isWalletsReady() const
    return isReady_;
 }
 
-bool WalletsManager::isReadyForTrading() const
+bool bs::sync::WalletsManager::isReadyForTrading() const
 {
    return hasPrimaryWallet();
 }
 
-void WalletsManager::saveWallet(const WalletPtr &newWallet)
+void bs::sync::WalletsManager::saveWallet(const WalletPtr &newWallet)
 {
 /*   if (hdDummyWallet_ == nullptr) {
       hdDummyWallet_ = std::make_shared<hd::DummyWallet>(logger_);
@@ -215,7 +218,7 @@ void WalletsManager::saveWallet(const WalletPtr &newWallet)
    addWallet(newWallet);
 }
 
-void WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
+void bs::sync::WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
 {
 /*   if (!isHDLeaf && hdDummyWallet_)
       hdDummyWallet_->add(wallet);
@@ -250,35 +253,35 @@ void WalletsManager::addWallet(const WalletPtr &wallet, bool isHDLeaf)
    }
 }
 
-void WalletsManager::balanceUpdated(const std::string &walletId)
+void bs::sync::WalletsManager::balanceUpdated(const std::string &walletId)
 {
    addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletBalanceUpdated(walletId); });
    });
 }
 
-void WalletsManager::addressAdded(const std::string &walletId)
+void bs::sync::WalletsManager::addressAdded(const std::string &walletId)
 {
    addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
 
-void WalletsManager::metadataChanged(const std::string &walletId)
+void bs::sync::WalletsManager::metadataChanged(const std::string &walletId)
 {
    addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletMetaChanged(walletId); });
    });
 }
 
-void WalletsManager::walletReset(const std::string &walletId)
+void bs::sync::WalletsManager::walletReset(const std::string &walletId)
 {
    addToQueue([this, walletId] {
       QMetaObject::invokeMethod(this, [this, walletId] { emit walletChanged(walletId); });
    });
 }
 
-void WalletsManager::saveWallet(const HDWalletPtr &wallet)
+void bs::sync::WalletsManager::saveWallet(const HDWalletPtr &wallet)
 {
    if (!userId_.empty()) {
       wallet->setUserId(userId_);
@@ -300,7 +303,7 @@ void WalletsManager::saveWallet(const HDWalletPtr &wallet)
    emit walletChanged(wallet->walletId());
 }
 
-void WalletsManager::walletCreated(const std::string &walletId)
+void bs::sync::WalletsManager::walletCreated(const std::string &walletId)
 {
    const auto &lbdMaint = [this, walletId] {
       for (const auto &hdWallet : hdWallets_) {
@@ -320,7 +323,7 @@ void WalletsManager::walletCreated(const std::string &walletId)
    addToQueue(lbdMaint);
 }
 
-void WalletsManager::walletDestroyed(const std::string &walletId)
+void bs::sync::WalletsManager::walletDestroyed(const std::string &walletId)
 {
    addToQueue([this, walletId] {
       const auto &wallet = getWalletById(walletId);
@@ -329,7 +332,7 @@ void WalletsManager::walletDestroyed(const std::string &walletId)
    });
 }
 
-WalletsManager::HDWalletPtr WalletsManager::getPrimaryWallet() const
+bs::sync::WalletsManager::HDWalletPtr bs::sync::WalletsManager::getPrimaryWallet() const
 {
    for (const auto &wallet : hdWallets_) {
       if (wallet->isPrimary()) {
@@ -339,12 +342,12 @@ WalletsManager::HDWalletPtr WalletsManager::getPrimaryWallet() const
    return nullptr;
 }
 
-bool WalletsManager::hasPrimaryWallet() const
+bool bs::sync::WalletsManager::hasPrimaryWallet() const
 {
    return (getPrimaryWallet() != nullptr);
 }
 
-WalletsManager::WalletPtr WalletsManager::getDefaultWallet() const
+bs::sync::WalletsManager::WalletPtr bs::sync::WalletsManager::getDefaultWallet() const
 {
    WalletPtr result;
    const auto &priWallet = getPrimaryWallet();
@@ -358,7 +361,7 @@ WalletsManager::WalletPtr WalletsManager::getDefaultWallet() const
    return result;
 }
 
-WalletsManager::WalletPtr WalletsManager::getCCWallet(const std::string &cc)
+bs::sync::WalletsManager::WalletPtr bs::sync::WalletsManager::getCCWallet(const std::string &cc)
 {
    if (cc.empty() || !hasPrimaryWallet()) {
       return nullptr;
@@ -381,7 +384,7 @@ WalletsManager::WalletPtr WalletsManager::getCCWallet(const std::string &cc)
    return ccGroup->getLeaf(ccLeafPath);
 }
 
-bool WalletsManager::isValidCCOutpoint(const std::string &cc, const BinaryData &txHash
+bool bs::sync::WalletsManager::isValidCCOutpoint(const std::string &cc, const BinaryData &txHash
    , uint32_t txOutIndex, uint64_t value) const
 {
    const auto &itTracker = trackers_.find(cc);
@@ -395,7 +398,7 @@ bool WalletsManager::isValidCCOutpoint(const std::string &cc, const BinaryData &
    return ((value % ccResolver_->lotSizeFor(cc)) == 0);
 }
 
-void WalletsManager::setUserId(const BinaryData &userId)
+void bs::sync::WalletsManager::setUserId(const BinaryData &userId)
 {
    userId_ = userId;
    for (const auto &hdWallet : hdWallets_) {
@@ -407,7 +410,7 @@ void WalletsManager::setUserId(const BinaryData &userId)
    }
 }
 
-const WalletsManager::HDWalletPtr WalletsManager::getHDWalletById(const std::string& walletId) const
+bs::sync::WalletsManager::HDWalletPtr bs::sync::WalletsManager::getHDWalletById(const std::string& walletId) const
 {
    auto it = std::find_if(hdWallets_.cbegin(), hdWallets_.cend(), [walletId](const HDWalletPtr &hdWallet) {
       return (hdWallet->walletId() == walletId);
@@ -418,7 +421,7 @@ const WalletsManager::HDWalletPtr WalletsManager::getHDWalletById(const std::str
    return nullptr;
 }
 
-const WalletsManager::HDWalletPtr WalletsManager::getHDRootForLeaf(const std::string& walletId) const
+bs::sync::WalletsManager::HDWalletPtr bs::sync::WalletsManager::getHDRootForLeaf(const std::string& walletId) const
 {
    for (const auto &hdWallet : hdWallets_) {
       for (const auto &leaf : hdWallet->getLeaves()) {
@@ -430,7 +433,7 @@ const WalletsManager::HDWalletPtr WalletsManager::getHDRootForLeaf(const std::st
    return nullptr;
 }
 
-std::vector<WalletsManager::WalletPtr> WalletsManager::getAllWallets() const
+std::vector<bs::sync::WalletsManager::WalletPtr> bs::sync::WalletsManager::getAllWallets() const
 {
    QMutexLocker lock(&mtxWallets_);
    std::vector<WalletPtr> result;
@@ -440,7 +443,7 @@ std::vector<WalletsManager::WalletPtr> WalletsManager::getAllWallets() const
    return result;
 }
 
-WalletsManager::WalletPtr WalletsManager::getWalletById(const std::string& walletId) const
+bs::sync::WalletsManager::WalletPtr bs::sync::WalletsManager::getWalletById(const std::string& walletId) const
 {
    for (const auto &wallet : wallets_) {
       if (wallet.second->hasId(walletId)) {
@@ -450,7 +453,7 @@ WalletsManager::WalletPtr WalletsManager::getWalletById(const std::string& walle
    return nullptr;
 }
 
-WalletsManager::WalletPtr WalletsManager::getWalletByAddress(const bs::Address &address) const
+bs::sync::WalletsManager::WalletPtr bs::sync::WalletsManager::getWalletByAddress(const bs::Address &address) const
 {
    for (const auto &wallet : wallets_) {
       if (wallet.second && (wallet.second->containsAddress(address)
@@ -461,7 +464,7 @@ WalletsManager::WalletPtr WalletsManager::getWalletByAddress(const bs::Address &
    return nullptr;
 }
 
-WalletsManager::GroupPtr WalletsManager::getGroupByWalletId(const std::string& walletId) const
+bs::sync::WalletsManager::GroupPtr bs::sync::WalletsManager::getGroupByWalletId(const std::string& walletId) const
 {
    const auto itGroup = groupsByWalletId_.find(walletId);
    if (itGroup == groupsByWalletId_.end()) {
@@ -482,13 +485,13 @@ WalletsManager::GroupPtr WalletsManager::getGroupByWalletId(const std::string& w
    return itGroup->second;
 }
 
-bool WalletsManager::walletNameExists(const std::string &walletName) const
+bool bs::sync::WalletsManager::walletNameExists(const std::string &walletName) const
 {
    const auto &it = walletNames_.find(walletName);
    return (it != walletNames_.end());
 }
 
-BTCNumericTypes::balance_type WalletsManager::getSpendableBalance() const
+BTCNumericTypes::balance_type bs::sync::WalletsManager::getSpendableBalance() const
 {
    if (!isArmoryReady()) {
       return std::numeric_limits<double>::infinity();
@@ -508,21 +511,21 @@ BTCNumericTypes::balance_type WalletsManager::getSpendableBalance() const
    return totalSpendable;
 }
 
-BTCNumericTypes::balance_type WalletsManager::getUnconfirmedBalance() const
+BTCNumericTypes::balance_type bs::sync::WalletsManager::getUnconfirmedBalance() const
 {
    return getBalanceSum([](const WalletPtr &wallet) {
       return wallet->type() == core::wallet::Type::Bitcoin ? wallet->getUnconfirmedBalance() : 0;
    });
 }
 
-BTCNumericTypes::balance_type WalletsManager::getTotalBalance() const
+BTCNumericTypes::balance_type bs::sync::WalletsManager::getTotalBalance() const
 {
    return getBalanceSum([](const WalletPtr &wallet) {
       return wallet->type() == core::wallet::Type::Bitcoin ? wallet->getTotalBalance() : 0;
    });
 }
 
-BTCNumericTypes::balance_type WalletsManager::getBalanceSum(
+BTCNumericTypes::balance_type bs::sync::WalletsManager::getBalanceSum(
    const std::function<BTCNumericTypes::balance_type(const WalletPtr &)> &cb) const
 {
    if (!isArmoryReady()) {
@@ -536,12 +539,12 @@ BTCNumericTypes::balance_type WalletsManager::getBalanceSum(
    return balance;
 }
 
-void WalletsManager::onNewBlock(unsigned int, unsigned int)
+void bs::sync::WalletsManager::onNewBlock(unsigned int, unsigned int)
 {
    QMetaObject::invokeMethod(this, [this] {emit blockchainEvent(); });
 }
 
-void WalletsManager::onStateChanged(ArmoryState state)
+void bs::sync::WalletsManager::onStateChanged(ArmoryState state)
 {
    if (state == ArmoryState::Ready) {
       logger_->debug("[{}] DB ready", __func__);
@@ -552,7 +555,7 @@ void WalletsManager::onStateChanged(ArmoryState state)
    }
 }
 
-void WalletsManager::walletReady(const std::string &walletId)
+void bs::sync::WalletsManager::walletReady(const std::string &walletId)
 {
    QMetaObject::invokeMethod(this, [this, walletId] { emit walletIsReady(walletId); });
    const auto rootWallet = getHDRootForLeaf(walletId);
@@ -587,7 +590,7 @@ void WalletsManager::walletReady(const std::string &walletId)
    }
 }
 
-void WalletsManager::scanComplete(const std::string &walletId)
+void bs::sync::WalletsManager::scanComplete(const std::string &walletId)
 {
    logger_->debug("[{}] - HD wallet {} imported", __func__, walletId);
    const auto hdWallet = getHDWalletById(walletId);
@@ -600,12 +603,12 @@ void WalletsManager::scanComplete(const std::string &walletId)
    });
 }
 
-bool WalletsManager::isArmoryReady() const
+bool bs::sync::WalletsManager::isArmoryReady() const
 {
    return (armory_ && (armory_->state() == ArmoryState::Ready));
 }
 
-void WalletsManager::eraseWallet(const WalletPtr &wallet)
+void bs::sync::WalletsManager::eraseWallet(const WalletPtr &wallet)
 {
    if (!wallet) {
       return;
@@ -614,7 +617,7 @@ void WalletsManager::eraseWallet(const WalletPtr &wallet)
    wallets_.erase(wallet->walletId());
 }
 
-bool WalletsManager::deleteWallet(WalletPtr wallet, bool deleteRemotely)
+bool bs::sync::WalletsManager::deleteWallet(WalletPtr wallet, bool deleteRemotely)
 {
    bool isHDLeaf = false;
    logger_->info("[WalletsManager::{}] - Removing wallet {} ({})...", __func__
@@ -652,7 +655,7 @@ bool WalletsManager::deleteWallet(WalletPtr wallet, bool deleteRemotely)
    return true;
 }
 
-bool WalletsManager::deleteWallet(HDWalletPtr wallet, bool deleteRemotely)
+bool bs::sync::WalletsManager::deleteWallet(HDWalletPtr wallet, bool deleteRemotely)
 {
    const auto itHdWallet = std::find(hdWallets_.cbegin(), hdWallets_.cend(), wallet);
    if (itHdWallet == hdWallets_.end()) {
@@ -690,7 +693,7 @@ bool WalletsManager::deleteWallet(HDWalletPtr wallet, bool deleteRemotely)
    return result;
 }
 
-std::vector<std::string> WalletsManager::registerWallets()
+std::vector<std::string> bs::sync::WalletsManager::registerWallets()
 {
    std::vector<std::string> result;
    if (!armory_) {
@@ -713,7 +716,7 @@ std::vector<std::string> WalletsManager::registerWallets()
    return result;
 }
 
-void WalletsManager::unregisterWallets()
+void bs::sync::WalletsManager::unregisterWallets()
 {
    walletsRegistered_ = false;
    for (auto &it : wallets_) {
@@ -721,7 +724,7 @@ void WalletsManager::unregisterWallets()
    }
 }
 
-bool WalletsManager::getTransactionDirection(Tx tx, const std::string &walletId
+bool bs::sync::WalletsManager::getTransactionDirection(Tx tx, const std::string &walletId
    , const std::function<void(Transaction::Direction, std::vector<bs::Address>)> &cb)
 {
    if (!tx.isInitialized()) {
@@ -902,7 +905,7 @@ bool WalletsManager::getTransactionDirection(Tx tx, const std::string &walletId
    return true;
 }
 
-bool WalletsManager::getTransactionMainAddress(const Tx &tx, const std::string &walletId
+bool bs::sync::WalletsManager::getTransactionMainAddress(const Tx &tx, const std::string &walletId
    , bool isReceiving, const std::function<void(QString, int)> &cb)
 {
    if (!tx.isInitialized() || !armory_) {
@@ -970,7 +973,7 @@ bool WalletsManager::getTransactionMainAddress(const Tx &tx, const std::string &
    return true;
 }
 
-void WalletsManager::updateTxDirCache(const std::string &txKey, Transaction::Direction dir
+void bs::sync::WalletsManager::updateTxDirCache(const std::string &txKey, Transaction::Direction dir
    , const std::vector<bs::Address> &inAddrs
    , std::function<void(Transaction::Direction, std::vector<bs::Address>)> cb)
 {
@@ -981,7 +984,7 @@ void WalletsManager::updateTxDirCache(const std::string &txKey, Transaction::Dir
    cb(dir, inAddrs);
 }
 
-void WalletsManager::updateTxDescCache(const std::string &txKey, const QString &desc, int addrCount, std::function<void(QString, int)> cb)
+void bs::sync::WalletsManager::updateTxDescCache(const std::string &txKey, const QString &desc, int addrCount, std::function<void(QString, int)> cb)
 {
    {
       FastLock lock(txDescLock_);
@@ -990,7 +993,7 @@ void WalletsManager::updateTxDescCache(const std::string &txKey, const QString &
    cb(desc, addrCount);
 }
 
-void WalletsManager::createSettlementLeaf(const bs::Address &authAddr
+void bs::sync::WalletsManager::createSettlementLeaf(const bs::Address &authAddr
    , const std::function<void(const SecureBinaryData &)> &cb)
 {
    if (!signContainer_) {
@@ -1033,7 +1036,7 @@ void WalletsManager::createSettlementLeaf(const bs::Address &authAddr
    signContainer_->createSettlementWallet(authAddr, cbWrap);
 }
 
-void WalletsManager::startWalletRescan(const HDWalletPtr &hdWallet)
+void bs::sync::WalletsManager::startWalletRescan(const HDWalletPtr &hdWallet)
 {
    if (armory_->state() == ArmoryState::Ready) {
       hdWallet->startRescan();
@@ -1043,7 +1046,7 @@ void WalletsManager::startWalletRescan(const HDWalletPtr &hdWallet)
    }
 }
 
-void WalletsManager::onWalletsListUpdated()
+void bs::sync::WalletsManager::onWalletsListUpdated()
 {
    const auto &cbSyncWallets = [this](const std::vector<bs::sync::WalletInfo> &wi) {
       std::map<std::string, bs::sync::WalletInfo> hdWallets;
@@ -1116,7 +1119,7 @@ void WalletsManager::onWalletsListUpdated()
    signContainer_->syncWalletInfo(cbSyncWallets);
 }
 
-void WalletsManager::onAuthLeafAdded(const std::string &walletId)
+void bs::sync::WalletsManager::onAuthLeafAdded(const std::string &walletId)
 {
    if (walletId.empty()) {
       if (authAddressWallet_) {
@@ -1162,14 +1165,14 @@ void WalletsManager::onAuthLeafAdded(const std::string &walletId)
    });
 }
 
-void WalletsManager::adoptNewWallet(const HDWalletPtr &wallet)
+void bs::sync::WalletsManager::adoptNewWallet(const HDWalletPtr &wallet)
 {
    saveWallet(wallet);
    emit newWalletAdded(wallet->walletId());
    emit walletsReady();
 }
 
-void WalletsManager::addWallet(const HDWalletPtr &wallet)
+void bs::sync::WalletsManager::addWallet(const HDWalletPtr &wallet)
 {
    if (!wallet) {
       return;
@@ -1181,7 +1184,7 @@ void WalletsManager::addWallet(const HDWalletPtr &wallet)
    }
 }
 
-bool WalletsManager::isWatchingOnly(const std::string &walletId) const
+bool bs::sync::WalletsManager::isWatchingOnly(const std::string &walletId) const
 {
    if (signContainer_) {
       return signContainer_->isWalletOffline(walletId);
@@ -1189,7 +1192,7 @@ bool WalletsManager::isWatchingOnly(const std::string &walletId) const
    return false;
 }
 
-void WalletsManager::goOnline()
+void bs::sync::WalletsManager::goOnline()
 {
    trackersStarted_ = true;
    for (const auto &cc : ccResolver_->securities()) {
@@ -1197,7 +1200,7 @@ void WalletsManager::goOnline()
    }
 }
 
-void WalletsManager::onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr)
+void bs::sync::WalletsManager::onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr)
 {
    const auto &cc = ccProd.toStdString();
    logger_->debug("[{}] received info for {}", __func__, cc);
@@ -1209,7 +1212,7 @@ void WalletsManager::onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, 
    }
 }
 
-void WalletsManager::onCCInfoLoaded()
+void bs::sync::WalletsManager::onCCInfoLoaded()
 {
    logger_->debug("[WalletsManager::{}] - Re-validating against GAs in CC leaves"
       , __func__);
@@ -1244,7 +1247,7 @@ void WalletsManager::onCCInfoLoaded()
 //   its own UTXO object while sharing the same UTXO hash.
 // - It is possible, in conjunction with a wallet, to determine if the UTXO is
 //   attached to an internal or external address.
-void WalletsManager::onZCReceived(const std::string& , const std::vector<bs::TXEntry>& entries)
+void bs::sync::WalletsManager::onZCReceived(const std::string& , const std::vector<bs::TXEntry>& entries)
 {
    std::vector<bs::TXEntry> ourZCentries;
 
@@ -1271,18 +1274,18 @@ void WalletsManager::onZCReceived(const std::string& , const std::vector<bs::TXE
    }
 }
 
-void WalletsManager::onZCInvalidated(const std::set<BinaryData> &ids)
+void bs::sync::WalletsManager::onZCInvalidated(const std::set<BinaryData> &ids)
 {
    QMetaObject::invokeMethod(this, [this, ids] {emit invalidatedZCs(ids); });
 }
 
-void WalletsManager::onTxBroadcastError(const std::string& , const BinaryData &txHash, int errCode, const std::string &errMsg)
+void bs::sync::WalletsManager::onTxBroadcastError(const std::string& , const BinaryData &txHash, int errCode, const std::string &errMsg)
 {
    logger_->error("[WalletsManager::onTxBroadcastError] - TX {} error: {} ({})"
       , txHash.toHexStr(true), errCode, errMsg);
 }
 
-void WalletsManager::invokeFeeCallbacks(unsigned int blocks, float fee)
+void bs::sync::WalletsManager::invokeFeeCallbacks(unsigned int blocks, float fee)
 {
    std::vector<QObject *> objsToDelete;
    for (auto &cbByObj : feeCallbacks_) {
@@ -1304,7 +1307,7 @@ void WalletsManager::invokeFeeCallbacks(unsigned int blocks, float fee)
    }
 }
 
-bool WalletsManager::estimatedFeePerByte(unsigned int blocksToWait, std::function<void(float)> cb, QObject *obj)
+bool bs::sync::WalletsManager::estimatedFeePerByte(unsigned int blocksToWait, std::function<void(float)> cb, QObject *obj)
 {
    if (!armory_) {
       return false;
@@ -1357,7 +1360,7 @@ bool WalletsManager::estimatedFeePerByte(unsigned int blocksToWait, std::functio
    return armory_->estimateFee(blocks, cbFee);
 }
 
-bool WalletsManager::getFeeSchedule(const std::function<void(const std::map<unsigned int, float> &)> &cb)
+bool bs::sync::WalletsManager::getFeeSchedule(const std::function<void(const std::map<unsigned int, float> &)> &cb)
 {
    if (!armory_) {
       return false;
@@ -1365,7 +1368,7 @@ bool WalletsManager::getFeeSchedule(const std::function<void(const std::map<unsi
    return armory_->getFeeSchedule(cb);
 }
 
-void WalletsManager::trackAddressChainUse(
+void bs::sync::WalletsManager::trackAddressChainUse(
    std::function<void(bool)> cb)
 {
    /***
@@ -1473,14 +1476,14 @@ void WalletsManager::trackAddressChainUse(
    }
 }
 
-void WalletsManager::addToQueue(const MaintQueueCb &cb)
+void bs::sync::WalletsManager::addToQueue(const MaintQueueCb &cb)
 {
    std::unique_lock<std::mutex> lock(mutex_);
    queue_.push_back(cb);
    queueCv_.notify_one();
 }
 
-void WalletsManager::threadFunction()
+void bs::sync::WalletsManager::threadFunction()
 {
    while (threadRunning_) {
       {
@@ -1511,7 +1514,7 @@ void WalletsManager::threadFunction()
 }
 
 
-void WalletsManager::CCResolver::addData(const std::string &cc, uint64_t lotSize
+void bs::sync::WalletsManager::CCResolver::addData(const std::string &cc, uint64_t lotSize
    , const bs::Address &genAddr)
 {
    securities_[cc] = { lotSize, genAddr };
@@ -1519,7 +1522,7 @@ void WalletsManager::CCResolver::addData(const std::string &cc, uint64_t lotSize
    walletIdxMap_[walletIdx] = cc;
 }
 
-std::vector<std::string> WalletsManager::CCResolver::securities() const
+std::vector<std::string> bs::sync::WalletsManager::CCResolver::securities() const
 {
    std::vector<std::string> result;
    for (const auto &ccDef : securities_) {
@@ -1528,7 +1531,7 @@ std::vector<std::string> WalletsManager::CCResolver::securities() const
    return result;
 }
 
-std::string WalletsManager::CCResolver::nameByWalletIndex(bs::hd::Path::Elem idx) const
+std::string bs::sync::WalletsManager::CCResolver::nameByWalletIndex(bs::hd::Path::Elem idx) const
 {
    idx |= bs::hd::hardFlag;
    const auto &itWallet = walletIdxMap_.find(idx);
@@ -1538,7 +1541,7 @@ std::string WalletsManager::CCResolver::nameByWalletIndex(bs::hd::Path::Elem idx
    return {};
 }
 
-uint64_t WalletsManager::CCResolver::lotSizeFor(const std::string &cc) const
+uint64_t bs::sync::WalletsManager::CCResolver::lotSizeFor(const std::string &cc) const
 {
    const auto &itSec = securities_.find(cc);
    if (itSec != securities_.end()) {
@@ -1547,7 +1550,7 @@ uint64_t WalletsManager::CCResolver::lotSizeFor(const std::string &cc) const
    return 0;
 }
 
-bs::Address WalletsManager::CCResolver::genesisAddrFor(const std::string &cc) const
+bs::Address bs::sync::WalletsManager::CCResolver::genesisAddrFor(const std::string &cc) const
 {
    const auto &itSec = securities_.find(cc);
    if (itSec != securities_.end()) {
@@ -1556,7 +1559,7 @@ bs::Address WalletsManager::CCResolver::genesisAddrFor(const std::string &cc) co
    return {};
 }
 
-bool WalletsManager::CreateCCLeaf(const std::string &ccName, const std::function<void(bs::error::ErrorCode result)> &cb)
+bool bs::sync::WalletsManager::CreateCCLeaf(const std::string &ccName, const std::function<void(bs::error::ErrorCode result)> &cb)
 {
    if (!isCCNameCorrect(ccName)) {
       logger_->error("[WalletsManager::CreateCCLeaf] invalid cc name passed: {}"
@@ -1601,7 +1604,7 @@ bool WalletsManager::CreateCCLeaf(const std::string &ccName, const std::function
    return signContainer_->createHDLeaf(primaryWallet->walletId(), path, {}, dialogData, createCCLeafCb);
 }
 
-void WalletsManager::processCreatedCCLeaf(const std::string &ccName, bs::error::ErrorCode result
+void bs::sync::WalletsManager::processCreatedCCLeaf(const std::string &ccName, bs::error::ErrorCode result
    , const std::string &walletId)
 {
    if (result == bs::error::ErrorCode::NoError) {
@@ -1638,7 +1641,7 @@ void WalletsManager::processCreatedCCLeaf(const std::string &ccName, bs::error::
    }
 }
 
-bool WalletsManager::PromoteWalletToPrimary(const std::string& walletId)
+bool bs::sync::WalletsManager::PromoteWalletToPrimary(const std::string& walletId)
 {
    bs::sync::PasswordDialogData dialogData;
    dialogData.setValue(PasswordDialogData::Title, tr("Promote to primary"));
@@ -1657,7 +1660,7 @@ bool WalletsManager::PromoteWalletToPrimary(const std::string& walletId)
    return signContainer_->promoteWalletToPrimary(walletId, dialogData, promoteToPriimaryCB);
 }
 
-void WalletsManager::processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId)
+void bs::sync::WalletsManager::processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId)
 {
    if (result == bs::error::ErrorCode::NoError) {
       emit walletPromotedToPrimary(walletId);
@@ -1668,7 +1671,7 @@ void WalletsManager::processPromoteWallet(bs::error::ErrorCode result, const std
    }
 }
 
-bool WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
+bool bs::sync::WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
    , const std::function<void(bs::error::ErrorCode result)> &cb)
 {
    bs::sync::PasswordDialogData dialogData;
@@ -1695,7 +1698,7 @@ bool WalletsManager::EnableXBTTradingInWallet(const std::string& walletId
    return signContainer_->enableTradingInHDWallet(walletId, userId_, dialogData, enableTradingCB);
 }
 
-void WalletsManager::processEnableTrading(bs::error::ErrorCode result, const std::string& walletId)
+void bs::sync::WalletsManager::processEnableTrading(bs::error::ErrorCode result, const std::string& walletId)
 {
    if (result == bs::error::ErrorCode::NoError) {
       emit walletChanged(walletId);
@@ -1705,7 +1708,7 @@ void WalletsManager::processEnableTrading(bs::error::ErrorCode result, const std
    }
 }
 
-void WalletsManager::startTracker(const std::string &cc)
+void bs::sync::WalletsManager::startTracker(const std::string &cc)
 {
    std::unique_ptr<ColoredCoinTrackerInterface> trackerSnapshots;
    if (trackerClient_) {
@@ -1743,7 +1746,7 @@ void WalletsManager::startTracker(const std::string &cc)
    }).detach();
 }
 
-void WalletsManager::updateTracker(const std::shared_ptr<hd::CCLeaf> &ccLeaf)
+void bs::sync::WalletsManager::updateTracker(const std::shared_ptr<hd::CCLeaf> &ccLeaf)
 {
    const auto itTracker = trackers_.find(ccLeaf->displaySymbol().toStdString());
    if (itTracker != trackers_.end()) {
@@ -1751,7 +1754,7 @@ void WalletsManager::updateTracker(const std::shared_ptr<hd::CCLeaf> &ccLeaf)
    }
 }
 
-void WalletsManager::checkTrackerUpdate(const std::string &cc)
+void bs::sync::WalletsManager::checkTrackerUpdate(const std::string &cc)
 {
    for (const auto &wallet : getAllWallets()) {
       auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
@@ -1771,7 +1774,7 @@ void WalletsManager::checkTrackerUpdate(const std::string &cc)
    }
 }
 
-bool WalletsManager::createAuthLeaf(const std::function<void()> &cb)
+bool bs::sync::WalletsManager::createAuthLeaf(const std::function<void()> &cb)
 {
    if (getAuthWallet() != nullptr) {
       logger_->error("[WalletsManager::CreateAuthLeaf] auth leaf already exists");
@@ -1833,7 +1836,7 @@ bool WalletsManager::createAuthLeaf(const std::function<void()> &cb)
       , dialogData, createAuthLeafCb);
 }
 
-std::shared_ptr<bs::sync::hd::SettlementLeaf> WalletsManager::getSettlementLeaf(const bs::Address &addr) const
+std::shared_ptr<bs::sync::hd::SettlementLeaf> bs::sync::WalletsManager::getSettlementLeaf(const bs::Address &addr) const
 {
    const auto priWallet = getPrimaryWallet();
    if (!priWallet) {
@@ -1853,7 +1856,7 @@ std::shared_ptr<bs::sync::hd::SettlementLeaf> WalletsManager::getSettlementLeaf(
    return settlLeaf;
 }
 
-bool WalletsManager::mergeableEntries(const bs::TXEntry &entry1, const bs::TXEntry &entry2) const
+bool bs::sync::WalletsManager::mergeableEntries(const bs::TXEntry &entry1, const bs::TXEntry &entry2) const
 {
    if (entry1.txHash != entry2.txHash) {
       return false;
@@ -1895,7 +1898,7 @@ bool WalletsManager::mergeableEntries(const bs::TXEntry &entry1, const bs::TXEnt
    return false;
 }
 
-std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEntry> &entries) const
+std::vector<bs::TXEntry> bs::sync::WalletsManager::mergeEntries(const std::vector<bs::TXEntry> &entries) const
 {
    std::vector<bs::TXEntry> mergedEntries;
    mergedEntries.reserve(entries.size());
@@ -1920,7 +1923,7 @@ std::vector<bs::TXEntry> WalletsManager::mergeEntries(const std::vector<bs::TXEn
 }
 
 // assumedRecipientCount is used with CC tests only
-bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t spendVal
+bs::core::wallet::TXSignRequest bs::sync::WalletsManager::createPartialTXRequest(uint64_t spendVal
    , const std::map<UTXO, std::string> &inputs, bs::Address changeAddress
    , float feePerByte, uint32_t topHeight
    , const RecipientMap &recipients
@@ -2066,7 +2069,7 @@ bs::core::wallet::TXSignRequest WalletsManager::createPartialTXRequest(uint64_t 
    return request;
 }
 
-std::shared_ptr<ColoredCoinTrackerClient> WalletsManager::tracker(const std::string &cc) const
+std::shared_ptr<ColoredCoinTrackerClient> bs::sync::WalletsManager::tracker(const std::string &cc) const
 {
    auto it = trackers_.find(cc);
    return it != trackers_.end() ? it->second : nullptr;
@@ -2090,7 +2093,7 @@ std::vector<std::string> bs::sync::WalletsManager::getHwWallets(bs::wallet::Hard
    return hwWallets;
 }
 
-std::string WalletsManager::getDefaultSpendWalletId() const
+std::string bs::sync::WalletsManager::getDefaultSpendWalletId() const
 {
    auto walletId = appSettings_->getDefaultWalletId();
    if (walletId.empty()) {

@@ -18,10 +18,8 @@
 // All other signer users will stick to SignContainer interface for signing operations
 class WalletSignerContainer : public SignContainer
 {
-Q_OBJECT
-
 public:
-   WalletSignerContainer(const std::shared_ptr<spdlog::logger> &, OpMode opMode);
+   WalletSignerContainer(const std::shared_ptr<spdlog::logger> &, SignerCallbackTarget*, OpMode opMode);
    ~WalletSignerContainer() noexcept = default;
 
 public:
@@ -73,14 +71,6 @@ public:
 
    virtual bool promoteWalletToPrimary(const std::string& rootWalletId
       , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) = 0;
-
-signals:
-   void AuthLeafAdded(const std::string &walletId);
-   // Notified from remote/local signer when wallets list is updated
-   void walletsListUpdated();
-   void walletsStorageDecrypted();
-   void needNewWalletPrompt();
-   void walletsReadyToSync();
 };
 
 #endif // __WALLET_SIGNER_CONTAINER_H__

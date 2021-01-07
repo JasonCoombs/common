@@ -42,7 +42,16 @@ namespace bs {
       class Wallet;
    }
 }
+namespace Blocksettle {
+   namespace Communication {
+      namespace headless {
+         class GetHDWalletInfoResponse;
+      }
+   }
+}
 class ApplicationSettings;
+class SignerCallbackTarget;
+
 
 class SignContainer : public QObject
 {
@@ -77,7 +86,7 @@ public:
    };
    Q_ENUM(ConnectionError)
 
-   SignContainer(const std::shared_ptr<spdlog::logger> &, OpMode opMode);
+   SignContainer(const std::shared_ptr<spdlog::logger> &, SignerCallbackTarget*, OpMode opMode);
    ~SignContainer() noexcept = default;
 
    virtual void Start(void) = 0;
@@ -143,27 +152,36 @@ public:
    bool isLocal() const { return mode_ == OpMode::Local || mode_ == OpMode::LocalInproc; }
    bool isWindowVisible() const { return isWindowVisible_; } // available only for local signer
 
-signals:
-   void connected();
-   void disconnected();
-   void authenticated();
-   void connectionError(ConnectionError error, const QString &details);
-   void ready();
-   void Error(bs::signer::RequestId id, std::string error);
-   void TXSigned(bs::signer::RequestId id, BinaryData signedTX, bs::error::ErrorCode result, const std::string &errorReason = {});
-   // emitted only for local signer
-   void windowVisibilityChanged(bool visible);
-
-   void QWalletInfo(unsigned int id, const bs::hd::WalletInfo &);
-   void PasswordChanged(const std::string &walletId, bool success);
-
-   // NoError mean turned on, AutoSignDisabled mean turned off, other codes mean error
-   void AutoSignStateChanged(bs::error::ErrorCode result, const std::string &walletId);
+   SignerCallbackTarget* cbTarget() const { return sct_; }
 
 protected:
    std::shared_ptr<spdlog::logger> logger_;
+   SignerCallbackTarget* sct_{ nullptr };
    const OpMode mode_;
    bool isWindowVisible_{};
+};
+
+
+class SignerCallbackTarget
+{
+public:
+   virtual void connected(const std::string& host) {}
+   virtual void connError(SignContainer::ConnectionError, const QString&) {}
+   virtual void connTorn() {}
+   virtual void onError(bs::signer::RequestId, const std::string& errMsg) {};
+   virtual void onAuthComplete() {}
+   virtual void onReady() {}
+   virtual void txSigned(bs::signer::RequestId, const BinaryData&
+      , bs::error::ErrorCode, const std::string& errMsg = {}) {};
+   virtual void walletInfo(bs::signer::RequestId
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse&) {};
+   virtual void autoSignStateChanged(bs::error::ErrorCode
+      , const std::string& walletId) {};
+   virtual void authLeafAdded(const std::string& walletId) {}
+   virtual void newWalletPrompt() {}
+   virtual void walletsReady() {}
+   virtual void walletsChanged() {}
+   virtual void windowIsVisible(bool) {}
 };
 
 

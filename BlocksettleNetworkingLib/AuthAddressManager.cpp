@@ -20,8 +20,8 @@
 #include "CheckRecipSigner.h"
 #include "ClientClasses.h"
 #include "FastLock.h"
+#include "HeadlessContainer.h"
 #include "RequestReplyCommand.h"
-#include "SignContainer.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
@@ -40,7 +40,7 @@ AuthAddressManager::AuthAddressManager(const std::shared_ptr<spdlog::logger>& lo
 
 void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSettings
    , const std::shared_ptr<bs::sync::WalletsManager> &walletsManager
-   , const std::shared_ptr<SignContainer> &container)
+   , const std::shared_ptr<HeadlessContainer> &container)
 {
    settings_ = appSettings;
    walletsManager_ = walletsManager;
@@ -53,7 +53,10 @@ void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSet
 
    // signingContainer_ might be null if user rejects remote signer key
    if (signingContainer_) {
-      connect(signingContainer_.get(), &SignContainer::TXSigned, this, &AuthAddressManager::onTXSigned);
+      const auto hct = dynamic_cast<QtHCT*>(signingContainer_->cbTarget());
+      if (hct) {
+         connect(hct, &QtHCT::TXSigned, this, &AuthAddressManager::onTXSigned);
+      }
    }
 
    SetAuthWallet();

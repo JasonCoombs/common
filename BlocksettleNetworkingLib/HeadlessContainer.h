@@ -39,7 +39,6 @@ namespace bs {
 namespace Blocksettle {
    namespace Communication {
       namespace headless {
-         class GetHDWalletInfoResponse;
          class RequestPacket;
       }
    }
@@ -51,36 +50,12 @@ class HeadlessListener;
 class QProcess;
 class WalletsManager;
 
-class HeadlessCallbackTarget
+class HeadlessContainer : public WalletSignerContainer
 {
-public:
-   virtual void connected(const std::string &host) {}
-   virtual void connError(SignContainer::ConnectionError, const QString &) {}
-   virtual void connTorn() {}
-   virtual void onError(bs::signer::RequestId, const std::string &errMsg) {};
-   virtual void onAuthComplete() {}
-   virtual void onReady() {}
-   virtual void restartConnection() {}
-   virtual void txSigned(bs::signer::RequestId, const BinaryData &
-      , bs::error::ErrorCode, const std::string &errMsg = {}) {};
-   virtual void walletInfo(bs::signer::RequestId
-      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse &) {};
-   virtual void autoSignStateChanged(bs::error::ErrorCode
-      , const std::string &walletId) {};
-   virtual void authLeafAdded(const std::string &walletId) {}
-   virtual void newWalletPrompt() {}
-   virtual void walletsReady() {}
-   virtual void walletsChanged() {}
-   virtual void windowIsVisible(bool) {}
-};
-
-class HeadlessContainer : public WalletSignerContainer, public HeadlessCallbackTarget
-{
-   Q_OBJECT
 public:
    static NetworkType mapNetworkType(Blocksettle::Communication::headless::NetworkType netType);
 
-   HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode, HeadlessCallbackTarget *);
+   HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode, SignerCallbackTarget *);
    ~HeadlessContainer() noexcept override = default;
 
    [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
@@ -167,6 +142,7 @@ public:
    bool isReady() const override;
    bool isWalletOffline(const std::string &walletId) const override;
 
+   virtual void restartConnection() = 0;
    virtual void onConnected() = 0;
    virtual void onDisconnected() = 0;
    virtual void onConnError(ConnectionError error, const QString &details) = 0;
@@ -199,30 +175,11 @@ protected:
    void ProcessSettlCPResponse(unsigned int id, const std::string &data);
    void ProcessWindowStatus(unsigned int id, const std::string &data);
 
-   void connected(const std::string &host) override;
-   void connError(SignContainer::ConnectionError, const QString &) override;
-   void onError(bs::signer::RequestId, const std::string &errMsg) override;
-   void connTorn() override;
-   void onAuthComplete() override;
-   void onReady() override;
-   void txSigned(bs::signer::RequestId, const BinaryData &, bs::error::ErrorCode
-      , const std::string &errMsg = {}) override;
-   void walletInfo(bs::signer::RequestId
-      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse &) override;
-   void autoSignStateChanged(bs::error::ErrorCode
-      , const std::string &walletId) override;
-   void authLeafAdded(const std::string &walletId) override;
-   void newWalletPrompt() override;
-   void walletsReady() override;
-   void walletsChanged() override;
-   void windowIsVisible(bool) override;
-
 protected:
    std::shared_ptr<HeadlessListener>   listener_;
    std::unordered_set<std::string>     missingWallets_;
    std::unordered_set<std::string>     woWallets_;
    std::set<bs::signer::RequestId>     signRequests_;
-   HeadlessCallbackTarget     * hct_{ nullptr };
 
    std::map<bs::signer::RequestId, std::function<void(std::vector<bs::sync::WalletInfo>)>>         cbWalletInfoMap_;
    std::map<bs::signer::RequestId, std::function<void(bs::sync::HDWalletData)>>  cbHDWalletMap_;
@@ -246,14 +203,60 @@ protected:
 };
 
 
-class RemoteSigner : public HeadlessContainer
+class QtHCT : public QObject, public SignerCallbackTarget
 {
    Q_OBJECT
+public:
+   QtHCT(QObject* parent) : QObject(parent) {}
+
+   void connected(const std::string& host) override { emit connected(); }
+   void connError(SignContainer::ConnectionError err, const QString& desc) override { emit connectionError(err, desc); }
+   void connTorn() override { emit disconnected(); }
+   void onError(bs::signer::RequestId reqId, const std::string& errMsg) override { emit Error(reqId, errMsg); }
+   void onAuthComplete() override { emit authenticated(); }
+   void onReady() override { emit ready(); }
+   void txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
+      , bs::error::ErrorCode errCode, const std::string& errMsg = {}) override { emit TXSigned(reqId, signedTX, errCode, errMsg); }
+   void walletInfo(bs::signer::RequestId reqId
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi) override {
+      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi)); }
+   void autoSignStateChanged(bs::error::ErrorCode errCode
+      , const std::string& walletId) override { emit AutoSignStateChanged(errCode, walletId); }
+   void authLeafAdded(const std::string& walletId) override { emit AuthLeafAdded(walletId); }
+   void newWalletPrompt() override { emit needNewWalletPrompt(); }
+   void walletsReady() override { emit walletsReadyToSync(); }
+   void walletsChanged() override { emit walletsListUpdated(); }
+   void windowIsVisible(bool v) override { emit windowVisibilityChanged(v); }
+
+signals:
+   void connected();
+   void connectionError(SignContainer::ConnectionError, const QString&);
+   void disconnected();
+   void authenticated();
+   void ready();
+   void needNewWalletPrompt();
+   void walletsReadyToSync();
+   void walletsListUpdated();
+//   void SignerCallbackTarget();
+   void windowVisibilityChanged(bool);
+
+   void Error(bs::signer::RequestId id, const std::string& errMsg);
+   void TXSigned(bs::signer::RequestId id, const BinaryData& signedTX
+      , bs::error::ErrorCode errCode, const std::string& errMsg);
+   void QWalletInfo(bs::signer::RequestId, const bs::hd::WalletInfo&);
+   void AutoSignStateChanged(bs::error::ErrorCode errCode
+      , const std::string& walletId);
+   void AuthLeafAdded(const std::string&);
+};
+
+
+class RemoteSigner : public HeadlessContainer
+{
 public:
    RemoteSigner(const std::shared_ptr<spdlog::logger> &, const QString &host
       , const QString &port, NetworkType netType
       , const std::shared_ptr<ConnectionManager>& connectionManager
-      , HeadlessCallbackTarget *, OpMode opMode = OpMode::Remote
+      , SignerCallbackTarget *, OpMode opMode = OpMode::Remote
       , const bool ephemeralDataConnKeys = true
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
@@ -302,12 +305,11 @@ private:
 
 class LocalSigner : public RemoteSigner
 {
-   Q_OBJECT
 public:
    LocalSigner(const std::shared_ptr<spdlog::logger> &, const QString &homeDir
       , NetworkType, const QString &port
       , const std::shared_ptr<ConnectionManager>& connectionManager
-      , HeadlessCallbackTarget *
+      , SignerCallbackTarget *
       , const bool startSignerProcess = true
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
