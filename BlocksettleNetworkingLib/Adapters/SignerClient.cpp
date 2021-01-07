@@ -21,7 +21,7 @@ using namespace bs::message;
 
 SignerClient::SignerClient(const std::shared_ptr<spdlog::logger> &logger
    , const std::shared_ptr<bs::message::User> &user)
-   : WalletSignerContainer(logger, OpMode::LocalInproc)
+   : WalletSignerContainer(logger, this, OpMode::LocalInproc)
    , logger_(logger), signerUser_(user)
 {}
 

@@ -15,16 +15,22 @@
 #include "CoreHDWallet.h"
 #include "Wallets/SyncHDWallet.h"
 
+#include "headless.pb.h"
+
+using namespace Blocksettle::Communication::headless;
+
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &mgr
-   , const std::shared_ptr<spdlog::logger> &logger, const std::string &walletsPath
-   , NetworkType netType, const PwdLockCb& cb)
-   : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
-   , walletsMgr_(mgr), walletsPath_(walletsPath), netType_(netType), pwLockCb_(cb)
+   , const std::shared_ptr<spdlog::logger> &logger, SignerCallbackTarget* sct
+   , const std::string &walletsPath, ::NetworkType netType, const PwdLockCb& cb)
+   : WalletSignerContainer(logger, sct, SignContainer::OpMode::LocalInproc)
+   , walletsMgr_(mgr), walletsPath_(walletsPath), netType_(netType)
+   , pwLockCb_(cb)
 { }
 
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &wallet
-   , const std::shared_ptr<spdlog::logger> &logger, const PwdLockCb& cb)
-   : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
+   , SignerCallbackTarget* sct, const std::shared_ptr<spdlog::logger> &logger
+   , const PwdLockCb& cb)
+   : WalletSignerContainer(logger, sct, SignContainer::OpMode::LocalInproc)
    , walletsPath_({}), netType_(wallet->networkType()), pwLockCb_(cb)
 {
    walletsMgr_ = std::make_shared<bs::core::WalletsManager>(logger);
@@ -40,7 +46,9 @@ void InprocSigner::Start()
       walletsMgr_->loadWallets(netType_, walletsPath_, {}, cbLoadProgress);
    }
    inited_ = true;
-   emit ready();
+   if (sct_) {
+      sct_->onReady();
+   }
    return;
 }
 
@@ -103,11 +111,15 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
          }
          signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
       }
-      emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      if (sct_) {
+         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      }
    }
    catch (const std::exception &e) {
       logger_->error("[{}] failed to sign: {}", __func__, e.what());
-      emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
+      if (sct_) {
+         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
+      }
    }
    return reqId;
 }
@@ -214,13 +226,17 @@ bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core
       if (cb) {
          cb(bs::error::ErrorCode::NoError, signedTx);
       }
-      emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      if (sct_) {
+         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      }
    } catch (const std::exception &e) {
       logger_->error("[{}] {}", __func__, e.what());
       if (cb) {
          cb(bs::error::ErrorCode::InternalError, {});
       }
-      emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
+      if (sct_) {
+         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
+      }
    }
    return reqId;
 }
@@ -403,8 +419,19 @@ bs::signer::RequestId InprocSigner::GetInfo(const std::string &walletId)
       }
    }
    const auto reqId = seqId_++;
-   const bs::hd::WalletInfo walletInfo(hdWallet);
-   emit QWalletInfo(reqId, walletInfo);
+   if (sct_) {
+      GetHDWalletInfoResponse wi;
+      wi.set_rootwalletid(hdWallet->walletId());
+      wi.set_rankm(hdWallet->encryptionRank().m);
+      wi.set_rankn(hdWallet->encryptionRank().n);
+      for (const auto& encKey : hdWallet->encryptionKeys()) {
+         wi.add_enckeys(encKey.toBinStr());
+      }
+      for (const auto& encType : hdWallet->encryptionTypes()) {
+         wi.add_enctypes((int)encType);
+      }
+      sct_->walletInfo(reqId, wi);
+   }
    return reqId;
 }
 

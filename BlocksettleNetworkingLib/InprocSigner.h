@@ -32,15 +32,14 @@ namespace bs {
 
 class InprocSigner : public WalletSignerContainer
 {
-   Q_OBJECT
 public:
    using PasswordLock = std::unique_ptr<bs::core::WalletPasswordScoped>;
    using PwdLockCb = std::function<PasswordLock(const std::string& walletId)>;
 
    InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &
-      , const std::shared_ptr<spdlog::logger> &
-      , const std::string &walletsPath, NetworkType, const PwdLockCb& cb = nullptr);
-   InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &
+      , const std::shared_ptr<spdlog::logger> &, SignerCallbackTarget*
+      , const std::string &walletsPath, ::NetworkType, const PwdLockCb& cb = nullptr);
+   InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &, SignerCallbackTarget*
       , const std::shared_ptr<spdlog::logger> &, const PwdLockCb& cb = nullptr);
    ~InprocSigner() noexcept override = default;
 
@@ -136,7 +135,7 @@ private:
 private:
    std::shared_ptr<bs::core::WalletsManager> walletsMgr_;
    const std::string walletsPath_;
-   NetworkType       netType_ = NetworkType::Invalid;
+   ::NetworkType     netType_ = ::NetworkType::Invalid;
    bs::signer::RequestId   seqId_ = 1;
    bool           inited_ = false;
    PwdLockCb   pwLockCb_{ nullptr };
