@@ -649,7 +649,9 @@ void BsClient::processTradingEnabledStatus(bool tradingEnabled)
 BsClientQt::BsClientQt(const std::shared_ptr<spdlog::logger>& logger
    , QObject* parent)
    : QObject(parent), BsClient(logger, this)
-{}
+{
+   qRegisterMetaType<BsClientLoginResult>();
+}
 
 void BsClientQt::startTimer(std::chrono::milliseconds timeout
    , const std::function<void()>& cb)
