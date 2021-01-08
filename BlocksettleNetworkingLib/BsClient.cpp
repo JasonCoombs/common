@@ -18,8 +18,8 @@
 #include "ProtobufUtils.h"
 #include "WsDataConnection.h"
 
-#include "bs_proxy_terminal.pb.h"
-#include "bs_proxy_terminal_pb.pb.h"
+//#include "bs_proxy_terminal.pb.h"
+//#include "bs_proxy_terminal_pb.pb.h"
 
 using namespace Blocksettle::Communication;
 using namespace Blocksettle::Communication::ProxyTerminal;
@@ -651,6 +651,8 @@ BsClientQt::BsClientQt(const std::shared_ptr<spdlog::logger>& logger
    : QObject(parent), BsClient(logger, this)
 {
    qRegisterMetaType<BsClientLoginResult>();
+   qRegisterMetaType<BsClientCallbackTarget::AuthorizeError>();
+   qRegisterMetaType<Blocksettle::Communication::ProxyTerminalPb::Response>();
 }
 
 void BsClientQt::startTimer(std::chrono::milliseconds timeout

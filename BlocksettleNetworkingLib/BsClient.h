@@ -33,6 +33,9 @@
 #include "TradeSettings.h"
 #include "ValidityFlag.h"
 
+#include "bs_proxy_terminal.pb.h"
+#include "bs_proxy_terminal_pb.pb.h"
+
 template<typename T> class FutureValue;
 
 namespace Blocksettle {
@@ -53,14 +56,14 @@ namespace Blocksettle {
    }
 }
 
-namespace Blocksettle {
+/*namespace Blocksettle {
    namespace Communication {
       namespace ProxyTerminalPb {
          class Request;
          class Response;
       }
    }
-}
+}*/
 
 namespace bs {
    namespace network {
@@ -118,6 +121,8 @@ struct BsClientCallbackTarget
 
    virtual void onTradingStatusChanged(bool tradingEnabled) {}
 };
+Q_DECLARE_METATYPE(BsClientCallbackTarget::AuthorizeError)
+Q_DECLARE_METATYPE(Blocksettle::Communication::ProxyTerminalPb::Response)
 
 class BsClient : public DataConnectionListener
 {
