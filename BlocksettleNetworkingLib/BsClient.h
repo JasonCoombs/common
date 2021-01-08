@@ -258,7 +258,6 @@ public slots:
    void sendCancelOnXBTTrade(const std::string& settlementId) override { BsClient::sendCancelOnXBTTrade(settlementId); }
    void sendCancelOnCCTrade(const std::string& clOrdId) override { BsClient::sendCancelOnCCTrade(clOrdId); }
    void findEmailHash(const std::string& email) override { BsClient::findEmailHash(email); }
-   void sendFutureRequest(const bs::network::FutureRequest& details) override { BsClient::sendFutureRequest(details); }
 
 signals:
    void startLoginDone(bool success, const std::string &errorMsg);
