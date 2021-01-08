@@ -18,7 +18,7 @@ from component_configurator import Configurator
 class ZeroMQSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '4.3.2'
+        self._version = '4.3.3'
         self._script_revision = '3'
 
         if settings.on_windows():
