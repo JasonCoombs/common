@@ -82,6 +82,7 @@ struct BsClientLoginResult
    float                      feeRatePb{};
    bs::TradeSettings          tradeSettings;
 };
+Q_DECLARE_METATYPE(BsClientLoginResult)
 
 struct BsClientCallbackTarget
 {
