@@ -14,11 +14,25 @@ package Blocksettle.Communication.ApiServer;
 
 import "bs_types.proto";
 
+enum EidStatus {
+    EID_STATUS_INVALID = 0;
+    EID_STATUS_WAITING_SIGN = 10;
+    EID_STATUS_TIMEOUT = 20;
+    EID_STATUS_CANCELLED = 21;
+    EID_STATUS_SERVER_ERROR = 22;
+    EID_STATUS_ACCOUNT_NOT_FOUND = 23;
+    EID_STATUS_SUCCESS = 30;
+}
+
 message Request
 {
     message Authorize
     {
         string api_key = 1;
+    }
+
+    message EidLogin
+    {
     }
 
     message MarketOrder
@@ -45,6 +59,7 @@ message Request
     oneof data
     {
         Authorize authorize = 10;
+        EidLogin eid_login = 15;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
@@ -57,6 +72,11 @@ message Response
     message Authorize
     {
         bool success = 1;
+    }
+
+    message EidLogin
+    {
+        string qr_code = 1;
     }
 
     message MarketOrder
@@ -97,14 +117,27 @@ message Response
         repeated Item items = 2;
     }
 
+    message EidLoginUpdate
+    {
+        EidStatus status = 1;
+    }
+
+    message Error
+    {
+        string error_msg = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
+        EidLogin eid_login = 15;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
         Subscribe subscribe = 14;
 
         MarketData market_data = 50;
+        Error fatal_error = 51;
+        EidLoginUpdate eid_login_update = 52;
     }
 }
