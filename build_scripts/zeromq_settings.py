@@ -48,26 +48,11 @@ class ZeroMQSettings(Configurator):
     def config_windows(self):
         command = []
 
-        # patch cmake file`
-        cmakeFileName = os.path.abspath(os.path.join(self.get_unpacked_sources_dir(), 'CMakeLists.txt'))
-        with open(cmakeFileName, 'r') as f:
-            lines = [line for line in f]
-
-        for index, line in enumerate(lines):
-            if 'set (ZMQ_USE_TWEETNACL 1)' in line:
-                lines[index] = line.replace('set (ZMQ_USE_TWEETNACL 1)', 'ADD_DEFINITIONS(-DZMQ_USE_TWEETNACL)')
-            elif 'set (ZMQ_HAVE_CURVE 1)' in line:
-                lines[index] = line.replace('set (ZMQ_HAVE_CURVE 1)', 'ADD_DEFINITIONS(-DZMQ_HAVE_CURVE)')
-            elif 'set (ZMQ_USE_LIBSODIUM 1)' in line:
-                lines[index] = line.replace('set (ZMQ_USE_LIBSODIUM 1)', 'ADD_DEFINITIONS(-DZMQ_USE_LIBSODIUM)')
-
-        with open(cmakeFileName, 'w') as f:
-            for line in lines:
-                f.write(line)
-
         command.append('cmake')
         command.append(self.get_unpacked_sources_dir())
         command.append('-DZMQ_BUILD_TESTS=OFF')
+        command.append('-DENABLE_DRAFTS=OFF')
+        command.append('-DWITH_LIBSODIUM=OFF')
 
         if self._project_settings.get_link_mode() == 'shared':
             command.append('-DBUILD_STATIC=OFF')
@@ -82,7 +67,7 @@ class ZeroMQSettings(Configurator):
                 command.append('-DCMAKE_CXX_FLAGS_RELEASE="/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('-DCMAKE_C_FLAGS_RELWITHDEBINFO="/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/MT /O2 /Ob2 /D NDEBUG"')
-                
+
         command.append('-G')
         command.append(self._project_settings.get_cmake_generator())
         if self._project_settings.on_windows():
@@ -106,6 +91,7 @@ class ZeroMQSettings(Configurator):
 
         command = ['./configure',
                    '--enable-libunwind=no',
+                   '--enable-drafts=no',
                    '--verbose',
                    '--prefix',
                    self.get_install_dir(),
