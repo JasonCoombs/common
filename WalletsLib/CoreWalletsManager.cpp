@@ -45,37 +45,58 @@ bool WalletsManager::loadWallets(NetworkType netType, const std::string &wallets
       SystemFileUtils::mkPath(walletsPath);
    }
 
-   const auto fileList = SystemFileUtils::readDir(walletsPath, "*.lmdb");
-   const size_t totalCount = fileList.size();
-   size_t current = 0;
-
-   for (const auto &file : fileList) {
+   std::vector<std::thread> loadingThreads;
+   std::mutex walletsMutex;
+   std::vector<HDWalletPtr> loadedWallets;
+   for (const auto &file : SystemFileUtils::readDir(walletsPath, "*.lmdb")) {
       if (!isWalletFile(file)) {
          continue;
       }
-      try {
-         logger_->debug("Loading BIP44 wallet from {}", file);
-         const auto wallet = std::make_shared<hd::Wallet>(file, netType
-            , walletsPath, controlPassphrase, logger_);
-         current++;
-         if (cbProgress) {
-            cbProgress(current, totalCount);
+      loadingThreads.push_back(std::thread([file, netType, walletsPath
+         , controlPassphrase, logger=logger_, &walletsMutex, &loadedWallets]
+      {
+         try {
+            logger->debug("Loading BIP44 wallet from {}", file);
+            const auto wallet = std::make_shared<hd::Wallet>(file, netType
+               , walletsPath, controlPassphrase, logger);
+            if ((netType != NetworkType::Invalid) && (netType != wallet->networkType())) {
+               logger->warn("[WalletsManager::loadWallets] {} network type mismatch: "
+                  "loading {}, wallet has {}", file, (int)netType, (int)wallet->networkType());
+            }
+            std::unique_lock<std::mutex> lock(walletsMutex);
+            loadedWallets.push_back(wallet);
          }
-         if ((netType != NetworkType::Invalid) && (netType != wallet->networkType())) {
-            logger_->warn("[{}] Network type mismatch: loading {}, wallet has {}", __func__, (int)netType, (int)wallet->networkType());
-         }
-         saveWallet(wallet);
-      }
-      catch (const std::exception &e) {
-         logger_->warn("Failed to load BIP44 wallet: {}", e.what());
+         catch (const std::exception& e) {
+            logger->warn("Failed to load BIP44 wallet {}: {}", file, e.what());
 
-         if (!strncmp(e.what(), wrongControlPasswordException, strlen(wrongControlPasswordException))) {
-            return false;
+            if (!strncmp(e.what(), wrongControlPasswordException, strlen(wrongControlPasswordException))) {
+               std::unique_lock<std::mutex> lock(walletsMutex);
+               loadedWallets.push_back(nullptr);
+            }
          }
+      }));
+   }
+   const size_t totalCount = loadingThreads.size();
+   size_t current = 0;
+   for (auto& thread : loadingThreads) {
+      if (thread.joinable()) {
+         thread.join();
+      }
+      if (cbProgress) {
+         cbProgress(++current, totalCount);
       }
    }
-   walletsLoaded_ = true;
-   return true;
+
+   unsigned int nbLoaded = 0;
+   for (const auto& wallet : loadedWallets) {
+      if (!wallet) {
+         continue;
+      }
+      nbLoaded++;
+      saveWallet(wallet);
+   }
+   walletsLoaded_ = (nbLoaded > 0);
+   return (nbLoaded == totalCount);
 }
 
 WalletsManager::HDWalletPtr WalletsManager::loadWoWallet(NetworkType netType
