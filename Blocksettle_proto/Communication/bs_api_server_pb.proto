@@ -24,6 +24,12 @@ message Request
         string ip_addr = 3;
     }
 
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+    }
+
     message MarketOrder
     {
         string entity_name = 1;
@@ -43,6 +49,7 @@ message Request
     oneof data
     {
         CheckApiKey check_api_key = 1;
+        CheckEid check_eid = 5;
         MarketOrder market_order = 2;
         LoadOrders load_orders = 3;
         LoadBalance load_balance = 4;
@@ -57,6 +64,13 @@ message Response
         string api_key = 2;
         string entity_name = 3;
         bs.types.ApiKeyError error = 4;
+    }
+
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+        string entity_name = 3;
     }
 
     message MarketOrder
@@ -80,6 +94,7 @@ message Response
     oneof data
     {
         CheckApiKey check_api_key = 1;
+        CheckEid check_eid = 5;
         MarketOrder market_order = 2;
         LoadOrders load_orders = 3;
         LoadBalance load_balance = 4;
