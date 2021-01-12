@@ -985,7 +985,7 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
       for (const auto &tx : txBatch) {
          if (!tx.second) {
             continue;
-         }  //FIXME: add txHeight serialization
+         }
          auto msgTX = msgResp->add_transactions();
          msgTX->set_tx(tx.second->serialize().toBinStr());
          msgTX->set_height(tx.second->getTxHeight());
