@@ -107,6 +107,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processGetUTXOs(env, msg.get_zc_utxos(), true);
       case ArmoryMessage::kGetRbfUtxos:
          return processGetUTXOs(env, msg.get_rbf_utxos(), false, true);
+      case ArmoryMessage::kGetUtxosForAddr:
+         return processUTXOsForAddr(env, msg.get_utxos_for_addr());
       case ArmoryMessage::kGetOutPoints:
          return processGetOutpoints(env, msg.get_out_points());
       case ArmoryMessage::kGetSpentness:
@@ -1239,6 +1241,38 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
       return armory_->getSpendableTxOutListForValue(walletIDs
          , std::numeric_limits<uint64_t>::max(), cbTxOutList);
    }
+}
+
+bool BlockchainAdapter::processUTXOsForAddr(const bs::message::Envelope& env
+   , const ArmoryMessage_UTXOsForAddr& request)
+{
+   if (suspended_) {
+      return false;
+   }
+   const auto& cbUTXOs = [this, env, stopped = stopped_]
+      (const std::vector<UTXO>& utxos)
+   {
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_utxos();
+      for (const auto& utxo : utxos) {
+         msgResp->add_utxos(utxo.serialize().toBinStr());
+      }
+      if (*stopped) {
+         return;
+      }
+      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      pushFill(envResp);
+   };
+
+   try {
+      const auto& address = bs::Address::fromAddressString(request.address());
+      return armory_->getUTXOsForAddress(address.prefixed(), cbUTXOs, request.with_zc());
+   }
+   catch (const std::exception& e) {
+      logger_->error("[{}] invalid address {}: {}", __func__, request.address(), e.what());
+      cbUTXOs({});
+   }
+   return true;
 }
 
 bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
