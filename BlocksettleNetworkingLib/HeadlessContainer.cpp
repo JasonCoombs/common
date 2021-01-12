@@ -25,7 +25,6 @@
 #include <QDir>
 #include <QProcess>
 #include <QStandardPaths>
-#include <QTimer>
 
 #include <spdlog/spdlog.h>
 #include "headless.pb.h"
@@ -41,6 +40,7 @@ namespace {
    // When remote signer will try to reconnect
    constexpr auto kLocalReconnectPeriod = std::chrono::seconds(10);
    constexpr auto kRemoteReconnectPeriod = std::chrono::seconds(1);
+   constexpr auto kSleepPeriod = std::chrono::milliseconds(20);
 
    const uint32_t kConnectTimeoutSec = 1;
 
@@ -1434,6 +1434,14 @@ RemoteSigner::RemoteSigner(const std::shared_ptr<spdlog::logger> &logger
    , connectionManager_{connectionManager}
 {}
 
+RemoteSigner::~RemoteSigner() noexcept
+{
+   isRestartScheduled_ = false;
+   if (restartThread_.joinable()) {
+      restartThread_.join();
+   }
+}
+
 // Establish the remote connection to the signer.
 void RemoteSigner::Start()
 {
@@ -1449,16 +1457,6 @@ void RemoteSigner::Start()
    {
       std::lock_guard<std::mutex> lock(mutex_);
       listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_, this);
-/*      connect(listener_.get(), &HeadlessListener::connected, this
-         , &RemoteSigner::onConnected, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::authenticated, this
-         , &RemoteSigner::onAuthenticated, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::disconnected, this
-         , &RemoteSigner::onDisconnected, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::error, this
-         , &RemoteSigner::onConnError, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::PacketReceived, this
-         , &RemoteSigner::onPacketReceived, Qt::QueuedConnection);*/
    }
 
    RemoteSigner::Connect();
@@ -1660,10 +1658,20 @@ void RemoteSigner::ScheduleRestart()
    if (isRestartScheduled_) {
       return;
    }
-
+   if (restartThread_.joinable()) {
+      restartThread_.join();
+   }
    isRestartScheduled_ = true;
-   auto timeout = isLocal() ? kLocalReconnectPeriod : kRemoteReconnectPeriod;
-   QTimer::singleShot(timeout, this, [this] {
+
+   restartThread_ = std::thread([this] {
+      const auto timeout = isLocal() ? kLocalReconnectPeriod : kRemoteReconnectPeriod;
+      const int nbIters = timeout / kSleepPeriod;
+      for (int i = 0; i < nbIters; ++i) {
+         std::this_thread::sleep_for(kSleepPeriod);
+         if (!isRestartScheduled_) {
+            return;
+         }
+      }
       isRestartScheduled_ = false;
       reconnect();
    });
