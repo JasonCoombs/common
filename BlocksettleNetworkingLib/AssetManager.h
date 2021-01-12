@@ -79,7 +79,11 @@ public:
    double getCCTotal();
    uint64_t getCCLotSize(const std::string &cc) const;
    bs::Address getCCGenesisAddr(const std::string &cc) const;
-   int64_t netDeliverableBalanceXbt() const { return netDeliverableBalanceXbt_; }
+
+   double futuresBalanceDeliverable() const { return futuresBalanceDeliverable_; }
+   double futuresBalanceCashSettled() const { return futuresBalanceCashSettled_; }
+   int64_t futuresXbtAmountDeliverable() const { return futuresXbtAmountDeliverable_; }
+   int64_t futuresXbtAmountCashSettled() const { return futuresXbtAmountCashSettled_; }
 
    bool hasSecurities() const { return securitiesReceived_; }
    std::vector<QString> securities(bs::network::Asset::Type = bs::network::Asset::Undefined) const;
@@ -88,6 +92,10 @@ public:
 
    bool HaveAssignedAccount() const { return !assignedAccount_.empty(); }
    std::string GetAssignedAccount() const { return assignedAccount_; }
+
+   static double profitLoss(int64_t futuresXbtAmount, double futuresBalance, double currentPrice);
+   double profitLossDeliverable(double currentPrice);
+   double profitLossCashSettled(double currentPrice);
 
 signals:
    void ccPriceChanged(const std::string& currency);
@@ -149,7 +157,10 @@ protected:
 
    std::unordered_map<std::string, QDateTime>  xbtPriceUpdateTimes_;
 
-   int64_t netDeliverableBalanceXbt_{};
+   double futuresBalanceDeliverable_{};
+   double futuresBalanceCashSettled_{};
+   int64_t futuresXbtAmountDeliverable_{};
+   int64_t futuresXbtAmountCashSettled_{};
 };
 
 #endif // __ASSET__MANAGER_H__
