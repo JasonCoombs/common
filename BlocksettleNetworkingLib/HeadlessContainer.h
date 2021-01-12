@@ -261,7 +261,7 @@ public:
       , const std::string& ownKeyFileDir = ""
       , const std::string& ownKeyFileName = ""
       , const bs::network::BIP15xNewKeyCb &inNewKeyCB = nullptr);
-   ~RemoteSigner() noexcept override = default;
+   ~RemoteSigner() noexcept override;
 
    void Start(void) override;
    bool Stop() override;
@@ -300,7 +300,8 @@ private:
    std::shared_ptr<ConnectionManager> connectionManager_;
    mutable std::mutex   mutex_;
    bool headlessConnFinished_ = false;
-   bool isRestartScheduled_{false};
+   std::atomic_bool  isRestartScheduled_{false};
+   std::thread       restartThread_;
 };
 
 class LocalSigner : public RemoteSigner
