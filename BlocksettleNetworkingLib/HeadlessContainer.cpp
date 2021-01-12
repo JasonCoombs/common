@@ -25,7 +25,6 @@
 #include <QDir>
 #include <QProcess>
 #include <QStandardPaths>
-#include <QTimer>
 
 #include <spdlog/spdlog.h>
 #include "headless.pb.h"
@@ -41,6 +40,7 @@ namespace {
    // When remote signer will try to reconnect
    constexpr auto kLocalReconnectPeriod = std::chrono::seconds(10);
    constexpr auto kRemoteReconnectPeriod = std::chrono::seconds(1);
+   constexpr auto kSleepPeriod = std::chrono::milliseconds(20);
 
    const uint32_t kConnectTimeoutSec = 1;
 
@@ -234,7 +234,6 @@ bs::signer::RequestId HeadlessContainer::Send(const headless::RequestPacket &pac
 
 void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSignTXResponse] Failed to parse SignTxReply");
@@ -263,7 +262,6 @@ void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string
 
 void HeadlessContainer::ProcessSettlementSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSettlementSignTXResponse] Failed to parse reply");
@@ -1436,6 +1434,14 @@ RemoteSigner::RemoteSigner(const std::shared_ptr<spdlog::logger> &logger
    , connectionManager_{connectionManager}
 {}
 
+RemoteSigner::~RemoteSigner() noexcept
+{
+   isRestartScheduled_ = false;
+   if (restartThread_.joinable()) {
+      restartThread_.join();
+   }
+}
+
 // Establish the remote connection to the signer.
 void RemoteSigner::Start()
 {
@@ -1451,16 +1457,6 @@ void RemoteSigner::Start()
    {
       std::lock_guard<std::mutex> lock(mutex_);
       listener_ = std::make_shared<HeadlessListener>(logger_, connection_, netType_, this);
-/*      connect(listener_.get(), &HeadlessListener::connected, this
-         , &RemoteSigner::onConnected, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::authenticated, this
-         , &RemoteSigner::onAuthenticated, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::disconnected, this
-         , &RemoteSigner::onDisconnected, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::error, this
-         , &RemoteSigner::onConnError, Qt::QueuedConnection);
-      connect(listener_.get(), &HeadlessListener::PacketReceived, this
-         , &RemoteSigner::onPacketReceived, Qt::QueuedConnection);*/
    }
 
    RemoteSigner::Connect();
@@ -1662,10 +1658,20 @@ void RemoteSigner::ScheduleRestart()
    if (isRestartScheduled_) {
       return;
    }
-
+   if (restartThread_.joinable()) {
+      restartThread_.join();
+   }
    isRestartScheduled_ = true;
-   auto timeout = isLocal() ? kLocalReconnectPeriod : kRemoteReconnectPeriod;
-   QTimer::singleShot(timeout, this, [this] {
+
+   restartThread_ = std::thread([this] {
+      const auto timeout = isLocal() ? kLocalReconnectPeriod : kRemoteReconnectPeriod;
+      const int nbIters = timeout / kSleepPeriod;
+      for (int i = 0; i < nbIters; ++i) {
+         std::this_thread::sleep_for(kSleepPeriod);
+         if (!isRestartScheduled_) {
+            return;
+         }
+      }
       isRestartScheduled_ = false;
       reconnect();
    });
@@ -1976,4 +1982,51 @@ bool HeadlessListener::addCookieKeyToKeyStore(
    }
 
    return bip15xConnection->addCookieKeyToKeyStore(path, name);
+}
+
+
+Q_DECLARE_METATYPE(bs::error::ErrorCode)
+Q_DECLARE_METATYPE(bs::signer::RequestId)
+
+QtHCT::QtHCT(QObject* parent) : QObject(parent)
+{
+   qRegisterMetaType<bs::error::ErrorCode>();
+   qRegisterMetaType<bs::signer::RequestId>();
+}
+
+void QtHCT::onError(bs::signer::RequestId reqId, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, errMsg] {
+      emit Error(reqId, errMsg);
+   });
+}
+
+void QtHCT::txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
+   , bs::error::ErrorCode errCode, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, signedTX, errCode, errMsg] {
+      emit TXSigned(reqId, signedTX, errCode, errMsg);
+   });
+}
+
+void QtHCT::walletInfo(bs::signer::RequestId reqId
+   , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, wi] {
+      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi));
+   });
+}
+
+void QtHCT::autoSignStateChanged(bs::error::ErrorCode errCode, const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, errCode, walletId] {
+      emit AutoSignStateChanged(errCode, walletId);
+   });
+}
+
+void QtHCT::authLeafAdded(const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, walletId] {
+      emit AuthLeafAdded(walletId);
+   });
 }
