@@ -234,7 +234,6 @@ bs::signer::RequestId HeadlessContainer::Send(const headless::RequestPacket &pac
 
 void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSignTXResponse] Failed to parse SignTxReply");
@@ -263,7 +262,6 @@ void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string
 
 void HeadlessContainer::ProcessSettlementSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSettlementSignTXResponse] Failed to parse reply");
@@ -1976,4 +1974,51 @@ bool HeadlessListener::addCookieKeyToKeyStore(
    }
 
    return bip15xConnection->addCookieKeyToKeyStore(path, name);
+}
+
+
+Q_DECLARE_METATYPE(bs::error::ErrorCode)
+Q_DECLARE_METATYPE(bs::signer::RequestId)
+
+QtHCT::QtHCT(QObject* parent) : QObject(parent)
+{
+   qRegisterMetaType<bs::error::ErrorCode>();
+   qRegisterMetaType<bs::signer::RequestId>();
+}
+
+void QtHCT::onError(bs::signer::RequestId reqId, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, errMsg] {
+      emit Error(reqId, errMsg);
+   });
+}
+
+void QtHCT::txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
+   , bs::error::ErrorCode errCode, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, signedTX, errCode, errMsg] {
+      emit TXSigned(reqId, signedTX, errCode, errMsg);
+   });
+}
+
+void QtHCT::walletInfo(bs::signer::RequestId reqId
+   , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, wi] {
+      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi));
+   });
+}
+
+void QtHCT::autoSignStateChanged(bs::error::ErrorCode errCode, const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, errCode, walletId] {
+      emit AutoSignStateChanged(errCode, walletId);
+   });
+}
+
+void QtHCT::authLeafAdded(const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, walletId] {
+      emit AuthLeafAdded(walletId);
+   });
 }
