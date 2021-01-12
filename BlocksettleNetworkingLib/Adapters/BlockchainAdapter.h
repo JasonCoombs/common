@@ -34,6 +34,7 @@ namespace BlockSettle {
       class ArmoryMessage_Settings;
       class ArmoryMessage_TXHashes;
       class ArmoryMessage_TXPushRequest;
+      class ArmoryMessage_UTXOsForAddr;
       class ArmoryMessage_WalletIDs;
       class ArmoryMessage_WalletUnconfirmedTarget;
    }
@@ -117,6 +118,8 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_FeeLevelsRequest &);
    bool processGetUTXOs(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_WalletIDs&, bool zc = false, bool rbf = false);
+   bool processUTXOsForAddr(const bs::message::Envelope&
+      , const BlockSettle::Common::ArmoryMessage_UTXOsForAddr&);
    bool processGetOutpoints(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_GetOutpointsForAddrList&);
    bool processSpentnessRequest(const bs::message::Envelope&
