@@ -197,6 +197,7 @@ message Response
    message FutureResponse
    {
       bool           success     = 1;
+      string         product     = 6;
       string         error_msg   = 2;
       bs.types.Side  side        = 3;
       double         price       = 4;

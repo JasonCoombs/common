@@ -407,18 +407,51 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
    }
 }
 
+double AssetManager::profitLoss(int64_t futuresXbtAmount, double futuresBalance, double currentPrice)
+{
+
+   auto sign = futuresXbtAmount > 0 ? 1 : -1;
+   auto futuresXbtAmountBitcoin = sign * bs::XBTAmount(static_cast<uint64_t>(std::abs(futuresXbtAmount))).GetValueBitcoin();
+   return futuresXbtAmountBitcoin * currentPrice - futuresBalance;
+}
+
+double AssetManager::profitLossDeliverable(double currentPrice)
+{
+   return profitLoss(futuresXbtAmountDeliverable_, futuresBalanceDeliverable_, currentPrice);
+}
+
+double AssetManager::profitLossCashSettled(double currentPrice)
+{
+   return profitLoss(futuresXbtAmountCashSettled_, futuresBalanceCashSettled_, currentPrice);
+}
+
 void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg)
 {
-   int64_t netDeliverableBalanceXbt = 0;
+   int64_t futuresXbtAmountDeliverable = 0;
+   int64_t futuresXbtAmountCashSettled = 0;
+   futuresBalanceDeliverable_ = 0;
+   futuresBalanceCashSettled_ = 0;
    for (const auto &order : msg.orders()) {
-      if (order.trade_type() == bs::network::Asset::DeliverableFutures && order.status() == bs::types::ORDER_STATUS_PENDING) {
+      if ((order.trade_type() == bs::network::Asset::DeliverableFutures || order.trade_type() == bs::network::Asset::CashSettledFutures) 
+         && order.status() == bs::types::ORDER_STATUS_PENDING) {
          auto sign = order.quantity() > 0 ? 1 : -1;
          auto amount = bs::XBTAmount(std::abs(order.quantity()));
-         netDeliverableBalanceXbt += sign * static_cast<int64_t>(amount.GetValue());
+         auto amountXbt = sign * amount.GetValueBitcoin();
+         auto amountSat = sign * static_cast<int64_t>(amount.GetValue());
+         auto balanceChange = amountXbt * order.price();
+         if (order.trade_type() == bs::network::Asset::DeliverableFutures) {
+            futuresXbtAmountDeliverable += amountSat;
+            futuresBalanceDeliverable_ += balanceChange;
+         } else {
+            futuresXbtAmountCashSettled += amountSat;
+            futuresBalanceCashSettled_ += balanceChange;
+         }
       }
    }
-   if (netDeliverableBalanceXbt != netDeliverableBalanceXbt_) {
-      netDeliverableBalanceXbt_ = netDeliverableBalanceXbt;
+   if (futuresXbtAmountDeliverable != futuresXbtAmountDeliverable_ 
+      || futuresXbtAmountCashSettled != futuresXbtAmountCashSettled_) {
+      futuresXbtAmountDeliverable_ = futuresXbtAmountDeliverable;
+      futuresXbtAmountCashSettled_ = futuresXbtAmountCashSettled;
       emit netDeliverableBalanceChanged();
    }
 }
