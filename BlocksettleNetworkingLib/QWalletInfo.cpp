@@ -66,6 +66,26 @@ WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsM
    }
 }
 
+WalletInfo::WalletInfo(const bs::sync::WalletInfo &hdWallet, QObject *parent)
+{
+   if ((hdWallet.format != bs::sync::WalletFormat::HD) || (hdWallet.ids.size() != 1)) {
+      throw std::runtime_error("invalid wallet info supplied");
+   }
+   walletId_ = QString::fromStdString(hdWallet.ids.at(0));
+   rootId_ = walletId_;
+   name_ = QString::fromStdString(hdWallet.name);
+   desc_ = QString::fromStdString(hdWallet.description);
+
+   for (const auto& encKey : hdWallet.encryptionKeys) {
+      encKeys_ << QString::fromStdString(encKey.toBinStr());
+   }
+   for (const auto& encType : hdWallet.encryptionTypes) {
+      encTypes_ << encType;
+   }
+   keyRank_ = hdWallet.encryptionRank;
+   emit walletChanged();
+}
+
 WalletInfo::WalletInfo(const std::shared_ptr<bs::sync::WalletsManager> &walletsMgr
    , const std::shared_ptr<bs::sync::Wallet> &wallet, QObject *parent)
    : walletsMgr_(walletsMgr)

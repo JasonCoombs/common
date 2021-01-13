@@ -15,7 +15,7 @@
 #include <memory>
 #include <vector>
 
-#include "CelerClient.h"
+#include "Celer/CelerClient.h"
 #include <disable_warnings.h>
 #include "BinaryData.h"
 #include <enable_warnings.h>

@@ -18,12 +18,25 @@
 #include <QString>
 #include <QVariant>
 #include <QPointer>
-
+#include "Address.h"
 #include "BsClient.h"
 #include "Wallets/SyncWallet.h"
 
 class ApplicationSettings;
 class BaseCelerClient;
+
+struct CCCallbackTarget
+{
+   virtual void onCCSecurityDef(const bs::network::CCSecurityDef&) {}
+   virtual void onCCSecurityId(const std::string& securityId) {}
+   virtual void onCCSecurityInfo(const std::string& cc, unsigned long nbSatoshis
+      , const bs::Address& genesisAddr) {}
+
+   virtual void onCCAddressSubmitted(const bs::Address&) {}
+   virtual void onCCInitialSubmitted(const bs::Address&) {}
+   virtual void onCCSubmitFailed(const bs::Address& address, const std::string& err) {}
+   virtual void onLoaded() {}
+};
 
 class CCPubResolver : public bs::sync::CCDataResolver
 {
@@ -57,11 +70,14 @@ private:
    const CCLoadCompleteCb  cbLoadComplete_;
 };
 
-class CCFileManager : public QObject
+class CCFileManager : public QObject, public CCCallbackTarget
 {
 Q_OBJECT
 public:
-   CCFileManager(const std::shared_ptr<spdlog::logger> &logger, const std::shared_ptr<ApplicationSettings> &appSettings);
+   [[deprecated]] CCFileManager(const std::shared_ptr<spdlog::logger> &logger
+      , const std::shared_ptr<ApplicationSettings> &appSettings);
+   CCFileManager(const std::shared_ptr<spdlog::logger>&, CCCallbackTarget*
+      , const std::string& signAddress);
    ~CCFileManager() noexcept override = default;
 
    CCFileManager(const CCFileManager&) = delete;
@@ -71,13 +87,13 @@ public:
 
    std::shared_ptr<bs::sync::CCDataResolver> getResolver() const { return resolver_; }
 
-   void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient> &);
+   [[deprecated]] void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient> &);
 
    bool submitAddress(const bs::Address &, uint32_t seed, const std::string &ccProduct);
    bool wasAddressSubmitted(const bs::Address &);
    void cancelActiveSign();
 
-   void setBsClient(const std::weak_ptr<BsClient> &);
+   [[deprecated]] void setBsClient(const std::weak_ptr<BsClient> &);
 
    void SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions);
 
@@ -91,10 +107,25 @@ signals:
    void CCSubmitFailed(const QString address, const QString &err);
    void Loaded();
 
+private: // Callbacks override
+   void onCCSecurityDef(const bs::network::CCSecurityDef& sd) override { emit CCSecurityDef(sd); }
+   void onCCSecurityId(const std::string& securityId) override { emit CCSecurityId(securityId); }
+   void onCCSecurityInfo(const std::string& cc, unsigned long nbSatoshis
+      , const bs::Address& genesisAddr) {
+      emit CCSecurityInfo(QString::fromStdString(cc), nbSatoshis, QString::fromStdString(genesisAddr.display()));
+   }
+
+   void onCCAddressSubmitted(const bs::Address& addr) override { emit CCAddressSubmitted(QString::fromStdString(addr.display())); }
+   void onCCInitialSubmitted(const bs::Address& addr) override { emit CCInitialSubmitted(QString::fromStdString(addr.display())); }
+   void onCCSubmitFailed(const bs::Address& addr, const std::string& err) override {
+      emit CCSubmitFailed(QString::fromStdString(addr.display()), QString::fromStdString(err));
+   }
+   void onLoaded() override { emit Loaded(); }
+
 private:
    std::shared_ptr<spdlog::logger>        logger_;
-   std::shared_ptr<ApplicationSettings>   appSettings_;
    std::shared_ptr<BaseCelerClient>       celerClient_;
+   CCCallbackTarget* cct_{ nullptr };
 
    std::shared_ptr<CCPubResolver>         resolver_;
    std::weak_ptr<BsClient>                bsClient_;

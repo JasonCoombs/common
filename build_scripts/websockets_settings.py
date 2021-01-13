@@ -116,7 +116,6 @@ class WebsocketsSettings(Configurator):
         # Workaround for data race: https://github.com/warmcat/libwebsockets/issues/1836
         env_vars['CFLAGS'] = "-Dmalloc_usable_size=INVALID_DEFINE_TO_DISABLE_FLAG"
 
-        result = subprocess.call(command, env=env_vars)
         if self._project_settings.on_windows():
             cmdStr = r' '.join(command)
             result = subprocess.call(cmdStr, env=env_vars)

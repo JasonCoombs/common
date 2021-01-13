@@ -58,11 +58,16 @@ bool BootstrapDataManager::loadFromLocalFile()
 
 bool BootstrapDataManager::setReceivedData(const std::string& data)
 {
-   if (loadData(data)) {
-      saveToLocalFile(data);
-      return true;
+   try {
+      if (loadData(data)) {
+         saveToLocalFile(data);
+         return true;
+      }
    }
-
+   catch (const std::exception& e) {
+      logger_->error("[BootstrapDataManager::setReceivedData] failed to load: {}"
+         , e.what());
+   }
    return false;
 }
 

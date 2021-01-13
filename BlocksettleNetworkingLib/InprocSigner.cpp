@@ -9,24 +9,29 @@
 
 */
 #include "InprocSigner.h"
-#include <QTimer>
 #include <spdlog/spdlog.h>
 #include "Address.h"
 #include "CoreWalletsManager.h"
 #include "CoreHDWallet.h"
 #include "Wallets/SyncHDWallet.h"
 
+#include "headless.pb.h"
+
+using namespace Blocksettle::Communication::headless;
+
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &mgr
-   , const std::shared_ptr<spdlog::logger> &logger, const std::string &walletsPath
-   , NetworkType netType)
-   : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
+   , const std::shared_ptr<spdlog::logger> &logger, SignerCallbackTarget* sct
+   , const std::string &walletsPath, ::NetworkType netType, const PwdLockCb& cb)
+   : WalletSignerContainer(logger, sct, SignContainer::OpMode::LocalInproc)
    , walletsMgr_(mgr), walletsPath_(walletsPath), netType_(netType)
+   , pwLockCb_(cb)
 { }
 
 InprocSigner::InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &wallet
-   , const std::shared_ptr<spdlog::logger> &logger)
-   : WalletSignerContainer(logger, SignContainer::OpMode::LocalInproc)
-   , walletsPath_({}), netType_(wallet->networkType())
+   , SignerCallbackTarget* sct, const std::shared_ptr<spdlog::logger> &logger
+   , const PwdLockCb& cb)
+   : WalletSignerContainer(logger, sct, SignContainer::OpMode::LocalInproc)
+   , walletsPath_({}), netType_(wallet->networkType()), pwLockCb_(cb)
 {
    walletsMgr_ = std::make_shared<bs::core::WalletsManager>(logger);
    walletsMgr_->addWallet(wallet);
@@ -41,7 +46,9 @@ void InprocSigner::Start()
       walletsMgr_->loadWallets(netType_, walletsPath_, {}, cbLoadProgress);
    }
    inited_ = true;
-   emit ready();
+   if (sct_) {
+      sct_->onReady();
+   }
    return;
 }
 
@@ -51,7 +58,6 @@ void InprocSigner::Start()
 bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest &txSignReq,
    TXSignMode mode, bool)
 {
-
    if (!txSignReq.isValid()) {
       logger_->error("[{}] Invalid TXSignRequest", __func__);
       return 0;
@@ -63,7 +69,7 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
          logger_->error("[{}] failed to find wallet with id {}", __func__, walletId);
          return 0;
       }
-      wallets.emplace_back(std::move(wallet));
+      wallets.push_back(wallet);
    }
    if (wallets.empty()) {
       logger_->error("[{}] empty wallets list", __func__);
@@ -105,25 +111,98 @@ bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSign
          }
          signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
       }
-      QTimer::singleShot(1, [this, reqId, signedTx] {
-         emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      });
+      if (sct_) {
+         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      }
    }
    catch (const std::exception &e) {
-      QTimer::singleShot(1, [this, reqId, reason = std::string(e.what())] {
-         emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, reason);
-      });
+      logger_->error("[{}] failed to sign: {}", __func__, e.what());
+      if (sct_) {
+         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
+      }
    }
    return reqId;
 }
 
-bs::signer::RequestId InprocSigner::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txReq
-   , const bs::sync::PasswordDialogData &
-   , SignContainer::TXSignMode
-   , bool
-   , const std::function<void (bs::error::ErrorCode, const BinaryData &)> &)
+void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignReq
+   , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
+      , const std::string& errorReason)>& cb
+   , TXSignMode mode, bool keepDuplicatedRecipients)
 {
-   return signTXRequest(txReq);
+   if (!txSignReq.isValid()) {
+      logger_->error("[{}] Invalid TXSignRequest", __func__);
+      cb({}, bs::error::ErrorCode::InternalError, "invalid request");
+      return;
+   }
+   std::vector<std::shared_ptr<bs::core::Wallet>> wallets;
+   for (const auto& walletId : txSignReq.walletIds) {
+      const auto wallet = walletsMgr_->getWalletById(walletId);
+      if (!wallet) {
+         logger_->error("[{}] failed to find wallet with id {}", __func__, walletId);
+         cb({}, bs::error::ErrorCode::InternalError, "wallet not found");
+         return;
+      }
+      wallets.push_back(wallet);
+   }
+   if (wallets.empty()) {
+      logger_->error("[{}] empty wallets list", __func__);
+      cb({}, bs::error::ErrorCode::InternalError, "empty wallets");
+      return;
+   }
+
+   const auto reqId = seqId_++;
+   try {
+      BinaryData signedTx;
+      PasswordLock pwLock = pwLockCb_ ? std::move(pwLockCb_(wallets.front()->walletId())) : nullptr;
+      if (mode == TXSignMode::Full) {
+         if (wallets.size() == 1) {
+            signedTx = wallets.front()->signTXRequest(txSignReq);
+         } else {
+            bs::core::wallet::TXMultiSignRequest multiReq;
+            multiReq.armorySigner_.merge(txSignReq.armorySigner_);
+
+            bs::core::WalletMap wallets;
+            for (unsigned i = 0; i < txSignReq.armorySigner_.getTxInCount(); i++) {
+               auto utxo = txSignReq.armorySigner_.getSpender(i)->getUtxo();
+               const auto addr = bs::Address::fromUTXO(utxo);
+               const auto wallet = walletsMgr_->getWalletByAddress(addr);
+               if (!wallet) {
+                  logger_->error("[{}] failed to find wallet for input address {}"
+                     , __func__, addr.display());
+                  cb({}, bs::error::ErrorCode::InternalError, "failed to find wallet for input address");
+                  return;
+               }
+               multiReq.addWalletId(wallet->walletId());
+               wallets[wallet->walletId()] = wallet;
+            }
+            multiReq.RBF = txSignReq.RBF;
+
+            signedTx = bs::core::SignMultiInputTX(multiReq, wallets);
+         }
+      } else {
+         if (wallets.size() != 1) {
+            logger_->error("[{}] can't sign partial request for more than 1 wallet", __func__);
+            cb({}, bs::error::ErrorCode::InternalError, "can't sign partial request for more than 1 wallet");
+            return;
+         }
+         signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
+      }
+      cb(signedTx, bs::error::ErrorCode::NoError, {});
+   } catch (const std::exception& e) {
+      cb({}, bs::error::ErrorCode::InternalError, e.what());
+   }
+}
+
+bs::signer::RequestId InprocSigner::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txReq
+   , const bs::sync::PasswordDialogData &, SignContainer::TXSignMode mode, bool keepDups
+   , const std::function<void (bs::error::ErrorCode, const BinaryData &)> &cb)
+{
+   const auto& cbWrap = [cb](BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)
+   {
+      cb(result, signedTX);
+   };
+   signTXRequest(txReq, cbWrap, mode, keepDups);
+   return seqId_++;
 }
 
 bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &txReq
@@ -142,19 +221,21 @@ bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core
 
    const auto reqId = seqId_++;
    try {
+      PasswordLock pwLock = pwLockCb_ ? std::move(pwLockCb_(wallet->walletId())) : nullptr;
       const auto signedTx = wallet->signSettlementTXRequest(txReq, sd);
-      QTimer::singleShot(1, [this, reqId, signedTx] {
-         emit TXSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      });
       if (cb) {
          cb(bs::error::ErrorCode::NoError, signedTx);
       }
+      if (sct_) {
+         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
+      }
    } catch (const std::exception &e) {
-      QTimer::singleShot(1, [this, reqId, reason = std::string(e.what())] {
-         emit TXSigned(reqId, {}, bs::error::ErrorCode::InternalError, reason);
-      });
+      logger_->error("[{}] {}", __func__, e.what());
       if (cb) {
          cb(bs::error::ErrorCode::InternalError, {});
+      }
+      if (sct_) {
+         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
       }
    }
    return reqId;
@@ -338,8 +419,19 @@ bs::signer::RequestId InprocSigner::GetInfo(const std::string &walletId)
       }
    }
    const auto reqId = seqId_++;
-   const bs::hd::WalletInfo walletInfo(hdWallet);
-   QTimer::singleShot(1, [this, reqId, walletInfo] { emit QWalletInfo(reqId, walletInfo); });
+   if (sct_) {
+      GetHDWalletInfoResponse wi;
+      wi.set_rootwalletid(hdWallet->walletId());
+      wi.set_rankm(hdWallet->encryptionRank().m);
+      wi.set_rankn(hdWallet->encryptionRank().n);
+      for (const auto& encKey : hdWallet->encryptionKeys()) {
+         wi.add_enckeys(encKey.toBinStr());
+      }
+      for (const auto& encType : hdWallet->encryptionTypes()) {
+         wi.add_enctypes((int)encType);
+      }
+      sct_->walletInfo(reqId, wi);
+   }
    return reqId;
 }
 
@@ -352,7 +444,7 @@ void InprocSigner::syncWalletInfo(const std::function<void(std::vector<bs::sync:
       bs::sync::WalletInfo walletInfo;
 
       walletInfo.format = bs::sync::WalletFormat::HD;
-      walletInfo.id = hdWallet->walletId();
+      walletInfo.ids.push_back(hdWallet->walletId());
       walletInfo.name = hdWallet->name();
       walletInfo.description = hdWallet->description();
       walletInfo.netType = hdWallet->networkType();
@@ -402,8 +494,8 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
                }
                extraData = BtcUtils::getHash160(rootSingle->getPubKey()->getCompressedKey());
             }
-            groupData.leaves.push_back({ leaf->walletId(), leaf->path()
-               , leaf->hasExtOnlyAddresses(), std::move(extraData) });
+            groupData.leaves.push_back({ { leaf->walletId() }, leaf->path()
+               , leaf->shortName(), std::string{}, leaf->hasExtOnlyAddresses(), std::move(extraData) });
          }
 
          result.groups.push_back(groupData);
@@ -467,8 +559,7 @@ void InprocSigner::syncTxComment(const std::string &walletId, const BinaryData &
 
 void InprocSigner::syncNewAddresses(const std::string &walletId
    , const std::vector<std::string> &inData
-   , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &cb
-   , bool persistent)
+   , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &cb)
 {
    std::vector<std::pair<bs::Address, std::string>> result;
    const auto wallet = walletsMgr_->getWalletById(walletId);

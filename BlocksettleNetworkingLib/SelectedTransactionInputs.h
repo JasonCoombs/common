@@ -34,11 +34,11 @@ public:
    using CbSelectionChanged = std::function<void()>;
 
 public:
-   SelectedTransactionInputs(const std::shared_ptr<bs::sync::Wallet> &
+   [[deprecated]] SelectedTransactionInputs(const std::shared_ptr<bs::sync::Wallet> &
       , bool isSegWitInputsOnly, bool confirmedOnly = false
       , const CbSelectionChanged &selectionChanged = nullptr
       , const std::function<void()> &cbInputsReset = nullptr);
-   SelectedTransactionInputs(const std::vector<std::shared_ptr<bs::sync::Wallet>> &
+   [[deprecated]] SelectedTransactionInputs(const std::vector<std::shared_ptr<bs::sync::Wallet>> &
       , bool isSegWitInputsOnly, bool confirmedOnly = false
       , const CbSelectionChanged &selectionChanged = nullptr
       , const std::function<void()> &cbInputsReset = nullptr);

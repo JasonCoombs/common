@@ -1,0 +1,119 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2018 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+#include "LoginSequence.h"
+
+#include "DownstreamLoginProto.pb.h"
+#include "UpstreamLoginProto.pb.h"
+#include "NettyCommunication.pb.h"
+
+#include <cassert>
+
+using namespace bs::celer;
+using namespace com::celertech::baseserver::communication::login;
+using namespace com::celertech::baseserver::communication::protobuf;
+
+
+LoginSequence::LoginSequence(const std::shared_ptr<spdlog::logger>& logger
+   , const std::string& username, const std::string& password)
+   : CommandSequence("CelerLoginSequence",
+      {
+         { false, nullptr, &LoginSequence::sendLoginRequest},
+         { true, &LoginSequence::processLoginResponse, nullptr},
+         { true, &LoginSequence::processConnectedEvent, nullptr},
+      })
+   , logger_(logger)
+   , username_(username)
+   , password_(password)
+{}
+
+void LoginSequence::SetCallbackFunctions(const onLoginSuccess_func& onSuccess
+   , const onLoginFailed_func& onFailed)
+{
+   onLoginSuccess_ = onSuccess;
+   onLoginFailed_ = onFailed;
+}
+
+CelerMessage LoginSequence::sendLoginRequest()
+{
+   LoginRequest loginRequest;
+
+   // This message will be replaced on BsProxy but we still need to do whole login sequence as usual
+   loginRequest.set_username(username_);
+   loginRequest.set_password(password_);
+
+   CelerMessage message;
+   message.messageType = CelerAPI::LoginRequestType;
+   message.messageData = loginRequest.SerializeAsString();
+
+   return message;
+}
+
+bool LoginSequence::processLoginResponse(const CelerMessage& message)
+{
+   LoginResponse response;
+
+   if (message.messageType != CelerAPI::LoginResponseType) {
+      logger_->error("[CelerLoginSequence::processLoginResponse] get invalid message type {} instead of {}"
+                     , message.messageType, CelerAPI::LoginResponseType);
+      return false;
+   }
+
+   if (!response.ParseFromString(message.messageData)) {
+      logger_->error("[CelerLoginSequence::processLoginResponse] failed to parse LoginResponse");
+      return false;
+   }
+
+   if (!response.loggedin()) {
+      if (response.has_message()) {
+         errorMessage_ = response.message();
+      }
+      else {
+         logger_->warn("[CelerLoginSequence::processLoginResponse] failed without error"
+            ": {}", response.DebugString());
+      }
+      return false;
+   }
+
+   sessionToken_ = response.sessiontoken();
+   return true;
+}
+
+bool LoginSequence::processConnectedEvent(const CelerMessage& message)
+{
+   ConnectedEvent response;
+
+   if (message.messageType != CelerAPI::ConnectedEventType) {
+      logger_->error("[CelerLoginSequence::processConnectedEvent] get invalid message type {} instead of {}"
+                     , message.messageType, CelerAPI::ConnectedEventType);
+      return false;
+   }
+
+   if (!response.ParseFromString(message.messageData)) {
+      logger_->error("[CelerLoginSequence::processConnectedEvent] failed to parse LoginResponse");
+      return false;
+   }
+
+   heartbeatInterval_ = std::chrono::seconds(response.heartbeatintervalinsecs());
+
+   return true;
+}
+
+bool LoginSequence::FinishSequence()
+{
+   if (IsSequenceFailed()) {
+      assert(onLoginFailed_);
+      onLoginFailed_(errorMessage_);
+   } else {
+      assert(onLoginSuccess_);
+      onLoginSuccess_(sessionToken_, heartbeatInterval_);
+   }
+   return true;
+}

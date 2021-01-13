@@ -12,9 +12,9 @@
 #include <QMutexLocker>
 #include <spdlog/spdlog.h>
 #include "AssetManager.h"
-#include "CelerClient.h"
-#include "CelerFindSubledgersForAccountSequence.h"
-#include "CelerGetAssignedAccountsListSequence.h"
+#include "Celer/CelerClient.h"
+#include "Celer/FindSubledgersForAccountSequence.h"
+#include "Celer/GetAssignedAccountsListSequence.h"
 #include "CommonTypes.h"
 #include "CurrencyPair.h"
 #include "MDCallbacksQt.h"
@@ -24,20 +24,24 @@
 #include "bs_proxy_terminal_pb.pb.h"
 #include "com/celertech/piggybank/api/subledger/DownstreamSubLedgerProto.pb.h"
 
+using namespace Blocksettle::Communication;
+
 
 AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
       , const std::shared_ptr<bs::sync::WalletsManager>& walletsManager
       , const std::shared_ptr<MDCallbacksQt> &mdCallbacks
-      , const std::shared_ptr<BaseCelerClient>& celerClient)
+      , const std::shared_ptr<CelerClientQt>& celerClient)
    : logger_(logger)
    , walletsManager_(walletsManager)
    , mdCallbacks_(mdCallbacks)
    , celerClient_(celerClient)
-{
-   connect(this, &AssetManager::ccPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::xbtPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::balanceChanged, [this] { emit totalChanged(); });
-}
+   , act_(this)
+{}
+
+AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
+   , AssetCallbackTarget *act)
+   : logger_(logger), act_(act)
+{}
 
 void AssetManager::init()
 {
@@ -48,13 +52,13 @@ void AssetManager::init()
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletsReady, this, &AssetManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AssetManager::onWalletChanged);
 
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectedToServer, this, &AssetManager::onCelerConnected);
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectedToServer, this, &AssetManager::onCelerConnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
 }
 
 double AssetManager::getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const
 {
-   if (currency == bs::network::XbtCurrency) {
+   if (walletsManager_ && (currency == bs::network::XbtCurrency)) {
       if (wallet == nullptr) {
          if (includeZc) {
             return walletsManager_->getSpendableBalance() + walletsManager_->getUnconfirmedBalance();
@@ -194,7 +198,8 @@ bs::network::Asset::Type AssetManager::GetAssetTypeForSecurity(const std::string
 
 void AssetManager::onWalletChanged()
 {
-   emit balanceChanged(bs::network::XbtCurrency);
+   act_->onBalanceChanged(bs::network::XbtCurrency);
+   act_->onTotalChanged();
 }
 
 void AssetManager::onMDSecurityReceived(const std::string &security, const bs::network::SecurityDef &sd)
@@ -267,7 +272,8 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
       }
       prices_[ccy] = productPrice;
       if (at == bs::network::Asset::PrivateMarket) {
-         emit ccPriceChanged(ccy);
+         act_->onCcPriceChanged(ccy);
+         act_->onTotalChanged();
       } else {
          sendUpdatesOnXBTPrice(ccy);
       }
@@ -334,7 +340,7 @@ void AssetManager::onCelerConnected()
       }
    };
 
-   auto seq = std::make_shared<CelerGetAssignedAccountsListSequence>(logger_, cb);
+   auto seq = std::make_shared<bs::celer::GetAssignedAccountsListSequence>(logger_, cb);
    celerClient_->ExecuteSequence(seq);
 }
 
@@ -352,9 +358,9 @@ void AssetManager::onCelerDisconnected()
 
    balances_.clear();
    currencies_.clear();
-   emit securitiesChanged();
-   emit fxBalanceCleared();
-   emit totalChanged();
+   act_->onSecuritiesChanged();
+   act_->onFxBalanceCleared();
+   act_->onTotalChanged();
 }
 
 void AssetManager::onAccountBalanceLoaded(const std::string& currency, double value)
@@ -363,7 +369,8 @@ void AssetManager::onAccountBalanceLoaded(const std::string& currency, double va
       return;
    }
    balances_[currency] = value;
-   emit balanceChanged(currency);
+   act_->onBalanceChanged(currency);
+   act_->onTotalChanged();
 }
 
 void AssetManager::onMessageFromPB(const ProxyTerminalPb::Response &response)
@@ -395,7 +402,8 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
    }
 
    if (emitUpdate) {
-      emit xbtPriceChanged(ccy);
+      act_->onXbtPriceChanged(ccy);
+      act_->onTotalChanged();
    }
 }
 

@@ -19,8 +19,7 @@
 #include <unordered_set>
 #include <vector>
 #include <QObject>
-#include <QThreadPool>
-
+#include "Address.h"
 #include "ArmoryConnection.h"
 #include "AutheIDClient.h"
 #include "BSErrorCode.h"
@@ -49,12 +48,44 @@ class ApplicationSettings;
 class ArmoryConnection;
 class BsClient;
 class BaseCelerClient;
+class HeadlessContainer;
 class RequestReplyCommand;
 class ResolverFeed_AuthAddress;
-class SignContainer;
 
 
-class AuthAddressManager : public QObject, public ArmoryCallbackTarget
+struct AuthCallbackTarget
+{
+   enum class AuthAddressState : int
+   {
+      Unknown, // in progress
+      NotSubmitted,
+      Submitted,
+      Tainted,
+      Verifying,
+      Verified,
+      Revoked,
+      RevokedByBS,
+      Invalid
+   };
+
+   virtual void addressListUpdated() {}
+   virtual void verifiedAddressListUpdated() {}
+   virtual void addrVerifiedOrRevoked(const bs::Address&, AuthAddressState) {}
+   virtual void addrStateChanged(const bs::Address&, AuthAddressState) {}
+   virtual void authWalletChanged() {}
+   virtual void authWalletCreated(const std::string& walletId) {}
+   virtual void onError(const std::string& errorText) const {}
+   virtual void onInfo(const std::string& info) {}
+
+   virtual void authAddressSubmitError(const bs::Address& address
+      , bs::error::AuthAddressSubmitResult statusCode) {}
+   virtual void authAddressSubmitSuccess(const bs::Address& address) {}
+   virtual void authAddressSubmitCancelled(const bs::Address& address) {}
+   virtual void authRevokeTxSent() {}
+   virtual void bsAddressList() {}
+};
+
+class AuthAddressManager : public QObject, public ArmoryCallbackTarget, public AuthCallbackTarget
 {
    Q_OBJECT
 
@@ -68,21 +99,9 @@ public:
       ArmoryOffline,
    };
 
-   enum class AuthAddressState
-   {
-      Unknown, // in progress
-      NotSubmitted,
-      Submitted,
-      Tainted,
-      Verifying,
-      Verified,
-      Revoked,
-      RevokedByBS,
-      Invalid
-   };
-
-   AuthAddressManager(const std::shared_ptr<spdlog::logger> &
+   [[deprecated]] AuthAddressManager(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<ArmoryConnection> &);
+   AuthAddressManager(const std::shared_ptr<spdlog::logger>&, AuthCallbackTarget*);
    ~AuthAddressManager() noexcept override;
 
    AuthAddressManager(const AuthAddressManager&) = delete;
@@ -90,13 +109,13 @@ public:
    AuthAddressManager(AuthAddressManager&&) = delete;
    AuthAddressManager& operator = (AuthAddressManager&&) = delete;
 
-   void init(const std::shared_ptr<ApplicationSettings> &
+   [[deprecated]] void init(const std::shared_ptr<ApplicationSettings> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
-      , const std::shared_ptr<SignContainer> &);
-   void initLogin(const std::shared_ptr<BaseCelerClient> &,
+      , const std::shared_ptr<HeadlessContainer> &);
+   [[deprecated]] void initLogin(const std::shared_ptr<BaseCelerClient> &,
       const std::shared_ptr<bs::TradeSettings> &);
 
-   const std::shared_ptr<bs::TradeSettings>& tradeSettings() const;
+   std::shared_ptr<bs::TradeSettings> tradeSettings() const;
 
    size_t GetAddressCount();
    bs::Address GetAddress(size_t index);
@@ -105,7 +124,7 @@ public:
 
    void setDefault(const bs::Address &addr);
 
-   bs::Address getDefault() const;
+   [[nodiscard]] bs::Address getDefault() const;
    size_t getDefaultIndex() const;
 
    bool HaveAuthWallet() const;
@@ -138,7 +157,7 @@ public:
 
    void SetLoadedValidationAddressList(const std::unordered_set<std::string>& validationAddresses);
 
-private slots:
+public slots:  // will turn into just public methods later
    void tryVerifyWalletAddresses();
    void onAuthWalletChanged();
    void onWalletChanged(const std::string &walletId);
@@ -149,7 +168,7 @@ private slots:
 signals:
    void AddressListUpdated();
    void VerifiedAddressListUpdated();
-   void AddrVerifiedOrRevoked(const QString &addr, const QString &state);
+   void AddrVerifiedOrRevoked(const QString &addr, int);
    void AddrStateChanged();
    void AuthWalletChanged();
    void AuthWalletCreated(const QString &walletId);
@@ -162,7 +181,28 @@ signals:
    void AuthRevokeTxSent();
    void gotBsAddressList();
 
-private:
+private: // Auth callbacks override
+   void addressListUpdated() override { emit AddressListUpdated(); }
+   void verifiedAddressListUpdated() override { emit VerifiedAddressListUpdated(); }
+   void addrVerifiedOrRevoked(const bs::Address& addr, AuthAddressState state) override {
+      emit AddrVerifiedOrRevoked(QString::fromStdString(addr.display()), (int)state);
+      addrStateChanged(addr, state);
+   }
+   void addrStateChanged(const bs::Address&, AuthAddressState) override { emit AddrStateChanged(); }
+   void authWalletChanged() override { emit AuthWalletChanged(); }
+   void authWalletCreated(const std::string& walletId) override { emit AuthWalletCreated(QString::fromStdString(walletId)); }
+   void onError(const std::string& errorText) const override { emit Error(QString::fromStdString(errorText)); }
+   void onInfo(const std::string& info) override { emit Info(QString::fromStdString(info)); }
+
+   void authAddressSubmitError(const bs::Address& address
+      , bs::error::AuthAddressSubmitResult statusCode) override {
+      emit AuthAddressSubmitError(QString::fromStdString(address.display()), statusCode);
+   }
+   void authAddressSubmitSuccess(const bs::Address& address) override { emit AuthAddressSubmitSuccess(QString::fromStdString(address.display())); }
+   void authAddressSubmitCancelled(const bs::Address& address) override { emit AuthAddressSubmitCancelled(QString::fromStdString(address.display())); }
+   void authRevokeTxSent() override { emit AuthRevokeTxSent(); }
+   void bsAddressList() override { emit gotBsAddressList(); }
+
    void SetAuthWallet();
    void ClearAddressList();
    bool setup();
@@ -197,6 +237,7 @@ protected:
    std::shared_ptr<bs::sync::WalletsManager> walletsManager_;
    std::shared_ptr<BaseCelerClient>       celerClient_;
    std::shared_ptr<AddressVerificator>    addressVerificator_;
+   AuthCallbackTarget* authCT_{ nullptr };
 
    mutable std::atomic_flag                  lockList_ = ATOMIC_FLAG_INIT;
    std::vector<bs::Address>                  addresses_;
@@ -210,7 +251,7 @@ protected:
    std::unordered_set<std::string>           bsAddressList_;
    std::shared_ptr<bs::sync::Wallet>         authWallet_;
 
-   std::shared_ptr<SignContainer>      signingContainer_;
+   std::shared_ptr<HeadlessContainer>  signingContainer_;
    std::unordered_set<unsigned int>    signIdsRevoke_;
    std::shared_ptr<bs::TradeSettings>  tradeSettings_;
 

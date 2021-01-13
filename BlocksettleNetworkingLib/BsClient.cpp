@@ -14,11 +14,12 @@
 #include <QTimer>
 
 #include "FutureValue.h"
+#include "MessageUtils.h"
 #include "ProtobufUtils.h"
 #include "WsDataConnection.h"
 
-#include "bs_proxy_terminal.pb.h"
-#include "bs_proxy_terminal_pb.pb.h"
+//#include "bs_proxy_terminal.pb.h"
+//#include "bs_proxy_terminal_pb.pb.h"
 
 using namespace Blocksettle::Communication;
 using namespace Blocksettle::Communication::ProxyTerminal;
@@ -36,13 +37,6 @@ namespace {
       return result;
    }
 
-}
-
-BsClient::BsClient(const std::shared_ptr<spdlog::logger> &logger
-   , QObject *parent)
-   : QObject(parent)
-   , logger_(logger)
-{
 }
 
 BsClient::~BsClient()
@@ -64,7 +58,7 @@ void BsClient::startLogin(const std::string &email)
    d->set_email(email);
 
    sendRequest(&request, std::chrono::seconds(10), [this] {
-      emit startLoginDone(false, kTimeoutError);
+      bct_->onStartLoginDone(false, kTimeoutError);
    });
 }
 
@@ -75,7 +69,7 @@ void BsClient::authorize(const std::string &apiKey)
    d->set_api_key(apiKey);
 
    sendRequest(&request, std::chrono::seconds(10), [this] {
-      emit authorizeDone(AuthorizeError::Timeout, {});
+      bct_->onAuthorizeDone(BsClientCallbackTarget::AuthorizeError::Timeout, {});
    });
 }
 
@@ -159,13 +153,13 @@ void BsClient::findEmailHash(const std::string &email)
 
    auto timeoutCb = [this, email] {
       SPDLOG_LOGGER_ERROR(logger_, "getting email hash timed out for address: {}", email);
-      emit emailHashReceived(email, "");
+      bct_->onEmailHashReceived(email, "");
    };
 
    auto processCb = [this, email](const Blocksettle::Communication::ProxyTerminal::Response &response) {
       const auto &hash = response.get_email_hash().hash();
       SPDLOG_LOGGER_DEBUG(logger_, "got email hash address: {}, hash: {}", email, hash);
-      emit emailHashReceived(email, hash);
+      bct_->onEmailHashReceived(email, hash);
    };
 
    sendRequest(&request, std::chrono::seconds(10), std::move(timeoutCb), std::move(processCb));
@@ -175,7 +169,7 @@ void BsClient::sendFutureRequest(const bs::network::FutureRequest &details)
 {
    ProxyTerminalPb::Request request;
    auto futureRequest = request.mutable_future_request();
-   futureRequest->set_side(bs::network::Side::toBS(details.side));
+   futureRequest->set_side(bs::message::toBS(details.side));
    futureRequest->set_price(details.price);
    futureRequest->set_amount(details.amount.GetValue());
    futureRequest->set_type(details.type);
@@ -198,7 +192,7 @@ void BsClient::getLoginResult()
    sendRequest(&request, autheidLoginTimeout() + std::chrono::seconds(3), [this] {
       BsClientLoginResult result;
       result.errorMsg = kTimeoutError;
-      emit getLoginResultDone(result);
+      bct_->onGetLoginResultDone(result);
    });
 }
 
@@ -433,86 +427,83 @@ void BsClient::OnDataReceived(const std::string &data)
       return;
    }
 
-   QMetaObject::invokeMethod(this, [this, response] {
-      if (response->request_id() != 0) {
-         auto it = activeRequests_.find(response->request_id());
-         if (it == activeRequests_.end()) {
-            SPDLOG_LOGGER_ERROR(logger_, "discard late response from BsProxy (requestId: {})", response->request_id());
-            return;
-         }
-
-         if (it->second.processCb) {
-            it->second.processCb(*response);
-         }
-
-         activeRequests_.erase(it);
+   if (response->request_id() != 0) {
+      auto it = activeRequests_.find(response->request_id());
+      if (it == activeRequests_.end()) {
+         SPDLOG_LOGGER_ERROR(logger_, "discard late response from BsProxy (requestId: {})", response->request_id());
+         return;
       }
 
-      switch (response->data_case()) {
-         case Response::kStartLogin:
-            processStartLogin(response->start_login());
-            return;
-         case Response::kAuthorize:
-            processAuthorize(response->authorize());
-            return;
-         case Response::kGetLoginResult:
-            processGetLoginResult(response->get_login_result());
-            return;
-         case Response::kCeler:
-            processCeler(response->celer());
-            return;
-         case Response::kProxyPb:
-            processProxyPb(response->proxy_pb());
-            return;
-         case Response::kGenAddrUpdated:
-            processGenAddrUpdated(response->gen_addr_updated());
-            return;
-         case Response::kUserStatusUpdated:
-            processUserStatusUpdated(response->user_status_updated());
-            return;
-         case Response::kUpdateFeeRate:
-            processUpdateFeeRate(response->update_fee_rate());
-            return;
-         case Response::kUpdateBalance:
-            processBalanceUpdate(response->update_balance());
-            return;
-         case Response::kTradingEnabled:
-            processTradingEnabledStatus(response->trading_enabled());
-            return;
-
-         case Response::kGetEmailHash:
-         case Response::kSignAuthAddress:
-         case Response::kConfirmAuthSubmit:
-         case Response::kSubmitCcAddress:
-         case Response::kSignCcAddress:
-         case Response::kConfirmCcAddress:
-            // Will be handled from processCb
-            return;
-
-         case Response::DATA_NOT_SET:
-            SPDLOG_LOGGER_ERROR(logger_, "invalid response from proxy");
-            return;
+      if (it->second.processCb) {
+         it->second.processCb(*response);
       }
 
-      SPDLOG_LOGGER_CRITICAL(logger_, "unknown response was detected!");
-   });
+      activeRequests_.erase(it);
+   }
+
+   switch (response->data_case()) {
+      case Response::kStartLogin:
+         processStartLogin(response->start_login());
+         return;
+      case Response::kAuthorize:
+         processAuthorize(response->authorize());
+         return;
+      case Response::kGetLoginResult:
+         processGetLoginResult(response->get_login_result());
+         return;
+      case Response::kCeler:
+         processCeler(response->celer());
+         return;
+      case Response::kProxyPb:
+         processProxyPb(response->proxy_pb());
+         return;
+      case Response::kGenAddrUpdated:
+         processGenAddrUpdated(response->gen_addr_updated());
+         return;
+      case Response::kUserStatusUpdated:
+         processUserStatusUpdated(response->user_status_updated());
+         return;
+      case Response::kUpdateFeeRate:
+         processUpdateFeeRate(response->update_fee_rate());
+         return;
+      case Response::kUpdateBalance:
+         processBalanceUpdate(response->update_balance());
+         return;
+      case Response::kTradingEnabled:
+         processTradingEnabledStatus(response->trading_enabled());
+         return;
+
+      case Response::kGetEmailHash:
+      case Response::kSignAuthAddress:
+      case Response::kConfirmAuthSubmit:
+      case Response::kSubmitCcAddress:
+      case Response::kSignCcAddress:
+      case Response::kConfirmCcAddress:
+         // Will be handled from processCb
+         return;
+
+      case Response::DATA_NOT_SET:
+         SPDLOG_LOGGER_ERROR(logger_, "invalid response from proxy");
+         return;
+   }
+
+   SPDLOG_LOGGER_CRITICAL(logger_, "unknown response was detected!");
 }
 
 void BsClient::OnConnected()
 {
-   emit connected();
+   bct_->Connected();
 }
 
 void BsClient::OnDisconnected()
 {
-   emit disconnected();
+   bct_->Disconnected();
 }
 
 void BsClient::OnError(DataConnectionListener::DataConnectionError errorCode)
 {
    SPDLOG_LOGGER_ERROR(logger_, "connection to bs proxy failed ({})", int(errorCode));
-
-   emit connectionFailed();
+   bct_->onConnectionFailed();
 }
 
 BsClient::RequestId BsClient::sendRequest(Request *request, std::chrono::milliseconds timeout
@@ -524,7 +515,7 @@ BsClient::RequestId BsClient::sendRequest(Request *request, std::chrono::millise
    activeRequest.timeoutCb = std::move(timeoutCb);
    activeRequests_.emplace(requestId, std::move(activeRequest));
 
-   QTimer::singleShot(timeout, this, [this, requestId] {
+   bct_->startTimer(timeout, [this, requestId] {
       auto it = activeRequests_.find(requestId);
       if (it == activeRequests_.end()) {
          return;
@@ -553,29 +544,29 @@ void BsClient::sendMessage(Request *request)
 void BsClient::processStartLogin(const Response_StartLogin &response)
 {
    bool success = response.error().error_code() == 0;
-   emit startLoginDone(success, response.error().message());
+   bct_->onStartLoginDone(success, response.error().message());
 }
 
 void BsClient::processAuthorize(const Response_Authorize &response)
 {
    if (response.error() || response.email().empty()) {
-      AuthorizeError error{};
+      BsClientCallbackTarget::AuthorizeError error{};
       switch (response.error()) {
          case bs::types::API_KEY_ERROR_UNKNOWN_KEY:
-            error = AuthorizeError::UnknownApiKey;
+            error = BsClientCallbackTarget::AuthorizeError::UnknownApiKey;
             break;
          case bs::types::API_KEY_ERROR_UNKNOWN_IP_ADDR:
-            error = AuthorizeError::UnknownIpAddr;
+            error = BsClientCallbackTarget::AuthorizeError::UnknownIpAddr;
             break;
          default:
-            error = AuthorizeError::ServerError;
+            error = BsClientCallbackTarget::AuthorizeError::ServerError;
             break;
       }
-      emit authorizeDone(error, {});
+      bct_->onAuthorizeDone(error, {});
       return;
    }
-
-   emit authorizeDone(AuthorizeError::NoError, response.email());
+   bct_->onAuthorizeDone(BsClientCallbackTarget::AuthorizeError::NoError
+      , response.email());
 }
 
 void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
@@ -591,7 +582,7 @@ void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
    result.enabled = response.enabled();
    result.feeRatePb = response.fee_rate();
    result.tradeSettings = bs::TradeSettings::fromPb(response.trade_settings());
-   emit getLoginResultDone(result);
+   bct_->onGetLoginResultDone(result);
 }
 
 void BsClient::processCeler(const Response_Celer &response)
@@ -601,8 +592,7 @@ void BsClient::processCeler(const Response_Celer &response)
       SPDLOG_LOGGER_ERROR(logger_, "invalid celer msg type received: {}", int(messageType));
       return;
    }
-
-   emit celerRecv(messageType, response.data());
+   bct_->onCelerRecv(messageType, response.data());
 }
 
 void BsClient::processProxyPb(const Response_ProxyPb &response)
@@ -612,36 +602,35 @@ void BsClient::processProxyPb(const Response_ProxyPb &response)
       SPDLOG_LOGGER_ERROR(logger_, "invalid PB message");
       return;
    }
-
-   emit processPbMessage(message);
+   bct_->onProcessPbMessage(message);
 }
 
 void BsClient::processGenAddrUpdated(const Response_GenAddrUpdated &response)
 {
    SPDLOG_LOGGER_DEBUG(logger_, "bootstrap data updated");
-   emit bootstrapDataUpdated(response.bootstrap_data_signed());
+   bct_->onBootstrapDataUpdated(response.bootstrap_data_signed());
 }
 
 void BsClient::processUserStatusUpdated(const Response_UserStatusUpdated &response)
 {
    SPDLOG_LOGGER_DEBUG(logger_, "user account state changed, new user type: {}, enabled: {}"
       , response.user_type(), response.enabled());
-   emit accountStateChanged(static_cast<bs::network::UserType>(response.user_type()), response.enabled());
+   bct_->onAccountStateChanged(static_cast<bs::network::UserType>(response.user_type()), response.enabled());
 }
 
 void BsClient::processUpdateFeeRate(const Response_UpdateFeeRate &response)
 {
-   emit feeRateReceived(response.fee_rate());
+   bct_->onFeeRateReceived(response.fee_rate());
 }
 
 void BsClient::processBalanceUpdate(const Response_UpdateBalance &response)
 {
    for (const auto &balance : response.balances()) {
-      emit balanceUpdated(balance.currency(), balance.balance());
+      bct_->onBalanceUpdated(balance.currency(), balance.balance());
    }
    if (!balanceLoaded_) {
       balanceLoaded_ = true;
-      emit balanceLoaded();
+      bct_->onBalanceLoaded();
    }
 }
 
@@ -653,5 +642,21 @@ BsClient::RequestId BsClient::newRequestId()
 
 void BsClient::processTradingEnabledStatus(bool tradingEnabled)
 {
-   emit tradingStatusChanged(tradingEnabled);
+   bct_->onTradingStatusChanged(tradingEnabled);
+}
+
+
+BsClientQt::BsClientQt(const std::shared_ptr<spdlog::logger>& logger
+   , QObject* parent)
+   : QObject(parent), BsClient(logger, this)
+{
+   qRegisterMetaType<BsClientLoginResult>();
+   qRegisterMetaType<BsClientCallbackTarget::AuthorizeError>();
+   qRegisterMetaType<Blocksettle::Communication::ProxyTerminalPb::Response>();
+}
+
+void BsClientQt::startTimer(std::chrono::milliseconds timeout
+   , const std::function<void()>& cb)
+{
+   QTimer::singleShot(timeout, this, cb);
 }

@@ -51,7 +51,8 @@ namespace bs {
          ServerError,
          AlreadyUsed,
          RequestTimeout,
-         AuthRequestSignFailed
+         AuthRequestSignFailed,
+         AuthSignCancelled
       };
    }
 }

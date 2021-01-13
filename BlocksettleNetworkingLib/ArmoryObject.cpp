@@ -13,7 +13,7 @@
 #include <QFile>
 #include <QProcess>
 #include <QPointer>
-
+#include <QThread>
 #include <cassert>
 #include <exception>
 #include <condition_variable>

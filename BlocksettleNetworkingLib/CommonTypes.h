@@ -14,19 +14,7 @@
 #include <QDateTime>
 #include <QObject>
 #include <QString>
-
 #include "Address.h"
-
-#include "com/celertech/marketmerchant/api/enums/SideProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/MarketDataEntryTypeProto.pb.h"
-
-#include "com/celertech/marketdata/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/MarketDataEntryTypeProto.pb.h"
-
-#include "bs_types.pb.h"
 
 #ifndef NDEBUG
 #include <stdexcept>
@@ -66,12 +54,6 @@ namespace bs {
             Sell
          };
 
-         static Type fromCeler(com::celertech::marketmerchant::api::enums::side::Side side);
-         static com::celertech::marketmerchant::api::enums::side::Side toCeler(Type side);
-
-         static Type fromBS(const bs::types::Side& side);
-         static bs::types::Side toBS(const Type& side);
-
          static const char *toString(Type side);
          static const char *responseToString(Type side);
 
@@ -91,10 +73,6 @@ namespace bs {
             last
          };
 
-         static Type fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt);
-         static com::celertech::marketmerchant::api::enums::assettype::AssetType toCeler(Type at);
-         static com::celertech::marketmerchant::api::enums::producttype::ProductType toCelerProductType(Type at);
-         static const char *toCelerSettlementType(Type at);
          static const char *toString(Type at);
 
          static bool isSpotType(const Type type);
@@ -165,7 +143,7 @@ namespace bs {
          QDateTime dateTime;
          std::string security;
          std::string product;
-         std::string settlementId;
+         BinaryData  settlementId;
          std::string reqTransaction;
          std::string dealerTransaction;
          std::string pendingStatus;
@@ -184,6 +162,7 @@ namespace bs {
             Filled
          };
          Status status{};
+         std::string info;
       };
 
 
@@ -226,9 +205,9 @@ namespace bs {
          };
          Status status{};
 
-         QDateTime   expirationTime;
+         uint64_t    expirationTime;
          int         timeSkewMs{};
-         uint64_t    celerTimestamp{};
+         uint64_t    timestamp{};
 
          bool empty() const { return quoteRequestId.empty(); }
       };
@@ -249,13 +228,11 @@ namespace bs {
          Side::Type  side;
          int         validityInS{};
 
-         double      bidPx{};
-         double      bidSz{};
-         double      bidFwdPts{};
+         double      price{};
+         double      quantity{};
+         double      bidFwdPts{};   // looks like this field and all ones below are not used
          double      bidContraQty{};
 
-         double      offerPx{};
-         double      offerSz{};
          double      offerFwdPts{};
          double      offerContraQty{};
 
@@ -353,7 +330,7 @@ namespace bs {
    }  //namespace network
 }  //namespace bs
 
-
+//TODO: remove below declarations (no Qt signals/slots in common)
 Q_DECLARE_METATYPE(bs::network::Asset::Type)
 Q_DECLARE_METATYPE(bs::network::Quote)
 Q_DECLARE_METATYPE(bs::network::Order)
@@ -366,6 +343,5 @@ Q_DECLARE_METATYPE(bs::network::CCSecurityDef)
 Q_DECLARE_METATYPE(bs::network::NewTrade)
 Q_DECLARE_METATYPE(bs::network::NewPMTrade)
 Q_DECLARE_METATYPE(bs::network::UnsignedPayinData)
-
 
 #endif //__BS_COMMON_TYPES_H__

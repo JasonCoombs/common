@@ -226,7 +226,6 @@ bool wallet::TXSignRequest::isValid() const noexcept
       armorySigner_.getTxOutCount() == 0) {
       return false;
    }
-   
    return true;
 }
 

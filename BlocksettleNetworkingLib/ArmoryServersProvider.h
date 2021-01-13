@@ -41,8 +41,8 @@ public:
    int indexOf(const QString &name) const;
    int indexOf(const ArmoryServer &server) const;
    int indexOfIpPort(const std::string &srvIPPort) const;
-   int getIndexOfMainNetServer() const;
-   int getIndexOfTestNetServer() const;
+   static int getIndexOfMainNetServer();
+   static int getIndexOfTestNetServer();
 
    bool add(const ArmoryServer &server);
    bool replace(int index, const ArmoryServer &server);

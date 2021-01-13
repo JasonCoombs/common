@@ -22,8 +22,10 @@ ThreadedAdapter::ThreadedAdapter()
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
    continueExecution_ = false;
+   decltype(pendingEnvelopes_) cleanQueue;
+   pendingEnvelopes_.swap(cleanQueue);
+   pendingEnvelopesEvent_.SetEvent();
    if (processingThread_.joinable()) {
-      pendingEnvelopesEvent_.SetEvent();
       processingThread_.join();
    }
 }
@@ -61,8 +63,10 @@ void ThreadedAdapter::processingRoutine()
       if (envelope == nullptr) {
          continue;
       }
-
-      processEnvelope(*envelope);
+      if (!processEnvelope(*envelope)) {
+         FastLock locker{ pendingEnvelopesLock_ };
+         pendingEnvelopes_.emplace(envelope);
+      }
    }
 }
 

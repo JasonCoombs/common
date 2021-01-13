@@ -25,12 +25,8 @@ namespace {
 } // namespace
 
 CacheFile::CacheFile(const std::string &filename, size_t nbElemLimit)
-   : QObject(nullptr)
-   , inMem_(filename.empty())
+   : inMem_(filename.empty())
    , nbMaxElems_(nbElemLimit)
-   , stopped_(false)
-   , threadPool_(this)
-   , saveTimer_(this)
 {
    if (!inMem_) {
       dbEnv_ = std::make_shared<LMDBEnv>();
@@ -38,15 +34,8 @@ CacheFile::CacheFile(const std::string &filename, size_t nbElemLimit)
       dbEnv_->setMapSize(kCacheFileMapSize);
       db_ = new LMDB(dbEnv_.get(), "cache");
 
-      threadPool_.setMaxThreadCount(1);
       read();
-      QtConcurrent::run(&threadPool_, this, &CacheFile::saver);
-
-      saveTimer_.setInterval(123 * 1000);
-      connect(&saveTimer_, &QTimer::timeout, [this] {
-         wcModified_.wakeOne();
-      });
-      saveTimer_.start();
+      thread_ = std::thread([this] { saver(); });
    }
 }
 
@@ -69,17 +58,19 @@ void CacheFile::stop()
       return;
    }
    {
-      QMutexLocker lock(&mtxModified_);
-      wcModified_.wakeAll();
+      std::unique_lock<std::mutex> lock(cvMutex_);
+      cvSave_.notify_one();
    }
-   threadPool_.clear();
-   threadPool_.waitForDone();
+   if (thread_.joinable()) {
+      thread_.join();
+   }
 }
 
 #define DB_PREFIX    0xDC
 
 void CacheFile::read()
-{
+{  // use write lock, as we're writing to in-mem map here, not reading it
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadOnly);
    auto dbIter = db_->begin();
 
@@ -88,7 +79,6 @@ void CacheFile::read()
    CharacterArrayRef keyRef(bwKey.getSize(), bwKey.getData().getPtr());
 
    dbIter.seek(keyRef, LMDB::Iterator::Seek_GE);
-   QWriteLocker lock(&rwLock_);
 
    while (dbIter.isValid()) {
       auto iterkey = dbIter.key();
@@ -119,9 +109,9 @@ void CacheFile::read()
 
 void CacheFile::write()
 {
-   QWriteLocker lockMap(&rwLock_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadWrite);
-   QMutexLocker lockMapModif(&mtxModified_);
+   std::unique_lock<std::mutex> lockModif(cvMutex_);
    for (const auto &entry : mapModified_) {
       BinaryWriter bwKey;
       bwKey.put_uint8_t(DB_PREFIX);
@@ -145,21 +135,20 @@ void CacheFile::saver()
       purge();
 
       {
-         QMutexLocker lock(&mtxModified_);
-         wcModified_.wait(&mtxModified_);
-
-         if (stopped_ || mapModified_.empty()) {
-            continue;
-         }
-
-         auto curTime = std::chrono::system_clock::now();
-         std::chrono::duration<double> diff = curTime - start;
-         if ((diff < minSaveDuration) && (mapModified_.size() < nbElemsThreshold)) {
-            continue;
-         }
-
-         start = curTime;
+         std::unique_lock<std::mutex> lock(cvMutex_);
+         cvSave_.wait_for(lock, std::chrono::seconds{ 123 });
       }
+      if (stopped_ || mapModified_.empty()) {
+         continue;
+      }
+
+      auto curTime = std::chrono::system_clock::now();
+      std::chrono::duration<double> diff = curTime - start;
+      if ((diff < minSaveDuration) && (mapModified_.size() < nbElemsThreshold)) {
+         continue;
+      }
+
+      start = curTime;
 
       write();
    }
@@ -169,12 +158,12 @@ void CacheFile::saver()
 void CacheFile::purge()
 {  // simple purge - without LRU/MRU counters
    {
-      QReadLocker lock(&rwLock_);
+      std::unique_lock<std::mutex> lock(rwMutex_);
       if (map_.size() < nbMaxElems_) {
          return;
       }
    }
-   QWriteLocker lock(&rwLock_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    LMDBEnv::Transaction tx(dbEnv_.get(), LMDB::ReadWrite);
    while (!stopped_ && (map_.size() >= nbMaxElems_)) {
       const auto entry = map_.begin();
@@ -190,14 +179,14 @@ void CacheFile::purge()
 
 BinaryData CacheFile::get(const BinaryData &key) const
 {
-   QReadLocker lockMap(&rwLock_);
+   std::unique_lock<std::mutex> lock(rwMutex_);
    auto it = map_.find(key);
    if (it == map_.end()) {
       if (inMem_) {
          return {};
       }
       else {
-         QMutexLocker lockMapModif(&mtxModified_);
+         std::unique_lock<std::mutex> lockModif(cvMutex_);
          it = mapModified_.find(key);
          if (it == mapModified_.end()) {
             return {};
@@ -211,13 +200,12 @@ BinaryData CacheFile::get(const BinaryData &key) const
 void CacheFile::put(const BinaryData &key, const BinaryData &val)
 {
    if (inMem_) {
-      QWriteLocker lock(&rwLock_);
+      std::unique_lock<std::mutex> lock(rwMutex_);
       map_[key] = val;
    }
    else {
-      QMutexLocker lock(&mtxModified_);
+      std::unique_lock<std::mutex> lock(cvMutex_);
       mapModified_[key] = val;
-      wcModified_.wakeOne();
    }
 }
 

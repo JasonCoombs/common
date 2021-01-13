@@ -24,12 +24,19 @@
 #include "PasswordDialogData.h"
 #include "PasswordDialogDataWrapper.h"
 
-#include "headless.pb.h"
-#include "bs_signer.pb.h"
-#include "Blocksettle_Communication_Internal.pb.h"
 
 namespace spdlog {
    class logger;
+}
+namespace Blocksettle {
+   namespace Communication {
+      namespace Internal {
+         class PasswordDialogDataWrapper;
+      }
+      namespace signer {
+         enum PasswordDialogType : int;
+      }
+   }
 }
 namespace bs {
    namespace core {
@@ -70,7 +77,7 @@ public:
    virtual void ccNamesReceived(bool) = 0;
 };
 
-using PasswordDialogFunc = std::function<void(const Internal::PasswordDialogDataWrapper &dialogData)>;
+using PasswordDialogFunc = std::function<void(const Blocksettle::Communication::Internal::PasswordDialogDataWrapper &)>;
 using PasswordReceivedCb = std::function<void(bs::error::ErrorCode result, const SecureBinaryData &password)>;
 using PasswordsReceivedCb = std::function<void(const std::unordered_map<std::string, SecureBinaryData> &)>;
 

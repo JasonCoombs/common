@@ -55,7 +55,8 @@ public:
 
    enum class EnvConfiguration
    {
-      Production,
+      Unknown = -1,
+      Production = 0,
       Test,
 #ifndef PRODUCTION_BUILD
       Staging,
@@ -173,8 +174,10 @@ public:
    int GetArmoryRemotePort(NetworkType networkType = NetworkType::Invalid) const;
 
    static QString localSignerDefaultName();
+   static QString appSubDir();
 
    QString GetSettingsPath() const;
+   QString AppendToWritableDir(const QString& filename) const;
 
    QString  GetHomeDir() const;
    QString  GetBackupDir() const;
@@ -205,6 +208,8 @@ public:
    QString bootstrapFilePath() const;
    QString bootstrapResourceFileName() const;
 
+   static bs::LogConfig parseLogConfig(const QStringList&);
+
    void setDefaultWalletId(const std::string& walletId);
    std::string getDefaultWalletId() const;
 
@@ -220,9 +225,7 @@ private:
    void SetBitcoinsDir(const QString& path);
    void SetDBDir(const QString& path);
 
-   QString AppendToWritableDir(const QString &filename) const;
-   bs::LogConfig parseLogConfig(const QStringList &) const;
-   bs::LogLevel parseLogLevel(QString) const;
+   static bs::LogLevel parseLogLevel(QString);
 
    QString getPath(const SettingDef &s) const;
 

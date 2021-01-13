@@ -4,7 +4,8 @@
 using namespace bs::message;
 
 static const int kQueueTime{ -1 };
-static const std::string kQTname{ "Queue time" };
+static const std::string kQTnameLong{ "Queue time" };
+static const std::string kQTnameShort{ " Q time" };
 
 void PerfAccounting::Entry::add(const std::chrono::microseconds &interval)
 {
@@ -44,23 +45,34 @@ void PerfAccounting::reset()
 }
 
 void PerfAccounting::report(const std::shared_ptr<spdlog::logger> &logger
-   , const std::map<int, std::string> &keyMapping)
+   , const std::string &qName, const std::map<int, std::string> &keyMapping)
 {
    std::string output;
    std::string name;
    for (const auto &entry : entries_) {
       if (entry.first == kQueueTime) {
-         name = kQTname;
+         if (qName.empty()) {
+            name = kQTnameLong;
+         }
+         else {
+            name = qName + kQTnameShort;
+         }
       }
       else {
-         const auto itMapping = keyMapping.find(entry.first);
+         const int userVal = entry.first & ~0x1000;
+         const bool isBC = (entry.first & 0x1000);
+         const auto itMapping = keyMapping.find(userVal);
          name = (itMapping == keyMapping.end())
-            ? std::to_string(entry.first) : itMapping->second;
+            ? std::to_string(userVal) : itMapping->second;
+         if (isBC) {
+            name = "*" + name;
+         }
       }
       output += fmt::format("\n\t{}:\t{:.3f} / {:.3f} / {:.3f}\t{}", name
          , entry.second.min(), entry.second.avg(), entry.second.max()
          , entry.second.count());
    }
-   logger->info("Performance accounting info 'min/avg/max count' expressed in "
-      "milliseconds:{}", output);
+   logger->info("Performance accounting info{} [min/avg/max count] in "
+      "milliseconds (* is broadcast):{}", qName.empty() ? "" : " for " + qName
+      , output);
 }

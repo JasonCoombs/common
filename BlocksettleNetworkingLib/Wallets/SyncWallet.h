@@ -80,14 +80,13 @@ namespace bs {
          // inputIndices required for HW wallets only.
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::string> &walletsIds
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::string> &inputIndices
             , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const std::string &changeIndex = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
+         [[deprecated]] bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
             , const std::vector<UTXO> &inputs
             , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
             , bool allowBroadcasts
@@ -121,8 +120,8 @@ namespace bs {
 
          virtual void synchronize(const std::function<void()> &cbDone);
 
-         virtual const std::string& walletId(void) const = 0;
-         virtual const std::string& walletIdInt(void) const;
+         virtual std::string walletId(void) const = 0;
+         virtual std::string walletIdInt(void) const;
 
          virtual std::string name() const { return walletName_; }
          virtual std::string shortName() const { return name(); }
@@ -130,6 +129,7 @@ namespace bs {
          virtual void setDescription(const std::string &) = 0;
          virtual core::wallet::Type type() const { return core::wallet::Type::Bitcoin; }
          virtual bool hasId(const std::string &id) const { return (walletId() == id); }
+         virtual bool hasScanId(const std::string&) const { return false; }
 
          virtual void setArmory(const std::shared_ptr<ArmoryConnection> &);
          virtual void setUserId(const BinaryData &) {}
@@ -141,9 +141,18 @@ namespace bs {
          virtual bool containsAddress(const bs::Address &addr) = 0;
          virtual bool containsHiddenAddress(const bs::Address &) const { return false; }
 
-         virtual std::vector<std::string> registerWallet(
+         [[deprecated]] virtual std::vector<std::string> registerWallet(
             const std::shared_ptr<ArmoryConnection> &armory = nullptr, bool asNew = false);
-         virtual void unregisterWallet();
+         [[deprecated]] virtual void unregisterWallet();
+
+         using WalletRegData = std::unordered_map<std::string, std::vector<BinaryData>>;
+         virtual WalletRegData regData() const;
+         virtual void onRegistered();
+
+         using UnconfTgtData = std::unordered_map<std::string, unsigned int>;
+         virtual UnconfTgtData unconfTargets() const;
+
+         virtual std::vector<std::string> internalIds() const { return { walletId() }; }
 
          virtual bool isBalanceAvailable() const;
          void onBalanceAvailable(const std::function<void()> &) const;
@@ -165,10 +174,12 @@ namespace bs {
          virtual std::string getTransactionComment(const BinaryData &txHash);
          virtual bool setTransactionComment(const BinaryData &txOrHash, const std::string &comment, bool sync = true);
 
+         std::set<BinaryData> allAddresses() const { return registeredAddresses_; }
          virtual std::vector<bs::Address> getUsedAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getExtAddressList() const { return usedAddresses_; }
          virtual std::vector<bs::Address> getIntAddressList() const { return usedAddresses_; }
-         virtual bool isExternalAddress(const Address &) const { return true; }
+         virtual std::vector<std::pair<bs::Address, std::string>> getAddressPool() const { return {}; }
+         virtual bool isExternalAddress(const bs::Address &) const { return true; }
          virtual size_t getUsedAddressCount() const { return usedAddresses_.size(); }
          virtual size_t getExtAddressCount() const { return usedAddresses_.size(); }
          virtual size_t getIntAddressCount() const { return usedAddresses_.size(); }
@@ -179,15 +190,16 @@ namespace bs {
          virtual void getNewChangeAddress(const CbAddress &cb) { getNewExtAddress(cb); }
 
          virtual std::string getAddressIndex(const bs::Address &) = 0;
+         virtual std::string getWalletIdForAddress(const bs::Address &) const { return walletId(); }
 
          virtual std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const = 0;
 
          //Adds an arbitrary address identified by index
          virtual int addAddress(const bs::Address &, const std::string &index, bool sync = true);
 
-         void syncAddresses();
+         [[deprecated]] void syncAddresses();
 
-         virtual bool getLedgerDelegateForAddress(const bs::Address &
+         [[deprecated]] virtual bool getLedgerDelegateForAddress(const bs::Address &
             , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &);
 
          virtual BTCNumericTypes::balance_type getTxBalance(int64_t val) const { return val / BTCNumericTypes::BalanceDivider; }
@@ -212,9 +224,9 @@ namespace bs {
          virtual bool deleteRemotely() { return false; } //stub
          virtual void merge(const std::shared_ptr<Wallet> &) {};
 
-         void newAddresses(const std::vector<std::string> &inData, const CbAddresses &cb);
-         void trackChainAddressUse(const std::function<void(bs::sync::SyncState)> &cb);
-         virtual void scan(const std::function<void(bs::sync::SyncState)> &cb) {}
+         [[deprecated]] void newAddresses(const std::vector<std::string> &inData, const CbAddresses &cb);
+         [[deprecated]] void trackChainAddressUse(const std::function<void(bs::sync::SyncState)> &cb);
+         [[deprecated]] virtual void scan(const std::function<void(bs::sync::SyncState)> &cb) {}
          size_t getActiveAddressCount(void);
 
          /***
@@ -224,14 +236,14 @@ namespace bs {
          ***/
 
          //balance and count
-         virtual bool updateBalances(const std::function<void(void)> & = nullptr);
-         virtual bool getAddressTxnCounts(const std::function<void(void)> &cb = nullptr);
+         [[deprecated]] virtual bool updateBalances(const std::function<void(void)> & = nullptr);
+         [[deprecated]] virtual bool getAddressTxnCounts(const std::function<void(void)> &cb = nullptr);
          
          //utxos
-         virtual bool getSpendableTxOutList(const ArmoryConnection::UTXOsCb &, uint64_t val, bool excludeReservation);
-         virtual bool getSpendableZCList(const ArmoryConnection::UTXOsCb &) const;
-         virtual bool getRBFTxOutList(const ArmoryConnection::UTXOsCb &) const;
-         virtual std::vector<UTXO> getIncompleteUTXOs() const;
+         [[deprecated]] virtual bool getSpendableTxOutList(const ArmoryConnection::UTXOsCb &, uint64_t val, bool excludeReservation);
+         [[deprecated]] virtual bool getSpendableZCList(const ArmoryConnection::UTXOsCb &) const;
+         [[deprecated]] virtual bool getRBFTxOutList(const ArmoryConnection::UTXOsCb &) const;
+         [[deprecated]] virtual std::vector<UTXO> getIncompleteUTXOs() const;
 
          //custom ACT
          template<class U> void setCustomACT(
@@ -245,14 +257,12 @@ namespace bs {
          WalletACT* peekACT(void) const { return act_.get(); }
 
       protected:
-         virtual void onZeroConfReceived(const std::vector<bs::TXEntry>&);
-         virtual void onNewBlock(unsigned int, unsigned int);
-         virtual void onRefresh(const std::vector<BinaryData> &ids, bool online);
-         virtual void onZCInvalidated(const std::set<BinaryData> &ids);
+         [[deprecated]] virtual void onZeroConfReceived(const std::vector<bs::TXEntry>&);
+         [[deprecated]] virtual void onNewBlock(unsigned int, unsigned int);
+         [[deprecated]] virtual void onRefresh(const std::vector<BinaryData> &ids, bool online);
+         [[deprecated]] virtual void onZCInvalidated(const std::set<BinaryData> &ids);
 
          virtual std::vector<BinaryData> getAddrHashes() const = 0;
-
-         virtual bool isOwnId(const std::string &wId) const { return (wId == walletId()); }
 
          template <typename MapT> static void updateMap(const MapT &src, MapT &dst)
          {
@@ -326,11 +336,11 @@ namespace bs {
             std::vector<std::function<void(void)>> cbTxNs;
             std::vector<std::function<void(void)>> cbBalances;
          };
-         mutable std::shared_ptr<BalanceData>   balanceData_;
-         std::map<bs::Address, std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)>>   cbLedgerByAddr_;
+         [[deprecated]] mutable std::shared_ptr<BalanceData>   balanceData_;
+         [[deprecated]] std::map<bs::Address, std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)>>   cbLedgerByAddr_;
 
          // List of addresses that was actually registered in armory
-         std::set<BinaryData>                   registeredAddresses_;
+         mutable std::set<BinaryData>           registeredAddresses_;
       };
 
       class WalletACT : public ArmoryCallbackTarget

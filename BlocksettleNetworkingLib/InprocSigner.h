@@ -13,6 +13,7 @@
 
 #include "WalletSignerContainer.h"
 #include <vector>
+#include "CoreHDWallet.h"
 
 namespace spdlog {
    class logger;
@@ -31,13 +32,15 @@ namespace bs {
 
 class InprocSigner : public WalletSignerContainer
 {
-   Q_OBJECT
 public:
+   using PasswordLock = std::unique_ptr<bs::core::WalletPasswordScoped>;
+   using PwdLockCb = std::function<PasswordLock(const std::string& walletId)>;
+
    InprocSigner(const std::shared_ptr<bs::core::WalletsManager> &
-      , const std::shared_ptr<spdlog::logger> &
-      , const std::string &walletsPath, NetworkType);
-   InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &
-      , const std::shared_ptr<spdlog::logger> &);
+      , const std::shared_ptr<spdlog::logger> &, SignerCallbackTarget*
+      , const std::string &walletsPath, ::NetworkType, const PwdLockCb& cb = nullptr);
+   InprocSigner(const std::shared_ptr<bs::core::hd::Wallet> &, SignerCallbackTarget*
+      , const std::shared_ptr<spdlog::logger> &, const PwdLockCb& cb = nullptr);
    ~InprocSigner() noexcept override = default;
 
    void Start() override;
@@ -47,13 +50,14 @@ public:
    bool isOffline() const override { return false; }
    bool isWalletOffline(const std::string &) const override { return false; }
 
-   bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+   [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
+      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
+   void signTXRequest(const bs::core::wallet::TXSignRequest&
+      , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode, const std::string& errorReason)>&
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
 
    bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &
-      , TXSignMode
-      , bool
+      , const bs::sync::PasswordDialogData &, TXSignMode, bool
       , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> &) override;
 
    bs::signer::RequestId signSettlementPartialTXRequest(const bs::core::wallet::TXSignRequest &
@@ -101,8 +105,7 @@ public:
       std::function<void(bs::sync::SyncState)> cb) override;
 
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
-      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &
-      , bool persistent = true) override;
+      , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
    void createSettlementWallet(const bs::Address &authAddr
       , const std::function<void(const SecureBinaryData &)> &) override;
@@ -132,9 +135,10 @@ private:
 private:
    std::shared_ptr<bs::core::WalletsManager> walletsMgr_;
    const std::string walletsPath_;
-   NetworkType       netType_ = NetworkType::Invalid;
+   ::NetworkType     netType_ = ::NetworkType::Invalid;
    bs::signer::RequestId   seqId_ = 1;
    bool           inited_ = false;
+   PwdLockCb   pwLockCb_{ nullptr };
 };
 
 #endif // INPROC_SIGNER_H

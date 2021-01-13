@@ -43,8 +43,7 @@ namespace bs {
 
       private:
          std::thread processingThread_;
-
-         std::atomic_bool                       continueExecution_ { true };
+         std::atomic_bool                       continueExecution_{ true };
          mutable std::atomic_flag               pendingEnvelopesLock_ = ATOMIC_FLAG_INIT;
          ManualResetEvent                       pendingEnvelopesEvent_;
          std::queue<std::shared_ptr<Envelope>>  pendingEnvelopes_;
