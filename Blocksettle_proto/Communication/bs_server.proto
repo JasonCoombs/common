@@ -243,10 +243,9 @@ enum GenoaType
    GenoaRegisterXBT1DayCashSettledTrade   = 37;
 
    GenoaSendCutoffPrice          = 38;
-
    GenoaLoadDeliveryObligations  = 39;
-
    GenoaSetDeliveryAddress       = 40;
+   GenoaUpdateDeliveryStatus     = 41;
 }
 
 message GenoaConnectedBroadcast
@@ -574,6 +573,13 @@ message SetDeliveryAddressResponse
    bool     result   = 2;
 }
 
+message UpdateDeliveryStatus
+{
+   string trade_id = 1;
+   string status   = 2;
+}
+
+
 message LoadedGenoaObligationData
 {
    string entity_name         = 1;
@@ -640,7 +646,7 @@ message GenoaMessage
       SetDeliveryAddressResponse       set_delivery_address_response = 45;
 
       LoadAllObligationsResponse       loaded_obligations            = 46;
-
+      UpdateDeliveryStatus             update_delivery_status        = 47;
    }
 }
 
@@ -1127,6 +1133,7 @@ enum TerminalMessageType
    TerminalOTCcAccept               = 18;
    TerminalOTCcTrade                = 19;
    TerminalUpdateBlotterForEntities = 21;
+   TerminalReportDelivery           = 22;
 }
 
 message PreimageData {
@@ -1218,6 +1225,22 @@ message TerminalUpdateBalanceMessage
    repeated bs.types.Balance balances = 1;
 }
 
+message TerminalDeliveryReport
+{
+   enum Status {
+      INVALID = 0;
+      PENDING = 1;
+      DELIVERED = 2;
+      //REJECTED ?
+   }
+   string entity = 1;
+   string id = 2;
+   int64  to_deliver = 3;
+   string bs_address = 4;
+   double price = 5;
+   Status status = 6;
+}
+
 message TerminalMessage
 {
    TerminalMessageType  type           = 1;
@@ -1237,6 +1260,7 @@ message TerminalMessage
       TerminalOTCcVerifyRequest     otcc_verify                = 16;
       TerminalOTCcSignedTX          otcc_tx                    = 17;
       AffectedEntities              entities_to_update         = 20;
+      TerminalDeliveryReport        delivery_report            = 21;
    }
 }
 
