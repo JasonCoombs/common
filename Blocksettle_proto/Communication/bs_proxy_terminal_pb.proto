@@ -177,9 +177,16 @@ message Response
 
    message DeliveryObligationsRequest
    {
+      enum Status
+      {
+          INVALID = 0;
+          PENDING = 1;
+          DELIVERED = 2;
+      }
       int64    to_deliver           = 1;
       string   bs_address           = 2;
       double   price                = 3;
+      Status   status               = 4;
    }
 
    // Blotter
@@ -224,5 +231,6 @@ message Response
       // update_orders - deprecated after 0.91.2
       UpdateOrders                  update_orders              = 20;
       UpdateOrdersAndObligations    update_orders_obligations  = 21;
+      DeliveryObligationsRequest    delivery_obligation_update = 22;
    }
 }
