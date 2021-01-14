@@ -239,14 +239,15 @@ enum GenoaType
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
    GenoaGetCustomerBalance       = 36;
+   GenoaLoadCustomerImBalance    = 37;
 
-   GenoaRegisterXBT1DayDeliverableTrade   = 37;
-   GenoaRegisterXBT1DayCashSettledTrade   = 38;
+   GenoaRegisterXBT1DayDeliverableTrade   = 38;
+   GenoaRegisterXBT1DayCashSettledTrade   = 39;
 
-   GenoaSendCutoffPrice          = 39;
-   GenoaLoadDeliveryObligations  = 40;
-   GenoaSetDeliveryAddress       = 41;
-   GenoaUpdateDeliveryStatus     = 42;
+   GenoaSendCutoffPrice          = 40;
+   GenoaLoadDeliveryObligations  = 41;
+   GenoaSetDeliveryAddress       = 42;
+   GenoaUpdateDeliveryStatus     = 43;
 }
 
 message GenoaConnectedBroadcast
