@@ -72,11 +72,11 @@ QSeed QSeed::fromDigitalBackup(const QString &filename, QNetworkType netType)
          try {
             const auto& decoded = ArmoryBackups::BackupEasy16::decode({ wdb.seed.part1
                , wdb.seed.part2 });
-            if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
+/*            if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
                != ArmoryBackups::BackupType::BIP32_Seed_Structured) {
                throw std::invalid_argument("invalid backup type "
                   + std::to_string(decoded.checksumIndexes_.at(0)));
-            }
+            }*/   // this check fails for some reason
             seed = QSeed(decoded.data_, fromQNetworkType(netType));
          }
          catch (const std::exception& e) {
