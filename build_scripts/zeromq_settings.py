@@ -19,7 +19,7 @@ class ZeroMQSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self._version = '4.3.3'
-        self._script_revision = '3'
+        self._script_revision = '4'
 
         if settings.on_windows():
             self._package_name = 'libzmq-' + self._version
