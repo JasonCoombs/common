@@ -34,6 +34,7 @@ enum CLIRequestType
    SetConfigType                    = 22;
    MigrateUserIds                   = 23;
    BroadcastBSAuthRevokeTX          = 24;
+   SyncGenoaUsers                   = 25;
 }
 
 enum ArmoryConnectionState
