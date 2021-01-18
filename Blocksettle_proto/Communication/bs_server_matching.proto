@@ -195,6 +195,7 @@ message RFSMarketOrderResponse
    double         order_price    = 4;
    bool           matched        = 5;
    string         error_message  = 6;
+   string         product        = 7;
 }
 
 message MatchingMessage

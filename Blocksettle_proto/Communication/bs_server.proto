@@ -232,20 +232,22 @@ enum GenoaType
    GenoaReserveCC                = 25;
    GenoaCompleteCCReserve        = 26;
    GenoaGetUserAccounts          = 29;
-   GenoaGetAccountBalance        = 30;
+   GenoaReloadCustomerBalance    = 30;
    GenoaEODUpdate                = 31;
    GenoaMigrateUserIds           = 32;
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+   GenoaGetCustomerBalance       = 36;
+   GenoaLoadCustomerImBalance    = 37;
 
-   GenoaRegisterXBT1DayDeliverableTrade   = 36;
-   GenoaRegisterXBT1DayCashSettledTrade   = 37;
+   GenoaRegisterXBT1DayDeliverableTrade   = 38;
+   GenoaRegisterXBT1DayCashSettledTrade   = 39;
 
-   GenoaSendCutoffPrice          = 38;
-   GenoaLoadDeliveryObligations  = 39;
-   GenoaSetDeliveryAddress       = 40;
-   GenoaUpdateDeliveryStatus     = 41;
+   GenoaSendCutoffPrice          = 40;
+   GenoaLoadDeliveryObligations  = 41;
+   GenoaSetDeliveryAddress       = 42;
+   GenoaUpdateDeliveryStatus     = 43;
 }
 
 message GenoaConnectedBroadcast
@@ -459,10 +461,10 @@ message GenoaAccountsBalanceUpdate
 
 enum GenoaAccountRequestType
 {
-   GenoaAccountUnknown = 0;
-   GenoaAccountUser    = 1;
-   GenoaAccountUsers   = 2;
-   GenoaAccountBalance = 3;
+   GenoaAccountUnknown           = 0;
+   GenoaAccountUser              = 1;
+   GenoaAccountUsers             = 2;
+   GenoaAccountBalancesSnapshot  = 3;
 }
 
 message GenoaAccountMessage
