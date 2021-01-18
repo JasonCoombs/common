@@ -449,6 +449,8 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+   GenoaReloadAccounts           = 36;
+   GenoaAccountReloaded          = 37;
 }
 
 message GenoaConnectedBroadcast
