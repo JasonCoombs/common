@@ -307,6 +307,7 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
          }
          pushFill(env);
          regMap_.erase(itReg);
+         logger_->debug("[{}] found reg request for {}", __func__, idStr);
          continue;
       }
 
@@ -319,6 +320,7 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
             , msgUnconfTgt.SerializeAsString() };
          pushFill(env);
          unconfTgtMap_.erase(itUnconfTgt);
+         logger_->debug("[{}] unconf tgt reg {}", __func__, idStr);
          continue;
       }
 
@@ -326,6 +328,7 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
       if (itAddrHist != addressSubscriptions_.end()) {
          singleAddrWalletRegistered(itAddrHist->second);
          addressSubscriptions_.erase(itAddrHist);
+         logger_->debug("[{}] addressSubscription {}", __func__, idStr);
          continue;
       }
       msgRefresh->add_ids(id.toBinStr());
@@ -758,7 +761,9 @@ bool BlockchainAdapter::processUnregisterWallets(const bs::message::Envelope& en
 std::string BlockchainAdapter::registerWallet(const std::string &walletId
    , const Wallet &wallet)
 {
-   registrationComplete_ = false;
+   if (regMap_.empty()) {
+      registrationComplete_ = false;
+   }
    auto &newWallet = wallets_[walletId];
    if (!newWallet.wallet) {
       newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
