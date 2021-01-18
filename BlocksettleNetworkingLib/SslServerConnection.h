@@ -49,6 +49,8 @@ struct SslServerConnectionParams
    // Callback should not block and useSsl must be set.
    using VerifyCallback = std::function<bool(const std::string &publicKey)>;
    VerifyCallback verifyCallback;
+
+   bool sendAsText{false};
 };
 
 class SslServerConnection : public ServerConnection
