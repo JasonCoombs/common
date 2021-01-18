@@ -247,7 +247,7 @@ enum GenoaType
    GenoaSendCutoffPrice          = 40;
    GenoaLoadDeliveryObligations  = 41;
    GenoaSetDeliveryAddress       = 42;
-   GenoaUpdateDeliveryStatus     = 43;
+   GenoaSettleDelivery           = 43;
 }
 
 message GenoaConnectedBroadcast
@@ -575,10 +575,9 @@ message SetDeliveryAddressResponse
    bool     result   = 2;
 }
 
-message UpdateDeliveryStatus
+message SettleDelivery
 {
    string trade_id = 1;
-   string status   = 2;
 }
 
 
@@ -648,7 +647,7 @@ message GenoaMessage
       SetDeliveryAddressResponse       set_delivery_address_response = 45;
 
       LoadAllObligationsResponse       loaded_obligations            = 46;
-      UpdateDeliveryStatus             update_delivery_status        = 47;
+      SettleDelivery                   settle_delivery_status        = 47;
    }
 }
 
