@@ -230,7 +230,8 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
          }
          auto packet = std::move(allPackets_.front());
          allPackets_.pop();
-         int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+         int rc = lws_write(wsi, packet.getPtr(), packet.getSize()
+            , params_.sendAsText ? LWS_WRITE_TEXT : LWS_WRITE_BINARY);
          if (rc == -1) {
             SPDLOG_LOGGER_ERROR(logger_, "write failed");
             reportFatalError(DataConnectionListener::UndefinedSocketError);
