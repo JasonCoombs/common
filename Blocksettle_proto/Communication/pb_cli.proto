@@ -273,3 +273,10 @@ message LoadUTXORequest
 {
    required bool     load_all = 1;
 }
+
+message SyncAccountsResponse
+{
+   required bool     success              = 1;
+   required int32    created_customers    = 2;
+   required int32    updated_properties   = 3;
+}
