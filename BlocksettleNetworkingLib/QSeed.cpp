@@ -36,10 +36,10 @@ QSeed QSeed::fromPaperKey(const QString &key, QNetworkType netType)
       if (seedLines.count() == 2) {
          const auto& decoded = ArmoryBackups::BackupEasy16::decode({ seedLines[0].toStdString()
             , seedLines[1].toStdString() });
-         if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
+/*         if (static_cast<ArmoryBackups::BackupType>(decoded.checksumIndexes_.at(0))
             != ArmoryBackups::BackupType::BIP32_Seed_Structured) {
             throw std::invalid_argument("invalid backup type " + std::to_string(decoded.checksumIndexes_.at(0)));
-         }
+         }*/
          seed = QSeed(decoded.data_, fromQNetworkType(netType));
       }
       else {
