@@ -480,6 +480,14 @@ bs::signer::RequestId HeadlessContainer::signTXRequest(const bs::core::wallet::T
    case TXSignMode::Partial:
       packet.set_type(headless::SignPartialTXRequestType);
       break;
+
+   case TXSignMode::AutoSign:
+      packet.set_type(headless::AutoSignFullType);
+      break;
+
+   default:
+      logger_->error("[{}] unknown sign mode {}", __func__, (int)mode);
+      break;
    }
    packet.set_data(request.SerializeAsString());
    const auto id = Send(packet);
@@ -507,6 +515,14 @@ void HeadlessContainer::signTXRequest(const bs::core::wallet::TXSignRequest& txR
 
    case TXSignMode::Partial:
       packet.set_type(headless::SignPartialTXRequestType);
+      break;
+
+   case TXSignMode::AutoSign:
+      packet.set_type(headless::AutoSignFullType);
+      break;
+
+   default:
+      logger_->error("[{}] unknown sign mode {}", __func__, (int)mode);
       break;
    }
    packet.set_data(request.SerializeAsString());
