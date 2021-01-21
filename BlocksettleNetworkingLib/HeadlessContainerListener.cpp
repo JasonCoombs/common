@@ -183,6 +183,7 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::SignSettlementTxRequestType:
    case headless::SignPartialTXRequestType:
    case headless::SignSettlementPartialTxType:
+   case headless::AutoSignFullType:
       return onSignTxRequest(clientId, packet, packet.type());
 
    case headless::SignSettlementPayoutTxType:
@@ -410,7 +411,8 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
    uint64_t amount = sentAmount < receivedAmount ? 0 : sentAmount - receivedAmount;
 
    auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
-   const bool autoSign = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer) && isAutoSignActive(rootWalletId);
+   const bool autoSign = ((autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer)
+      || (reqType == headless::RequestType::AutoSignFullType)) && isAutoSignActive(rootWalletId);
 
    if (amount && !checkSpendLimit(amount, rootWalletId, autoSign)) {
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxSpendLimitExceed);
@@ -874,7 +876,8 @@ bool HeadlessContainerListener::RequestPasswordIfNeeded(const std::string &clien
 
    auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
    // currently only dealer can use autosign
-   bool autoSignAllowed = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer);
+   bool autoSignAllowed = ((autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer)
+      || (reqType == headless::RequestType::AutoSignFullType));
 
    SecureBinaryData password;
    if (autoSignAllowed && needPassword) {

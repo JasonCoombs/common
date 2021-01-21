@@ -183,10 +183,11 @@ message Response
           PENDING = 1;
           DELIVERED = 2;
       }
-      int64    to_deliver           = 1;
-      string   bs_address           = 2;
-      double   price                = 3;
-      Status   status               = 4;
+      string   id                   = 1;
+      int64    to_deliver           = 2;
+      string   bs_address           = 3;
+      double   price                = 4;
+      Status   status               = 5;
    }
 
    // Blotter
