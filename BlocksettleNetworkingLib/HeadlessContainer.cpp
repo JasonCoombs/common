@@ -1760,6 +1760,7 @@ void RemoteSigner::onPacketReceived(const headless::RequestPacket &packet)
 
    switch (packet.type()) {
    case headless::SignTxRequestType:
+   case headless::AutoSignFullType:
    case headless::SignPartialTXRequestType:
    case headless::SignSettlementPayoutTxType:
    case headless::SignAuthAddrRevokeType:
