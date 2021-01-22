@@ -234,6 +234,7 @@ protected:
    std::unique_ptr<DataConnection> connection_;
 
    std::map<RequestId, ActiveRequest> activeRequests_;
+   ValidityFlag validityFlag_;
    RequestId lastRequestId_{};
    RequestId lastSignRequestId_{};
 

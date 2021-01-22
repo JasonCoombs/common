@@ -495,7 +495,10 @@ BsClient::RequestId BsClient::sendRequest(Request *request, std::chrono::millise
    activeRequest.timeoutCb = std::move(timeoutCb);
    activeRequests_.emplace(requestId, std::move(activeRequest));
 
-   bct_->startTimer(timeout, [this, requestId] {
+   bct_->startTimer(timeout, [this, requestId, handle = validityFlag_.handle()] {
+      if (!handle.isValid()) {
+         return;
+      }
       auto it = activeRequests_.find(requestId);
       if (it == activeRequests_.end()) {
          return;
