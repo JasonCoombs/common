@@ -21,10 +21,6 @@ ThreadedAdapter::ThreadedAdapter()
 
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
-   continueExecution_ = false;
-   decltype(pendingEnvelopes_) cleanQueue;
-   pendingEnvelopes_.swap(cleanQueue);
-   pendingEnvelopesEvent_.SetEvent();
    stop();
 }
 
@@ -36,6 +32,10 @@ bool ThreadedAdapter::process(const Envelope &envelope)
 
 void ThreadedAdapter::stop()
 {
+   continueExecution_ = false;
+   decltype(pendingEnvelopes_) cleanQueue;
+   pendingEnvelopes_.swap(cleanQueue);
+   pendingEnvelopesEvent_.SetEvent();
    if (processingThread_.joinable()) {
       processingThread_.join();
    }
