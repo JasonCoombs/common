@@ -65,7 +65,7 @@ public:
       , const std::shared_ptr<bs::message::User>& userBlockchain
       , const std::shared_ptr<bs::message::User>& userWallet
       , const std::shared_ptr<OnChainExternalPlug>&);
-   ~OnChainTrackerAdapter() override = default;
+   ~OnChainTrackerAdapter() override;
 
    bool processEnvelope(const bs::message::Envelope &) override;
 

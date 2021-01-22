@@ -53,6 +53,7 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
 WalletsAdapter::~WalletsAdapter()
 {
    utxoResMgr_->shutdownCheck();
+   stop();
 }
 
 bool WalletsAdapter::processEnvelope(const Envelope &env)

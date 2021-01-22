@@ -25,15 +25,20 @@ ThreadedAdapter::~ThreadedAdapter() noexcept
    decltype(pendingEnvelopes_) cleanQueue;
    pendingEnvelopes_.swap(cleanQueue);
    pendingEnvelopesEvent_.SetEvent();
-   if (processingThread_.joinable()) {
-      processingThread_.join();
-   }
+   stop();
 }
 
 bool ThreadedAdapter::process(const Envelope &envelope)
 {
    SendEnvelopeToThread(envelope);
    return true;
+}
+
+void ThreadedAdapter::stop()
+{
+   if (processingThread_.joinable()) {
+      processingThread_.join();
+   }
 }
 
 void ThreadedAdapter::processingRoutine()

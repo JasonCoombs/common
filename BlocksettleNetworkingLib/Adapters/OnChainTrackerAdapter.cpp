@@ -114,6 +114,11 @@ OnChainTrackerAdapter::OnChainTrackerAdapter(const std::shared_ptr<spdlog::logge
    extPlug->setParent(this, user_);
 }
 
+OnChainTrackerAdapter::~OnChainTrackerAdapter()
+{
+   stop();
+}
+
 bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
 {
    if (extPlug_->tryProcess(env)) {
