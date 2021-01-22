@@ -661,6 +661,8 @@ enum GenoaServerType
    GenoaServerNewCcSeed          = 5;
    GenoaServerNewCCDeposit       = 6;
    GenoaTradingDayClosedSignal   = 7;
+   GenoaOpenDeliveryPeriod       = 8;
+   GenoaCloseDeliveryPeriod      = 9;
 }
 
 message GenoaServerClientRequest
@@ -1399,6 +1401,8 @@ enum ObligationsManagingMessageType
 {
    SendCutoffPriceRequest     = 0;
    LoadCustomerObligations    = 1;
+   OpenDelievryPeriod         = 2;
+   CloseDeliveryPeriod        = 3;
 };
 
 message ObligationsManaging
@@ -1416,6 +1420,7 @@ message ObligationsManaging
       int64    to_deliver     = 2;
       string   bs_address     = 3;
       double   cutoff_price   = 4;
+      bool     detected       = 5;
    }
 
    oneof data
