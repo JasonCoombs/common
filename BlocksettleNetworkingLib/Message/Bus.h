@@ -57,6 +57,7 @@ namespace bs {
 
       private:
          std::shared_ptr<spdlog::logger>           logger_;
+         mutable std::mutex mutex_;
          std::map<UserValue, std::shared_ptr<Adapter>>   adapters_;
          std::shared_ptr<Adapter>   supervisor_;
          std::shared_ptr<Adapter>   defaultRoute_;
