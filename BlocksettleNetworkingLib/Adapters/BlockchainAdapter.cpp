@@ -288,6 +288,7 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
    auto msgRefresh = msg.mutable_refresh();
    for (const auto &id : ids) {
       const auto &idStr = id.toBinStr();
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
       const auto &itReg = regMap_.find(idStr);
       if (itReg != regMap_.end()) {
          wallets_[itReg->second].registered = true;
@@ -727,6 +728,7 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
       sendError();
    }
    else {
+      std::lock_guard<std::recursive_mutex> lock(mutex_);
       reqByRegId_[regId] = env;
    }
    return true;
@@ -773,6 +775,7 @@ std::string BlockchainAdapter::registerWallet(const std::string &walletId
 
    const auto &regId = newWallet.wallet->registerAddresses(newWallet.addresses
       , wallet.asNew);
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    regMap_[regId] = walletId;
    return regId;
 }
@@ -780,6 +783,7 @@ std::string BlockchainAdapter::registerWallet(const std::string &walletId
 bool BlockchainAdapter::processUnconfTarget(const bs::message::Envelope &env
    , const ArmoryMessage_WalletUnconfirmedTarget &request)
 {
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    const auto &itWallet = wallets_.find(request.wallet_id());
    if (itWallet == wallets_.end()) {
       logger_->error("[{}] unknown wallet {}", __func__, request.wallet_id());

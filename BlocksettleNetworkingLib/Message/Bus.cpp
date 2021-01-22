@@ -55,6 +55,7 @@ void Router::bindAdapter(const std::shared_ptr<Adapter> &adapter)
          logger_->critical("[Router::bindAdapter] adapter {} for {} already exists "
             "- overriding with {}", itReceiver->second->name(), receiver->name(), adapter->name());
       }
+      std::lock_guard<std::mutex> lock(mutex_);
       adapters_[receiver->value()] = adapter;
    }
 }
@@ -94,6 +95,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
       return {};
    }
    if (!env.receiver || env.receiver->isBroadcast()) {
+      std::lock_guard<std::mutex> lock(mutex_);
       for (const auto &adapter : adapters_) {
          if (!env.sender->isSystem() && (adapter.first == env.sender->value())) {
             continue;

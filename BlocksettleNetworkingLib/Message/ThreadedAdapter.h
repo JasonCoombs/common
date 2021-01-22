@@ -36,6 +36,7 @@ namespace bs {
 
       protected:
          virtual bool processEnvelope(const Envelope &) = 0;
+         void stop();
 
       private:
          void processingRoutine();

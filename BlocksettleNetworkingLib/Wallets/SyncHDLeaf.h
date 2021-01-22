@@ -179,6 +179,7 @@ namespace bs {
             std::vector<bs::Address>                     intAddresses_;
             std::vector<bs::Address>                     extAddresses_;
             std::map<BinaryData, AddrPoolKey>            addrToIndex_;
+            mutable std::recursive_mutex mutex_;
             [[deprecated]] cb_complete_notify                           cbScanNotify_ = nullptr;
             [[deprecated]] std::function<void(const std::string &walletId, unsigned int idx)> cbWriteLast_ = nullptr;
             BTCNumericTypes::balance_type spendableBalanceCorrection_ = 0;

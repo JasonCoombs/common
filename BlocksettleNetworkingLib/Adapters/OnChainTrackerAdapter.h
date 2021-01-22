@@ -65,7 +65,7 @@ public:
       , const std::shared_ptr<bs::message::User>& userBlockchain
       , const std::shared_ptr<bs::message::User>& userWallet
       , const std::shared_ptr<OnChainExternalPlug>&);
-   ~OnChainTrackerAdapter() override = default;
+   ~OnChainTrackerAdapter() override;
 
    bool processEnvelope(const bs::message::Envelope &) override;
 
@@ -100,12 +100,13 @@ private:
    std::shared_ptr<OnChainExternalPlug>   extPlug_;
    std::shared_ptr<CcTrackerClient>       ccTracker_;
 
+   std::recursive_mutex mutex_;
    std::unique_ptr<AuthAddressValidator>     authVerificator_;
    std::shared_ptr<AuthValidatorCallbacks>   authCallbacks_;
    std::set<bs::Address>                     userAddresses_;
    std::map<bs::Address, AddressVerificationState> addrStates_;
    bool     blockchainReady_{ false };
-   bool     authOnline_{ false };
+   std::atomic_bool authOnline_{ false };
    uint32_t topBlock_{ 0 };
    std::map<uint64_t, AuthValidatorCallbacks::OutpointsCb>  outpointCallbacks_;
    std::map<uint64_t, AuthValidatorCallbacks::UTXOsCb>      utxoCallbacks_;
