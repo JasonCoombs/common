@@ -697,6 +697,7 @@ hd::Leaf::AddrPoolKey hd::Leaf::getAddressIndexForAddr(const BinaryData &addr) c
 
 hd::Leaf::AddrPoolKey hd::Leaf::addressIndex(const bs::Address &addr) const
 {
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    const auto itIndex = addrToIndex_.find(addr.unprefixed());
    if (itIndex == addrToIndex_.end()) {
       return {};
@@ -780,6 +781,7 @@ int hd::Leaf::addAddress(const bs::Address &addr, const std::string &index, bool
          lastExtIdx_ = addrIndex + 1;
       }
    }
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    addrToIndex_[addr.unprefixed()] = {path};
    return id;
 }

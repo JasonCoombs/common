@@ -209,6 +209,7 @@ void OnChainTrackerAdapter::connectAuthVerificator()
 
 void OnChainTrackerAdapter::authAddressVerification()
 {
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    if (!authVerificator_ || !authOnline_ || userAddresses_.empty()) {
       logger_->warn("[{}] not ready: {} {} {}", (authVerificator_ != nullptr)
          , authOnline_, userAddresses_.empty());
@@ -350,6 +351,7 @@ bool OnChainTrackerAdapter::processAuthAddresses(const OnChainTrackMessage_AuthA
 {
    logger_->debug("[{}] adding {} auth addresses from {}", __func__
       , request.addresses_size(), request.wallet_id());
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    for (const auto& addr : request.addresses()) {
       try {
          userAddresses_.insert(bs::Address::fromAddressString(addr));
@@ -377,6 +379,7 @@ void OnChainTrackerAdapter::sendVerifiedAuthAddresses()
 
 void OnChainTrackerAdapter::onAuthValidationAddresses(const std::vector<std::string>& addrs)
 {
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
    authVerificator_ = std::make_unique<AuthAddressValidator>(authCallbacks_);
    for (const auto& addr : addrs) {
       try {
