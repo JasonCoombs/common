@@ -56,6 +56,10 @@ message Request
         string product_type = 1;
     }
 
+    message TradingDay
+    {
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -64,6 +68,7 @@ message Request
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
         Subscribe subscribe = 14;
+        TradingDay trading_day = 16;
     }
 }
 
@@ -104,6 +109,12 @@ message Response
         string error_msg = 3;
     }
 
+    message TradingDay
+    {
+        double open_cutoff_price = 1;
+        uint64 dayclose_timestamp_utc = 2;
+    }
+
     message MarketData
     {
         message Item
@@ -135,6 +146,7 @@ message Response
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
         Subscribe subscribe = 14;
+        TradingDay trading_day = 16;
 
         MarketData market_data = 50;
         Error fatal_error = 51;
