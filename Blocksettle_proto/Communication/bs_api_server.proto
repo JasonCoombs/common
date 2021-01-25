@@ -126,6 +126,8 @@ message Response
 
         string product_type = 1;
         repeated Item items = 2;
+        double cutoff = 3;
+        uint64 daily_volume = 4;
     }
 
     message EidLoginUpdate
