@@ -31,7 +31,7 @@ namespace bs {
       }
 
       // Amount is truncated toward zero, so PriceAmount<2>(1.1299) is equal to PriceAmount<2>(1.12)
-      explicit PriceAmount(double amount)
+      PriceAmount(double amount)
       {
          value_ = static_cast<int64_t>(std::trunc(amount * scale()));
       }
