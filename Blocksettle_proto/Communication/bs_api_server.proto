@@ -35,6 +35,15 @@ message Request
     {
     }
 
+    message ResumeSession
+    {
+        string session_id = 1;
+    }
+
+    message Logout
+    {
+    }
+
     message MarketOrder
     {
         uint64 xbt_amount = 1;
@@ -64,6 +73,8 @@ message Request
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        ResumeSession resume_session = 17;
+        Logout logout = 18;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
@@ -77,11 +88,21 @@ message Response
     message Authorize
     {
         bool success = 1;
+        string session_id = 2;
     }
 
     message EidLogin
     {
         string qr_code = 1;
+    }
+
+    message ResumeSession
+    {
+        bool success = 1;
+    }
+
+    message Logout
+    {
     }
 
     message MarketOrder
@@ -133,6 +154,7 @@ message Response
     message EidLoginUpdate
     {
         EidStatus status = 1;
+        string session_id = 2;
     }
 
     message Error
@@ -144,6 +166,8 @@ message Response
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        ResumeSession resume_session = 17;
+        Logout logout = 18;
         MarketOrder market_order = 11;
         LoadOrders load_orders = 12;
         LoadBalance load_balance = 13;
