@@ -22,13 +22,14 @@ message Empty
 
 enum PrivBridgeType
 {
-   PrivBridgeUnknownType    = 0;
-   PrivBridgeStart          = 1;
-   PrivBridgeReconnect      = 2;
-   PrivBridgeSuspendTrading = 3;
-   PrivBridgeResumeTrading  = 4;
-   PrivBridgeCreateUser     = 5;
-   PrivBridgeArmoryDbReset  = 6;
+   PrivBridgeUnknownType         = 0;
+   PrivBridgeStart               = 1;
+   PrivBridgeReconnect           = 2;
+   PrivBridgeSuspendTrading      = 3;
+   PrivBridgeResumeTrading       = 4;
+   PrivBridgeCreateUser          = 5;
+   PrivBridgeArmoryDbReset       = 6;
+   PrivateBridgeGetHashedEmail   = 7;
 }
 
 message PrivBridgeCreateUserRequest
@@ -43,13 +44,31 @@ message PrivBridgeResponse
    string error_text = 2;
 }
 
+message GetHashedEmailRequest
+{
+   repeated string customer_email = 1;
+}
+
+message GetHashedEmailResponse
+{
+   message EmailHash
+   {
+      string customer_email   = 1;
+      string email_hash       = 2;
+   }
+
+   repeated EmailHash email_hash = 1;
+}
+
 message PrivateBridgeMessage
 {
    PrivBridgeType type = 1;
    oneof data {
-      PrivBridgeCreateUserRequest create_user = 2;
-      string message = 3;
-      PrivBridgeResponse response = 10;
+      PrivBridgeCreateUserRequest   create_user                = 2;
+      string                        message                    = 3;
+      PrivBridgeResponse            response                   = 4;
+      GetHashedEmailRequest         get_hashed_email_request   = 5;
+      GetHashedEmailResponse        get_hashed_email_response  = 6;
    }
 }
 
@@ -238,6 +257,7 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+
    GenoaGetCustomerBalance       = 36;
    GenoaLoadCustomerImBalance    = 37;
 
@@ -248,6 +268,10 @@ enum GenoaType
    GenoaLoadDeliveryObligations  = 41;
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
+
+   GenoaReloadAccounts           = 44;
+   GenoaAccountReloaded          = 45;
+
 }
 
 message GenoaConnectedBroadcast
@@ -790,6 +814,7 @@ enum CelerType
    CelerNewAccountAck            = 31;
    CelerGetUserProperty          = 32;
    CelerRegisterCCDefinition     = 33;
+   CelerCheckUser                = 34;
 }
 
 message SavedTradeInfoMessage
@@ -866,6 +891,19 @@ message CelerSecurityDefData
    bool   is_private_share = 2;
 }
 
+message CelerCheckUserRequest
+{
+   string email_hash = 1;
+}
+
+message CelerCheckUserResponse
+{
+   bool     success              = 1;
+   bool     user_exists          = 2;
+   bool     trading_enabled      = 3;
+   bool     xbt_dealing_enabled  = 4;
+}
+
 message CelerMessage
 {
    CelerType type = 1;
@@ -881,8 +919,10 @@ message CelerMessage
       CelerGetUserPropertyRequest      get_user_prop_request   = 12;
       CelerGetUserPropertyResponse     get_user_prop_response  = 13;
       string                           cc_name                 = 14;
+      CelerCheckUserRequest            check_user_request      = 15;
+      CelerCheckUserResponse           check_user_response     = 16;
    }
-   int64 sequence_num = 15;
+   int64 sequence_num = 17;
 }
 
 
