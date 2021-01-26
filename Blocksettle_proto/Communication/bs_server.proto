@@ -334,6 +334,7 @@ message GenoaUserRequest
 
 message GenoaOrderData
 {
+   string id               = 11;
    int32  subsystem        = 1;
    double price            = 2;
    string contra_product   = 3;
