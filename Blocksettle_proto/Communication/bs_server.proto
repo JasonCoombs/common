@@ -268,11 +268,11 @@ enum GenoaType
    GenoaLoadDeliveryObligations  = 41;
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
-   GetTradeCycleDetails          = 46;
+   GenoaGetTradeCycleDetails     = 46;
+   GenoaEstimateImType           = 47;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
-
 }
 
 message GenoaConnectedBroadcast
@@ -631,6 +631,24 @@ message GenoaGetCurrentTradeCycleDetails
    uint64 open_interest        = 4;
 }
 
+message GenoaEstimateImRequest
+{
+   string product_name = 1;
+   double qty = 2;
+   string entity_name = 3;
+}
+
+message GenoaEstimateImResponse
+{
+   bool success = 1;
+   string error_msg = 2;
+   string entity_name = 3;
+
+   double expected_im_reservation = 10;
+   double fee_amount = 12;
+   string product_name = 13;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -684,6 +702,8 @@ message GenoaMessage
       SettleDelivery                   settle_delivery_status        = 47;
 
       GenoaGetCurrentTradeCycleDetails current_trade_cycle_details   = 48;
+      GenoaEstimateImRequest           estimate_im                   = 49;
+      GenoaEstimateImResponse          estimate_im_response          = 50;
    }
 }
 
