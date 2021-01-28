@@ -63,6 +63,8 @@ QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn
    , transactionData(txData), assetType(qrn.assetType), validityInS(120)
 {
    side = bs::network::Side::invert(qrn.side);
+   price = prc;
+   quantity = qrn.quantity;
 }
 
 
