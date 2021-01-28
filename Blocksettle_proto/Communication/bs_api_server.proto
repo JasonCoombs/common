@@ -69,6 +69,12 @@ message Request
     {
     }
 
+    message EstimateIm
+    {
+        string product_name = 1;
+        double qty = 2;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -80,6 +86,7 @@ message Request
         LoadBalance load_balance = 13;
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
+        EstimateIm estimate_im = 19;
     }
 }
 
@@ -134,6 +141,18 @@ message Response
     {
         double open_cutoff_price = 1;
         uint64 dayclose_timestamp_utc = 2;
+        uint64 cut_off_at = 3;
+        uint64 open_interest = 4;
+    }
+
+    message EstimateIm
+    {
+        bool success = 1;
+        string error_msg = 2;
+
+        double expected_im_reservation = 10;
+        double fee_amount = 12;
+        string product_name = 14;
     }
 
     message MarketData
@@ -173,6 +192,7 @@ message Response
         LoadBalance load_balance = 13;
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
+        EstimateIm estimate_im = 19;
 
         MarketData market_data = 50;
         Error fatal_error = 51;

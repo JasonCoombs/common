@@ -51,6 +51,12 @@ message Request
         bytes client_id = 1;
     }
 
+    message EstimateIm
+    {
+        string entity_name = 1;
+        Blocksettle.Communication.ApiServer.Request.EstimateIm order = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -59,6 +65,7 @@ message Request
         LoadOrders load_orders = 3;
         LoadBalance load_balance = 4;
         TradingDay trading_day = 6;
+        EstimateIm estimate_im = 7;
     }
 }
 
@@ -103,6 +110,12 @@ message Response
         Blocksettle.Communication.ApiServer.Response.TradingDay result = 2;
     }
 
+    message EstimateIm
+    {
+        string entity_name = 1;
+        Blocksettle.Communication.ApiServer.Response.EstimateIm result = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -111,5 +124,6 @@ message Response
         LoadOrders load_orders = 3;
         LoadBalance load_balance = 4;
         TradingDay trading_day = 6;
+        EstimateIm estimate_im = 7;
     }
 }
