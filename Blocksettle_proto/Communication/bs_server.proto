@@ -268,6 +268,7 @@ enum GenoaType
    GenoaLoadDeliveryObligations  = 41;
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
+   GetTradeCycleDetails          = 46;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -622,6 +623,14 @@ message LoadAllObligationsResponse
    repeated LoadedGenoaObligationData  obligation  = 2;
 }
 
+message GenoaGetCurrentTradeCycleDetails
+{
+   bool success                = 1;
+   string error_msg            = 2;
+   uint64 cut_off_at           = 3;
+   uint64 open_interest        = 4;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -673,6 +682,8 @@ message GenoaMessage
 
       LoadAllObligationsResponse       loaded_obligations            = 46;
       SettleDelivery                   settle_delivery_status        = 47;
+
+      GenoaGetCurrentTradeCycleDetails current_trade_cycle_details   = 48;
    }
 }
 
