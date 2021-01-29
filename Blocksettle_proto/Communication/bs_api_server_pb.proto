@@ -102,6 +102,7 @@ message Response
     {
         string entity_name = 1;
         Blocksettle.Communication.ApiServer.Response.LoadBalance result = 2;
+        bool user_requested = 3;
     }
 
     message TradingDay

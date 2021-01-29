@@ -1546,3 +1546,18 @@ message PriceStreamManaging
       GetBestOfferResponse best_price_offer     = 3;
    }
 }
+
+message ApiServerMsg
+{
+   message UpdateBalance
+   {
+      string entity_name = 1;
+      string currency = 2;
+      double balance = 3;
+   }
+
+   oneof data
+   {
+      UpdateBalance update_balance = 1;
+   }
+}
