@@ -75,6 +75,11 @@ message Request
         double qty = 2;
     }
 
+    message ProductFee
+    {
+        string product_name = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -87,6 +92,7 @@ message Request
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
+        ProductFee product_fee = 20;
     }
 }
 
@@ -154,6 +160,15 @@ message Response
         string product_name = 14;
     }
 
+    message ProductFee
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string product_name = 3;
+        double fee = 4;
+        string fee_ccy = 5;
+    }
+
     message MarketData
     {
         message Item
@@ -192,6 +207,7 @@ message Response
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
+        ProductFee product_fee = 20;
 
         MarketData market_data = 50;
         Error fatal_error = 51;

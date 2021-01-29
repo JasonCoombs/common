@@ -270,6 +270,7 @@ enum GenoaType
    GenoaSettleDelivery           = 43;
    GenoaGetTradeCycleDetails     = 46;
    GenoaEstimateImType           = 47;
+   GenoaMarginReservationFee     = 48;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -650,6 +651,20 @@ message GenoaEstimateImResponse
    string product_name = 13;
 }
 
+message GenoaGetMarginReservationFeeReq
+{
+   string product_name = 3;
+}
+
+message GenoaGetMarginReservationFeeResp
+{
+   bool success = 1;
+   string error_msg = 2;
+   string product_name = 3;
+   double fee = 4;
+   string fee_ccy = 5;
+}
+
 message GenoaMessage
 {
    GenoaType type = 1;
@@ -705,6 +720,10 @@ message GenoaMessage
       GenoaGetCurrentTradeCycleDetails current_trade_cycle_details   = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
+
+      GenoaGetMarginReservationFeeReq  get_margin_reserv_fee         = 51;
+      GenoaGetMarginReservationFeeResp get_margin_reserv_fee_resp    = 52;
+
    }
 }
 
