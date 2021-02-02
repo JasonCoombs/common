@@ -1585,8 +1585,16 @@ message ApiServerMsg
       double balance = 3;
    }
 
+   message UpdateOrder
+   {
+      string entity_name = 1;
+      bs.types.Order order = 2;
+      bs.types.Action action = 3;
+   }
+
    oneof data
    {
       UpdateBalance update_balance = 1;
+      UpdateOrder update_order = 2;
    }
 }
