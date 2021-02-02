@@ -183,6 +183,7 @@ message Response
         repeated Item items = 2;
         double cutoff = 3;
         double daily_volume = 4;
+        double open_interest = 5;
     }
 
     message EidLoginUpdate
