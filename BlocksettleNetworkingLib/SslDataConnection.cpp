@@ -52,6 +52,14 @@ SslDataConnection::~SslDataConnection()
    closeConnection();
 }
 
+bool SslDataConnection::openConnectionWithPath(const std::string& host, const std::string& path
+                               , const std::string& port
+                               , DataConnectionListener* listener)
+{
+   path_ = path;
+   return openConnection(host, port, listener);
+}
+
 bool SslDataConnection::openConnection(const std::string &host, const std::string &port
    , DataConnectionListener *listener)
 {
@@ -259,6 +267,7 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
       }
 
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
+         SPDLOG_LOGGER_ERROR(logger_, "undefined socket error");
          reportFatalError(DataConnectionListener::UndefinedSocketError);
          break;
       }
@@ -275,7 +284,7 @@ void SslDataConnection::listenFunction()
    i.host = i.address;
    i.port = port_;
    i.origin = i.address;
-   i.path = "/";
+   i.path = path_.c_str();
    i.context = context_;
    i.protocol = kProtocolNameWs;
    i.userdata = this;
