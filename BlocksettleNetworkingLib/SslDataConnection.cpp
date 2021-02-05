@@ -267,7 +267,11 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
       }
 
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
-         SPDLOG_LOGGER_ERROR(logger_, "undefined socket error");
+         if (in) {
+            SPDLOG_LOGGER_ERROR(logger_, "Connection error: {}", (const char*)in);
+         } else {
+            SPDLOG_LOGGER_ERROR(logger_, "undefined socket connection error");
+         }
          reportFatalError(DataConnectionListener::UndefinedSocketError);
          break;
       }
