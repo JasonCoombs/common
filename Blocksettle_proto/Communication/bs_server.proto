@@ -1221,7 +1221,6 @@ message SettlementTxMessage
 enum TerminalMessageType
 {
    TerminalUnknownType              = 0;
-   TerminalSendBlotterUpdate        = 1;
    TerminalUnsignedPayinRequest     = 2;
    TerminalSignedPayinRequest       = 3;
    TerminalSignedPayoutRequest      = 4;
@@ -1384,7 +1383,6 @@ enum ProxyMessageType
    ProxyConnected          = 1;
    ProxyDisconnected       = 2;
    ProxyReconnect          = 3;
-   ProxyBlotterUpdates     = 4;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
 }
