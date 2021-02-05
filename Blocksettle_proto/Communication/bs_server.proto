@@ -1239,6 +1239,7 @@ enum TerminalMessageType
    TerminalOTCcTrade                = 19;
    TerminalUpdateBlotterForEntities = 21;
    TerminalReportDelivery           = 22;
+   TerminalUpdateTrade              = 23;
 }
 
 message PreimageData {
@@ -1346,6 +1347,12 @@ message TerminalDeliveryReport
    Status status = 6;
 }
 
+message TerminalUpdateOrder
+{
+   bs.types.Order order = 1;
+   bs.types.Action action = 2;
+}
+
 message TerminalMessage
 {
    TerminalMessageType  type           = 1;
@@ -1366,6 +1373,7 @@ message TerminalMessage
       TerminalOTCcSignedTX          otcc_tx                    = 17;
       AffectedEntities              entities_to_update         = 20;
       TerminalDeliveryReport        delivery_report            = 21;
+      TerminalUpdateOrder           update_order               = 22;
    }
 }
 
