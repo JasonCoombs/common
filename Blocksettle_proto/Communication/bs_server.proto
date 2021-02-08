@@ -1548,7 +1548,8 @@ message PriceStreamManaging
 
    enum MessageType
    {
-      GetBestOfferingPriceForOrder = 0;
+      GetBestOfferingPriceForOrder  = 0;
+      TradeUpdateEventType          = 1;
    };
 
    message GetBestOfferRequest
@@ -1573,12 +1574,20 @@ message PriceStreamManaging
       bool        offer_exists = 4;
    }
 
+   message TradeUpdateEvent
+   {
+      string            entity_name = 1;
+      bs.types.Order    order       = 2;
+      bs.types.Action   action      = 3;
+   }
+
    MessageType   message_type = 1;
 
    oneof data
    {
       GetBestOfferRequest  get_best_price_offer = 2;
       GetBestOfferResponse best_price_offer     = 3;
+      TradeUpdateEvent     trade_update_event   = 4;
    }
 }
 
