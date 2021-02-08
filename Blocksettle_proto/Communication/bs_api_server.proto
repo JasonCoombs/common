@@ -170,6 +170,12 @@ message Response
         string fee_ccy = 5;
     }
 
+    message OrderUpdate
+    {
+        bs.types.Order order = 1;
+        bs.types.Action action = 2;
+    }
+
     message MarketData
     {
         message Item
@@ -214,6 +220,7 @@ message Response
         MarketData market_data = 50;
         Error fatal_error = 51;
         EidLoginUpdate eid_login_update = 52;
+        OrderUpdate order_update = 53;
     }
 }
 
