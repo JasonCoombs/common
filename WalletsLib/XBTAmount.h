@@ -22,7 +22,7 @@ namespace bs {
    {
    public:
       using satoshi_type = BTCNumericTypes::satoshi_type;
-      using bitcoin_type = BTCNumericTypes::satoshi_type;
+      using bitcoin_type = BTCNumericTypes::balance_type;
 
    public:
       XBTAmount();
