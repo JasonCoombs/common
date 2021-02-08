@@ -12,6 +12,14 @@ syntax = "proto3";
 
 package bs.types;
 
+enum Action
+{
+    ACTION_UNKNOWN = 0;
+    ACTION_CREATED = 1;
+    ACTION_UPDATED = 2;
+    ACTION_REMOVED = 3;
+}
+
 enum Side
 {
     SIDE_INVALID = 0;

@@ -270,6 +270,7 @@ enum GenoaType
    GenoaSettleDelivery           = 43;
    GenoaGetTradeCycleDetails     = 46;
    GenoaEstimateImType           = 47;
+   GenoaMarginReservationFee     = 48;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -625,11 +626,12 @@ message LoadAllObligationsResponse
 
 message GenoaGetCurrentTradeCycleDetails
 {
-   bool success                = 1;
-   string error_msg            = 2;
-   uint64 cut_off_at           = 3;
-   uint64 open_interest        = 4;
-   double last_cut_off_price   = 5;
+   bool success                     = 1;
+   string error_msg                 = 2;
+   int64 cut_off_at                 = 3;
+   double seconds_time_to_cut_off   = 4;
+   double open_interest             = 5;
+   double last_cut_off_price        = 6;
 }
 
 message GenoaEstimateImRequest
@@ -648,6 +650,20 @@ message GenoaEstimateImResponse
    double expected_im_reservation = 10;
    double fee_amount = 12;
    string product_name = 13;
+}
+
+message GenoaGetMarginReservationFeeReq
+{
+   string product_name = 3;
+}
+
+message GenoaGetMarginReservationFeeResp
+{
+   bool success = 1;
+   string error_msg = 2;
+   string product_name = 3;
+   double fee = 4;
+   string fee_ccy = 5;
 }
 
 message GenoaMessage
@@ -705,6 +721,10 @@ message GenoaMessage
       GenoaGetCurrentTradeCycleDetails current_trade_cycle_details   = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
+
+      GenoaGetMarginReservationFeeReq  get_margin_reserv_fee         = 51;
+      GenoaGetMarginReservationFeeResp get_margin_reserv_fee_resp    = 52;
+
    }
 }
 
@@ -720,6 +740,7 @@ enum GenoaServerType
    GenoaTradingDayClosedSignal   = 7;
    GenoaOpenDeliveryPeriod       = 8;
    GenoaCloseDeliveryPeriod      = 9;
+   GenoaTradeUpdateEvent         = 10;
 }
 
 message GenoaServerClientRequest
@@ -763,6 +784,13 @@ message GenoaServerNewCCDepositRequest
    string      correlation_id = 4;
 }
 
+message GenoaServerTradeUpdateEvent
+{
+   string            entity_name    = 1;
+   bs.types.Action   action         = 2;
+   bs.types.Order    order          = 3;
+}
+
 message GenoaServerMessage
 {
    GenoaServerType type = 1;
@@ -773,6 +801,7 @@ message GenoaServerMessage
       GenoaServerXbtTradingStatus      xbt_trd_status = 5;
       GenoaServerNewCcSeedRequest      new_cc_seed    = 6;
       GenoaServerNewCCDepositRequest   new_cc_deposit = 7;
+      GenoaServerTradeUpdateEvent      trade_update   = 8;
 
       bool                             response       = 10;
    }
@@ -1192,7 +1221,6 @@ message SettlementTxMessage
 enum TerminalMessageType
 {
    TerminalUnknownType              = 0;
-   TerminalSendBlotterUpdate        = 1;
    TerminalUnsignedPayinRequest     = 2;
    TerminalSignedPayinRequest       = 3;
    TerminalSignedPayoutRequest      = 4;
@@ -1210,6 +1238,7 @@ enum TerminalMessageType
    TerminalOTCcTrade                = 19;
    TerminalUpdateBlotterForEntities = 21;
    TerminalReportDelivery           = 22;
+   TerminalUpdateTrade              = 23;
 }
 
 message PreimageData {
@@ -1317,6 +1346,12 @@ message TerminalDeliveryReport
    Status status = 6;
 }
 
+message TerminalUpdateOrder
+{
+   bs.types.Order order = 1;
+   bs.types.Action action = 2;
+}
+
 message TerminalMessage
 {
    TerminalMessageType  type           = 1;
@@ -1337,6 +1372,7 @@ message TerminalMessage
       TerminalOTCcSignedTX          otcc_tx                    = 17;
       AffectedEntities              entities_to_update         = 20;
       TerminalDeliveryReport        delivery_report            = 21;
+      TerminalUpdateOrder           update_order               = 22;
    }
 }
 
@@ -1347,7 +1383,6 @@ enum ProxyMessageType
    ProxyConnected          = 1;
    ProxyDisconnected       = 2;
    ProxyReconnect          = 3;
-   ProxyBlotterUpdates     = 4;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
 }
@@ -1556,8 +1591,16 @@ message ApiServerMsg
       double balance = 3;
    }
 
+   message UpdateOrder
+   {
+      string entity_name = 1;
+      bs.types.Order order = 2;
+      bs.types.Action action = 3;
+   }
+
    oneof data
    {
       UpdateBalance update_balance = 1;
+      UpdateOrder update_order = 2;
    }
 }

@@ -218,6 +218,12 @@ message Response
       string         error_msg   = 2;
    }
 
+   message UpdateOrder
+   {
+      bs.types.Order order = 1;
+      bs.types.Action action = 2;
+   }
+
    oneof data
    {
       StartOtc       start_otc         = 1;
@@ -233,5 +239,6 @@ message Response
       UpdateOrders                  update_orders              = 20;
       UpdateOrdersAndObligations    update_orders_obligations  = 21;
       DeliveryObligationsRequest    delivery_obligation_update = 22;
+      UpdateOrder                   update_order               = 23;
    }
 }

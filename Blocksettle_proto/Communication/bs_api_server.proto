@@ -46,7 +46,7 @@ message Request
 
     message MarketOrder
     {
-        uint64 xbt_amount = 1;
+        double amount = 1;
         bs.types.Side side = 2;
         string product_type = 3;
         double user_expected_price = 4;
@@ -75,6 +75,11 @@ message Request
         double qty = 2;
     }
 
+    message ProductFee
+    {
+        string product_name = 1;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -87,6 +92,7 @@ message Request
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
+        ProductFee product_fee = 20;
     }
 }
 
@@ -139,8 +145,9 @@ message Response
 
     message TradingDay
     {
-        uint64 cut_off_at = 3;
-        uint64 open_interest = 4;
+        double time_to_cut_off = 1;
+        double cut_off_at = 3;
+        double open_interest = 4;
         double last_cut_off_price = 5;
     }
 
@@ -152,6 +159,21 @@ message Response
         double expected_im_reservation = 10;
         double fee_amount = 12;
         string product_name = 14;
+    }
+
+    message ProductFee
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string product_name = 3;
+        double fee = 4;
+        string fee_ccy = 5;
+    }
+
+    message OrderUpdate
+    {
+        bs.types.Order order = 1;
+        bs.types.Action action = 2;
     }
 
     message MarketData
@@ -166,7 +188,8 @@ message Response
         string product_type = 1;
         repeated Item items = 2;
         double cutoff = 3;
-        uint64 daily_volume = 4;
+        double daily_volume = 4;
+        double open_interest = 5;
     }
 
     message EidLoginUpdate
@@ -192,10 +215,12 @@ message Response
         Subscribe subscribe = 14;
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
+        ProductFee product_fee = 20;
 
         MarketData market_data = 50;
         Error fatal_error = 51;
         EidLoginUpdate eid_login_update = 52;
+        OrderUpdate order_update = 53;
     }
 }
 
