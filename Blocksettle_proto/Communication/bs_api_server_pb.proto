@@ -80,6 +80,7 @@ message Request
         EstimateIm estimate_im = 7;
         ProductFee product_fee = 8;
         MaxTradeAmount max_trade_amount = 9;
+        Blocksettle.Communication.ApiServer.Response.MarketData market_data = 10;
     }
 }
 
