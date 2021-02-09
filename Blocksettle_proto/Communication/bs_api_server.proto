@@ -80,6 +80,10 @@ message Request
         string product_name = 1;
     }
 
+    message TradingStats
+    {
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -93,6 +97,7 @@ message Request
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
+        TradingStats trading_stats = 21;
     }
 }
 
@@ -170,6 +175,13 @@ message Response
         string fee_ccy = 5;
     }
 
+    message TradingStats
+    {
+        double cutoff = 1;
+        double daily_volume = 2;
+        double open_interest = 3;
+    }
+
     message OrderUpdate
     {
         bs.types.Order order = 1;
@@ -216,6 +228,7 @@ message Response
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
+        TradingStats trading_stats = 21;
 
         MarketData market_data = 50;
         Error fatal_error = 51;
