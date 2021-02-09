@@ -87,6 +87,10 @@ message Request
         bs.types.Side side = 2;
     }
 
+    message TradingStats
+    {
+    }
+
     oneof data
     {
         Authorize authorize = 10;
@@ -101,6 +105,7 @@ message Request
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
         MaxTradeAmount max_trade_amount = 21;
+        TradingStats trading_stats = 22;
     }
 }
 
@@ -186,6 +191,13 @@ message Response
         double fee = 4;
     }
 
+    message TradingStats
+    {
+        double cutoff = 1;
+        double daily_volume = 2;
+        double open_interest = 3;
+    }
+
     message OrderUpdate
     {
         bs.types.Order order = 1;
@@ -233,6 +245,7 @@ message Response
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
         MaxTradeAmount max_trade_amount = 21;
+        TradingStats trading_stats = 22;
 
         MarketData market_data = 50;
         Error fatal_error = 51;
