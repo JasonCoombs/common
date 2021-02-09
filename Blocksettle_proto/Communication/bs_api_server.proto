@@ -73,6 +73,7 @@ message Request
     {
         string product_name = 1;
         double qty = 2;
+        bs.types.Side side = 3;
     }
 
     message ProductFee
