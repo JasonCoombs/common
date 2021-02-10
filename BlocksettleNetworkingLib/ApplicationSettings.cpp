@@ -185,6 +185,11 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { DefaultXBTTradeWalletIdTestnet,        SettingDef(QLatin1String("DefaultXBTTradeWalletIdTestnet")) },
       { DefaultXBTTradeWalletIdMainnet,        SettingDef(QLatin1String("DefaultXBTTradeWalletIdMainnet")) }
    };
+
+   if (get<std::string>(armoryDbIp) == "armory.blocksettle.com" && get<int>(armoryDbPort) == 81) {
+       set(armoryDbIp, QStringLiteral("armory-testnet.blocksettle.com"));
+       set(armoryDbPort, 80);
+   }
 }
 
 QVariant ApplicationSettings::get(Setting set, bool getDefaultValue) const

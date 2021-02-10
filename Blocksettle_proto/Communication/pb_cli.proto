@@ -34,6 +34,7 @@ enum CLIRequestType
    SetConfigType                    = 22;
    MigrateUserIds                   = 23;
    BroadcastBSAuthRevokeTX          = 24;
+   SyncGenoaUsers                   = 25;
 }
 
 enum ArmoryConnectionState
@@ -271,4 +272,11 @@ message SetConfigResponse
 message LoadUTXORequest
 {
    required bool     load_all = 1;
+}
+
+message SyncAccountsResponse
+{
+   required bool     success              = 1;
+   required int32    created_customers    = 2;
+   required int32    updated_properties   = 3;
 }
