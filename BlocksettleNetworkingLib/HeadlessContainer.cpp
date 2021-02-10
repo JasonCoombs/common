@@ -1969,12 +1969,6 @@ bool HeadlessListener::addCookieKeyToKeyStore(
 Q_DECLARE_METATYPE(bs::error::ErrorCode)
 Q_DECLARE_METATYPE(bs::signer::RequestId)
 
-QtHCT::QtHCT(QObject* parent) : QObject(parent)
-{
-   qRegisterMetaType<bs::error::ErrorCode>();
-   qRegisterMetaType<bs::signer::RequestId>();
-}
-
 void QtHCT::onError(bs::signer::RequestId reqId, const std::string& errMsg)
 {
    QMetaObject::invokeMethod(this, [this, reqId, errMsg] {
