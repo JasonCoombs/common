@@ -19,9 +19,10 @@
 
 #include <QStringList>
 
-#include "DataConnectionListener.h"
-#include "WalletSignerContainer.h"
 #include "BIP15xHelpers.h"
+#include "DataConnectionListener.h"
+#include "ThreadSafeContainers.h"
+#include "WalletSignerContainer.h"
 
 
 namespace spdlog {
@@ -181,25 +182,25 @@ protected:
    std::unordered_set<std::string>     woWallets_;
    std::set<bs::signer::RequestId>     signRequests_;
 
-   std::map<bs::signer::RequestId, std::function<void(std::vector<bs::sync::WalletInfo>)>>         cbWalletInfoMap_;
-   std::map<bs::signer::RequestId, std::function<void(bs::sync::HDWalletData)>>  cbHDWalletMap_;
-   std::map<bs::signer::RequestId, std::function<void(bs::sync::WalletData)>>    cbWalletMap_;
-   std::map<bs::signer::RequestId, std::function<void(bs::sync::SyncState)>>     cbSyncAddrsMap_;
-   std::map<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbExtAddrsMap_;
-   std::map<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbNewAddrsMap_;
-   std::map<bs::signer::RequestId, SignTxCb> cbSettlementSignTxMap_;
-   std::map<bs::signer::RequestId, SignerStateCb>  cbSignerStateMap_;
-   std::map<bs::signer::RequestId, std::function<void(const SecureBinaryData &)>>   cbSettlWalletMap_;
-   std::map<bs::signer::RequestId, std::function<void(bool)>>                       cbSettlIdMap_;
-   std::map<bs::signer::RequestId, std::function<void(bool, bs::Address)>>          cbPayinAddrMap_;
-   std::map<bs::signer::RequestId, std::function<void(bool, const SecureBinaryData &)>>   cbSettlPubkeyMap_;
-   std::map<bs::signer::RequestId, std::function<void(const BIP32_Node &)>>   cbChatNodeMap_;
-   std::map<bs::signer::RequestId, std::function<void(const bs::Address &)>>  cbSettlAuthMap_;
-   std::map<bs::signer::RequestId, std::function<void(const BinaryData &, const BinaryData &)>>  cbSettlCPMap_;
-   std::map<bs::signer::RequestId, std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>> signTxMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(std::vector<bs::sync::WalletInfo>)>>         cbWalletInfoMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::HDWalletData)>>  cbHDWalletMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::WalletData)>>    cbWalletMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::SyncState)>>     cbSyncAddrsMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbExtAddrsMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbNewAddrsMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, SignTxCb> cbSettlementSignTxMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, SignerStateCb>  cbSignerStateMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const SecureBinaryData &)>>   cbSettlWalletMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool)>>                       cbSettlIdMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool, bs::Address)>>          cbPayinAddrMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool, const SecureBinaryData &)>>   cbSettlPubkeyMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const BIP32_Node &)>>   cbChatNodeMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const bs::Address &)>>  cbSettlAuthMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const BinaryData &, const BinaryData &)>>  cbSettlCPMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>> signTxMap_;
 
-   std::map<bs::signer::RequestId, CreateHDLeafCb>          cbCCreateLeafMap_;
-   std::map<bs::signer::RequestId, UpdateWalletStructureCB> cbUpdateWalletMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, CreateHDLeafCb>          cbCCreateLeafMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, UpdateWalletStructureCB> cbUpdateWalletMap_;
 };
 
 
@@ -207,21 +208,22 @@ class QtHCT : public QObject, public SignerCallbackTarget
 {
    Q_OBJECT
 public:
-   QtHCT(QObject* parent);
+   QtHCT(QObject* parent) : QObject(parent) {}
 
    void connected(const std::string& host) override { emit connected(); }
    void connError(SignContainer::ConnectionError err, const QString& desc) override { emit connectionError(err, desc); }
    void connTorn() override { emit disconnected(); }
-   void onError(bs::signer::RequestId reqId, const std::string& errMsg) override;
+   void onError(bs::signer::RequestId reqId, const std::string& errMsg) override { emit Error(reqId, errMsg); }
    void onAuthComplete() override { emit authenticated(); }
    void onReady() override { emit ready(); }
    void txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
-      , bs::error::ErrorCode errCode, const std::string& errMsg = {}) override;
+      , bs::error::ErrorCode errCode, const std::string& errMsg = {}) override { emit TXSigned(reqId, signedTX, errCode, errMsg); }
    void walletInfo(bs::signer::RequestId reqId
-      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi) override;
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi) override {
+      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi)); }
    void autoSignStateChanged(bs::error::ErrorCode errCode
-      , const std::string& walletId) override;
-   void authLeafAdded(const std::string& walletId) override;
+      , const std::string& walletId) override { emit AutoSignStateChanged(errCode, walletId); }
+   void authLeafAdded(const std::string& walletId) override { emit AuthLeafAdded(walletId); }
    void newWalletPrompt() override { emit needNewWalletPrompt(); }
    void walletsReady() override { emit walletsReadyToSync(); }
    void walletsChanged() override { emit walletsListUpdated(); }
@@ -328,6 +330,7 @@ private:
    const QString  homeDir_;
    const bool     startProcess_;
    const double   asSpendLimit_;
+   std::recursive_mutex mutex_;
    std::shared_ptr<QProcess>  headlessProcess_;
 };
 

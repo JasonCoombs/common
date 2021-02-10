@@ -191,6 +191,10 @@ void ArmoryConnection::setupConnection(NetworkType netType
    , const std::string& datadir
    , bool oneWayAuth, const BIP151Cb &cbBIP151)
 {
+   if (host.empty()) {
+      logger_->error("[ArmoryConnection::setupConnection] invalid connection host");
+      return;
+   }
    addToQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
       tgt->onPrepareConnection(netType, host, port);
    });

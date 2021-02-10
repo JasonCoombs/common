@@ -53,6 +53,7 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
 WalletsAdapter::~WalletsAdapter()
 {
    utxoResMgr_->shutdownCheck();
+   stop();
 }
 
 bool WalletsAdapter::processEnvelope(const Envelope &env)
@@ -584,23 +585,20 @@ void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 
 void WalletsAdapter::sendWalletReady(const std::string &walletId)
 {
-   const auto &itReg = pendingRegistrations_.find(walletId);
-   if ((itReg == pendingRegistrations_.end()) || itReg->second.empty()) {
-      const auto& wallet = getWalletById(walletId);
-      if (wallet) {
-         pendingRegistrations_.erase(wallet->walletId());
-         for (const auto& wltId : wallet->internalIds()) {
-            readyWallets_.insert(wltId);
-         }
+   const auto& wallet = getWalletById(walletId);
+   if (wallet) {
+      pendingRegistrations_.erase(wallet->walletId());
+      for (const auto& wltId : wallet->internalIds()) {
+         readyWallets_.insert(wltId);
       }
-      else {
-         readyWallets_.insert(walletId);
-      }
-      WalletsMessage msg;
-      msg.set_wallet_ready(walletId);
-      Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
-      pushFill(env);
    }
+   else {
+      readyWallets_.insert(walletId);
+   }
+   WalletsMessage msg;
+   msg.set_wallet_ready(walletId);
+   Envelope env{ 0, ownUser_, nullptr, {}, {}, msg.SerializeAsString() };
+   pushFill(env);
 }
 
 void WalletsAdapter::sendWalletError(const std::string &walletId
@@ -662,7 +660,6 @@ void WalletsAdapter::metadataChanged(const std::string &walletId)
 
 void WalletsAdapter::processWalletRegistered(const std::string &walletId)
 {
-   logger_->debug("[{}] {}", __func__, walletId);
    for (const auto &wallet : wallets_) {
       if (wallet.second->hasScanId(walletId)) {
          processScanRegistered(wallet.second, walletId);
