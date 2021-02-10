@@ -668,6 +668,13 @@ message GenoaGetMarginReservationFeeResp
 
 message GenoaMessage
 {
+   message FutureTradeData
+   {
+      TradeDataMessage trade = 1;
+      double IM_reserve = 2;
+      double DM_reserve = 3;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaConnectedBroadcast          connected                  = 2;
@@ -703,10 +710,10 @@ message GenoaMessage
       GeanoReserveCCResponse           cc_reserve_response        = 36;
       string                           entity_name                = 37;
 
-      TradeDataMessage                 xbt1day_deliverable_trade_request   = 38;
+      FutureTradeData                  xbt1day_deliverable_trade_request   = 38;
       XBT1DayTradeResult               xbt1day_deliverable_trade_response  = 39;
 
-      TradeDataMessage                 xbt1day_cash_settled_trade_request  = 40;
+      FutureTradeData                  xbt1day_cash_settled_trade_request  = 40;
       XBT1DayTradeResult               xbt1day_cash_settled_trade_response = 41;
 
       double                           cutoff_price               = 42;

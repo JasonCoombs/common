@@ -73,11 +73,18 @@ message Request
     {
         string product_name = 1;
         double qty = 2;
+        bs.types.Side side = 3;
     }
 
     message ProductFee
     {
         string product_name = 1;
+    }
+
+    message MaxTradeAmount
+    {
+        string product_name = 1;
+        bs.types.Side side = 2;
     }
 
     message TradingStats
@@ -97,7 +104,8 @@ message Request
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
-        TradingStats trading_stats = 21;
+        MaxTradeAmount max_trade_amount = 21;
+        TradingStats trading_stats = 22;
     }
 }
 
@@ -175,6 +183,14 @@ message Response
         string fee_ccy = 5;
     }
 
+    message MaxTradeAmount
+    {
+        string product_name = 1;
+        bs.types.Side side = 2;
+        double qty = 3;
+        double fee = 4;
+    }
+
     message TradingStats
     {
         double cutoff = 1;
@@ -228,7 +244,8 @@ message Response
         TradingDay trading_day = 16;
         EstimateIm estimate_im = 19;
         ProductFee product_fee = 20;
-        TradingStats trading_stats = 21;
+        MaxTradeAmount max_trade_amount = 21;
+        TradingStats trading_stats = 22;
 
         MarketData market_data = 50;
         Error fatal_error = 51;

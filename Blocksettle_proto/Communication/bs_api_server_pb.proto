@@ -63,6 +63,12 @@ message Request
         Blocksettle.Communication.ApiServer.Request.ProductFee order = 2;
     }
 
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        Blocksettle.Communication.ApiServer.Request.MaxTradeAmount request = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -73,6 +79,8 @@ message Request
         TradingDay trading_day = 6;
         EstimateIm estimate_im = 7;
         ProductFee product_fee = 8;
+        MaxTradeAmount max_trade_amount = 9;
+        Blocksettle.Communication.ApiServer.Response.MarketData market_data = 10;
     }
 }
 
@@ -136,6 +144,12 @@ message Response
         Blocksettle.Communication.ApiServer.Response.OrderUpdate result = 2;
     }
 
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        Blocksettle.Communication.ApiServer.Response.MaxTradeAmount result = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -147,5 +161,6 @@ message Response
         EstimateIm estimate_im = 7;
         ProductFee product_fee = 8;
         OrderUpdate order_update = 9;
+        MaxTradeAmount max_trade_amount = 10;
     }
 }
