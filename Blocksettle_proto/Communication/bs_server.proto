@@ -1561,8 +1561,10 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      int64          xbt_amount = 1;
+      uint64         xbt_amount = 1;
       PriceBookType  price_book = 2;
+      bs.types.Side  side = 3;
+      double         expected_price = 4;
    }
 
    message GetBestOfferResponse
@@ -1575,10 +1577,8 @@ message PriceStreamManaging
          double   price             = 2;
       }
 
-      PriceOffer  offer = 2;
-      PriceOffer  bid   = 3;
-
-      bool        offer_exists = 4;
+      PriceOffer  match = 2;
+      bool        matched = 4;
    }
 
    message TradeUpdateEvent
