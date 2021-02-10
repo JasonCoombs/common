@@ -52,8 +52,8 @@ SslDataConnection::~SslDataConnection()
    closeConnection();
 }
 
-bool SslDataConnection::openConnectionWithPath(const std::string& host, const std::string& path
-                               , const std::string& port
+bool SslDataConnection::openConnectionWithPath(const std::string& host, const std::string& port
+                               , const std::string& path
                                , DataConnectionListener* listener)
 {
    path_ = path;

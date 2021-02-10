@@ -69,8 +69,8 @@ public:
    SslDataConnection(SslDataConnection&&) = delete;
    SslDataConnection& operator = (SslDataConnection&&) = delete;
 
-   bool openConnectionWithPath(const std::string& host, const std::string& path
-                               , const std::string& port
+   bool openConnectionWithPath(const std::string& host, const std::string& port
+                               , const std::string& path
                                , DataConnectionListener* listener);
 
    bool openConnection(const std::string& host, const std::string& port
