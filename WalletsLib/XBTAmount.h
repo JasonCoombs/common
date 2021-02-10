@@ -15,11 +15,15 @@
 
 namespace bs {
 
-// class XBTAmount should be used to unify getting satochi amount from double BTC
+// class XBTAmount should be used to unify getting satoshi amount from double BTC
 // across all codebase
 // basically it is strongly typed wrapper for uint64_t
    class XBTAmount
    {
+   public:
+      using satoshi_type = BTCNumericTypes::satoshi_type;
+      using bitcoin_type = BTCNumericTypes::balance_type;
+
    public:
       XBTAmount();
       explicit XBTAmount(const BTCNumericTypes::balance_type amount);

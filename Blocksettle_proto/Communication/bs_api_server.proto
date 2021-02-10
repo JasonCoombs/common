@@ -257,20 +257,9 @@ message Response
 
 message LP_API
 {
-   message PriceOffer
-   {
-      message BidAsk {
-         string bid = 1; // should be double at some point
-         string ask = 2;
-      }
-      BidAsk inf = 5;	// can't use numeric field names for 1, 5, 10, 25
-   }
-
    oneof data
    {
        string     api_key = 1;
        string     login_result = 2;
-       PriceOffer cash_settled = 3;
-       PriceOffer deliverable  = 4;
    }
 }
