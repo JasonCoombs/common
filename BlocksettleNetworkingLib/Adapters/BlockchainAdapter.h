@@ -140,12 +140,13 @@ protected:
       bool asNew{ false };
    };
    std::unordered_map<std::string, Wallet>      wallets_;
+   std::recursive_mutex mutex_;
    std::unordered_map<std::string, std::string> regMap_;
    std::unordered_map<std::string, bs::message::Envelope>   reqByRegId_;
    std::unordered_map<std::string, std::pair<std::string, bs::message::Envelope>>   unconfTgtMap_;
 
    bool walletsReady_{ false };
-   bool registrationComplete_{ false };
+   std::atomic_bool registrationComplete_{ false };
    std::atomic_bool  suspended_{ true };
    std::shared_ptr<std::atomic_bool>   stopped_;
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;

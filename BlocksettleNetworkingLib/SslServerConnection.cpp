@@ -57,7 +57,7 @@ SslServerConnection::~SslServerConnection()
    stopServer();
 }
 
-bool SslServerConnection::BindConnection(const std::string& host , const std::string& port
+bool SslServerConnection::BindConnection(const std::string& /*host*/, const std::string& port
    , ServerConnectionListener* listener)
 {
    stopServer();
@@ -69,7 +69,13 @@ bool SslServerConnection::BindConnection(const std::string& host , const std::st
 
    struct lws_context_creation_info info;
    memset(&info, 0, sizeof(info));
-   info.port = std::stoi(port);
+   try {
+      info.port = std::stoi(port);
+   }
+   catch (const std::exception& e) {
+      logger_->error("[SslServerConnection::BindConnection] invalid port {}: {}", port, e.what());
+      return false;
+   }
    info.protocols = kProtocols;
    info.gid = -1;
    info.uid = -1;

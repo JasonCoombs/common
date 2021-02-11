@@ -21,6 +21,17 @@ ThreadedAdapter::ThreadedAdapter()
 
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
+   stop();
+}
+
+bool ThreadedAdapter::process(const Envelope &envelope)
+{
+   SendEnvelopeToThread(envelope);
+   return true;
+}
+
+void ThreadedAdapter::stop()
+{
    continueExecution_ = false;
    decltype(pendingEnvelopes_) cleanQueue;
    pendingEnvelopes_.swap(cleanQueue);
@@ -28,12 +39,6 @@ ThreadedAdapter::~ThreadedAdapter() noexcept
    if (processingThread_.joinable()) {
       processingThread_.join();
    }
-}
-
-bool ThreadedAdapter::process(const Envelope &envelope)
-{
-   SendEnvelopeToThread(envelope);
-   return true;
 }
 
 void ThreadedAdapter::processingRoutine()

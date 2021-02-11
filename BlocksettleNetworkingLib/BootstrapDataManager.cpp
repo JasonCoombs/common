@@ -92,10 +92,15 @@ bool BootstrapDataManager::loadData(const std::string& data)
 
    const auto payload = BinaryData::fromString(response.responsedata());
    const auto signature = BinaryData::fromString(response.datasignature());
-   const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
-
-   if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
-      logger_->error("[BootstrapDataManager::loadData] signature invalid");
+   try {
+      const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
+      if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
+         logger_->error("[BootstrapDataManager::loadData] signature invalid");
+         return false;
+      }
+   }
+   catch (const std::exception& e) {
+      logger_->error("[BootstrapDataManager::loadData] invalid BS sign address: {}", e.what());
       return false;
    }
 
