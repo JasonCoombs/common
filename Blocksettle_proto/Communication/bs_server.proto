@@ -1563,8 +1563,6 @@ message PriceStreamManaging
    {
       uint64         xbt_amount = 1;
       PriceBookType  price_book = 2;
-      bs.types.Side  side = 3;
-      double         expected_price = 4;
    }
 
    message GetBestOfferResponse
@@ -1577,7 +1575,8 @@ message PriceStreamManaging
          double   price             = 2;
       }
 
-      PriceOffer  match = 2;
+      PriceOffer  bid = 2;
+      PriceOffer  ask = 3;
       bool        matched = 4;
    }
 
