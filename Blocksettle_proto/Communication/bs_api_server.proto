@@ -160,7 +160,6 @@ message Response
     {
         double time_to_cut_off = 1;
         double cut_off_at = 3;
-        double open_interest = 4;
         double last_cut_off_price = 5;
     }
 
@@ -216,9 +215,6 @@ message Response
 
         string product_type = 1;
         repeated Item items = 2;
-        double cutoff = 3;
-        double daily_volume = 4;
-        double open_interest = 5;
     }
 
     message EidLoginUpdate
