@@ -440,11 +440,11 @@ QString ApplicationSettings::GetDefaultHomeDir() const
 {
    switch (get<NetworkType>(netType)) {
    case NetworkType::TestNet:
-      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/ + QDir::separator() + testnetSubdir);
+      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + testnetSubdir);
    case NetworkType::RegTest:
-      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/ + QDir::separator() + regtestSubdir);
+      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + regtestSubdir);
    default:
-      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/);
+      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName);
    }
 }
 
