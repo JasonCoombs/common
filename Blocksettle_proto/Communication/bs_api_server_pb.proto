@@ -124,6 +124,7 @@ message Response
     {
         bytes client_id = 1;
         Blocksettle.Communication.ApiServer.Response.TradingDay result = 2;
+        double open_interest = 3;
     }
 
     message EstimateIm
