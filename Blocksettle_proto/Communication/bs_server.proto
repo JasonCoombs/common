@@ -659,11 +659,12 @@ message GenoaGetMarginReservationFeeReq
 
 message GenoaGetMarginReservationFeeResp
 {
-   bool success = 1;
-   string error_msg = 2;
-   string product_name = 3;
-   double fee = 4;
-   string fee_ccy = 5;
+   bool     success        = 1;
+   string   error_msg      = 2;
+   string   product_name   = 3;
+   double   fee            = 4;
+   string   fee_ccy        = 5;
+   double   im             = 6;
 }
 
 message GenoaMessage
