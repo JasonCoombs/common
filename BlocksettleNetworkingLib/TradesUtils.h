@@ -142,6 +142,7 @@ namespace bs {
          bs::Address settlAddr;
          BinaryData usedPayinHash;
          bs::XBTAmount amount;
+         UTXO  utxo; // optional
       };
 
       struct PayoutVerifyResult

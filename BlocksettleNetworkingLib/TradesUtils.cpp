@@ -451,10 +451,12 @@ bs::tradeutils::PayoutVerifyResult bs::tradeutils::verifySignedPayout(bs::tradeu
       auto txdata = tx.serialize();
       auto bctx = BCTX::parse(txdata);
 
-      auto utxo = getInputFromTX(args.settlAddr, args.usedPayinHash, 0, args.amount);
+      if (!args.utxo.isInitialized()) {
+         args.utxo = getInputFromTX(args.settlAddr, args.usedPayinHash, 0, args.amount);
+      }
 
       std::map<BinaryData, std::map<unsigned, UTXO>> utxoMap;
-      utxoMap[utxo.getTxHash()][0] = utxo;
+      utxoMap[args.utxo.getTxHash()][0] = args.utxo;
 
       TransactionVerifier tsv(*bctx, utxoMap);
 
