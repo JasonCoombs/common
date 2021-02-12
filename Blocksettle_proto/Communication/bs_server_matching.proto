@@ -198,6 +198,23 @@ message RFSMarketOrderResponse
    string         product        = 7;
 }
 
+message EstimateImRequest
+{
+   string entity_name = 1;
+   string product = 2;
+   double qty = 3;
+   bs.types.Side side = 4;
+   double price = 5;
+}
+
+message EstimateImResponse
+{
+   EstimateImRequest request = 1;
+   bool   success = 2;
+   double im_balance = 3;
+   string error_text = 4;
+}
+
 message MatchingMessage
 {
    oneof data {
@@ -229,5 +246,7 @@ message MatchingMarketMessage
    oneof data {
       RFSMarketOrder             rfs_market_order = 1;
       RFSMarketOrderResponse     rfs_market_order_response = 2;
+      EstimateImRequest          estimate_im_request = 3;
+      EstimateImResponse         estimate_im_response = 4;
    }
 }
