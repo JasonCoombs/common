@@ -159,6 +159,7 @@ message Response
 
     message TradingDay
     {
+        string product_name = 2;
         double time_to_cut_off = 1;
         double cut_off_at = 3;
         double last_cut_off_price = 5;
