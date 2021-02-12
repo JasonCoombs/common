@@ -67,6 +67,7 @@ message Request
 
     message TradingDay
     {
+        string product_name = 1;
     }
 
     message EstimateIm
