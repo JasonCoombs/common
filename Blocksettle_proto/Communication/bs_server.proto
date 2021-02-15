@@ -269,7 +269,6 @@ enum GenoaType
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
    GenoaTradeCycleStatus         = 46;
-   GenoaMarginReservationFee     = 48;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -627,11 +626,14 @@ message GenoaGetCurrentTradeCycleDetails
 {
    bool success                     = 1;
    string error_msg                 = 2;
-   string product_name              = 7;
-   int64 cut_off_at                 = 3;
-   double seconds_time_to_cut_off   = 4;
-   double open_interest             = 5;
-   double last_cut_off_price        = 6;
+   string product_name              = 3;
+   int64 cut_off_at                 = 4;
+   double seconds_time_to_cut_off   = 5;
+   double open_interest             = 6;
+   double last_cut_off_price        = 7;
+   double fee                       = 8;
+   string fee_ccy                   = 9;
+   double im                        = 10;
 }
 
 message GenoaEstimateImRequest
@@ -650,21 +652,6 @@ message GenoaEstimateImResponse
    double expected_im_reservation = 10;
    double fee_amount = 12;
    string product_name = 13;
-}
-
-message GenoaGetMarginReservationFeeReq
-{
-   string product_name = 3;
-}
-
-message GenoaGetMarginReservationFeeResp
-{
-   bool     success        = 1;
-   string   error_msg      = 2;
-   string   product_name   = 3;
-   double   fee            = 4;
-   string   fee_ccy        = 5;
-   double   im             = 6;
 }
 
 message GenoaSendCutoffPriceReq
@@ -737,8 +724,6 @@ message GenoaMessage
       GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
-      GenoaGetMarginReservationFeeReq  get_margin_reserv_fee         = 51;
-      GenoaGetMarginReservationFeeResp get_margin_reserv_fee_resp    = 52;
 
    }
 }
