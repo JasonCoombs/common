@@ -269,7 +269,6 @@ enum GenoaType
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
    GenoaTradeCycleStatus         = 46;
-   GenoaEstimateImType           = 47;
    GenoaMarginReservationFee     = 48;
 
    GenoaReloadAccounts           = 44;
