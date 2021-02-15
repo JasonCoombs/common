@@ -268,9 +268,7 @@ enum GenoaType
    GenoaLoadDeliveryObligations  = 41;
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
-   GenoaGetTradeCycleDetails     = 46;
-   GenoaEstimateImType           = 47;
-   GenoaMarginReservationFee     = 48;
+   GenoaTradeCycleStatus         = 46;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -628,10 +626,14 @@ message GenoaGetCurrentTradeCycleDetails
 {
    bool success                     = 1;
    string error_msg                 = 2;
-   int64 cut_off_at                 = 3;
-   double seconds_time_to_cut_off   = 4;
-   double open_interest             = 5;
-   double last_cut_off_price        = 6;
+   string product_name              = 3;
+   int64 cut_off_at                 = 4;
+   double seconds_time_to_cut_off   = 5;
+   double open_interest             = 6;
+   double last_cut_off_price        = 7;
+   double fee                       = 8;
+   string fee_ccy                   = 9;
+   double im                        = 10;
 }
 
 message GenoaEstimateImRequest
@@ -652,19 +654,10 @@ message GenoaEstimateImResponse
    string product_name = 13;
 }
 
-message GenoaGetMarginReservationFeeReq
+message GenoaSendCutoffPriceReq
 {
-   string product_name = 3;
-}
-
-message GenoaGetMarginReservationFeeResp
-{
-   bool     success        = 1;
-   string   error_msg      = 2;
-   string   product_name   = 3;
-   double   fee            = 4;
-   string   fee_ccy        = 5;
-   double   im             = 6;
+   string   product_name   = 1;
+   double   cutoff_price   = 2;
 }
 
 message GenoaMessage
@@ -718,7 +711,7 @@ message GenoaMessage
       FutureTradeData                  xbt1day_cash_settled_trade_request  = 40;
       XBT1DayTradeResult               xbt1day_cash_settled_trade_response = 41;
 
-      double                           cutoff_price               = 42;
+      GenoaSendCutoffPriceReq          cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
 
       SetDeliveryAddress               set_delivery_address          = 44;
@@ -727,12 +720,10 @@ message GenoaMessage
       LoadAllObligationsResponse       loaded_obligations            = 46;
       SettleDelivery                   settle_delivery_status        = 47;
 
-      GenoaGetCurrentTradeCycleDetails current_trade_cycle_details   = 48;
+      string                           trade_cycle_status            = 53;
+      GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
-
-      GenoaGetMarginReservationFeeReq  get_margin_reserv_fee         = 51;
-      GenoaGetMarginReservationFeeResp get_margin_reserv_fee_resp    = 52;
 
    }
 }
@@ -800,17 +791,23 @@ message GenoaServerTradeUpdateEvent
    bs.types.Order    order          = 3;
 }
 
+message GenoaServerTradingDayClose
+{
+   string            product_name   = 1;
+}
+
 message GenoaServerMessage
 {
    GenoaServerType type = 1;
    oneof data {
-      GenoaServerClientRequest         new_client     = 2;
-      GenoaServerBalanceUpdate         balance_update = 3;
-      GenoaServerTradingStatusUpdate   trd_status     = 4;
-      GenoaServerXbtTradingStatus      xbt_trd_status = 5;
-      GenoaServerNewCcSeedRequest      new_cc_seed    = 6;
-      GenoaServerNewCCDepositRequest   new_cc_deposit = 7;
-      GenoaServerTradeUpdateEvent      trade_update   = 8;
+      GenoaServerClientRequest         new_client           = 2;
+      GenoaServerBalanceUpdate         balance_update       = 3;
+      GenoaServerTradingStatusUpdate   trd_status           = 4;
+      GenoaServerXbtTradingStatus      xbt_trd_status       = 5;
+      GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
+      GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
+      GenoaServerTradeUpdateEvent      trade_update         = 8;
+      GenoaServerTradingDayClose       trading_day_close    = 9;
 
       bool                             response       = 10;
    }
@@ -1540,10 +1537,16 @@ message ObligationsManaging
       bool     detected       = 5;
    }
 
+   message TradingDayClose
+   {
+      string   product_name   = 1;
+   }
+
    oneof data
    {
       CustomerObligationsRequest    load_obligations_request   = 3;
       CustomerObligationsResponse   load_obligations_response  = 4;
+      TradingDayClose               trading_day_close_request  = 5;
    }
 }
 
