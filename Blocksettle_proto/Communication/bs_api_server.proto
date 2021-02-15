@@ -24,6 +24,18 @@ enum EidStatus {
     EID_STATUS_SUCCESS = 30;
 }
 
+message Order
+{
+   string id = 1;
+   bs.types.OrderStatus status = 2;
+   string status_text = 3;
+   double timestamp = 4;
+   string product_type = 5;
+   bs.types.Side side = 6;
+   double quantity = 8;
+   double price = 9;
+}
+
 message Request
 {
     message Authorize
@@ -142,7 +154,7 @@ message Response
 
     message LoadOrders
     {
-        repeated bs.types.Order orders = 1;
+        repeated Order orders = 1;
     }
 
     message LoadBalance
@@ -202,7 +214,7 @@ message Response
 
     message OrderUpdate
     {
-        bs.types.Order order = 1;
+        Order order = 1;
         bs.types.Action action = 2;
     }
 
