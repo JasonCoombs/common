@@ -136,7 +136,7 @@ message Response
     {
         bool success = 1;
         string order_id = 2;
-        string error = 3;
+        string error_msg = 3;
         double price = 4;
     }
 
