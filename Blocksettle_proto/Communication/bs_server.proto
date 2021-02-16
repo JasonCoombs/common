@@ -1562,6 +1562,8 @@ message PriceStreamManaging
       ClientConnected               = 3;
       ClientDisconnected            = 4;
       DataReceivedFromClient        = 5;
+      CleanupExpiredPriceOfferings  = 6;
+      PriceConsumed                 = 7;
    };
 
    message GetBestOfferRequest
@@ -1578,6 +1580,7 @@ message PriceStreamManaging
       {
          string   owner_entity_name = 1;
          double   price             = 2;
+         int64    timestamp         = 3;
       }
 
       PriceOffer  bid = 2;
@@ -1598,6 +1601,12 @@ message PriceStreamManaging
       bytes    client_data = 2;
    }
 
+   message PriceConsumedData
+   {
+      string   owner_entity_name = 1;
+      int64    timestamp         = 2;
+   }
+
    MessageType   message_type = 1;
 
    oneof data
@@ -1606,6 +1615,7 @@ message PriceStreamManaging
       GetBestOfferResponse best_price_offer     = 3;
       TradeUpdateEvent     trade_update_event   = 4;
       ClientData           client_data          = 5;
+      PriceConsumedData    consumed_price       = 6;
    }
 }
 
