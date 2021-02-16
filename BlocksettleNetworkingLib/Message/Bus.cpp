@@ -18,12 +18,6 @@ using namespace bs::message;
 static const std::string kQuitMessage("QUIT");
 static const std::string kAccResetMessage("ACC_RESET");
 
-using bus_clock = std::chrono::steady_clock;
-
-static_assert(bus_clock::is_steady, "Should be steady clock");
-static_assert(bus_clock::period::den >= 10000, "Should be at least ms" );
-
-
 Router::Router(const std::shared_ptr<spdlog::logger> &logger)
    : logger_(logger)
 {}
@@ -202,7 +196,7 @@ void Queue_Locking::process()
    const auto &processPortion = [this, &deferredQueue, &dqTime, &accTime, &acc]
       (const decltype(queue_) &tempQueue, const bus_clock::time_point &timeNow)
    {
-      std::chrono::time_point<std::chrono::system_clock> procStart;
+      TimeStamp procStart;
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {

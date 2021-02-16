@@ -241,7 +241,7 @@ void BlockchainAdapter::reconnect()
    logger_->debug("[BlockchainAdapter::reconnect]");
    ArmoryMessage msg;
    msg.mutable_reconnect();
-   const auto timeNow = std::chrono::system_clock::now();
+   const auto timeNow = bs::message::bus_clock::now();
    bs::message::Envelope env{ 0, user_, user_, timeNow
       , timeNow + kReconnectInterval, msg.SerializeAsString() };
    pushFill(env);
@@ -977,7 +977,7 @@ void BlockchainAdapter::sendBroadcastTimeout(const std::string &timeoutId)
 {
    ArmoryMessage msg;
    msg.set_tx_push_timeout(timeoutId);
-   const auto &timeNow = std::chrono::system_clock::now();
+   const auto &timeNow = bs::message::bus_clock::now();
    bs::message::Envelope env{ 0, user_, user_, timeNow
       , timeNow + kBroadcastTimeout, msg.SerializeAsString() };
    pushFill(env);
