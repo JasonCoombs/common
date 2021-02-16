@@ -269,6 +269,7 @@ enum GenoaType
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
    GenoaTradeCycleStatus         = 46;
+   GenoaTradingDayOpen     	 = 47;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -724,7 +725,7 @@ message GenoaMessage
       GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
-
+      string                           trading_day_open              = 51;
    }
 }
 
@@ -808,7 +809,6 @@ message GenoaServerMessage
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
       GenoaServerTradeUpdateEvent      trade_update         = 8;
       GenoaServerTradingDayClose       trading_day_close    = 9;
-
       bool                             response       = 10;
    }
 }
