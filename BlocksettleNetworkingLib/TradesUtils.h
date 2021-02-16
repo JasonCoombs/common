@@ -156,6 +156,9 @@ namespace bs {
       // Maximum XBT amount multiplier for possible price changes
       double reservationQuantityMultiplier();
 
+      bs::Address createEasySettlAddress(const SecureBinaryData& buyerPubKey
+         , const SecureBinaryData& sellerPubKey);
+
    } // namespace tradeutils
 } // namespace bs
 

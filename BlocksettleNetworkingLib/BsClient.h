@@ -22,7 +22,7 @@
 #include <spdlog/logger.h>
 
 #include "Address.h"
-
+#include "AuthAddress.h"
 #include "autheid_utils.h"
 #include "AutheIDClient.h"
 #include "BSErrorCode.h"
@@ -115,6 +115,7 @@ struct BsClientCallbackTarget
    virtual void onFeeRateReceived(float feeRate) {}
    virtual void onBalanceLoaded() {}
    virtual void onBalanceUpdated(const std::string& currency, double balance) {}
+   virtual void onAddrWhitelisted(const std::map<bs::Address, AddressVerificationState>&) {}
 
    virtual void onTradingStatusChanged(bool tradingEnabled) {}
 };
@@ -180,6 +181,7 @@ public:
    virtual void sendCancelOnCCTrade(const std::string& clOrdId);
 
    virtual void findEmailHash(const std::string& email);
+   virtual void whitelistAddress(const std::string& addrStr);
 
    static std::chrono::seconds autheidLoginTimeout();
    static std::chrono::seconds autheidAuthAddressTimeout();

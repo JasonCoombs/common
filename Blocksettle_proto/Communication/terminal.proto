@@ -387,6 +387,16 @@ message BsServerMessage
       bytes tx = 2;
    }
 
+
+   message WhitelistAddrs
+   {
+      message AddressStatus {
+         string address = 1;
+         int32  status = 2;
+      }
+      repeated AddressStatus addresses = 1;
+   }   
+
    oneof data
    {
       Empty            open_connection = 1;
@@ -415,6 +425,8 @@ message BsServerMessage
       XbtTransaction   send_unsigned_payin = 25;
       XbtTransaction   send_signed_payin = 26;
       XbtTransaction   send_signed_payout = 27;
+      string           whitelist_address = 28;
+      WhitelistAddrs   whitelist_addresses_result = 29;
    }
 }
 

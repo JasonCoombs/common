@@ -142,7 +142,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
       return;
    }
 
-   leaf->setSettlementID(args.settlementId, [args, cb](bool result)
+   leaf->setSettlementID(args.settlementId, [args, cb](bool result, const SecureBinaryData&)
    {
       if (!result) {
          cb(PayinResult::error("setSettlementID failed"));
@@ -386,7 +386,7 @@ void bs::tradeutils::createPayout(bs::tradeutils::PayoutArgs args
    }
 
    leaf->setSettlementID(args.settlementId, [args, cb, myKeyFirst]
-      (bool result)
+      (bool result, const SecureBinaryData&)
    {
       if (!result) {
          cb(PayoutResult::error("setSettlementID failed"));
@@ -487,4 +487,23 @@ bs::tradeutils::PayoutVerifyResult bs::tradeutils::verifySignedPayout(bs::tradeu
 double bs::tradeutils::reservationQuantityMultiplier()
 {
    return 1.2;
+}
+
+bs::Address bs::tradeutils::createEasySettlAddress(const SecureBinaryData& buyerPubKey
+   , const SecureBinaryData& sellerPubKey)
+{
+   SecureBinaryData pubKey1 = sellerPubKey;
+   SecureBinaryData pubKey2 = buyerPubKey;
+   const auto& asset1 = std::make_shared<AssetEntry_Single>(0, BinaryData(), pubKey1, nullptr);
+   const auto& asset2 = std::make_shared<AssetEntry_Single>(0, BinaryData(), pubKey2, nullptr);
+
+   std::map<BinaryData, std::shared_ptr<AssetEntry>> assetMap;
+   assetMap.insert({ READHEX("00"), asset1 });
+   assetMap.insert({ READHEX("01"), asset2 });
+
+   auto assetMultiSig = std::make_shared<AssetEntry_Multisig>(0, BinaryData()
+      , assetMap, 1, 2);
+   auto addrMultiSig = std::make_shared<AddressEntry_Multisig>(assetMultiSig, true);
+   const auto& addrP2sh = std::make_shared<AddressEntry_P2SH>(addrMultiSig);
+   return bs::Address::fromAddressEntry(*addrP2sh);
 }

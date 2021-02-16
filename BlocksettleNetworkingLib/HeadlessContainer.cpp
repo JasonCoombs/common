@@ -845,7 +845,7 @@ void HeadlessContainer::createSettlementWallet(const bs::Address &authAddr
 }
 
 void HeadlessContainer::setSettlementID(const std::string &walletId, const SecureBinaryData &id
-   , const std::function<void(bool)> &cb)
+   , const std::function<void(bool, const SecureBinaryData&)> &cb)
 {
    headless::SetSettlementIdRequest request;
    request.set_wallet_id(walletId);
@@ -855,7 +855,7 @@ void HeadlessContainer::setSettlementID(const std::string &walletId, const Secur
    packet.set_data(request.SerializeAsString());
    packet.set_type(headless::SetSettlementIdType);
    const auto reqId = Send(packet);
-   cbSettlIdMap_.put(reqId, cb);
+   cbSettlPubkeyMap_.put(reqId, cb);
 }
 
 void HeadlessContainer::getSettlementPayinAddress(const std::string &walletId
@@ -884,6 +884,20 @@ void HeadlessContainer::getRootPubkey(const std::string &walletID
    packet.set_type(headless::SettlGetRootPubkeyType);
    const auto reqId = Send(packet);
    cbSettlPubkeyMap_.put(reqId, cb);
+}
+
+void HeadlessContainer::getAddressPubkey(const std::string& walletID
+   , const std::string& address, const std::function<void(const SecureBinaryData&)>& cb)
+{
+   headless::AddressPubKeyRequest request;
+   request.set_wallet_id(walletID);
+   request.set_address(address);
+
+   headless::RequestPacket packet;
+   packet.set_data(request.SerializeAsString());
+   packet.set_type(headless::AddressPubkeyRequestType);
+   const auto reqId = Send(packet);
+   cbSettlWalletMap_.put(reqId, cb);
 }
 
 void HeadlessContainer::getChatNode(const std::string &walletID
@@ -1125,12 +1139,12 @@ void HeadlessContainer::ProcessSetSettlementId(unsigned int id, const std::strin
       sct_->onError(id, "failed to parse");
       return;
    }
-   const auto cb = cbSettlIdMap_.take(id);
+   const auto cb = cbSettlPubkeyMap_.take(id);
    if (!cb) {
       sct_->onError(id, "no callback found for id " + std::to_string(id));
       return;
    }
-   cb(response.success());
+   cb(response.success(), SecureBinaryData::fromString(response.public_key()));
 }
 
 void HeadlessContainer::ProcessGetPayinAddr(unsigned int id, const std::string &data)
@@ -1251,6 +1265,22 @@ void HeadlessContainer::ProcessWindowStatus(unsigned int id, const std::string &
    SPDLOG_LOGGER_DEBUG(logger_, "local signer visible: {}", message.visible());
    isWindowVisible_ = message.visible();
    sct_->windowIsVisible(isWindowVisible_);
+}
+
+void HeadlessContainer::ProcessAddrPubkeyResponse(unsigned int id, const std::string& data)
+{
+   headless::AddressPubKeyResponse response;
+   if (!response.ParseFromString(data)) {
+      logger_->error("[HeadlessContainer::ProcessSettlGetRootPubkey] Failed to parse reply");
+      sct_->onError(id, "failed to parse");
+      return;
+   }
+   const auto cb = cbSettlWalletMap_.take(id);
+   if (!cb) {
+      sct_->onError(id, "no callback found for id " + std::to_string(id));
+      return;
+   }
+   cb(SecureBinaryData::fromString(response.public_key()));
 }
 
 void HeadlessContainer::ProcessSyncWalletInfo(unsigned int id, const std::string &data)
@@ -1763,6 +1793,10 @@ void RemoteSigner::onPacketReceived(const headless::RequestPacket &packet)
 
    case headless::SettlGetRootPubkeyType:
       ProcessSettlGetRootPubkey(packet.id(), packet.data());
+      break;
+
+   case headless::AddressPubkeyRequestType:
+      ProcessAddrPubkeyResponse(packet.id(), packet.data());
       break;
 
    case headless::SyncWalletInfoType:

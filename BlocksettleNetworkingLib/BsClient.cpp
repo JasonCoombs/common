@@ -150,17 +150,41 @@ void BsClient::findEmailHash(const std::string &email)
    auto d = request.mutable_get_email_hash();
    d->set_email(email);
 
-   auto timeoutCb = [this, email] {
+   auto timeoutCb = [this, email]
+   {
       SPDLOG_LOGGER_ERROR(logger_, "getting email hash timed out for address: {}", email);
       bct_->onEmailHashReceived(email, "");
    };
-
-   auto processCb = [this, email](const Blocksettle::Communication::ProxyTerminal::Response &response) {
+   auto processCb = [this, email](const ProxyTerminal::Response &response)
+   {
       const auto &hash = response.get_email_hash().hash();
       SPDLOG_LOGGER_DEBUG(logger_, "got email hash address: {}, hash: {}", email, hash);
       bct_->onEmailHashReceived(email, hash);
    };
+   sendRequest(&request, std::chrono::seconds(10), std::move(timeoutCb), std::move(processCb));
+}
 
+void BsClient::whitelistAddress(const std::string& addrStr)
+{
+   Request request;
+   request.set_whitelist_address(addrStr);
+
+   auto timeoutCb = [this, addrStr]
+   {
+      SPDLOG_LOGGER_ERROR(logger_, "whitelisting address {} timed out", addrStr);
+   };
+   auto processCb = [this](const ProxyTerminal::Response& response)
+   {
+      std::map<bs::Address, AddressVerificationState> result;
+      for (const auto& addr : response.whitelist_addresses().addresses()) {
+         try {
+            const auto& address = bs::Address::fromAddressString(addr.address());
+            result[address] = static_cast<AddressVerificationState>(addr.status());
+         }
+         catch (...) {}
+      }
+      bct_->onAddrWhitelisted(result);
+   };
    sendRequest(&request, std::chrono::seconds(10), std::move(timeoutCb), std::move(processCb));
 }
 

@@ -254,6 +254,9 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::ChatNodeRequestType:
       return onChatNodeRequest(clientId, packet);
 
+   case headless::AddressPubkeyRequestType:
+      return onAddressPubkey(clientId, packet);
+
    case headless::SettlementAuthType:
       return onSettlAuthRequest(clientId, packet);
 
@@ -1642,14 +1645,20 @@ bool HeadlessContainerListener::onSetSettlementId(const std::string &clientId
 
    // Call addSettlementID only once, otherwise addSettlementID will crash
    const auto settlementId = SecureBinaryData::fromString(request.settlement_id());
-   if (settlLeaf->getIndexForSettlementID(settlementId) == UINT32_MAX) {
-      settlLeaf->addSettlementID(settlementId);
+   auto addrIndex = settlLeaf->getIndexForSettlementID(settlementId);
+   if (addrIndex == UINT32_MAX) {
+      addrIndex = settlLeaf->addSettlementID(settlementId);
       settlLeaf->getNewExtAddress();
       if (callbacks_) {
          callbacks_->walletChanged(settlLeaf->walletId());
       }
       logger_->debug("[{}] set settlement id {} for wallet {}", __func__
          , settlementId.toHexStr(), settlLeaf->walletId());
+   }
+
+   const auto& asset = settlLeaf->getAssetForId(addrIndex);
+   if (asset) {
+      response.set_public_key(asset->getPubKey()->getCompressedKey().toBinStr());
    }
 
    response.set_success(true);
@@ -1715,7 +1724,8 @@ bool HeadlessContainerListener::onSettlGetRootPubkey(const std::string &clientId
    return sendData(packet.SerializeAsString(), clientId);
 }
 
-bool HeadlessContainerListener::onGetHDWalletInfo(const std::string &clientId, headless::RequestPacket &packet)
+bool HeadlessContainerListener::onGetHDWalletInfo(const std::string &clientId
+   , const headless::RequestPacket &packet)
 {
    headless::GetHDWalletInfoRequest request;
    if (!request.ParseFromString(packet.data())) {
@@ -2341,6 +2351,45 @@ bool HeadlessContainerListener::onExecCustomDialog(const std::string &clientId, 
       callbacks_->customDialog(request.dialogname(), request.variantdata());
    }
    return true;
+}
+
+bool HeadlessContainerListener::onAddressPubkey(const std::string& clientId
+   , headless::RequestPacket packet)
+{
+   headless::AddressPubKeyRequest request;
+   if (!request.ParseFromString(packet.data())) {
+      logger_->error("[{}] failed to parse request", __func__);
+      return false;
+   }
+   bs::Address address;
+   try {
+      address = bs::Address::fromAddressString(request.address());
+   }
+   catch (const std::exception&) {
+      logger_->error("[{}] invalid address {}", __func__, request.address());
+      return false;
+   }
+
+   headless::AddressPubKeyResponse response;
+   response.set_address(request.address());
+   const auto& wallet = walletsMgr_->getWalletByAddress(address);
+   if (wallet) {
+      if (wallet->walletId() != request.wallet_id()) {
+         logger_->warn("[{}] wallets mismatch: {} vs {}", __func__
+            , wallet->walletId(), request.wallet_id());
+      }
+      try {
+         response.set_public_key(wallet->getPublicKeyFor(address).toBinStr());
+      }
+      catch (const std::exception& e) {
+         logger_->error("[{}] failure: {}", __func__, e.what());
+      }
+   }
+   else {
+      logger_->error("[{}] unknown wallet for address {}", __func__, request.address());
+   }
+   packet.set_data(response.SerializeAsString());
+   return sendData(packet.SerializeAsString(), clientId);
 }
 
 void HeadlessContainerListener::setNoWallets(bool noWallets)
