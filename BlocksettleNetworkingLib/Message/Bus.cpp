@@ -18,7 +18,6 @@ using namespace bs::message;
 static const std::string kQuitMessage("QUIT");
 static const std::string kAccResetMessage("ACC_RESET");
 
-
 Router::Router(const std::shared_ptr<spdlog::logger> &logger)
    : logger_(logger)
 {}
@@ -172,7 +171,7 @@ bool Queue_Locking::pushFill(Envelope &env)
       env.id = nextId();
    }
    if (env.posted.time_since_epoch().count() == 0) {
-      env.posted = std::chrono::system_clock::now();
+      env.posted = bus_clock::now();
    }
    return push(env);
 }
@@ -190,14 +189,14 @@ void Queue_Locking::process()
    srand(std::time(nullptr));    // requred for per-thread randomness
    logger_->debug("[Queue::process] {} started", name_);
    decltype(queue_) deferredQueue;
-   auto dqTime = std::chrono::system_clock::now();
-   auto accTime = std::chrono::system_clock::now();
+   auto dqTime = bus_clock::now();
+   auto accTime = bus_clock::now();
    PerfAccounting acc;
 
    const auto &processPortion = [this, &deferredQueue, &dqTime, &accTime, &acc]
-      (const decltype(queue_) &tempQueue, const std::chrono::system_clock::time_point &timeNow)
+      (const decltype(queue_) &tempQueue, const bus_clock::time_point &timeNow)
    {
-      std::chrono::time_point<std::chrono::system_clock> procStart;
+      TimeStamp procStart;
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {
@@ -231,7 +230,7 @@ void Queue_Locking::process()
                continue;
             }
             if (accounting_) {
-               procStart = std::chrono::system_clock::now();
+               procStart = bus_clock::now();
             }
             if (adapters.size() == 1) {
                if (!adapters[0]->process(env)) {
@@ -239,7 +238,7 @@ void Queue_Locking::process()
                }
                if (accounting_) {
                   acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
-                     , std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - procStart));
+                     , std::chrono::duration_cast<std::chrono::microseconds>(bus_clock::now() - procStart));
                }
             } else {
                // Multiple adapters to process a message typically means broadcast. We don't requeue such messages
@@ -248,7 +247,7 @@ void Queue_Locking::process()
                for (const auto &adapter : adapters) {
                   const bool processed = adapter->process(env);
                   if (accounting_ && processed) {
-                     const auto& timeNow = std::chrono::system_clock::now();
+                     const auto& timeNow = bus_clock::now();
                      acc.add(static_cast<int>((*adapter->supportedReceivers().cbegin())->value() + 0x1000)
                         , std::chrono::duration_cast<std::chrono::microseconds>(timeNow - procStart));
                      procStart = timeNow;
@@ -269,7 +268,7 @@ void Queue_Locking::process()
       if (!running_) {
          break;
       }
-      const auto &timeNow = std::chrono::system_clock::now();
+      const auto &timeNow = bus_clock::now();
       if (!deferredQueue.empty()) {
          decltype(queue_) tempQueue;
          deferredQueue.swap(tempQueue);
@@ -285,12 +284,12 @@ void Queue_Locking::process()
       }
 
       if ((deferredQueue.size() > 100) && ((timeNow - dqTime) > deferredQueueInterval_)) {
-         dqTime = std::chrono::system_clock::now();
+         dqTime = bus_clock::now();
          logger_->warn("[Queue::process] {} deferred queue has grown to {} elements"
             , name_, deferredQueue.size());
       }
       if (accounting_ && ((timeNow - accTime) >= accountingInterval_)) {
-         accTime = std::chrono::system_clock::now();
+         accTime = bus_clock::now();
          acc.report(logger_, name_, accMap_);
       }
    }
