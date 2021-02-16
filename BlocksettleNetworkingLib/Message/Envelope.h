@@ -19,7 +19,12 @@
 namespace bs {
    namespace message {
       using UserValue = int;
-      using TimeStamp = std::chrono::time_point<std::chrono::system_clock>;
+      using bus_clock = std::chrono::steady_clock;
+
+      static_assert(bus_clock::is_steady, "Should be steady clock");
+      static_assert(bus_clock::period::den >= 10000, "Should be at least ms");
+
+      using TimeStamp = std::chrono::time_point<bus_clock>;
 
       class User
       {
