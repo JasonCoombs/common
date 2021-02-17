@@ -1567,6 +1567,7 @@ message PriceStreamManaging
       DataReceivedFromClient        = 5;
       CleanupExpiredPriceOfferings  = 6;
       PriceConsumed                 = 7;
+      EntityDealingDemoted          = 8;
    };
 
    message GetBestOfferRequest
@@ -1619,6 +1620,7 @@ message PriceStreamManaging
       TradeUpdateEvent     trade_update_event   = 4;
       ClientData           client_data          = 5;
       PriceConsumedData    consumed_price       = 6;
+      string               entity_name          = 7;
    }
 }
 
