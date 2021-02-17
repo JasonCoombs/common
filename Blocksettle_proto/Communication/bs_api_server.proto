@@ -102,6 +102,7 @@ message Request
 
     message TradingStats
     {
+        string product_type = 1;
     }
 
     oneof data
@@ -209,9 +210,10 @@ message Response
 
     message TradingStats
     {
-        double cutoff = 1;
-        double daily_volume = 2;
-        double open_interest = 3;
+        string product_type = 2;
+        double cutoff = 3;
+        double daily_volume = 4;
+        double open_interest = 5;
     }
 
     message OrderUpdate
