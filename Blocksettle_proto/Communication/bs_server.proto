@@ -1638,9 +1638,15 @@ message ApiServerMsg
       bs.types.Action action = 3;
    }
 
+   message UpdateBook
+   {
+      Communication.TradeHistory.PriceBookUpdate data = 1;
+   }
+
    oneof data
    {
       UpdateBalance  update_balance = 1;
       UpdateOrder    update_order   = 2;
+      UpdateBook     update_book    = 3;
    }
 }

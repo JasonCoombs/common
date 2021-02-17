@@ -14,6 +14,7 @@ package Blocksettle.Communication.ApiServerPb;
 
 import "bs_types.proto";
 import "bs_api_server.proto";
+import "trade_history.proto";
 
 message Request
 {
@@ -152,6 +153,11 @@ message Response
         ApiServer.Response.MaxTradeAmount result = 2;
     }
 
+    message UpdateBook
+    {
+        Communication.TradeHistory.PriceBookUpdate data = 1;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -164,5 +170,6 @@ message Response
         ProductFee product_fee = 8;
         OrderUpdate order_update = 9;
         MaxTradeAmount max_trade_amount = 10;
+        UpdateBook update_book = 11;
     }
 }
