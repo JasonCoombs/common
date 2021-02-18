@@ -47,6 +47,10 @@ message Request
     {
     }
 
+    message EidCancel
+    {
+    }
+
     message ResumeSession
     {
         string session_id = 1;
@@ -109,6 +113,7 @@ message Request
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        EidCancel eid_cancel = 23;
         ResumeSession resume_session = 17;
         Logout logout = 18;
         MarketOrder market_order = 11;
