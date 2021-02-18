@@ -34,6 +34,7 @@ message Order
    bs.types.Side side = 6;
    double quantity = 8;
    double price = 9;
+   double cut_off_price = 10;
 }
 
 message Request

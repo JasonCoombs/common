@@ -370,6 +370,7 @@ message GenoaOrderData
    uint64 timestamp        = 8;
    string status           = 9;
    int32  trade_type       = 10;
+   double cut_off_price    = 12;
 }
 
 message GenoaFindOrdersResponse
