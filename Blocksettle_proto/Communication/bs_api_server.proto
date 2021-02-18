@@ -179,10 +179,10 @@ message Response
 
     message TradingDay
     {
-        string product_type = 2;
-        double time_to_cut_off = 1;
+        string product_type = 1;
+        double time_to_cut_off = 2;
         double cut_off_at = 3;
-        double last_cut_off_price = 5;
+        double last_cut_off_price = 4;
     }
 
     message EstimateIm
@@ -247,6 +247,11 @@ message Response
         string account_name = 3;
     }
 
+    message TradingClosed
+    {
+        string product_type = 1;
+    }
+
     message Error
     {
         string error_msg = 1;
@@ -272,6 +277,7 @@ message Response
         Error fatal_error = 51;
         EidLoginUpdate eid_login_update = 52;
         OrderUpdate order_update = 53;
+        TradingClosed trading_closed = 54;
     }
 }
 

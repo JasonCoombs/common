@@ -797,6 +797,14 @@ message GenoaServerTradingDayClose
    string            product_name   = 1;
 }
 
+message GenoaServerTradingDayOpen
+{
+   string            product_name         = 1;
+   int64             cut_off_at           = 2;
+   double            seconds_to_cut_off   = 3;
+   double            last_cut_off_price   = 4;
+}
+
 message GenoaServerMessage
 {
    GenoaServerType type = 1;
@@ -809,7 +817,9 @@ message GenoaServerMessage
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
       GenoaServerTradeUpdateEvent      trade_update         = 8;
       GenoaServerTradingDayClose       trading_day_close    = 9;
-      bool                             response       = 10;
+      GenoaServerTradingDayOpen        trading_day_open     = 10;
+
+      bool                             response             = 50;
    }
 }
 
@@ -1645,10 +1655,25 @@ message ApiServerMsg
       Communication.TradeHistory.PriceBookUpdate data = 1;
    }
 
+   message TradeClose
+   {
+      string product_name = 1;
+   }
+
+   message TradeOpen
+   {
+      string product_name = 1;
+      int64 cut_off_at = 2;
+      double seconds_to_cut_off = 3;
+      double last_cut_off_price = 4;
+   }
+
    oneof data
    {
       UpdateBalance  update_balance = 1;
       UpdateOrder    update_order   = 2;
       UpdateBook     update_book    = 3;
+      TradeClose     trade_close    = 4;
+      TradeOpen      trade_open     = 5;
    }
 }
