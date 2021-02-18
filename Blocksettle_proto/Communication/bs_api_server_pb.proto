@@ -1,0 +1,175 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Communication.ApiServerPb;
+
+import "bs_types.proto";
+import "bs_api_server.proto";
+import "trade_history.proto";
+
+message Request
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string ip_addr = 3;
+    }
+
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+    }
+
+    message MarketOrder
+    {
+        string entity_name = 1;
+        ApiServer.Request.MarketOrder order = 2;
+    }
+
+    message LoadOrders
+    {
+        string entity_name = 1;
+    }
+
+    message LoadBalance
+    {
+        string entity_name = 1;
+    }
+
+    message TradingDay
+    {
+        bytes client_id = 1;
+        ApiServer.Request.TradingDay order = 2;
+    }
+
+    message EstimateIm
+    {
+        string entity_name = 1;
+        ApiServer.Request.EstimateIm order = 2;
+    }
+
+    message ProductFee
+    {
+        bytes client_id = 1;
+        ApiServer.Request.ProductFee order = 2;
+    }
+
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        ApiServer.Request.MaxTradeAmount request = 2;
+    }
+
+    oneof data
+    {
+        CheckApiKey check_api_key = 1;
+        CheckEid check_eid = 5;
+        MarketOrder market_order = 2;
+        LoadOrders load_orders = 3;
+        LoadBalance load_balance = 4;
+        TradingDay trading_day = 6;
+        EstimateIm estimate_im = 7;
+        ProductFee product_fee = 8;
+        MaxTradeAmount max_trade_amount = 9;
+        ApiServer.Response.MarketData market_data = 10;
+    }
+}
+
+message Response
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string entity_name = 3;
+        bs.types.ApiKeyError error = 4;
+    }
+
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+        string entity_name = 3;
+    }
+
+    message MarketOrder
+    {
+        string entity_name = 1;
+        ApiServer.Response.MarketOrder result = 2;
+    }
+
+    message LoadOrders
+    {
+        string entity_name = 1;
+        ApiServer.Response.LoadOrders result = 2;
+    }
+
+    message LoadBalance
+    {
+        string entity_name = 1;
+        ApiServer.Response.LoadBalance result = 2;
+        bool user_requested = 3;
+    }
+
+    message TradingDay
+    {
+        bytes client_id = 1;
+        ApiServer.Response.TradingDay result = 2;
+        double open_interest = 3;
+    }
+
+    message EstimateIm
+    {
+        string entity_name = 1;
+        ApiServer.Response.EstimateIm result = 2;
+    }
+
+    message ProductFee
+    {
+        bytes client_id = 1;
+        ApiServer.Response.ProductFee result = 2;
+    }
+
+    message OrderUpdate
+    {
+        string entity_name = 1;
+        ApiServer.Response.OrderUpdate result = 2;
+    }
+
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        ApiServer.Response.MaxTradeAmount result = 2;
+    }
+
+    message UpdateBook
+    {
+        Communication.TradeHistory.PriceBookUpdate data = 1;
+    }
+
+    oneof data
+    {
+        CheckApiKey check_api_key = 1;
+        CheckEid check_eid = 5;
+        MarketOrder market_order = 2;
+        LoadOrders load_orders = 3;
+        LoadBalance load_balance = 4;
+        TradingDay trading_day = 6;
+        EstimateIm estimate_im = 7;
+        ProductFee product_fee = 8;
+        OrderUpdate order_update = 9;
+        MaxTradeAmount max_trade_amount = 10;
+        UpdateBook update_book = 11;
+    }
+}

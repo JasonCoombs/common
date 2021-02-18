@@ -234,7 +234,6 @@ bs::signer::RequestId HeadlessContainer::Send(const headless::RequestPacket &pac
 
 void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSignTXResponse] Failed to parse SignTxReply");
@@ -258,7 +257,6 @@ void HeadlessContainer::ProcessSignTXResponse(unsigned int id, const std::string
 
 void HeadlessContainer::ProcessSettlementSignTXResponse(unsigned int id, const std::string &data)
 {
-   logger_->debug("[{}]", __func__);
    headless::SignTxReply response;
    if (!response.ParseFromString(data)) {
       logger_->error("[HeadlessContainer::ProcessSettlementSignTXResponse] Failed to parse reply");
@@ -459,6 +457,14 @@ bs::signer::RequestId HeadlessContainer::signTXRequest(const bs::core::wallet::T
    case TXSignMode::Partial:
       packet.set_type(headless::SignPartialTXRequestType);
       break;
+
+   case TXSignMode::AutoSign:
+      packet.set_type(headless::AutoSignFullType);
+      break;
+
+   default:
+      logger_->error("[{}] unknown sign mode {}", __func__, (int)mode);
+      break;
    }
    packet.set_data(request.SerializeAsString());
    const auto id = Send(packet);
@@ -486,6 +492,14 @@ void HeadlessContainer::signTXRequest(const bs::core::wallet::TXSignRequest& txR
 
    case TXSignMode::Partial:
       packet.set_type(headless::SignPartialTXRequestType);
+      break;
+
+   case TXSignMode::AutoSign:
+      packet.set_type(headless::AutoSignFullType);
+      break;
+
+   default:
+      logger_->error("[{}] unknown sign mode {}", __func__, (int)mode);
       break;
    }
    packet.set_data(request.SerializeAsString());
@@ -1740,6 +1754,7 @@ void RemoteSigner::onPacketReceived(const headless::RequestPacket &packet)
 
    switch (packet.type()) {
    case headless::SignTxRequestType:
+   case headless::AutoSignFullType:
    case headless::SignPartialTXRequestType:
    case headless::SignSettlementPayoutTxType:
    case headless::SignAuthAddrRevokeType:
@@ -1982,4 +1997,45 @@ bool HeadlessListener::addCookieKeyToKeyStore(
    }
 
    return bip15xConnection->addCookieKeyToKeyStore(path, name);
+}
+
+
+Q_DECLARE_METATYPE(bs::error::ErrorCode)
+Q_DECLARE_METATYPE(bs::signer::RequestId)
+
+void QtHCT::onError(bs::signer::RequestId reqId, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, errMsg] {
+      emit Error(reqId, errMsg);
+   });
+}
+
+void QtHCT::txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
+   , bs::error::ErrorCode errCode, const std::string& errMsg)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, signedTX, errCode, errMsg] {
+      emit TXSigned(reqId, signedTX, errCode, errMsg);
+   });
+}
+
+void QtHCT::walletInfo(bs::signer::RequestId reqId
+   , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi)
+{
+   QMetaObject::invokeMethod(this, [this, reqId, wi] {
+      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi));
+   });
+}
+
+void QtHCT::autoSignStateChanged(bs::error::ErrorCode errCode, const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, errCode, walletId] {
+      emit AutoSignStateChanged(errCode, walletId);
+   });
+}
+
+void QtHCT::authLeafAdded(const std::string& walletId)
+{
+   QMetaObject::invokeMethod(this, [this, walletId] {
+      emit AuthLeafAdded(walletId);
+   });
 }
