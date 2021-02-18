@@ -25,6 +25,7 @@ namespace Blocksettle {
       namespace ProxyTerminalPb {
          class Response;
          class Response_UpdateOrdersAndObligations;
+         class Response_UpdateOrder;
       }
    }
 }
@@ -36,6 +37,9 @@ namespace bs {
    namespace sync {
       class Wallet;
       class WalletsManager;
+   }
+   namespace types {
+      class Order;
    }
 }
 class MDCallbacksQt;
@@ -64,7 +68,7 @@ public:
       , const std::shared_ptr<MDCallbacksQt> &
       , const std::shared_ptr<CelerClientQt> &);
    AssetManager(const std::shared_ptr<spdlog::logger>&, AssetCallbackTarget *);
-   ~AssetManager() = default;
+   ~AssetManager() override;
 
    virtual void init();
 
@@ -128,6 +132,7 @@ protected:
 private:
   void sendUpdatesOnXBTPrice(const std::string& ccy);
   void processUpdateOrders(const Blocksettle::Communication::ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg);
+  void processUpdateOrder(const Blocksettle::Communication::ProxyTerminalPb::Response_UpdateOrder &msg);
 
   void onCcPriceChanged(const std::string& currency) override { emit ccPriceChanged(currency); }
   void onXbtPriceChanged(const std::string& currency) override { emit xbtPriceChanged(currency); }
@@ -137,6 +142,8 @@ private:
   void onBalanceChanged(const std::string& currency) override { emit balanceChanged(currency); }
   void onTotalChanged() override { emit totalChanged(); }
   void onSecuritiesChanged() override { emit securitiesChanged(); }
+
+  void updateFuturesBalances();
 
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
@@ -157,10 +164,13 @@ protected:
 
    std::unordered_map<std::string, QDateTime>  xbtPriceUpdateTimes_;
 
+   std::map<std::string, bs::types::Order> orders_;
+
    double futuresBalanceDeliverable_{};
    double futuresBalanceCashSettled_{};
    int64_t futuresXbtAmountDeliverable_{};
    int64_t futuresXbtAmountCashSettled_{};
+
 };
 
 #endif // __ASSET__MANAGER_H__
