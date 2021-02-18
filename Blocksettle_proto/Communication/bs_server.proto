@@ -739,6 +739,7 @@ enum GenoaServerType
    GenoaServerNewCcSeed          = 5;
    GenoaServerNewCCDeposit       = 6;
    GenoaTradingDayClosedSignal   = 7;
+   GenoaTradingDayOpenSignal     = 11;
    GenoaOpenDeliveryPeriod       = 8;
    GenoaCloseDeliveryPeriod      = 9;
    GenoaTradeUpdateEvent         = 10;
