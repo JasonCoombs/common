@@ -105,7 +105,6 @@ struct BsClientCallbackTarget
    virtual void onGetLoginResultDone(const BsClientLoginResult&) {}
 
    virtual void onCelerRecv(CelerAPI::CelerMessageType messageType, const std::string& data) {}
-   // Register Blocksettle::Communication::ProxyTerminalPb::Response with qRegisterMetaType() if queued connection is needed
    virtual void onProcessPbMessage(const Blocksettle::Communication::ProxyTerminalPb::Response& message) {}
 
    virtual void Connected() {}
