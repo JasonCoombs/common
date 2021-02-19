@@ -23,6 +23,8 @@ namespace JsonTools
 {
    // converted set to true if double was extracted successfully
    double GetDouble(const QJsonValue& value, bool& converted);
+   double GetDouble(const QJsonValue& value);
+   int64_t GetInt64(const QJsonValue& value);
 
    QString  GetStringProperty(const QVariantMap& settingsMap, const QString& propertyName);
    double   GetDoubleProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted = nullptr);

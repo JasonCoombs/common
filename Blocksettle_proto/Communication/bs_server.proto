@@ -269,7 +269,7 @@ enum GenoaType
    GenoaSetDeliveryAddress       = 42;
    GenoaSettleDelivery           = 43;
    GenoaTradeCycleStatus         = 46;
-   GenoaTradingDayOpen     	 = 47;
+   GenoaTradingDayOpen           = 47;
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
@@ -370,6 +370,7 @@ message GenoaOrderData
    uint64 timestamp        = 8;
    string status           = 9;
    int32  trade_type       = 10;
+   double cut_off_price    = 12;
 }
 
 message GenoaFindOrdersResponse
@@ -661,6 +662,14 @@ message GenoaSendCutoffPriceReq
    double   cutoff_price   = 2;
 }
 
+message GenoaTradingDayOpenMsg
+{
+   string            product_name         = 1;
+   int64             cut_off_at           = 2;
+   double            seconds_to_cut_off   = 3;
+   double            last_cut_off_price   = 4;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -725,7 +734,7 @@ message GenoaMessage
       GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 48;
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
-      string                           trading_day_open              = 51;
+      GenoaTradingDayOpenMsg           trading_day_open              = 51;
    }
 }
 
@@ -809,7 +818,8 @@ message GenoaServerMessage
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
       GenoaServerTradeUpdateEvent      trade_update         = 8;
       GenoaServerTradingDayClose       trading_day_close    = 9;
-      bool                             response       = 10;
+
+      bool                             response             = 50;
    }
 }
 
@@ -1517,12 +1527,11 @@ enum ObligationsManagingMessageType
    LoadCustomerObligations    = 1;
    OpenDelievryPeriod         = 2;
    CloseDeliveryPeriod        = 3;
+   LiveCutoffPriceUpdated     = 4;
 };
 
 message ObligationsManaging
 {
-   ObligationsManagingMessageType   type = 1;
-
    message CustomerObligationsRequest
    {
       string   entity_name    = 1;
@@ -1542,22 +1551,26 @@ message ObligationsManaging
       string   product_name   = 1;
    }
 
+   message LiveCutOffPriceUpdate
+   {
+      bs.types.PriceBookType  price_book  = 1;
+      int64                   ask         = 2;
+      int64                   bid         = 3;
+   }
+
+   ObligationsManagingMessageType   type = 1;
+
    oneof data
    {
       CustomerObligationsRequest    load_obligations_request   = 3;
       CustomerObligationsResponse   load_obligations_response  = 4;
       TradingDayClose               trading_day_close_request  = 5;
+      LiveCutOffPriceUpdate         live_cutoff_price          = 6;
    }
 }
 
 message PriceStreamManaging
 {
-   enum PriceBookType
-   {
-      CashSettlePriceBook = 0;
-      DeliverablePriceBook = 1;
-   }
-
    enum MessageType
    {
       GetBestOfferingPriceForOrder  = 0;
@@ -1573,8 +1586,8 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      uint64         xbt_amount = 1;
-      PriceBookType  price_book = 2;
+      uint64                  xbt_amount = 1;
+      bs.types.PriceBookType  price_book = 2;
    }
 
    message GetBestOfferResponse
@@ -1654,10 +1667,16 @@ message ApiServerMsg
       Communication.TradeHistory.PriceBookUpdate data = 1;
    }
 
+   message TradeClose
+   {
+      string product_name = 1;
+   }
+
    oneof data
    {
       UpdateBalance  update_balance = 1;
       UpdateOrder    update_order   = 2;
       UpdateBook     update_book    = 3;
+      TradeClose     trade_close    = 4;
    }
 }

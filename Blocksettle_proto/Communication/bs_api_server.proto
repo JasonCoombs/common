@@ -34,6 +34,7 @@ message Order
    bs.types.Side side = 6;
    double quantity = 8;
    double price = 9;
+   double cut_off_price = 10;
 }
 
 message Request
@@ -44,6 +45,10 @@ message Request
     }
 
     message EidLogin
+    {
+    }
+
+    message EidCancel
     {
     }
 
@@ -102,12 +107,14 @@ message Request
 
     message TradingStats
     {
+        string product_type = 1;
     }
 
     oneof data
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        EidCancel eid_cancel = 23;
         ResumeSession resume_session = 17;
         Logout logout = 18;
         MarketOrder market_order = 11;
@@ -173,10 +180,10 @@ message Response
 
     message TradingDay
     {
-        string product_type = 2;
-        double time_to_cut_off = 1;
+        string product_type = 1;
+        double time_to_cut_off = 2;
         double cut_off_at = 3;
-        double last_cut_off_price = 5;
+        double last_cut_off_price = 4;
     }
 
     message EstimateIm
@@ -209,9 +216,9 @@ message Response
 
     message TradingStats
     {
-        double cutoff = 1;
-        double daily_volume = 2;
-        double open_interest = 3;
+        string product_type = 2;
+        double daily_volume = 4;
+        double open_interest = 5;
     }
 
     message OrderUpdate
@@ -240,6 +247,11 @@ message Response
         string account_name = 3;
     }
 
+    message TradingClosed
+    {
+        string product_type = 1;
+    }
+
     message Error
     {
         string error_msg = 1;
@@ -265,6 +277,7 @@ message Response
         Error fatal_error = 51;
         EidLoginUpdate eid_login_update = 52;
         OrderUpdate order_update = 53;
+        TradingClosed trading_closed = 54;
     }
 }
 
