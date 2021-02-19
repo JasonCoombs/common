@@ -217,7 +217,6 @@ message Response
     message TradingStats
     {
         string product_type = 2;
-        double cutoff = 3;
         double daily_volume = 4;
         double open_interest = 5;
     }
