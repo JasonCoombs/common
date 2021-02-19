@@ -25,6 +25,17 @@ namespace JsonTools
       }
    }
 
+   double GetDouble(const QJsonValue& value)
+   {
+      bool converted;
+      return GetDouble(value, converted);
+   }
+
+   int64_t GetInt64(const QJsonValue &value)
+   {
+      return static_cast<int64_t>(GetDouble(value));
+   }
+
    QString GetStringProperty(const QVariantMap& settingsMap, const QString& propertyName)
    {
       if (settingsMap.contains(propertyName)) {
