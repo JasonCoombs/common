@@ -1527,12 +1527,11 @@ enum ObligationsManagingMessageType
    LoadCustomerObligations    = 1;
    OpenDelievryPeriod         = 2;
    CloseDeliveryPeriod        = 3;
+   LiveCutoffPriceUpdated     = 4;
 };
 
 message ObligationsManaging
 {
-   ObligationsManagingMessageType   type = 1;
-
    message CustomerObligationsRequest
    {
       string   entity_name    = 1;
@@ -1552,22 +1551,26 @@ message ObligationsManaging
       string   product_name   = 1;
    }
 
+   message LiveCutOffPriceUpdate
+   {
+      bs.types.PriceBookType  price_book  = 1;
+      int64                   ask         = 2;
+      int64                   bid         = 3;
+   }
+
+   ObligationsManagingMessageType   type = 1;
+
    oneof data
    {
       CustomerObligationsRequest    load_obligations_request   = 3;
       CustomerObligationsResponse   load_obligations_response  = 4;
       TradingDayClose               trading_day_close_request  = 5;
+      LiveCutOffPriceUpdate         live_cutoff_price          = 6;
    }
 }
 
 message PriceStreamManaging
 {
-   enum PriceBookType
-   {
-      CashSettlePriceBook = 0;
-      DeliverablePriceBook = 1;
-   }
-
    enum MessageType
    {
       GetBestOfferingPriceForOrder  = 0;
@@ -1583,8 +1586,8 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      uint64         xbt_amount = 1;
-      PriceBookType  price_book = 2;
+      uint64                  xbt_amount = 1;
+      bs.types.PriceBookType  price_book = 2;
    }
 
    message GetBestOfferResponse

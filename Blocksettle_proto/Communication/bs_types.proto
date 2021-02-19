@@ -35,6 +35,12 @@ enum OrderStatus
    ORDER_STATUS_VOID = 3;
 }
 
+enum PriceBookType
+{
+   CashSettlePriceBook = 0;
+   DeliverablePriceBook = 1;
+}
+
 message Order
 {
    string      id                = 1;
