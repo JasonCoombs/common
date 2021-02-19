@@ -43,6 +43,8 @@ AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
    : logger_(logger), act_(act)
 {}
 
+AssetManager::~AssetManager() = default;
+
 void AssetManager::init()
 {
    connect(mdCallbacks_.get(), &MDCallbacksQt::MDSecurityReceived, this, &AssetManager::onMDSecurityReceived);
@@ -379,6 +381,9 @@ void AssetManager::onMessageFromPB(const ProxyTerminalPb::Response &response)
       case Blocksettle::Communication::ProxyTerminalPb::Response::kUpdateOrdersObligations:
          processUpdateOrders(response.update_orders_obligations());
          break;
+      case Blocksettle::Communication::ProxyTerminalPb::Response::kUpdateOrder:
+         processUpdateOrder(response.update_order());
+         break;
       default:
          break;
    }
@@ -427,12 +432,38 @@ double AssetManager::profitLossCashSettled(double currentPrice)
 
 void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg)
 {
+   orders_.clear();
+   for (const auto &order : msg.orders()) {
+      orders_.insert({order.id(), order});
+   }
+   updateFuturesBalances();
+}
+
+void AssetManager::processUpdateOrder(const ProxyTerminalPb::Response_UpdateOrder &msg)
+{
+   switch (msg.action()) {
+      case bs::types::ACTION_CREATED:
+      case bs::types::ACTION_UPDATED:
+         orders_[msg.order().id()] = msg.order();
+         break;
+      case bs::types::ACTION_REMOVED:
+         orders_.erase(msg.order().id());
+         break;
+      default:
+         break;
+   }
+   updateFuturesBalances();
+}
+
+void AssetManager::updateFuturesBalances()
+{
    int64_t futuresXbtAmountDeliverable = 0;
    int64_t futuresXbtAmountCashSettled = 0;
    futuresBalanceDeliverable_ = 0;
    futuresBalanceCashSettled_ = 0;
-   for (const auto &order : msg.orders()) {
-      if ((order.trade_type() == bs::network::Asset::DeliverableFutures || order.trade_type() == bs::network::Asset::CashSettledFutures) 
+   for (const auto &item : orders_) {
+      const auto &order = item.second;
+      if ((order.trade_type() == bs::network::Asset::DeliverableFutures || order.trade_type() == bs::network::Asset::CashSettledFutures)
          && order.status() == bs::types::ORDER_STATUS_PENDING) {
          auto sign = order.quantity() > 0 ? 1 : -1;
          auto amount = bs::XBTAmount(std::abs(order.quantity()));
@@ -448,7 +479,7 @@ void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrd
          }
       }
    }
-   if (futuresXbtAmountDeliverable != futuresXbtAmountDeliverable_ 
+   if (futuresXbtAmountDeliverable != futuresXbtAmountDeliverable_
       || futuresXbtAmountCashSettled != futuresXbtAmountCashSettled_) {
       futuresXbtAmountDeliverable_ = futuresXbtAmountDeliverable;
       futuresXbtAmountCashSettled_ = futuresXbtAmountCashSettled;
