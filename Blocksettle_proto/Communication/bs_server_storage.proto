@@ -180,6 +180,12 @@ message SetUserDeliveryAddressResponse
    string   error_msg      = 4;
 }
 
+message WhitelistedAddresses
+{
+   string user_name = 1;
+   repeated string addresses = 2;
+}
+
 message StorageAddressMessage
 {
    oneof data
@@ -221,6 +227,9 @@ message StorageAddressMessage
 
       SetUserDeliveryAddressRequest    set_user_delivery_address          = 24;
       SetUserDeliveryAddressResponse   set_user_delivery_address_response = 25;
+
+      AuthAddress          whitelist_address = 26;
+      WhitelistedAddresses whitelisted_addresses = 27;
    }
 }
 
