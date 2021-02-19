@@ -106,7 +106,8 @@ message Request
       }
       repeated AddrStatus addresses = 1;
       string email = 2;
-      string error_text = 3;
+      int64  internal_request_id = 3;
+      string error_text = 4;
    }
 
    oneof data
