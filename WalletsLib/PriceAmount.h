@@ -95,7 +95,7 @@ namespace bs {
          return value_;
       }
 
-      static Self Deserialize(underlying_type data)
+      static Self deserialize(underlying_type data)
       {
          return Self{data};
       }
