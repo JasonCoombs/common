@@ -678,7 +678,7 @@ message GenoaMessage
       double            IM_reserve_acquirer     = 2;
       double            DM_reserve              = 3;
       double            IM_reserve_counterparty = 4;
-      string            dealer_entity_name      = 5;
+      string            dealer_trading_account  = 5;
    }
 
    GenoaType type = 1;
