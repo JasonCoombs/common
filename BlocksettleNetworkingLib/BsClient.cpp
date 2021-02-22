@@ -503,6 +503,7 @@ void BsClient::OnDataReceived(const std::string &data)
       case Response::kSubmitCcAddress:
       case Response::kSignCcAddress:
       case Response::kConfirmCcAddress:
+      case Response::kWhitelistAddresses:
          // Will be handled from processCb
          return;
 
@@ -511,7 +512,8 @@ void BsClient::OnDataReceived(const std::string &data)
          return;
    }
 
-   SPDLOG_LOGGER_CRITICAL(logger_, "unknown response was detected!");
+   SPDLOG_LOGGER_CRITICAL(logger_, "unknown response {} {} was detected!"
+      , response->request_id(), response->data_case());
 }
 
 void BsClient::OnConnected()

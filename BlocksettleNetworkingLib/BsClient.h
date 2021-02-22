@@ -52,6 +52,7 @@ namespace Blocksettle {
          class Response_UpdateBalance;
          class Response_UpdateFeeRate;
          class Response_UserStatusUpdated;
+         class Response_WhitelistAddrs;
       }
    }
 }

@@ -1310,7 +1310,7 @@ bool WalletsAdapter::processCreateExtAddress(const bs::message::Envelope& env
 {
    auto wallet = getWalletById(walletId);
    if (!wallet) {
-      const auto& hdWallet = getHDWalletById(walletId);
+      const auto& hdWallet = walletId.empty() ? getPrimaryWallet() : getHDWalletById(walletId);
       if (!hdWallet) {
          logger_->error("[{}] failed to find wallet {}", __func__, walletId);
          sendAddresses(env, walletId, {});
@@ -2548,7 +2548,8 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
 
    const auto& counterPubKey = SecureBinaryData::fromString(request.counter_auth_pubkey());
    const auto& createPayout = [this, sendResponse, request, recvAddr]
-      (const bs::Address& settlAddr, SecureBinaryData ownPubKey)
+      (const bs::Address& settlAddr, SecureBinaryData ownPubKey
+         , const std::shared_ptr<bs::sync::Wallet>& authWallet = {})
    {
       if (settlAddr.empty()) {
          sendResponse({}, {}, "invalid settlement address");
@@ -2561,8 +2562,11 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
       const auto& payoutUtxo = UTXO(request.amount(), UINT32_MAX, UINT32_MAX, 0
          , payinTxHash, addrP2shSingle->getPreimage());
 
-      const auto& txReq = bs::tradeutils::createPayoutTXRequest(
+      auto txReq = bs::tradeutils::createPayoutTXRequest(
          payoutUtxo, recvAddr, settlementFee_, topBlock_);
+      if (authWallet) {
+         txReq.walletIds = { authWallet->walletId() };
+      }
       sendResponse(settlAddr, txReq);
    };
 
@@ -2583,13 +2587,15 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
          return true;
       }
       signerClient_->getAddressPubkey(wallet->walletId(), request.own_auth_address()
-         , [sendResponse, createPayout, counterPubKey](const SecureBinaryData& pubKey)
+         , [sendResponse, createPayout, counterPubKey, wallet]
+         (const SecureBinaryData& pubKey)
       {
          if (pubKey.empty()) {
             sendResponse({}, {}, "no pubkey for auth address");
             return;
          }
-         createPayout(bs::tradeutils::createEasySettlAddress(counterPubKey, pubKey), pubKey);
+         createPayout(bs::tradeutils::createEasySettlAddress(counterPubKey, pubKey)
+            , pubKey, wallet);
       });
    }
    return true;
