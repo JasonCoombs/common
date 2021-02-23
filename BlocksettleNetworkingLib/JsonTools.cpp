@@ -154,6 +154,7 @@ namespace JsonTools
       return true;
    }
 
+#ifdef NLOHMANN_JSON
    double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted)
    {
       return GetDoubleProperty(jsonObject, propertyName, converted);
@@ -185,5 +186,5 @@ namespace JsonTools
 
       return result;
    }
-
+#endif   //NLOHMANN_JSON
 }
