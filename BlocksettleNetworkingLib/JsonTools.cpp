@@ -154,4 +154,36 @@ namespace JsonTools
       return true;
    }
 
+   double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted)
+   {
+      return GetDoubleProperty(jsonObject, propertyName, converted);
+   }
+
+   double GetDoubleProperty(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted)
+   {
+      double result = 0;
+      bool convertResult = false;
+      auto it = jsonObject.find(propertyName);
+      if (it != jsonObject.end()) {
+         if (it->is_number()) {
+            convertResult = true;
+            result = it->get<double>();
+         }
+      } else {
+         if (it->is_string()) {
+            try {
+               result = std::stod(it->get<std::string>());
+               convertResult = true;
+            } catch (...) {
+            }
+         }
+      }
+
+      if (converted != nullptr) {
+         *converted = convertResult;
+      }
+
+      return result;
+   }
+
 }

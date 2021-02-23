@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 class QJsonValue;
 
 namespace JsonTools
@@ -29,6 +31,9 @@ namespace JsonTools
    QString  GetStringProperty(const QVariantMap& settingsMap, const QString& propertyName);
    double   GetDoubleProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted = nullptr);
    uint64_t GetUIntProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted = nullptr);
+
+   double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
+   double GetDoubleProperty(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
 
    enum class FieldsLoadingRule
    {
