@@ -35,6 +35,7 @@ message Order
    double quantity = 8;
    double price = 9;
    double cut_off_price = 10;
+   double trade_im = 11;
 }
 
 message Request
