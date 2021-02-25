@@ -36,6 +36,7 @@ enum CLIRequestType
    BroadcastBSAuthRevokeTX          = 24;
    BSDeliveryTransactionType        = 25;
    SyncGenoaUsers                   = 26;
+   UsersImInfoType                  = 27;
 }
 
 enum ArmoryConnectionState

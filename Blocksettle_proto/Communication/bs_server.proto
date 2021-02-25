@@ -243,6 +243,7 @@ enum GenoaType
    GenoaReserveCashXBT           = 14;
    GenoaUpdateReservation        = 15;
    GenoaCompleteXbtCashTransfer  = 16;
+   GenoaUpdateBalanceType        = 17;
    GenoaExecuteFxTrade           = 19;
    GenoaFindOrdersForUser        = 20;
    GenoaUserTradingStatus        = 21;
@@ -704,6 +705,7 @@ message GenoaMessage
       GenoaXbtCompleteTransferResponse xbt_transfer_complete      = 19;
       GenoaAccountMessage              account                    = 20;
       CustomerAccountData              new_account                = 6;
+      GenoaAccountsBalanceUpdate       balance_update             = 54;
       GenoaSendCCTokenRequest          cc_token                   = 21;
       TradeInfoCcData                  cc_reserve                 = 22;
       string                           settlement_id              = 23;
@@ -1651,13 +1653,6 @@ message PriceStreamManaging
 
 message ApiServerMsg
 {
-   message UpdateBalance
-   {
-      string entity_name = 1;
-      string currency = 2;
-      double balance = 3;
-   }
-
    message UpdateOrder
    {
       string entity_name = 1;
@@ -1677,7 +1672,6 @@ message ApiServerMsg
 
    oneof data
    {
-      UpdateBalance  update_balance = 1;
       UpdateOrder    update_order   = 2;
       UpdateBook     update_book    = 3;
       TradeClose     trade_close    = 4;
