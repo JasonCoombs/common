@@ -151,7 +151,6 @@ int WsServerConnection::callback(lws *wsi, int reason, void *in, size_t len)
 
             auto clientIt = clients_.find(data.clientId);
             if (clientIt == clients_.end()) {
-               SPDLOG_LOGGER_DEBUG(logger_, "send failed, client {} already disconnected", bs::toHex(data.clientId));
                continue;
             }
             auto &client = clientIt->second;
