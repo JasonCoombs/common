@@ -1681,5 +1681,6 @@ message ApiServerMsg
       UpdateOrder    update_order   = 2;
       UpdateBook     update_book    = 3;
       TradeClose     trade_close    = 4;
+      Empty          send_prices    = 5;
    }
 }
