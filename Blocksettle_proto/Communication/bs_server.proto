@@ -258,6 +258,7 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+   GenoaRegisterAccount          = 48;
 
    GenoaGetCustomerBalance       = 36;
    GenoaLoadCustomerImBalance    = 37;
@@ -673,6 +674,20 @@ message GenoaTradingDayOpenMsg
    double            last_cut_off_price   = 4;
 }
 
+message GenoaRegisterAccountRequest
+{
+   string answers = 1;
+   string kyc = 2;
+}
+
+message GenoaRegisterAccountResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   string error_msg = 3;
+   string entity_name = 4;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -740,6 +755,8 @@ message GenoaMessage
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
       GenoaTradingDayOpenMsg           trading_day_open              = 51;
+      GenoaRegisterAccountRequest      register_account_req          = 55;
+      GenoaRegisterAccountResponse     register_account_resp         = 56;
    }
 }
 
