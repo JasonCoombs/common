@@ -21,6 +21,7 @@ enum EidStatus {
     EID_STATUS_CANCELLED = 21;
     EID_STATUS_SERVER_ERROR = 22;
     EID_STATUS_ACCOUNT_NOT_FOUND = 23;
+    EID_STATUS_REGISTRATON_FAILED = 24;
     EID_STATUS_SUCCESS = 30;
 }
 
@@ -47,6 +48,17 @@ message Request
 
     message EidLogin
     {
+    }
+
+    message EidRegister
+    {
+        message Answer
+        {
+            string question = 1;
+            string answer = 2;
+        }
+
+        repeated Answer answers = 1;
     }
 
     message EidCancel
@@ -115,6 +127,7 @@ message Request
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        EidRegister eid_register = 24;
         EidCancel eid_cancel = 23;
         ResumeSession resume_session = 17;
         Logout logout = 18;
@@ -140,6 +153,11 @@ message Response
     }
 
     message EidLogin
+    {
+        string qr_code = 1;
+    }
+
+    message EidRegister
     {
         string qr_code = 1;
     }
@@ -246,6 +264,7 @@ message Response
         EidStatus status = 1;
         string session_id = 2;
         string account_name = 3;
+        string error_msg = 4;
     }
 
     message TradingClosed
@@ -262,6 +281,7 @@ message Response
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        EidRegister eid_register = 24;
         ResumeSession resume_session = 17;
         Logout logout = 18;
         MarketOrder market_order = 11;
