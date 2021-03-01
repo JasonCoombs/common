@@ -1602,7 +1602,6 @@ message PriceStreamManaging
       DataReceivedFromClient        = 5;
       CleanupExpiredPriceOfferings  = 6;
       PriceConsumed                 = 7;
-      EntityDealingDemoted          = 8;
       BalanceUpdateNotification     = 9;
    };
 

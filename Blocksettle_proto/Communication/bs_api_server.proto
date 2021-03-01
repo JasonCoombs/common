@@ -123,6 +123,20 @@ message Request
         string product_type = 1;
     }
 
+    message SubmitPrices
+    {
+        message PriceData
+        {
+            bs.types.PriceRangeId   range_id    = 1;
+            double                  ask         = 2;
+            double                  bid         = 3;
+        }
+
+        string              product_type = 1;
+        string              product      = 2;
+        repeated PriceData  prices = 3;
+    }
+
     oneof data
     {
         Authorize authorize = 10;
