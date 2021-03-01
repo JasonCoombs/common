@@ -50,6 +50,26 @@ enum PriceRangeId
    Range_25_100    = 5;
 }
 
+message StreamPriceData
+{
+   PriceRangeId   range_id = 1;
+   double         ask      = 2;
+   double         bid      = 3;
+}
+
+message SubmitPricesData
+{
+   string                     product_type   = 1;
+   string                     product        = 2;
+   repeated StreamPriceData   prices         = 3;
+}
+
+message PullPricesData
+{
+   string   product_type   = 1;
+   string   product        = 2;
+}
+
 message Order
 {
    string      id                = 1;
