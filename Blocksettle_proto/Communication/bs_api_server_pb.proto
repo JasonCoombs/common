@@ -78,19 +78,32 @@ message Request
         ApiServer.Request.MaxTradeAmount request = 2;
     }
 
+   message SubmitPricesData
+   {
+      string                     entity_name = 1;
+      bs.types.SubmitPricesData  request     = 2;
+   }
+   message PullPricesData
+   {
+      string                     entity_name = 1;
+      bs.types.PullPricesData    request     = 2;
+   }
+
     oneof data
     {
-        CheckApiKey check_api_key = 1;
-        CheckEid check_eid = 5;
-        RegisterEid register_eid = 11;
-        MarketOrder market_order = 2;
-        LoadOrders load_orders = 3;
-        LoadBalance load_balance = 4;
-        TradingDay trading_day = 6;
-        EstimateIm estimate_im = 7;
-        ProductFee product_fee = 8;
-        MaxTradeAmount max_trade_amount = 9;
-        ApiServer.Response.MarketData market_data = 10;
+        CheckApiKey                    check_api_key     = 1;
+        CheckEid                       check_eid         = 2;
+        RegisterEid                    register_eid      = 3;
+        MarketOrder                    market_order      = 4;
+        LoadOrders                     load_orders       = 5;
+        LoadBalance                    load_balance      = 6;
+        TradingDay                     trading_day       = 7;
+        EstimateIm                     estimate_im       = 8;
+        ProductFee                     product_fee       = 9;
+        MaxTradeAmount                 max_trade_amount  = 10;
+        ApiServer.Response.MarketData  market_data       = 11;
+        SubmitPricesData               submit_prices     = 12;
+        PullPricesData                 pull_prices       = 13;
     }
 }
 
