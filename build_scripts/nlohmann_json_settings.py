@@ -1,7 +1,7 @@
 #
 #
 # ***********************************************************************************
-# * Copyright (C) 2020, BlockSettle AB
+# * Copyright (C) 2020-2021, BlockSettle AB
 # * Distributed under the GNU Affero General Public License (AGPL v3)
 # * See LICENSE or http://www.gnu.org/licenses/agpl.html
 # *
@@ -42,9 +42,9 @@ class NLohmanJson(Configurator):
     def get_install_dir(self):
         return os.path.join(self._project_settings.get_common_build_dir(), 'JSON')
 
-    def get_unpacked_spdlog_sources_dir(self):
+    def get_unpacked_json_sources_dir(self):
         return os.path.join(self._project_settings.get_sources_dir(), 'json-' + self._version)
 
     def install(self):
-        self.filter_copy(self.get_unpacked_spdlog_sources_dir(), self.get_install_dir())
+        self.filter_copy(self.get_unpacked_json_sources_dir(), self.get_install_dir())
         return True
