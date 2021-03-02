@@ -502,11 +502,11 @@ message GenoaAccountMessage
 {
    GenoaAccountRequestType type = 1;
    oneof data {
-      GenoaAccountUserRequest   user_request = 2;
-      CustomerAccountData account_data = 3;
-      GenoaAccountsData accounts = 4;
-      bytes balance_snapshot = 5;
-      GenoaAccountsBalanceUpdate balance_update = 6;
+      GenoaAccountUserRequest    user_request      = 2;
+      CustomerAccountData        account_data      = 3;
+      GenoaAccountsData          accounts          = 4;
+      bytes                      balance_snapshot  = 5;
+      GenoaAccountsBalanceUpdate balance_update    = 6;
    }
 }
 
@@ -1599,13 +1599,10 @@ message PriceStreamManaging
    enum MessageType
    {
       GetBestOfferingPriceForOrder  = 0;
-      TradeUpdateEventType          = 1;
-      ClientConnected               = 3;
-      ClientDisconnected            = 4;
-      DataReceivedFromClient        = 5;
-      CleanupExpiredPriceOfferings  = 6;
-      PriceConsumed                 = 7;
-      EntityDealingDemoted          = 8;
+      CleanupExpiredPriceOfferings  = 1;
+      PriceConsumed                 = 2;
+      SubmitPrices                  = 3;
+      PullPrices                    = 4;
       DealerConnected               = 10;
       DealerDisconnected            = 11;
    };
@@ -1632,13 +1629,6 @@ message PriceStreamManaging
       bool        matched = 4;
    }
 
-   message TradeUpdateEvent
-   {
-      string            entity_name = 1;
-      bs.types.Order    order       = 2;
-      bs.types.Action   action      = 3;
-   }
-
    message ClientData
    {
       bytes    client_id   = 1;
@@ -1651,16 +1641,30 @@ message PriceStreamManaging
       uint64   timestamp         = 2;
    }
 
+   message SubmitPricesRequest
+   {
+      string                     owner_entity_name = 1;
+      bs.types.SubmitPricesData  submit_price_data = 2;
+   }
+
+   message PullPricesRequest
+   {
+      string                     owner_entity_name = 1;
+      bs.types.PullPricesData    pull_price_data   = 2;
+   }
+
+
    MessageType   message_type = 1;
 
    oneof data
    {
       GetBestOfferRequest  get_best_price_offer = 2;
       GetBestOfferResponse best_price_offer     = 3;
-      TradeUpdateEvent     trade_update_event   = 4;
-      ClientData           client_data          = 5;
-      PriceConsumedData    consumed_price       = 6;
-      string               entity_name          = 7;
+      ClientData           client_data          = 4;
+      PriceConsumedData    consumed_price       = 5;
+      string               entity_name          = 6;
+      SubmitPricesRequest  submit_prices        = 7;
+      PullPricesRequest    pull_prices          = 8;
    }
 }
 
