@@ -1691,5 +1691,7 @@ message ApiServerMsg
       Empty          send_prices    = 5;
       Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
       Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
+      string         user_connected = 8;
+      string         user_disconnected = 9;
    }
 }

@@ -91,6 +91,8 @@ message Request
         ProductFee product_fee = 8;
         MaxTradeAmount max_trade_amount = 9;
         ApiServer.Response.MarketData market_data = 10;
+        string     user_connected = 12;
+        string     user_disconnected = 13;
     }
 }
 
