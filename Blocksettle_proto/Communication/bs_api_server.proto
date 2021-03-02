@@ -80,6 +80,7 @@ message Request
         bs.types.Side side = 2;
         string product_type = 3;
         double user_expected_price = 4;
+        bool max_amount = 5;
     }
 
     message LoadOrders

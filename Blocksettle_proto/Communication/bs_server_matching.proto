@@ -184,6 +184,7 @@ message RFSMarketOrder
 
    double         user_expected_price = 4;
    int32          type                = 5;
+   bool           max_amount          = 6;
 }
 
 message RFSMarketOrderResponse
