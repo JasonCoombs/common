@@ -41,6 +41,34 @@ enum PriceBookType
    DeliverablePriceBook = 1;
 }
 
+enum PriceRangeId
+{
+   RangeUndefined  = 0;
+   Range_0_1       = 1;
+   Range_1_5       = 2;
+   Range_5_10      = 3;
+   Range_10_25     = 4;
+   Range_25_100    = 5;
+}
+
+message StreamPriceData
+{
+   PriceRangeId   range_id = 1;
+   double         ask      = 2;
+   double         bid      = 3;
+}
+
+message SubmitPricesData
+{
+   string                     product_type   = 1;
+   repeated StreamPriceData   prices         = 2;
+}
+
+message PullPricesData
+{
+   string   product_type   = 1;
+}
+
 message Order
 {
    string      id                = 1;

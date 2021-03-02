@@ -125,21 +125,23 @@ message Request
 
     oneof data
     {
-        Authorize authorize = 10;
-        EidLogin eid_login = 15;
-        EidRegister eid_register = 24;
-        EidCancel eid_cancel = 23;
-        ResumeSession resume_session = 17;
-        Logout logout = 18;
-        MarketOrder market_order = 11;
-        LoadOrders load_orders = 12;
-        LoadBalance load_balance = 13;
-        Subscribe subscribe = 14;
-        TradingDay trading_day = 16;
-        EstimateIm estimate_im = 19;
-        ProductFee product_fee = 20;
-        MaxTradeAmount max_trade_amount = 21;
-        TradingStats trading_stats = 22;
+        Authorize                   authorize           = 10;
+        EidLogin                    eid_login           = 11;
+        EidRegister                 eid_register        = 12;
+        EidCancel                   eid_cancel          = 13;
+        ResumeSession               resume_session      = 14;
+        Logout                      logout              = 15;
+        MarketOrder                 market_order        = 16;
+        LoadOrders                  load_orders         = 17;
+        LoadBalance                 load_balance        = 18;
+        Subscribe                   subscribe           = 19;
+        TradingDay                  trading_day         = 20;
+        EstimateIm                  estimate_im         = 21;
+        ProductFee                  product_fee         = 22;
+        MaxTradeAmount              max_trade_amount    = 23;
+        TradingStats                trading_stats       = 24;
+        bs.types.SubmitPricesData   submit_prices       = 25;
+        bs.types.PullPricesData     pull_prices         = 26;
     }
 }
 
@@ -300,14 +302,4 @@ message Response
         OrderUpdate order_update = 53;
         TradingClosed trading_closed = 54;
     }
-}
-
-
-message LP_API
-{
-   oneof data
-   {
-       string     api_key = 1;
-       string     login_result = 2;
-   }
 }
