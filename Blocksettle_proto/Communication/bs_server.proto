@@ -501,11 +501,11 @@ message GenoaAccountMessage
 {
    GenoaAccountRequestType type = 1;
    oneof data {
-      GenoaAccountUserRequest   user_request = 2;
-      CustomerAccountData account_data = 3;
-      GenoaAccountsData accounts = 4;
-      bytes balance_snapshot = 5;
-      GenoaAccountsBalanceUpdate balance_update = 6;
+      GenoaAccountUserRequest    user_request      = 2;
+      CustomerAccountData        account_data      = 3;
+      GenoaAccountsData          accounts          = 4;
+      bytes                      balance_snapshot  = 5;
+      GenoaAccountsBalanceUpdate balance_update    = 6;
    }
 }
 
