@@ -303,13 +303,3 @@ message Response
         TradingClosed trading_closed = 54;
     }
 }
-
-
-message LP_API
-{
-   oneof data
-   {
-       string     api_key = 1;
-       string     login_result = 2;
-   }
-}

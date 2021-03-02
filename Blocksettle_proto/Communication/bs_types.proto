@@ -40,6 +40,7 @@ enum PriceBookType
    CashSettlePriceBook = 0;
    DeliverablePriceBook = 1;
 }
+
 enum PriceRangeId
 {
    RangeUndefined  = 0;
@@ -60,14 +61,12 @@ message StreamPriceData
 message SubmitPricesData
 {
    string                     product_type   = 1;
-   string                     product        = 2;
-   repeated StreamPriceData   prices         = 3;
+   repeated StreamPriceData   prices         = 2;
 }
 
 message PullPricesData
 {
    string   product_type   = 1;
-   string   product        = 2;
 }
 
 message Order
