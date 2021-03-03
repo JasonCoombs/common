@@ -21,6 +21,7 @@ enum EidStatus {
     EID_STATUS_CANCELLED = 21;
     EID_STATUS_SERVER_ERROR = 22;
     EID_STATUS_ACCOUNT_NOT_FOUND = 23;
+    EID_STATUS_REGISTRATON_FAILED = 24;
     EID_STATUS_SUCCESS = 30;
 }
 
@@ -49,6 +50,17 @@ message Request
     {
     }
 
+    message EidRegister
+    {
+        message Answer
+        {
+            string question = 1;
+            string answer = 2;
+        }
+
+        repeated Answer answers = 1;
+    }
+
     message EidCancel
     {
     }
@@ -68,6 +80,7 @@ message Request
         bs.types.Side side = 2;
         string product_type = 3;
         double user_expected_price = 4;
+        bool max_amount = 5;
     }
 
     message LoadOrders
@@ -113,20 +126,23 @@ message Request
 
     oneof data
     {
-        Authorize authorize = 10;
-        EidLogin eid_login = 15;
-        EidCancel eid_cancel = 23;
-        ResumeSession resume_session = 17;
-        Logout logout = 18;
-        MarketOrder market_order = 11;
-        LoadOrders load_orders = 12;
-        LoadBalance load_balance = 13;
-        Subscribe subscribe = 14;
-        TradingDay trading_day = 16;
-        EstimateIm estimate_im = 19;
-        ProductFee product_fee = 20;
-        MaxTradeAmount max_trade_amount = 21;
-        TradingStats trading_stats = 22;
+        Authorize                   authorize           = 10;
+        EidLogin                    eid_login           = 11;
+        EidRegister                 eid_register        = 12;
+        EidCancel                   eid_cancel          = 13;
+        ResumeSession               resume_session      = 14;
+        Logout                      logout              = 15;
+        MarketOrder                 market_order        = 16;
+        LoadOrders                  load_orders         = 17;
+        LoadBalance                 load_balance        = 18;
+        Subscribe                   subscribe           = 19;
+        TradingDay                  trading_day         = 20;
+        EstimateIm                  estimate_im         = 21;
+        ProductFee                  product_fee         = 22;
+        MaxTradeAmount              max_trade_amount    = 23;
+        TradingStats                trading_stats       = 24;
+        bs.types.SubmitPricesData   submit_prices       = 25;
+        bs.types.PullPricesData     pull_prices         = 26;
     }
 }
 
@@ -140,6 +156,11 @@ message Response
     }
 
     message EidLogin
+    {
+        string qr_code = 1;
+    }
+
+    message EidRegister
     {
         string qr_code = 1;
     }
@@ -246,6 +267,7 @@ message Response
         EidStatus status = 1;
         string session_id = 2;
         string account_name = 3;
+        string error_msg = 4;
     }
 
     message TradingClosed
@@ -262,6 +284,7 @@ message Response
     {
         Authorize authorize = 10;
         EidLogin eid_login = 15;
+        EidRegister eid_register = 24;
         ResumeSession resume_session = 17;
         Logout logout = 18;
         MarketOrder market_order = 11;
@@ -280,14 +303,4 @@ message Response
         OrderUpdate order_update = 53;
         TradingClosed trading_closed = 54;
     }
-}
-
-
-message LP_API
-{
-   oneof data
-   {
-       string     api_key = 1;
-       string     login_result = 2;
-   }
 }

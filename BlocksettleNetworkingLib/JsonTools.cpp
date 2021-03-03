@@ -167,11 +167,9 @@ namespace JsonTools
       auto it = jsonObject.find(propertyName);
       if (it != jsonObject.end()) {
          if (it->is_number()) {
-            convertResult = true;
             result = it->get<double>();
-         }
-      } else {
-         if (it->is_string()) {
+            convertResult = true;
+         } else if (it->is_string()) {
             try {
                result = std::stod(it->get<std::string>());
                convertResult = true;

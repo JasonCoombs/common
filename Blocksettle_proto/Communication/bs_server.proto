@@ -12,6 +12,7 @@ syntax = "proto3";
 
 package Blocksettle.Server;
 
+import "bs_api_server_pb.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
 import "bs_types.proto";
@@ -258,6 +259,7 @@ enum GenoaType
    GenoaApiKey                   = 33;
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
+   GenoaRegisterAccount          = 48;
 
    GenoaGetCustomerBalance       = 36;
    GenoaLoadCustomerImBalance    = 37;
@@ -500,11 +502,11 @@ message GenoaAccountMessage
 {
    GenoaAccountRequestType type = 1;
    oneof data {
-      GenoaAccountUserRequest   user_request = 2;
-      CustomerAccountData account_data = 3;
-      GenoaAccountsData accounts = 4;
-      bytes balance_snapshot = 5;
-      GenoaAccountsBalanceUpdate balance_update = 6;
+      GenoaAccountUserRequest    user_request      = 2;
+      CustomerAccountData        account_data      = 3;
+      GenoaAccountsData          accounts          = 4;
+      bytes                      balance_snapshot  = 5;
+      GenoaAccountsBalanceUpdate balance_update    = 6;
    }
 }
 
@@ -673,6 +675,20 @@ message GenoaTradingDayOpenMsg
    double            last_cut_off_price   = 4;
 }
 
+message GenoaRegisterAccountRequest
+{
+   string answers = 1;
+   string kyc = 2;
+}
+
+message GenoaRegisterAccountResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   string error_msg = 3;
+   string entity_name = 4;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -682,6 +698,8 @@ message GenoaMessage
       double            DM_reserve              = 3;
       double            IM_reserve_counterparty = 4;
       string            dealer_trading_account  = 5;
+      double            net_exposure_acquirer   = 6;
+      double            net_exposure_counterparty = 7;
    }
 
    GenoaType type = 1;
@@ -740,6 +758,8 @@ message GenoaMessage
       GenoaEstimateImRequest           estimate_im                   = 49;
       GenoaEstimateImResponse          estimate_im_response          = 50;
       GenoaTradingDayOpenMsg           trading_day_open              = 51;
+      GenoaRegisterAccountRequest      register_account_req          = 55;
+      GenoaRegisterAccountResponse     register_account_resp         = 56;
    }
 }
 
@@ -1428,6 +1448,8 @@ message ProxyMessage
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
+      string                        user_connected = 10;
+      string                        user_disconnected = 11;
    }
 }
 
@@ -1579,14 +1601,12 @@ message PriceStreamManaging
    enum MessageType
    {
       GetBestOfferingPriceForOrder  = 0;
-      TradeUpdateEventType          = 1;
-      ClientConnected               = 3;
-      ClientDisconnected            = 4;
-      DataReceivedFromClient        = 5;
-      CleanupExpiredPriceOfferings  = 6;
-      PriceConsumed                 = 7;
-      EntityDealingDemoted          = 8;
-      BalanceUpdateNotification     = 9;
+      CleanupExpiredPriceOfferings  = 1;
+      PriceConsumed                 = 2;
+      SubmitPrices                  = 3;
+      PullPrices                    = 4;
+      DealerConnected               = 10;
+      DealerDisconnected            = 11;
    };
 
    message GetBestOfferRequest
@@ -1611,13 +1631,6 @@ message PriceStreamManaging
       bool        matched = 4;
    }
 
-   message TradeUpdateEvent
-   {
-      string            entity_name = 1;
-      bs.types.Order    order       = 2;
-      bs.types.Action   action      = 3;
-   }
-
    message ClientData
    {
       bytes    client_id   = 1;
@@ -1630,12 +1643,18 @@ message PriceStreamManaging
       uint64   timestamp         = 2;
    }
 
-   message BalanceUpdate
+   message SubmitPricesRequest
    {
-      string entity_name   = 1;
-      string currency      = 2;
-      double new_balance   = 3;
+      string                     owner_entity_name = 1;
+      bs.types.SubmitPricesData  submit_price_data = 2;
    }
+
+   message PullPricesRequest
+   {
+      string                     owner_entity_name = 1;
+      bs.types.PullPricesData    pull_price_data   = 2;
+   }
+
 
    MessageType   message_type = 1;
 
@@ -1643,11 +1662,11 @@ message PriceStreamManaging
    {
       GetBestOfferRequest  get_best_price_offer = 2;
       GetBestOfferResponse best_price_offer     = 3;
-      TradeUpdateEvent     trade_update_event   = 4;
-      ClientData           client_data          = 5;
-      PriceConsumedData    consumed_price       = 6;
-      string               entity_name          = 7;
-      BalanceUpdate        balance_update       = 8;
+      ClientData           client_data          = 4;
+      PriceConsumedData    consumed_price       = 5;
+      string               entity_name          = 6;
+      SubmitPricesRequest  submit_prices        = 7;
+      PullPricesRequest    pull_prices          = 8;
    }
 }
 
@@ -1675,5 +1694,10 @@ message ApiServerMsg
       UpdateOrder    update_order   = 2;
       UpdateBook     update_book    = 3;
       TradeClose     trade_close    = 4;
+      Empty          send_prices    = 5;
+      Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
+      Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
+      string         user_connected = 8;
+      string         user_disconnected = 9;
    }
 }
