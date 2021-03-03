@@ -99,6 +99,11 @@ std::shared_ptr<ServerConnection> ConnectionManager::CreateGenoaAPIServerConnect
    return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_);
 }
 
+std::shared_ptr<ServerConnection> ConnectionManager::CreateCelerAPIServerConnection() const
+{
+   return std::make_shared<CelerStreamServerConnection>(logger_, zmqContext_);
+}
+
 std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection() const
 {
    auto connection = std::make_shared<bs::celer::ClientConnection<ZmqDataConnection> >(logger_);
