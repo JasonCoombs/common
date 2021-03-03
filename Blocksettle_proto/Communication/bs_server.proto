@@ -12,6 +12,7 @@ syntax = "proto3";
 
 package Blocksettle.Server;
 
+import "bs_api_server_pb.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
 import "bs_types.proto";
@@ -1445,6 +1446,8 @@ message ProxyMessage
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
+      string                        user_connected = 10;
+      string                        user_disconnected = 11;
    }
 }
 
@@ -1600,6 +1603,8 @@ message PriceStreamManaging
       PriceConsumed                 = 2;
       SubmitPrices                  = 3;
       PullPrices                    = 4;
+      DealerConnected               = 10;
+      DealerDisconnected            = 11;
    };
 
    message GetBestOfferRequest
@@ -1688,5 +1693,9 @@ message ApiServerMsg
       UpdateBook     update_book    = 3;
       TradeClose     trade_close    = 4;
       Empty          send_prices    = 5;
+      Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
+      Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
+      string         user_connected = 8;
+      string         user_disconnected = 9;
    }
 }

@@ -105,6 +105,8 @@ message Request
         ApiServer.Response.MarketData  market_data       = 11;
         SubmitPricesData               submit_prices     = 12;
         PullPricesData                 pull_prices       = 13;
+        string     user_connected = 14;
+        string     user_disconnected = 15;
     }
 }
 
