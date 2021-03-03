@@ -698,6 +698,8 @@ message GenoaMessage
       double            DM_reserve              = 3;
       double            IM_reserve_counterparty = 4;
       string            dealer_trading_account  = 5;
+      double            net_exposure_acquirer   = 6;
+      double            net_exposure_counterparty = 7;
    }
 
    GenoaType type = 1;
