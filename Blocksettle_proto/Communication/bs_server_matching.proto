@@ -271,5 +271,6 @@ message MatchingMarketMessage
       EstimateImRequest          estimate_im_request = 3;
       EstimateImResponse         estimate_im_response = 4;
       UsersImInfo                users_im_info = 5;
+      string                     order_timeout = 6;
    }
 }
