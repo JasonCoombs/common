@@ -276,6 +276,10 @@ enum GenoaType
 
    GenoaReloadAccounts           = 44;
    GenoaAccountReloaded          = 45;
+
+   GenoaCreateIbanAgreementUrlType   = 49;
+   GenoaGetIbanAccountsType          = 50;
+   GenoaGetIbanAccountDetailsType    = 51;
 }
 
 message GenoaConnectedBroadcast
@@ -689,6 +693,48 @@ message GenoaRegisterAccountResponse
    string entity_name = 4;
 }
 
+message GenoaCreateIbanAgreementUrlRequest
+{
+   string country_short_code = 1;
+   string iban = 2;
+   string redirect = 3;
+}
+
+message GenoaCreateIbanAgreementUrlResponse
+{
+   bool error = 1;
+   string message = 2;
+   string ref = 3;
+   string initiate = 4;
+}
+
+message GenoaGetIbanAccountsRequest
+{
+   string requisitions_id = 1;
+}
+
+message GenoaGetIbanAccountsResponse
+{
+   bool loaded = 1;
+   repeated string results = 2;
+}
+
+message GenoaGetIbanAccountDetailsRequest
+{
+   string account_ref = 1;
+}
+
+message GenoaGetIbanAccountDetailsResponse
+{
+   bool loaded = 1;
+   string resource_id = 2;
+   string iban = 3;
+   string currency = 4;
+   string name = 5;
+   string product = 6;
+   string cash_account_type = 7;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -760,6 +806,13 @@ message GenoaMessage
       GenoaTradingDayOpenMsg           trading_day_open              = 51;
       GenoaRegisterAccountRequest      register_account_req          = 55;
       GenoaRegisterAccountResponse     register_account_resp         = 56;
+
+      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 57;
+      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 58;
+      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 59;
+      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 60;
+      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 61;
+      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 62;
    }
 }
 

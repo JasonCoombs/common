@@ -90,6 +90,24 @@ message Request
         bs.types.PullPricesData     request     = 2;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Request.CreateIbanAgreementUrl request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Request.GetIbanAccounts request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Request.GetIbanAccountDetails request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                    check_api_key     = 1;
@@ -107,6 +125,9 @@ message Request
         PullPricesData                 pull_prices       = 13;
         string     user_connected = 14;
         string     user_disconnected = 15;
+        CreateIbanAgreementUrl         create_iban_agreement       = 27;
+        GetIbanAccounts                get_iban_accounts           = 28;
+        GetIbanAccountDetails          get_iban_account_details    = 29;
     }
 }
 
@@ -203,6 +224,24 @@ message Response
         double last_cut_off_price = 4;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Response.CreateIbanAgreementUrl result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Response.GetIbanAccounts result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Response.GetIbanAccountDetails result = 1;
+        string entity_name = 3;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -219,5 +258,8 @@ message Response
         UpdateBook update_book = 11;
         TradeClose trade_close = 12;
         TradeOpen trade_open = 13;
+        CreateIbanAgreementUrl create_iban_agreement = 15;
+        GetIbanAccounts get_iban_accounts = 16;
+        GetIbanAccountDetails get_iban_account_details = 17;
     }
 }
