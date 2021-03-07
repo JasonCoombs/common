@@ -21,7 +21,7 @@ enum EidStatus {
     EID_STATUS_CANCELLED = 21;
     EID_STATUS_SERVER_ERROR = 22;
     EID_STATUS_ACCOUNT_NOT_FOUND = 23;
-    EID_STATUS_REGISTRATON_FAILED = 24;
+    EID_STATUS_REGISTRATION_FAILED = 24;
     EID_STATUS_SUCCESS = 30;
 }
 
@@ -124,6 +124,23 @@ message Request
         string product_type = 1;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        string country_short_code = 1;
+        string iban = 2;
+        string redirect = 3;
+    }
+
+    message GetIbanAccounts
+    {
+        string requisitions_id = 1;
+    }
+
+    message GetIbanAccountDetails
+    {
+        string account_ref = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize           = 10;
@@ -143,6 +160,10 @@ message Request
         TradingStats                trading_stats       = 24;
         bs.types.SubmitPricesData   submit_prices       = 25;
         bs.types.PullPricesData     pull_prices         = 26;
+        CreateIbanAgreementUrl      create_iban_agreement       = 27;
+        GetIbanAccounts             get_iban_accounts           = 28;
+        GetIbanAccountDetails       get_iban_account_details    = 29;
+
     }
 }
 
@@ -243,6 +264,31 @@ message Response
         double open_interest = 5;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        bool error = 1;
+        string message = 2;
+        string ref = 3;
+        string initiate = 4;
+    }
+
+    message GetIbanAccounts
+    {
+        bool loaded = 1;
+        repeated string results = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        bool loaded = 1;
+        string resource_id = 2;
+        string iban = 3;
+        string currency = 4;
+        string name = 5;
+        string product = 6;
+        string cash_account_type = 7;
+    }
+
     message OrderUpdate
     {
         Order order = 1;
@@ -296,6 +342,9 @@ message Response
         ProductFee product_fee = 20;
         MaxTradeAmount max_trade_amount = 21;
         TradingStats trading_stats = 22;
+        CreateIbanAgreementUrl create_iban_agreement = 23;
+        GetIbanAccounts get_iban_accounts = 25;
+        GetIbanAccountDetails get_iban_account_details = 26;
 
         MarketData market_data = 50;
         Error fatal_error = 51;
