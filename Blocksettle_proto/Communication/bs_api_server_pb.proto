@@ -152,9 +152,9 @@ message Request
         LoadAddresses                   load_addresses              = 17;
         RevokeAddress                   revoke_address              = 18;
         LoadDepositAddress              load_deposit_address        = 19;
-        CreateIbanAgreementUrl          create_iban_agreement       = 27;
-        GetIbanAccounts                 get_iban_accounts           = 28;
-        GetIbanAccountDetails           get_iban_account_details    = 29;
+        CreateIbanAgreementUrl          create_iban_agreement       = 20;
+        GetIbanAccounts                 get_iban_accounts           = 21;
+        GetIbanAccountDetails           get_iban_account_details    = 22;
     }
 }
 
