@@ -117,3 +117,9 @@ enum ApiKeyError
     API_KEY_ERROR_UNKNOWN_IP_ADDR = 2;
     API_KEY_ERROR_SERVER_ERROR = 3;
 }
+
+message WhitelistedAddress
+{
+   string   address     = 1;
+   string   description = 2;
+}

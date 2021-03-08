@@ -124,25 +124,42 @@ message Request
         string product_type = 1;
     }
 
+    message LoadAddresses
+    {
+    }
+
+    message RevokeAddress
+    {
+        string address = 1;
+    }
+
+    message LoadDepositAddress
+    {
+    }
+
     oneof data
     {
-        Authorize                   authorize           = 10;
-        EidLogin                    eid_login           = 11;
-        EidRegister                 eid_register        = 12;
-        EidCancel                   eid_cancel          = 13;
-        ResumeSession               resume_session      = 14;
-        Logout                      logout              = 15;
-        MarketOrder                 market_order        = 16;
-        LoadOrders                  load_orders         = 17;
-        LoadBalance                 load_balance        = 18;
-        Subscribe                   subscribe           = 19;
-        TradingDay                  trading_day         = 20;
-        EstimateIm                  estimate_im         = 21;
-        ProductFee                  product_fee         = 22;
-        MaxTradeAmount              max_trade_amount    = 23;
-        TradingStats                trading_stats       = 24;
-        bs.types.SubmitPricesData   submit_prices       = 25;
-        bs.types.PullPricesData     pull_prices         = 26;
+        Authorize                   authorize               = 10;
+        EidLogin                    eid_login               = 11;
+        EidRegister                 eid_register            = 12;
+        EidCancel                   eid_cancel              = 13;
+        ResumeSession               resume_session          = 14;
+        Logout                      logout                  = 15;
+        MarketOrder                 market_order            = 16;
+        LoadOrders                  load_orders             = 17;
+        LoadBalance                 load_balance            = 18;
+        Subscribe                   subscribe               = 19;
+        TradingDay                  trading_day             = 20;
+        EstimateIm                  estimate_im             = 21;
+        ProductFee                  product_fee             = 22;
+        MaxTradeAmount              max_trade_amount        = 23;
+        TradingStats                trading_stats           = 24;
+        bs.types.SubmitPricesData   submit_prices           = 25;
+        bs.types.PullPricesData     pull_prices             = 26;
+        bs.types.WhitelistedAddress submit_address          = 27;
+        LoadAddresses               load_addresses          = 28;
+        RevokeAddress               revoke_address          = 29;
+        LoadDepositAddress          load_deposit_address    = 30;
     }
 }
 
@@ -280,27 +297,56 @@ message Response
         string error_msg = 1;
     }
 
+    message SubmitAddress
+    {
+        string  address     = 1;
+        bool    success     = 2;
+        string  error_msg   = 3;
+    }
+
+    message LoadAddresses
+    {
+        repeated bs.types.WhitelistedAddress addresses = 1;
+    }
+
+    message RevokeAddress
+    {
+        string  address     = 1;
+        bool    success     = 2;
+        string  error_msg   = 3;
+    }
+
+    message LoadDepositAddress
+    {
+        string  address     = 1;
+        bool    success     = 2;
+        string  error_msg   = 3;
+    }
+
     oneof data
     {
-        Authorize authorize = 10;
-        EidLogin eid_login = 15;
-        EidRegister eid_register = 24;
-        ResumeSession resume_session = 17;
-        Logout logout = 18;
-        MarketOrder market_order = 11;
-        LoadOrders load_orders = 12;
-        LoadBalance load_balance = 13;
-        Subscribe subscribe = 14;
-        TradingDay trading_day = 16;
-        EstimateIm estimate_im = 19;
-        ProductFee product_fee = 20;
-        MaxTradeAmount max_trade_amount = 21;
-        TradingStats trading_stats = 22;
-
-        MarketData market_data = 50;
-        Error fatal_error = 51;
-        EidLoginUpdate eid_login_update = 52;
-        OrderUpdate order_update = 53;
-        TradingClosed trading_closed = 54;
+        Authorize           authorize               = 10;
+        EidLogin            eid_login               = 11;
+        EidRegister         eid_register            = 12;
+        ResumeSession       resume_session          = 13;
+        Logout              logout                  = 14;
+        MarketOrder         market_order            = 15;
+        LoadOrders          load_orders             = 16;
+        LoadBalance         load_balance            = 17;
+        Subscribe           subscribe               = 18;
+        TradingDay          trading_day             = 19;
+        EstimateIm          estimate_im             = 20;
+        ProductFee          product_fee             = 21;
+        MaxTradeAmount      max_trade_amount        = 22;
+        TradingStats        trading_stats           = 23;
+        MarketData          market_data             = 24;
+        Error               fatal_error             = 25;
+        EidLoginUpdate      eid_login_update        = 26;
+        OrderUpdate         order_update            = 27;
+        TradingClosed       trading_closed          = 28;
+        SubmitAddress       submit_address          = 29;
+        LoadAddresses       load_adresses           = 30;
+        RevokeAddress       revoke_address          = 31;
+        LoadDepositAddress  load_deposit_address    = 32;
     }
 }
