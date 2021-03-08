@@ -90,6 +90,7 @@ message Request
         bs.types.PullPricesData     request     = 2;
     }
 
+<<<<<<< HEAD
     message SubmitAddressData
     {
         string                      entity_name = 1;
@@ -112,28 +113,49 @@ message Request
         string entity_name = 1;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Request.CreateIbanAgreementUrl request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Request.GetIbanAccounts request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Request.GetIbanAccountDetails request = 1;
+        string entity_name = 2;
+    }
+
 
     oneof data
     {
-        CheckApiKey                     check_api_key           = 1;
-        CheckEid                        check_eid               = 2;
-        RegisterEid                     register_eid            = 3;
-        MarketOrder                     market_order            = 4;
-        LoadOrders                      load_orders             = 5;
-        LoadBalance                     load_balance            = 6;
-        TradingDay                      trading_day             = 7;
-        EstimateIm                      estimate_im             = 8;
-        ProductFee                      product_fee             = 9;
-        MaxTradeAmount                  max_trade_amount        = 10;
-        ApiServer.Response.MarketData   market_data             = 11;
-        SubmitPricesData                submit_prices           = 12;
-        PullPricesData                  pull_prices             = 13;
-        string                          user_connected          = 14;
-        string                          user_disconnected       = 15;
-        SubmitAddressData               submit_address          = 16;
-        LoadAddresses                   load_addresses          = 17;
-        RevokeAddress                   revoke_address          = 18;
-        LoadDepositAddress              load_deposit_address    = 19;
+        CheckApiKey                     check_api_key               = 1;
+        CheckEid                        check_eid                   = 2;
+        RegisterEid                     register_eid                = 3;
+        MarketOrder                     market_order                = 4;
+        LoadOrders                      load_orders                 = 5;
+        LoadBalance                     load_balance                = 6;
+        TradingDay                      trading_day                 = 7;
+        EstimateIm                      estimate_im                 = 8;
+        ProductFee                      product_fee                 = 9;
+        MaxTradeAmount                  max_trade_amount            = 10;
+        ApiServer.Response.MarketData   market_data                 = 11;
+        SubmitPricesData                submit_prices               = 12;
+        PullPricesData                  pull_prices                 = 13;
+        string                          user_connected              = 14;
+        string                          user_disconnected           = 15;
+        SubmitAddressData               submit_address              = 16;
+        LoadAddresses                   load_addresses              = 17;
+        RevokeAddress                   revoke_address              = 18;
+        LoadDepositAddress              load_deposit_address        = 19;
+        CreateIbanAgreementUrl          create_iban_agreement       = 27;
+        GetIbanAccounts                 get_iban_accounts           = 28;
+        GetIbanAccountDetails           get_iban_account_details    = 29;
     }
 }
 
@@ -230,21 +252,42 @@ message Response
         double  last_cut_off_price  = 4;
     }
 
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Response.CreateIbanAgreementUrl result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Response.GetIbanAccounts result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Response.GetIbanAccountDetails result = 1;
+        string entity_name = 3;
+    }
+
     oneof data
     {
-        CheckApiKey     check_api_key       = 1;
-        CheckEid        check_eid           = 2;
-        RegisterEid     register_eid        = 3;
-        MarketOrder     market_order        = 4;
-        LoadOrders      load_orders         = 5;
-        LoadBalance     load_balance        = 6;
-        TradingDay      trading_day         = 7;
-        EstimateIm      estimate_im         = 8;
-        ProductFee      product_fee         = 9;
-        OrderUpdate     order_update        = 10;
-        MaxTradeAmount  max_trade_amount    = 11;
-        UpdateBook      update_book         = 12;
-        TradeClose      trade_close         = 13;
-        TradeOpen       trade_open          = 14;
+        CheckApiKey             check_api_key               = 1;
+        CheckEid                check_eid                   = 2;
+        RegisterEid             register_eid                = 3;
+        MarketOrder             market_order                = 4;
+        LoadOrders              load_orders                 = 5;
+        LoadBalance             load_balance                = 6;
+        TradingDay              trading_day                 = 7;
+        EstimateIm              estimate_im                 = 8;
+        ProductFee              product_fee                 = 9;
+        OrderUpdate             order_update                = 10;
+        MaxTradeAmount          max_trade_amount            = 11;
+        UpdateBook              update_book                 = 12;
+        TradeClose              trade_close                 = 13;
+        TradeOpen               trade_open                  = 14;
+        CreateIbanAgreementUrl  create_iban_agreement       = 15;
+        GetIbanAccounts         get_iban_accounts           = 16;
+        GetIbanAccountDetails   get_iban_account_details    = 17;
     }
 }
