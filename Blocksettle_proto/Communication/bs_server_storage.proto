@@ -180,6 +180,17 @@ message SetUserDeliveryAddressResponse
    string   error_msg      = 4;
 }
 
+message LoadUserDepositAddressRequest
+{
+   string   entity_name    = 1;
+}
+
+message LoadUserDepositAddressResponse
+{
+   string   entity_name       = 1;
+   string   deposit_address   = 2;
+}
+
 message StorageAddressMessage
 {
    oneof data
@@ -221,6 +232,9 @@ message StorageAddressMessage
 
       SetUserDeliveryAddressRequest    set_user_delivery_address          = 24;
       SetUserDeliveryAddressResponse   set_user_delivery_address_response = 25;
+
+      LoadUserDepositAddressRequest    load_deposit_address                = 26;
+      LoadUserDepositAddressResponse   load_deposit_address_response       = 27;
    }
 }
 

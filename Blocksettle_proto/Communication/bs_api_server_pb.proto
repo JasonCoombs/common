@@ -269,6 +269,12 @@ message Response
         string entity_name = 3;
     }
 
+    message LoadDepositAddress
+    {
+        string entity_name = 1;
+        string address     = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -288,5 +294,6 @@ message Response
         CreateIbanAgreementUrl  create_iban_agreement       = 15;
         GetIbanAccounts         get_iban_accounts           = 16;
         GetIbanAccountDetails   get_iban_account_details    = 17;
+        LoadDepositAddress      load_deposit_address        = 18;
     }
 }
