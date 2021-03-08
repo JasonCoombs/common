@@ -90,7 +90,6 @@ message Request
         bs.types.PullPricesData     request     = 2;
     }
 
-<<<<<<< HEAD
     message SubmitAddressData
     {
         string                      entity_name = 1;

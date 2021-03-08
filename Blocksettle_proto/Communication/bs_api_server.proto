@@ -124,7 +124,6 @@ message Request
         string product_type = 1;
     }
 
-<<<<<<< HEAD
     message LoadAddresses
     {
     }
