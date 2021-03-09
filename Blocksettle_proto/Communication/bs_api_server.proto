@@ -171,9 +171,11 @@ message Request
         ProductFee                  product_fee                 = 22;
         MaxTradeAmount              max_trade_amount            = 23;
         TradingStats                trading_stats               = 24;
-        bs.types.SubmitPricesData   submit_prices               = 25;
-        bs.types.PullPricesData     pull_prices                 = 26;
-        bs.types.WhitelistedAddress submit_address              = 27;
+
+        bs.types.SubmitPricesData           submit_prices       = 25;
+        bs.types.PullPricesData             pull_prices         = 26;
+        bs.types.WhitelistedAddressRequest  submit_address      = 27;
+
         LoadAddresses               load_addresses              = 28;
         RevokeAddress               revoke_address              = 29;
         LoadDepositAddress          load_deposit_address        = 30;
@@ -344,14 +346,15 @@ message Response
 
     message SubmitAddress
     {
-        string  address     = 1;
-        bool    success     = 2;
-        string  error_msg   = 3;
+        string  address         = 1;
+        bool    success         = 2;
+        string  error_msg       = 3;
+        int64   added_timestamp = 4;
     }
 
     message LoadAddresses
     {
-        repeated bs.types.WhitelistedAddress addresses = 1;
+        repeated bs.types.WhitelistedAddressResponse addresses = 1;
     }
 
     message RevokeAddress
@@ -388,7 +391,7 @@ message Response
         OrderUpdate             order_update                = 27;
         TradingClosed           trading_closed              = 28;
         SubmitAddress           submit_address              = 29;
-        LoadAddresses           load_adresses               = 30;
+        LoadAddresses           load_addresses              = 30;
         RevokeAddress           revoke_address              = 31;
         LoadDepositAddress      load_deposit_address        = 32;
         CreateIbanAgreementUrl  create_iban_agreement       = 33;

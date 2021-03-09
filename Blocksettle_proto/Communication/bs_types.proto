@@ -118,10 +118,17 @@ enum ApiKeyError
     API_KEY_ERROR_SERVER_ERROR = 3;
 }
 
-message WhitelistedAddress
+message WhitelistedAddressRequest
 {
-   string   address     = 1;
-   string   description = 2;
+    string  address         = 1;
+    string  description     = 2;
+}
+
+message WhitelistedAddressResponse
+{
+    string  address         = 1;
+    string  description     = 2;
+    int64   added_timestamp = 3;
 }
 
 enum SubmitWhitelistedAddressError

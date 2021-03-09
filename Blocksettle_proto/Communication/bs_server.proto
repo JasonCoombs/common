@@ -1641,8 +1641,8 @@ message ObligationsManaging
 
    message SubmitWhitelistedAddress
    {
-      string                        entity_name    = 1;
-      bs.types.WhitelistedAddress   address_data   = 2;
+      string                              entity_name    = 1;
+      bs.types.WhitelistedAddressRequest  address_data   = 2;
    }
 
    message SubmitAddressResponse
