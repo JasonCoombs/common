@@ -281,6 +281,21 @@ message Response
         repeated bs.types.WhitelistedAddressResponse    addresses   = 2;
     }
 
+    message SubmitAddress
+    {
+        string  entity_name     = 1;
+        bool    success         = 2;
+        string  address         = 3;
+        int64   added_timestamp = 4;
+    }
+
+    message RevokeAddress
+    {
+        string  entity_name = 1;
+        string  address     = 2;
+        bool    success     = 3;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -302,5 +317,7 @@ message Response
         GetIbanAccountDetails   get_iban_account_details    = 17;
         LoadDepositAddress      load_deposit_address        = 18;
         LoadAddresses           load_addresses              = 19;
+        SubmitAddress           submit_address              = 20;
+        RevokeAddress           revoke_address              = 21;
     }
 }
