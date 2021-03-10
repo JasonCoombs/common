@@ -25,6 +25,11 @@ enum EidStatus {
     EID_STATUS_SUCCESS = 30;
 }
 
+enum ErrorCode {
+    ERROR_CODE_SERVER_ERROR = 0;
+    ERROR_CODE_INVALID_REQUEST = 1;
+}
+
 message Order
 {
    string id = 1;
@@ -341,7 +346,12 @@ message Response
 
     message Error
     {
-        string error_msg = 1;
+        ErrorCode error_code = 1;
+        string error_msg = 2;
+    }
+
+    message SessionReplaced
+    {
     }
 
     message SubmitAddress
@@ -385,17 +395,19 @@ message Response
         ProductFee              product_fee                 = 21;
         MaxTradeAmount          max_trade_amount            = 22;
         TradingStats            trading_stats               = 23;
-        MarketData              market_data                 = 24;
-        Error                   fatal_error                 = 25;
-        EidLoginUpdate          eid_login_update            = 26;
-        OrderUpdate             order_update                = 27;
-        TradingClosed           trading_closed              = 28;
-        SubmitAddress           submit_address              = 29;
-        LoadAddresses           load_addresses              = 30;
-        RevokeAddress           revoke_address              = 31;
-        LoadDepositAddress      load_deposit_address        = 32;
-        CreateIbanAgreementUrl  create_iban_agreement       = 33;
-        GetIbanAccounts         get_iban_accounts           = 34;
-        GetIbanAccountDetails   get_iban_account_details    = 35;
+        SubmitAddress           submit_address              = 24;
+        LoadAddresses           load_addresses              = 25;
+        RevokeAddress           revoke_address              = 26;
+        LoadDepositAddress      load_deposit_address        = 27;
+        CreateIbanAgreementUrl  create_iban_agreement       = 28;
+        GetIbanAccounts         get_iban_accounts           = 29;
+        GetIbanAccountDetails   get_iban_account_details    = 30;
+
+        MarketData               market_data                = 31;
+        Error                    fatal_error                = 32;
+        EidLoginUpdate           eid_login_update           = 33;
+        OrderUpdate              order_update               = 34;
+        TradingClosed            trading_closed             = 35;
+        SessionReplaced          session_replaced           = 36;
     }
 }
