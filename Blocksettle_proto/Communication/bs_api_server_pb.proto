@@ -179,7 +179,6 @@ message Response
     {
         bytes client_id = 1;
         ApiServer.Response.TradingDay result = 2;
-        double open_interest = 3;
     }
 
     message EstimateIm
@@ -242,6 +241,12 @@ message Response
         string entity_name = 3;
     }
 
+    message OpenInterest
+    {
+        string product_type = 1;
+        double open_interest = 2;
+    }
+
     oneof data
     {
         CheckApiKey check_api_key = 1;
@@ -261,5 +266,6 @@ message Response
         CreateIbanAgreementUrl create_iban_agreement = 15;
         GetIbanAccounts get_iban_accounts = 16;
         GetIbanAccountDetails get_iban_account_details = 17;
+        OpenInterest open_interest = 18;
     }
 }
