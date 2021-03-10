@@ -206,7 +206,6 @@ message Response
     {
         bytes client_id = 1;
         ApiServer.Response.TradingDay result = 2;
-        double open_interest = 3;
     }
 
     message EstimateIm
@@ -269,6 +268,12 @@ message Response
         string entity_name = 3;
     }
 
+    message OpenInterest
+    {
+        string product_type = 1;
+        double open_interest = 2;
+    }
+
     message LoadDepositAddress
     {
         string entity_name = 1;
@@ -320,5 +325,6 @@ message Response
         LoadAddresses           load_addresses              = 19;
         SubmitAddress           submit_address              = 20;
         RevokeAddress           revoke_address              = 21;
+        OpenInterest            open_interest               = 22;
     }
 }
