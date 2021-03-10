@@ -25,6 +25,11 @@ enum EidStatus {
     EID_STATUS_SUCCESS = 30;
 }
 
+enum ErrorCode {
+    ERROR_CODE_SERVER_ERROR = 0;
+    ERROR_CODE_INVALID_REQUEST = 1;
+}
+
 message Order
 {
    string id = 1;
@@ -323,7 +328,12 @@ message Response
 
     message Error
     {
-        string error_msg = 1;
+        ErrorCode error_code = 1;
+        string error_msg = 2;
+    }
+
+    message SessionReplaced
+    {
     }
 
     oneof data
@@ -351,5 +361,6 @@ message Response
         EidLoginUpdate eid_login_update = 52;
         OrderUpdate order_update = 53;
         TradingClosed trading_closed = 54;
+        SessionReplaced session_replaced = 55;
     }
 }
