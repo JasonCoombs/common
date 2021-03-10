@@ -129,6 +129,19 @@ message Request
         string product_type = 1;
     }
 
+    message LoadAddresses
+    {
+    }
+
+    message RevokeAddress
+    {
+        string address = 1;
+    }
+
+    message LoadDepositAddress
+    {
+    }
+
     message CreateIbanAgreementUrl
     {
         string country_short_code = 1;
@@ -146,29 +159,40 @@ message Request
         string account_ref = 1;
     }
 
+    message WhitelistedAddressRequest
+    {
+        string  address         = 1;
+        string  description     = 2;
+    }
+
     oneof data
     {
-        Authorize                   authorize           = 10;
-        EidLogin                    eid_login           = 11;
-        EidRegister                 eid_register        = 12;
-        EidCancel                   eid_cancel          = 13;
-        ResumeSession               resume_session      = 14;
-        Logout                      logout              = 15;
-        MarketOrder                 market_order        = 16;
-        LoadOrders                  load_orders         = 17;
-        LoadBalance                 load_balance        = 18;
-        Subscribe                   subscribe           = 19;
-        TradingDay                  trading_day         = 20;
-        EstimateIm                  estimate_im         = 21;
-        ProductFee                  product_fee         = 22;
-        MaxTradeAmount              max_trade_amount    = 23;
-        TradingStats                trading_stats       = 24;
-        bs.types.SubmitPricesData   submit_prices       = 25;
-        bs.types.PullPricesData     pull_prices         = 26;
-        CreateIbanAgreementUrl      create_iban_agreement       = 27;
-        GetIbanAccounts             get_iban_accounts           = 28;
-        GetIbanAccountDetails       get_iban_account_details    = 29;
+        Authorize                   authorize                   = 10;
+        EidLogin                    eid_login                   = 11;
+        EidRegister                 eid_register                = 12;
+        EidCancel                   eid_cancel                  = 13;
+        ResumeSession               resume_session              = 14;
+        Logout                      logout                      = 15;
+        MarketOrder                 market_order                = 16;
+        LoadOrders                  load_orders                 = 17;
+        LoadBalance                 load_balance                = 18;
+        Subscribe                   subscribe                   = 19;
+        TradingDay                  trading_day                 = 20;
+        EstimateIm                  estimate_im                 = 21;
+        ProductFee                  product_fee                 = 22;
+        MaxTradeAmount              max_trade_amount            = 23;
+        TradingStats                trading_stats               = 24;
 
+        bs.types.SubmitPricesData           submit_prices       = 25;
+        bs.types.PullPricesData             pull_prices         = 26;
+
+        WhitelistedAddressRequest   submit_address              = 27;
+        LoadAddresses               load_addresses              = 28;
+        RevokeAddress               revoke_address              = 29;
+        LoadDepositAddress          load_deposit_address        = 30;
+        CreateIbanAgreementUrl      create_iban_agreement       = 31;
+        GetIbanAccounts             get_iban_accounts           = 32;
+        GetIbanAccountDetails       get_iban_account_details    = 33;
     }
 }
 
@@ -336,31 +360,68 @@ message Response
     {
     }
 
+    message SubmitAddress
+    {
+        string  address         = 1;
+        string  description     = 2;
+        bool    success         = 3;
+        string  error_msg       = 4;
+        double  added_timestamp = 5;
+    }
+
+    message WhitelistedAddressResponse
+    {
+        string  address         = 1;
+        string  description     = 2;
+        double  added_timestamp = 3;
+    }
+
+    message LoadAddresses
+    {
+        repeated WhitelistedAddressResponse addresses = 1;
+    }
+
+    message RevokeAddress
+    {
+        string  address     = 1;
+        bool    success     = 2;
+        string  error_msg   = 3;
+    }
+
+    message LoadDepositAddress
+    {
+        string  address  = 1;
+    }
+
     oneof data
     {
-        Authorize authorize = 10;
-        EidLogin eid_login = 15;
-        EidRegister eid_register = 24;
-        ResumeSession resume_session = 17;
-        Logout logout = 18;
-        MarketOrder market_order = 11;
-        LoadOrders load_orders = 12;
-        LoadBalance load_balance = 13;
-        Subscribe subscribe = 14;
-        TradingDay trading_day = 16;
-        EstimateIm estimate_im = 19;
-        ProductFee product_fee = 20;
-        MaxTradeAmount max_trade_amount = 21;
-        TradingStats trading_stats = 22;
-        CreateIbanAgreementUrl create_iban_agreement = 23;
-        GetIbanAccounts get_iban_accounts = 25;
-        GetIbanAccountDetails get_iban_account_details = 26;
+        Authorize               authorize                   = 10;
+        EidLogin                eid_login                   = 11;
+        EidRegister             eid_register                = 12;
+        ResumeSession           resume_session              = 13;
+        Logout                  logout                      = 14;
+        MarketOrder             market_order                = 15;
+        LoadOrders              load_orders                 = 16;
+        LoadBalance             load_balance                = 17;
+        Subscribe               subscribe                   = 18;
+        TradingDay              trading_day                 = 19;
+        EstimateIm              estimate_im                 = 20;
+        ProductFee              product_fee                 = 21;
+        MaxTradeAmount          max_trade_amount            = 22;
+        TradingStats            trading_stats               = 23;
+        SubmitAddress           submit_address              = 24;
+        LoadAddresses           load_addresses              = 25;
+        RevokeAddress           revoke_address              = 26;
+        LoadDepositAddress      load_deposit_address        = 27;
+        CreateIbanAgreementUrl  create_iban_agreement       = 28;
+        GetIbanAccounts         get_iban_accounts           = 29;
+        GetIbanAccountDetails   get_iban_account_details    = 30;
 
-        MarketData market_data = 50;
-        Error fatal_error = 51;
-        EidLoginUpdate eid_login_update = 52;
-        OrderUpdate order_update = 53;
-        TradingClosed trading_closed = 54;
-        SessionReplaced session_replaced = 55;
+        MarketData               market_data                = 31;
+        Error                    fatal_error                = 32;
+        EidLoginUpdate           eid_login_update           = 33;
+        OrderUpdate              order_update               = 34;
+        TradingClosed            trading_closed             = 35;
+        SessionReplaced          session_replaced           = 36;
     }
 }
