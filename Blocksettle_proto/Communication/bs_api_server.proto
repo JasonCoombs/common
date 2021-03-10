@@ -366,7 +366,7 @@ message Response
         string  description     = 2;
         bool    success         = 3;
         string  error_msg       = 4;
-        int64   added_timestamp = 5;
+        double  added_timestamp = 5;
     }
 
     message WhitelistedAddressResponse
