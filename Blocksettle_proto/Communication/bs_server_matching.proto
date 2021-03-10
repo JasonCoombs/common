@@ -224,6 +224,7 @@ message UsersImInfo
          double net_exposure = 2;
          double leverage_ratio = 3;
          double balance = 4;
+         double im_balance = 5;
       }
       string account_name = 1;
       repeated PerProduct per_product = 2;
@@ -233,8 +234,13 @@ message UsersImInfo
    repeated InfoIM im_info = 1;
    repeated string connected_users = 2;
    repeated string lp_streaming_users = 3;
-   double open_interest_buy = 4;
-   double open_interest_sell = 5;
+
+   message OpenInterest {
+      int32  product_type = 1;
+      double buy = 2;
+      double sell = 3;
+   }
+   repeated OpenInterest open_interest = 4;
 }
 
 
