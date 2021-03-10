@@ -740,13 +740,14 @@ message GenoaMessage
 {
    message FutureTradeData
    {
-      TradeDataMessage  trade                   = 1;
-      double            IM_reserve_acquirer     = 2;
-      double            DM_reserve              = 3;
-      double            IM_reserve_counterparty = 4;
-      string            dealer_trading_account  = 5;
-      double            net_exposure_acquirer   = 6;
-      double            net_exposure_counterparty = 7;
+      TradeDataMessage  trade                      = 1;
+      double            IM_reserve_acquirer        = 2;
+      double            DM_reserve                 = 3;
+      double            IM_reserve_counterparty    = 4;
+      string            dealer_trading_account     = 5;
+      double            net_exposure_acquirer      = 6;
+      double            net_exposure_counterparty  = 7;
+      int64             valid_duration             = 8;
    }
 
    GenoaType type = 1;
