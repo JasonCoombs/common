@@ -159,6 +159,12 @@ message Request
         string account_ref = 1;
     }
 
+    message WhitelistedAddressRequest
+    {
+        string  address         = 1;
+        string  description     = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -179,8 +185,8 @@ message Request
 
         bs.types.SubmitPricesData           submit_prices       = 25;
         bs.types.PullPricesData             pull_prices         = 26;
-        bs.types.WhitelistedAddressRequest  submit_address      = 27;
 
+        WhitelistedAddressRequest   submit_address              = 27;
         LoadAddresses               load_addresses              = 28;
         RevokeAddress               revoke_address              = 29;
         LoadDepositAddress          load_deposit_address        = 30;
@@ -357,14 +363,22 @@ message Response
     message SubmitAddress
     {
         string  address         = 1;
-        bool    success         = 2;
-        string  error_msg       = 3;
-        int64   added_timestamp = 4;
+        string  description     = 2;
+        bool    success         = 3;
+        string  error_msg       = 4;
+        int64   added_timestamp = 5;
+    }
+
+    message WhitelistedAddressResponse
+    {
+        string  address         = 1;
+        string  description     = 2;
+        double  added_timestamp = 3;
     }
 
     message LoadAddresses
     {
-        repeated bs.types.WhitelistedAddressResponse addresses = 1;
+        repeated WhitelistedAddressResponse addresses = 1;
     }
 
     message RevokeAddress

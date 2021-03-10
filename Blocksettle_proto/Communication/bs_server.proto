@@ -12,10 +12,11 @@ syntax = "proto3";
 
 package Blocksettle.Server;
 
+import "bs_api_server.proto";
 import "bs_api_server_pb.proto";
+import "bs_types.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
-import "bs_types.proto";
 
 message Empty
 {
@@ -1641,13 +1642,26 @@ message ObligationsManaging
 
    message SubmitWhitelistedAddress
    {
-      string                              entity_name    = 1;
-      bs.types.WhitelistedAddressRequest  address_data   = 2;
+      string entity_name = 1;
+      Blocksettle.Communication.ApiServer.Request.WhitelistedAddressRequest  address_data   = 2;
+   }
+
+   enum SubmitWhitelistedAddressError
+   {
+      SUBMIT_WA_NO_ERROR                     = 0;
+      // SUBMIT_WA_ERROR_INVALID_ADDRESS - invalid address string format
+      SUBMIT_WA_ERROR_INVALID_ADDRESS_FORMAT = 1;
+      // SUBMIT_WA_ERROR_INVALID_ADDRESS_TYPE - invalid address type. refer to RTC API doc for accepted types
+      SUBMIT_WA_ERROR_INVALID_ADDRESS_TYPE   = 2;
+      // SUBMIT_WA_ERROR_INVALID_DESCRIPTION - address description is tool long
+      SUBMIT_WA_ERROR_INVALID_DESCRIPTION    = 3;
+      // SUBMIT_WA_ERROR_EXCEED_LIMIT - user address limit exceeded. Refer to RTC doc
+      SUBMIT_WA_ERROR_EXCEED_LIMIT           = 4;
    }
 
    message SubmitAddressResponse
    {
-      bs.types.SubmitWhitelistedAddressError result_code = 1;
+      SubmitWhitelistedAddressError result_code = 1;
    }
 
    ObligationsManagingMessageType   type = 1;
