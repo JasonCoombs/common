@@ -115,6 +115,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processSpentnessRequest(env, msg.get_spentness());
       case ArmoryMessage::kGetOutputsForOps:
          return processGetOutputsForOPs(env, msg.get_outputs_for_ops());
+      case ArmoryMessage::kSubscribeTxForAddress:
+         return processSubscribeAddressTX(env, msg.subscribe_tx_for_address());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
             , env.id, msg.data_case());
@@ -422,6 +424,9 @@ static std::vector<bs::TXEntry> mergeTXEntries(const std::vector<bs::TXEntry>& e
 
 void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::vector<bs::TXEntry> &entries)
 {
+   for (const auto& entry : entries) {
+      processZcForAddrSubscriptions(entry);
+   }
    receivedZCs_.insert(requestId);
    const auto& mergedEntries = mergeTXEntries(entries);
    ArmoryMessage msg;
@@ -740,24 +745,34 @@ bool BlockchainAdapter::processUnregisterWallets(const bs::message::Envelope& en
    ArmoryMessage msg;
    auto msgResp = msg.mutable_unregister_wallets();
    for (const auto& walletId : request.wallet_ids()) {
-      const auto& itWallet = wallets_.find(walletId);
-      if (itWallet == wallets_.end()) {
-         logger_->warn("[{}] unknown wallet {}", __func__, walletId);
-         continue;
-      }
-      if (itWallet->second.wallet) {
-         itWallet->second.wallet->unregister();
+      if (unregisterWallet(walletId)) {
          msgResp->add_wallet_ids(walletId);
       }
-      else {
-         logger_->warn("[{}] wallet for {} not set", __func__, walletId);
-      }
-      wallets_.erase(itWallet);
-      regMap_.erase(walletId);
    }
    bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
       , msg.SerializeAsString() };
    return pushFill(envResp);
+}
+
+bool BlockchainAdapter::unregisterWallet(const std::string& walletId)
+{
+   bool result = false;
+   std::lock_guard<std::recursive_mutex> lock(mutex_);
+   const auto& itWallet = wallets_.find(walletId);
+   if (itWallet == wallets_.end()) {
+      logger_->warn("[{}] unknown wallet {}", __func__, walletId);
+      return false;
+   }
+   if (itWallet->second.wallet) {
+      itWallet->second.wallet->unregister();
+      result = true;
+   }
+   else {
+      logger_->warn("[{}] wallet for {} not set", __func__, walletId);
+   }
+   wallets_.erase(itWallet);
+   regMap_.erase(walletId);
+   return result;
 }
 
 std::string BlockchainAdapter::registerWallet(const std::string &walletId
@@ -1503,6 +1518,53 @@ bool BlockchainAdapter::processGetOutputsForOPs(const bs::message::Envelope& env
       }
    }
    return true;
+}
+
+bool BlockchainAdapter::processSubscribeAddressTX(const bs::message::Envelope& env
+   , const std::string& addr)
+{
+   bs::Address address;
+   try {
+      address = bs::Address::fromAddressString(addr);
+   }
+   catch (const std::exception&) {
+      logger_->error("[{}] invalid address {}", __func__, addr);
+      return true;
+   }
+   const auto& itAddr = addrTxSubscriptions_.find(address);
+   if (itAddr != addrTxSubscriptions_.end()) {
+      logger_->debug("[{}] unsubscribing address {}", __func__, addr);
+      unregisterWallet(addr);
+      addrTxSubscriptions_.erase(itAddr);
+      return true;
+   }
+   logger_->debug("[{}] subscribing address {}", __func__, addr);
+   Wallet addrWallet;
+   addrWallet.addresses = { address };
+   addrWallet.asNew = true;
+   registerWallet(addr, addrWallet);
+   addrTxSubscriptions_[address] = { env.id, env.sender };
+   return true;
+}
+
+void BlockchainAdapter::processZcForAddrSubscriptions(const bs::TXEntry& entry)
+{
+   for (const auto& subscription : addrTxSubscriptions_) {
+      const auto& addrStr = subscription.first.display();
+      const auto& itId = entry.walletIds.find(addrStr);
+      if (itId == entry.walletIds.end()) {
+         continue;
+      }
+      logger_->debug("[{}] found ZC {} for {}", __func__, entry.value, addrStr);
+      ArmoryMessage msg;
+      auto msgResp = msg.mutable_address_tx();
+      msgResp->set_address(addrStr);
+      msgResp->set_value(entry.value);
+      msgResp->set_tx_hash(entry.txHash.toBinStr());
+      Envelope env{ 0, user_, subscription.second.subscriber, {}, {}
+         , msg.SerializeAsString() };
+      pushFill(env);
+   }
 }
 
 void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& request)

@@ -126,6 +126,8 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_GetSpentness&);
    bool processGetOutputsForOPs(const bs::message::Envelope&
       , const BlockSettle::Common::ArmoryMessage_GetOutputsForOPs&);
+   bool processSubscribeAddressTX(const bs::message::Envelope&, const std::string& addr);
+   void processZcForAddrSubscriptions(const bs::TXEntry&);
 
 protected:
    std::shared_ptr<spdlog::logger>     logger_;
@@ -175,8 +177,15 @@ protected:
    std::set<BinaryData> pushedZCs_;
    std::unordered_set<std::string>  receivedZCs_;
 
+   struct AddressSubscription {
+      uint64_t msgId;
+      std::shared_ptr<bs::message::User>  subscriber;
+   };
+   std::map<bs::Address, AddressSubscription>   addrTxSubscriptions_;
+
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);
+   bool unregisterWallet(const std::string& walletId);
    void singleAddrWalletRegistered(const AddressHistRequest &);
 };
 
