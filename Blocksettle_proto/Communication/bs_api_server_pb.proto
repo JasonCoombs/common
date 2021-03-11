@@ -303,7 +303,7 @@ message Response
     message LoadAddresses
     {
         string                                                  entity_name = 1;
-        repeated ApiServer.Response.WhitelistedAddressResponse  addresses   = 2;
+        repeated ApiServer.Response.LoadAddresses.WhitelistedAddressResponse  addresses   = 2;
     }
 
     message SubmitAddress
