@@ -1791,3 +1791,33 @@ message ApiServerMsg
       string         user_disconnected = 9;
    }
 }
+
+
+message DealerConnMessage
+{
+   message OrderRequest
+   {
+      string product = 1;
+      double qty = 2;
+      bs.types.Side side = 3;
+   }
+
+   message OrderResponse
+   {
+      bool   success = 1;
+      string product = 2;
+      double qty = 3;
+      bs.types.Side side = 4;
+      string exchange_order_id = 5;
+      double price = 6;
+      string reject_reason = 7;
+   }
+
+   oneof data
+   {
+      Empty         connected = 1;
+      Empty         disconnected = 2;
+      OrderRequest  order_request = 3;
+      OrderResponse order_response = 4;
+   }
+}
