@@ -765,7 +765,7 @@ message GenoaNewApiKeyRequest
 message GenoaNewApiKeyResponse
 {
    bool error = 1;
-   string key = 2;
+   GenoaListApiKeysResponse.ApiKey key = 2;
 }
 
 message GenoaListApiKeysRequest
