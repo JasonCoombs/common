@@ -302,6 +302,12 @@ message Response
         bool    success     = 3;
     }
 
+    message UserNotify
+    {
+        string broadcast_to = 1;
+        ApiServer.Response.UserNotify user_notify = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -326,5 +332,6 @@ message Response
         SubmitAddress           submit_address              = 20;
         RevokeAddress           revoke_address              = 21;
         OpenInterest            open_interest               = 22;
+        UserNotify              user_notify                 = 23;
     }
 }

@@ -282,6 +282,7 @@ enum GenoaType
    GenoaGetIbanAccountsType          = 50;
    GenoaGetIbanAccountDetailsType    = 51;
    GenoaOpenInterestType             = 52;
+   GenoaUserNotify                   = 53;
 }
 
 message GenoaConnectedBroadcast
@@ -687,6 +688,14 @@ message GenoaOpenInterestMsg
    double            open_interest        = 2;
 }
 
+message GenoaUserNotifyMsg
+{
+   string            broadcast_to         = 1;
+   string            message              = 2;
+   string            code                 = 3;
+   string            type                 = 4;
+}
+
 message GenoaRegisterAccountRequest
 {
    string answers = 1;
@@ -823,6 +832,7 @@ message GenoaMessage
       GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 61;
       GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 62;
       GenoaOpenInterestMsg                   open_interest                    = 63;
+      GenoaUserNotifyMsg                     user_notify                      = 64;
    }
 }
 

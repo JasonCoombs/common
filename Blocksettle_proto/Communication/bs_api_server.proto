@@ -394,6 +394,13 @@ message Response
         string  address  = 1;
     }
 
+    message UserNotify
+    {
+        string message = 1;
+        string code = 2;
+        string type = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -424,5 +431,6 @@ message Response
         OrderUpdate              order_update               = 34;
         TradingClosed            trading_closed             = 35;
         SessionReplaced          session_replaced           = 36;
+        UserNotify               user_notify                = 37;
     }
 }
