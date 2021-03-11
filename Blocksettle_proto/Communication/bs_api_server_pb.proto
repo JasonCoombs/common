@@ -130,6 +130,23 @@ message Request
         string entity_name = 2;
     }
 
+    message NewApiKey
+    {
+        ApiServer.Request.NewApiKey request = 1;
+        string entity_name = 2;
+    }
+
+    message ListApiKeys
+    {
+        ApiServer.Request.ListApiKeys request = 1;
+        string entity_name = 2;
+    }
+
+    message DeleteApiKey
+    {
+        ApiServer.Request.DeleteApiKey request = 1;
+        string entity_name = 2;
+    }
 
     oneof data
     {
@@ -155,6 +172,9 @@ message Request
         CreateIbanAgreementUrl          create_iban_agreement       = 20;
         GetIbanAccounts                 get_iban_accounts           = 21;
         GetIbanAccountDetails           get_iban_account_details    = 22;
+        NewApiKey                       new_api_key                 = 23;
+        ListApiKeys                     list_api_keys               = 24;
+        DeleteApiKey                    delete_api_key              = 25;
     }
 }
 
@@ -308,6 +328,24 @@ message Response
         ApiServer.Response.UserNotify user_notify = 2;
     }
 
+    message NewApiKey
+    {
+        ApiServer.Response.NewApiKey result = 1;
+        string entity_name = 3;
+    }
+
+    message ListApiKeys
+    {
+        ApiServer.Response.ListApiKeys result = 1;
+        string entity_name = 3;
+    }
+
+    message DeleteApiKey
+    {
+        ApiServer.Response.DeleteApiKey result = 1;
+        string entity_name = 3;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -333,5 +371,8 @@ message Response
         RevokeAddress           revoke_address              = 21;
         OpenInterest            open_interest               = 22;
         UserNotify              user_notify                 = 23;
+        NewApiKey               new_api_key                 = 24;
+        ListApiKeys             list_api_keys               = 25;
+        DeleteApiKey            delete_api_key              = 26;
     }
 }

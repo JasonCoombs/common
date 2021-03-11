@@ -261,6 +261,9 @@ enum GenoaType
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
    GenoaRegisterAccount          = 48;
+   GenoaNewApiKeyType            = 54;
+   GenoaListApiKeysType          = 55;
+   GenoaDeleteApiKeyType         = 56;
 
    GenoaGetCustomerBalance       = 36;
    GenoaLoadCustomerImBalance    = 37;
@@ -752,6 +755,50 @@ message GenoaGetIbanAccountDetailsResponse
    string cash_account_type = 7;
 }
 
+message GenoaNewApiKeyRequest
+{
+   string entity_name = 1;
+   string label = 2;
+   string ip = 3;
+}
+
+message GenoaNewApiKeyResponse
+{
+   bool error = 1;
+   string key = 2;
+}
+
+message GenoaListApiKeysRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaListApiKeysResponse
+{
+   message ApiKey
+   {
+      int32 id = 1;
+      string token = 2;
+      string allow = 3;
+      string label = 4;
+      string created = 5;
+   }
+
+   bool loaded = 1;
+   repeated ApiKey keys = 2;
+}
+
+message GenoaDeleteApiKeyRequest
+{
+   string entity_name = 1;
+   int32 key_id = 2;
+}
+
+message GenoaDeleteApiKeyResponse
+{
+   bool error = 1;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -833,6 +880,13 @@ message GenoaMessage
       GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 62;
       GenoaOpenInterestMsg                   open_interest                    = 63;
       GenoaUserNotifyMsg                     user_notify                      = 64;
+
+      GenoaNewApiKeyRequest                  new_api_key_req                  = 65;
+      GenoaNewApiKeyResponse                 new_api_key_resp                 = 66;
+      GenoaListApiKeysRequest                list_api_keys_req                = 67;
+      GenoaListApiKeysResponse               list_api_keys_resp               = 68;
+      GenoaDeleteApiKeyRequest               delete_api_key_req               = 69;
+      GenoaDeleteApiKeyResponse              delete_api_key_resp              = 70;
    }
 }
 

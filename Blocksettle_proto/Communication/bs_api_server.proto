@@ -166,6 +166,21 @@ message Request
         string  description     = 2;
     }
 
+    message NewApiKey
+    {
+        string label = 1;
+        string ip = 2;
+    }
+
+    message ListApiKeys
+    {
+    }
+
+    message DeleteApiKey
+    {
+        int32 key_id = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -194,6 +209,9 @@ message Request
         CreateIbanAgreementUrl      create_iban_agreement       = 31;
         GetIbanAccounts             get_iban_accounts           = 32;
         GetIbanAccountDetails       get_iban_account_details    = 33;
+        NewApiKey                   new_api_key                 = 34;
+        ListApiKeys                 list_api_keys               = 35;
+        DeleteApiKey                delete_api_key              = 36;
     }
 }
 
@@ -401,6 +419,32 @@ message Response
         string type = 3;
     }
 
+    message NewApiKey
+    {
+        bool error = 1;
+        string key = 2;
+    }
+
+    message ListApiKeys
+    {
+        message ApiKey
+        {
+            int32 id = 1;
+            string token = 2;
+            string allow = 3;
+            string label = 4;
+            string created = 5;
+        }
+
+        bool loaded = 1;
+        repeated ApiKey keys = 2;
+    }
+
+    message DeleteApiKey
+    {
+        bool error = 1;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -424,6 +468,9 @@ message Response
         CreateIbanAgreementUrl  create_iban_agreement       = 28;
         GetIbanAccounts         get_iban_accounts           = 29;
         GetIbanAccountDetails   get_iban_account_details    = 30;
+        NewApiKey               new_api_key                 = 38;
+        ListApiKeys             list_api_keys               = 39;
+        DeleteApiKey            delete_api_key              = 40;
 
         MarketData               market_data                = 31;
         Error                    fatal_error                = 32;
