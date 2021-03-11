@@ -424,6 +424,9 @@ static std::vector<bs::TXEntry> mergeTXEntries(const std::vector<bs::TXEntry>& e
 
 void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::vector<bs::TXEntry> &entries)
 {
+   for (const auto& entry : entries) {
+      processZcForAddrSubscriptions(entry);
+   }
    receivedZCs_.insert(requestId);
    const auto& mergedEntries = mergeTXEntries(entries);
    ArmoryMessage msg;
@@ -481,7 +484,6 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
 
    for (const auto &entry : mergedEntries) {
       pushedZCs_.erase(entry.txHash);
-      processZcForAddrSubscriptions(entry);
 
       auto msgTX = msgZC->add_tx_entries();
       msgTX->set_tx_hash(entry.txHash.toBinStr());
