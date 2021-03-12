@@ -429,19 +429,21 @@ message Response
 
     message NewApiKey
     {
-        bool error = 1;
-        ApiKey key = 2;
+        bool success = 1;
+        string error_msg = 2;
+        ApiKey key = 3;
     }
 
     message ListApiKeys
     {
-        bool loaded = 1;
+        bool success = 1;
         repeated ApiKey keys = 2;
     }
 
     message DeleteApiKey
     {
-        bool error = 1;
+        bool success = 1;
+        string error_msg = 2;
     }
 
     oneof data
