@@ -218,9 +218,21 @@ message SubmitWhitelistedAddress
 
 message SubmitWhitelistedAddressResponse
 {
-   bool                    success        = 1;
+   // bs::network::SubmitWhitelistedAddressStatus
+   int32                   status_code    = 1;
    string                  entity_name    = 2;
    WhitelistedAddressInfo  address_info   = 3;
+}
+
+message SubmitDepositAddress
+{
+   string   entity_name = 1;
+   string   address     = 2;
+}
+
+message SubmitDepositAddressResponse
+{
+   bool result = 1;
 }
 
 message RevokeWhitelistedAddress
@@ -289,6 +301,9 @@ message StorageAddressMessage
 
       RevokeWhitelistedAddress         revoke_whitelisted_address          = 32;
       RevokeWhitelistedAddressResponse revoke_whitelisted_address_response = 33;
+
+      SubmitDepositAddress             submit_deposit_address              = 34;
+      SubmitDepositAddressResponse     submit_deposit_address_response     = 35;
    }
 }
 

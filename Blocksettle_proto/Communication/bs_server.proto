@@ -98,6 +98,8 @@ message WalletMessage
       bytes                                  bootstrap_data          = 6;
       uint32                                 get_new_trading_addrs   = 7;
       Addresses                              trading_addresses       = 8;
+      uint32                                 get_new_deposit_addrs   = 9;
+      Addresses                              deposit_addresses       = 10;
    }
 }
 
@@ -1655,22 +1657,12 @@ message ObligationsManaging
       Blocksettle.Communication.ApiServer.Request.WhitelistedAddressRequest  address_data   = 2;
    }
 
-   enum SubmitWhitelistedAddressError
-   {
-      SUBMIT_WA_NO_ERROR                     = 0;
-      // SUBMIT_WA_ERROR_INVALID_ADDRESS - invalid address string format
-      SUBMIT_WA_ERROR_INVALID_ADDRESS_FORMAT = 1;
-      // SUBMIT_WA_ERROR_INVALID_ADDRESS_TYPE - invalid address type. refer to RTC API doc for accepted types
-      SUBMIT_WA_ERROR_INVALID_ADDRESS_TYPE   = 2;
-      // SUBMIT_WA_ERROR_INVALID_DESCRIPTION - address description is tool long
-      SUBMIT_WA_ERROR_INVALID_DESCRIPTION    = 3;
-      // SUBMIT_WA_ERROR_EXCEED_LIMIT - user address limit exceeded. Refer to RTC doc
-      SUBMIT_WA_ERROR_EXCEED_LIMIT           = 4;
-   }
-
    message SubmitAddressResponse
    {
-      SubmitWhitelistedAddressError result_code = 1;
+      // bs::network::SubmitWhitelistedAddressStatus
+      int32    status_code = 1;
+      string   entity_name = 2;
+      Blocksettle.Communication.ApiServer.Response.WhitelistedAddressResponse address_data = 3;
    }
 
    ObligationsManagingMessageType   type = 1;
