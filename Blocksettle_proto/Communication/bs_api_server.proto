@@ -22,6 +22,7 @@ enum EidStatus {
     EID_STATUS_SERVER_ERROR = 22;
     EID_STATUS_ACCOUNT_NOT_FOUND = 23;
     EID_STATUS_REGISTRATION_FAILED = 24;
+    EID_STATUS_ACCOUNT_NOT_VERIFIED = 25;
     EID_STATUS_SUCCESS = 30;
 }
 
@@ -42,6 +43,15 @@ message Order
    double price = 9;
    double cut_off_price = 10;
    double trade_im = 11;
+}
+
+message ApiKey
+{
+    int32 id = 1;
+    string token = 2;
+    string allow = 3;
+    string label = 4;
+    string created = 5;
 }
 
 message Request
@@ -165,6 +175,41 @@ message Request
         string  description     = 2;
     }
 
+    message NewApiKey
+    {
+        string label = 1;
+        string ip = 2;
+    }
+
+    message ListApiKeys
+    {
+    }
+
+    message DeleteApiKey
+    {
+        int32 key_id = 1;
+    }
+
+    message CreateExternalAccount
+    {
+        string account_ref = 1;
+    }
+
+    message GetAllExternalAccounts
+    {
+    }
+
+    message GetDepositInfo
+    {
+    }
+
+    message WithdrawToExternalAccount
+    {
+        string account_name = 1;
+        double amount = 2;
+        string ccy = 3;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -193,6 +238,13 @@ message Request
         CreateIbanAgreementUrl      create_iban_agreement       = 31;
         GetIbanAccounts             get_iban_accounts           = 32;
         GetIbanAccountDetails       get_iban_account_details    = 33;
+        NewApiKey                   new_api_key                 = 34;
+        ListApiKeys                 list_api_keys               = 35;
+        DeleteApiKey                delete_api_key              = 36;
+        GetDepositInfo              get_deposit_info                = 37;
+        CreateExternalAccount       create_external_account         = 38;
+        GetAllExternalAccounts      get_all_external_accounts       = 39;
+        WithdrawToExternalAccount   withdraw_to_external_account    = 40;
     }
 }
 
@@ -393,6 +445,59 @@ message Response
         string  address  = 1;
     }
 
+    message UserNotify
+    {
+        string message = 1;
+        string code = 2;
+        string type = 3;
+    }
+
+    message NewApiKey
+    {
+        bool success = 1;
+        string error_msg = 2;
+        ApiKey key = 3;
+        string secret = 4;
+    }
+
+    message ListApiKeys
+    {
+        bool success = 1;
+        repeated ApiKey keys = 2;
+    }
+
+    message DeleteApiKey
+    {
+        bool success = 1;
+        string error_msg = 2;
+        int32 key_id = 3;
+    }
+
+    message GetDepositInfo
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string data = 3;
+    }
+
+    message CreateExternalAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        bool success = 1;
+        repeated string names = 2;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -416,6 +521,13 @@ message Response
         CreateIbanAgreementUrl  create_iban_agreement       = 28;
         GetIbanAccounts         get_iban_accounts           = 29;
         GetIbanAccountDetails   get_iban_account_details    = 30;
+        NewApiKey               new_api_key                 = 38;
+        ListApiKeys             list_api_keys               = 39;
+        DeleteApiKey            delete_api_key              = 40;
+        GetDepositInfo                get_deposit_info               = 41;
+        CreateExternalAccount         create_external_account        = 42;
+        GetAllExternalAccounts        get_all_external_accounts      = 43;
+        WithdrawToExternalAccount     withdraw_to_external_account   = 44;
 
         MarketData               market_data                = 31;
         Error                    fatal_error                = 32;
@@ -423,5 +535,6 @@ message Response
         OrderUpdate              order_update               = 34;
         TradingClosed            trading_closed             = 35;
         SessionReplaced          session_replaced           = 36;
+        UserNotify               user_notify                = 37;
     }
 }
