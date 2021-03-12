@@ -397,14 +397,15 @@ message Response
         double  added_timestamp = 5;
     }
 
+    message WhitelistedAddressResponse
+    {
+        string  address         = 1;
+        string  description     = 2;
+        double  added_timestamp = 3;
+    }
+
     message LoadAddresses
     {
-        message WhitelistedAddressResponse
-        {
-            string  address         = 1;
-            string  description     = 2;
-            double  added_timestamp = 3;
-        }
         repeated WhitelistedAddressResponse addresses = 1;
     }
 

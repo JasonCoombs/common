@@ -330,6 +330,13 @@ message ArmoryMessage
       string request_id = 2;
    }
 
+   message AddressTX
+   {
+      string address = 1;
+      int64  value = 2;
+      bytes  tx_hash = 3;
+   }
+
    oneof data
    {
       Loading           loading = 1;
@@ -376,6 +383,8 @@ message ArmoryMessage
       Spentness         spentness = 43;
       GetOutputsForOPs  get_outputs_for_ops = 44;
       OutputsForOPs     outputs_for_ops = 45;
+      string            subscribe_tx_for_address = 46;
+      AddressTX         address_tx = 47;
    }
 }
 
