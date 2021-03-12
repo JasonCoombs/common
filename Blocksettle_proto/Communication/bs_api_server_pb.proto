@@ -293,6 +293,7 @@ message Response
         string  address         = 3;
         string  description     = 4;
         int64   added_timestamp = 5;
+        string  error_message   = 6;
     }
 
     message RevokeAddress
