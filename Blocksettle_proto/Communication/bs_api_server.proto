@@ -190,6 +190,26 @@ message Request
         int32 key_id = 1;
     }
 
+    message CreateExternalAccount
+    {
+        string account_ref = 1;
+    }
+
+    message GetAllExternalAccounts
+    {
+    }
+
+    message GetDepositInfo
+    {
+    }
+
+    message WithdrawToExternalAccount
+    {
+        string account_name = 1;
+        double amount = 2;
+        string ccy = 3;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -221,6 +241,10 @@ message Request
         NewApiKey                   new_api_key                 = 34;
         ListApiKeys                 list_api_keys               = 35;
         DeleteApiKey                delete_api_key              = 36;
+        GetDepositInfo              get_deposit_info                = 37;
+        CreateExternalAccount       create_external_account         = 38;
+        GetAllExternalAccounts      get_all_external_accounts       = 39;
+        WithdrawToExternalAccount   withdraw_to_external_account    = 40;
     }
 }
 
@@ -447,6 +471,31 @@ message Response
         string error_msg = 2;
     }
 
+    message GetDepositInfo
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string data = 3;
+    }
+
+    message CreateExternalAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        bool success = 1;
+        repeated string names = 2;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -473,6 +522,10 @@ message Response
         NewApiKey               new_api_key                 = 38;
         ListApiKeys             list_api_keys               = 39;
         DeleteApiKey            delete_api_key              = 40;
+        GetDepositInfo                get_deposit_info               = 41;
+        CreateExternalAccount         create_external_account        = 42;
+        GetAllExternalAccounts        get_all_external_accounts      = 43;
+        WithdrawToExternalAccount     withdraw_to_external_account   = 44;
 
         MarketData               market_data                = 31;
         Error                    fatal_error                = 32;

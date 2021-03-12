@@ -148,6 +148,30 @@ message Request
         string entity_name = 2;
     }
 
+    message CreateExternalAccount
+    {
+        ApiServer.Request.CreateExternalAccount request = 1;
+        string entity_name = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        ApiServer.Request.GetAllExternalAccounts request = 1;
+        string entity_name = 2;
+    }
+
+    message GetDepositInfo
+    {
+        ApiServer.Request.GetDepositInfo request = 1;
+        string entity_name = 2;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        ApiServer.Request.WithdrawToExternalAccount request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -175,6 +199,10 @@ message Request
         NewApiKey                       new_api_key                 = 23;
         ListApiKeys                     list_api_keys               = 24;
         DeleteApiKey                    delete_api_key              = 25;
+        CreateExternalAccount           create_external_account         = 26;
+        GetAllExternalAccounts          get_all_external_accounts       = 27;
+        GetDepositInfo                  get_deposit_info                = 28;
+        WithdrawToExternalAccount       withdraw_to_external_account    = 29;
     }
 }
 
@@ -332,19 +360,43 @@ message Response
     message NewApiKey
     {
         ApiServer.Response.NewApiKey result = 1;
-        string entity_name = 3;
+        string entity_name = 2;
     }
 
     message ListApiKeys
     {
         ApiServer.Response.ListApiKeys result = 1;
-        string entity_name = 3;
+        string entity_name = 2;
     }
 
     message DeleteApiKey
     {
         ApiServer.Response.DeleteApiKey result = 1;
-        string entity_name = 3;
+        string entity_name = 2;
+    }
+
+    message CreateExternalAccount
+    {
+        ApiServer.Response.CreateExternalAccount result = 1;
+        string entity_name = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        ApiServer.Response.GetAllExternalAccounts result = 1;
+        string entity_name = 2;
+    }
+
+    message GetDepositInfo
+    {
+        ApiServer.Response.GetDepositInfo result = 1;
+        string entity_name = 2;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        ApiServer.Response.WithdrawToExternalAccount result = 1;
+        string entity_name = 2;
     }
 
     oneof data
@@ -375,5 +427,9 @@ message Response
         NewApiKey               new_api_key                 = 24;
         ListApiKeys             list_api_keys               = 25;
         DeleteApiKey            delete_api_key              = 26;
+        CreateExternalAccount         create_external_account        = 27;
+        GetAllExternalAccounts        get_all_external_accounts      = 28;
+        GetDepositInfo                get_deposit_info               = 29;
+        WithdrawToExternalAccount     withdraw_to_external_account   = 30;
     }
 }
