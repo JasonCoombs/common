@@ -772,6 +772,7 @@ message GenoaNewApiKeyResponse
 {
    bool error = 1;
    GenoaListApiKeysResponse.ApiKey key = 2;
+   string secret = 3;
 }
 
 message GenoaListApiKeysRequest
@@ -803,6 +804,7 @@ message GenoaDeleteApiKeyRequest
 message GenoaDeleteApiKeyResponse
 {
    bool error = 1;
+   int32 key_id = 2;
 }
 
 message GenoaCreateExternalAccountRequest
