@@ -157,6 +157,7 @@ message Request
         string country_short_code = 1;
         string iban = 2;
         string redirect = 3;
+        bool sandbox = 4;
     }
 
     message GetIbanAccounts
