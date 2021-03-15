@@ -464,6 +464,5 @@ void WalletsManager::addWallet(const HDWalletPtr &wallet)
    if (!wallet) {
       return;
    }
-
    saveWallet(wallet);
 }

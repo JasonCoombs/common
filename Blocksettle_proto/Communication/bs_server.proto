@@ -89,6 +89,25 @@ message WalletMessage
       repeated string addresses = 2;
    }
 
+   message DepositAddressTX
+   {
+      string address = 1;
+      int64  value = 2;
+      bytes  tx_hash = 3;
+   }
+
+   message OutInstaTxRequest
+   {
+      string out_address = 1;
+      uint64 amount = 2;
+   }
+
+   message OutInstaTxResponse
+   {
+      string out_address = 1;
+      bytes  signed_tx = 2;
+   }
+
    oneof data {
       Empty                                  wallet_reload           = 1;
       string                                 wallet_loaded           = 2;	// wallet id
@@ -100,6 +119,9 @@ message WalletMessage
       Addresses                              trading_addresses       = 8;
       uint32                                 get_new_deposit_addrs   = 9;
       Addresses                              deposit_addresses       = 10;
+      DepositAddressTX                       deposit_address_tx      = 11;
+      OutInstaTxRequest                      out_insta_tx_request    = 12;
+      OutInstaTxResponse                     out_insta_tx_response   = 13;
    }
 }
 
