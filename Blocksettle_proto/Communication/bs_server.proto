@@ -255,65 +255,64 @@ message CcTrackMessage
 
 enum GenoaType
 {
-   GenoaUnknownType              = 0;
-   GenoaReconnect                = 1;
-   GenoaHeartbeat                = 2;
-   GenoaClientConnected          = 3;
-   GenoaAccountsAvailable        = 7;
-   GenoaAccounts                 = 8;
-   GenoaNewAccount               = 9;
-   GenoaGetXBTReservations       = 10;
-   GenoaGetCCReservations        = 11;
-   GenoaCancelCCReservation      = 12;
-   GenoaCancelXBTReservation     = 13;
-   GenoaReserveCashXBT           = 14;
-   GenoaUpdateReservation        = 15;
-   GenoaCompleteXbtCashTransfer  = 16;
-   GenoaUpdateBalanceType        = 17;
-   GenoaExecuteFxTrade           = 19;
-   GenoaFindOrdersForUser        = 20;
-   GenoaUserTradingStatus        = 21;
-   GenoaTradeXbtUpdate           = 22;
-   GenoaSendCCToken              = 24;
-   GenoaReserveCC                = 25;
-   GenoaCompleteCCReserve        = 26;
-   GenoaGetUserAccounts          = 29;
-   GenoaReloadCustomerBalance    = 30;
-   GenoaEODUpdate                = 31;
-   GenoaMigrateUserIds           = 32;
-   GenoaApiKey                   = 33;
-   GetEntityName                 = 34;
-   GetUserEmail                  = 35;
-   GenoaRegisterAccount          = 48;
-   GenoaNewApiKeyType            = 54;
-   GenoaListApiKeysType          = 55;
-   GenoaDeleteApiKeyType         = 56;
-   GenoaCreateExternalAccountType         = 57;
-   GenoaGetAllExternalAccountsType        = 58;
-   GenoaGetDepositInfoType                = 59;
-   GenoaWithdrawToExternalAccountType     = 60;
-
-   GenoaGetCustomerBalance       = 36;
-   GenoaLoadCustomerImBalance    = 37;
-
-   GenoaRegisterXBT1DayDeliverableTrade   = 38;
-   GenoaRegisterXBT1DayCashSettledTrade   = 39;
-
-   GenoaSendCutoffPrice          = 40;
-   GenoaLoadDeliveryObligations  = 41;
-   GenoaSetDeliveryAddress       = 42;
-   GenoaSettleDelivery           = 43;
-   GenoaTradeCycleStatus         = 46;
-   GenoaTradingDayOpen           = 47;
-
-   GenoaReloadAccounts           = 44;
-   GenoaAccountReloaded          = 45;
-
-   GenoaCreateIbanAgreementUrlType   = 49;
-   GenoaGetIbanAccountsType          = 50;
-   GenoaGetIbanAccountDetailsType    = 51;
-   GenoaOpenInterestType             = 52;
-   GenoaUserNotify                   = 53;
+   GenoaUnknownType                       = 0;
+   GenoaReconnect                         = 1;
+   GenoaHeartbeat                         = 2;
+   GenoaClientConnected                   = 3;
+   GenoaAccountsAvailable                 = 4;
+   GenoaAccounts                          = 5;
+   GenoaNewAccount                        = 6;
+   GenoaGetXBTReservations                = 7;
+   GenoaGetCCReservations                 = 8;
+   GenoaCancelCCReservation               = 9;
+   GenoaCancelXBTReservation              = 10;
+   GenoaReserveCashXBT                    = 11;
+   GenoaUpdateReservation                 = 12;
+   GenoaCompleteXbtCashTransfer           = 13;
+   GenoaUpdateBalanceType                 = 14;
+   GenoaExecuteFxTrade                    = 15;
+   GenoaFindOrdersForUser                 = 16;
+   GenoaUserTradingStatus                 = 17;
+   GenoaTradeXbtUpdate                    = 18;
+   GenoaSendCCToken                       = 19;
+   GenoaReserveCC                         = 20;
+   GenoaCompleteCCReserve                 = 21;
+   GenoaGetUserAccounts                   = 22;
+   GenoaReloadCustomerBalance             = 23;
+   GenoaEODUpdate                         = 24;
+   GenoaMigrateUserIds                    = 25;
+   GenoaApiKey                            = 26;
+   GetEntityName                          = 27;
+   GetUserEmail                           = 28;
+   GenoaRegisterAccount                   = 29;
+   GenoaNewApiKeyType                     = 30;
+   GenoaListApiKeysType                   = 31;
+   GenoaDeleteApiKeyType                  = 32;
+   GenoaCreateExternalAccountType         = 33;
+   GenoaGetAllExternalAccountsType        = 34;
+   GenoaGetDepositInfoType                = 35;
+   GenoaWithdrawToExternalAccountType     = 36;
+   GenoaGetCustomerBalance                = 37;
+   GenoaLoadCustomerImBalance             = 38;
+   GenoaRegisterXBT1DayDeliverableTrade   = 39;
+   GenoaRegisterXBT1DayCashSettledTrade   = 40;
+   GenoaSendCutoffPrice                   = 41;
+   GenoaLoadDeliveryObligations           = 42;
+   GenoaSetDeliveryAddress                = 43;
+   GenoaSettleDelivery                    = 44;
+   GenoaTradeCycleStatus                  = 45;
+   GenoaTradingDayOpen                    = 46;
+   GenoaReloadAccounts                    = 47;
+   GenoaAccountReloaded                   = 48;
+   GenoaCreateIbanAgreementUrlType        = 49;
+   GenoaGetIbanAccountsType               = 50;
+   GenoaGetIbanAccountDetailsType         = 51;
+   GenoaOpenInterestType                  = 52;
+   GenoaUserNotify                        = 53;
+   GenoaRegisterXBTDepositType            = 54;
+   GenoaConfirmXBTDepositType             = 55;
+   GenoaRegisterXBTWithdrawType           = 56;
+   GenoaConfirmXBTWithdrawType            = 57;
 }
 
 message GenoaConnectedBroadcast
@@ -876,6 +875,55 @@ message GenoaWithdrawToExternalAccountResponse
    bool error = 1;
 }
 
+message GenoaRegisterXBTDepositRequest
+{
+   string entity_name   = 1;
+   double price         = 2;
+   double xbt_amount    = 3;
+   string deposit_id    = 4;
+}
+
+message GenoaRegisterXBTDepositResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaConfirmXBTDepositRequest
+{
+   string deposit_id = 1;
+}
+
+message GenoaConfirmXBTDepositResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+message GenoaRegiserXBTWithdrawRequest
+{
+   string entity_name   = 1;
+   double price         = 2;
+   double xbt_amount    = 3;
+   string deposit_id    = 4;
+}
+
+message GenoaRegiserXBTWithdrawResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaConfirmXBTWithdrawRequest
+{
+   string deposit_id = 1;
+}
+
+message GenoaConfirmXBTWithdrawResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -973,6 +1021,16 @@ message GenoaMessage
       GenoaGetDepositInfoResponse               get_deposit_info_resp              = 76;
       GenoaWithdrawToExternalAccountRequest     withdraw_to_external_account_req   = 77;
       GenoaWithdrawToExternalAccountResponse    withdraw_to_external_account_resp  = 78;
+
+      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 79;
+      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 80;
+      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 81;
+      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 82;
+
+      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 83;
+      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 84;
+      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 85;
+      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 86;
    }
 }
 
