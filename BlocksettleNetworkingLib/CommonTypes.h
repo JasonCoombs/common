@@ -327,25 +327,6 @@ namespace bs {
          std::string    unsignedPayin;
       };
 
-      enum class SubmitWhitelistedAddressStatus : int
-      {
-         NoError,
-         InternalStorageError,
-         InvalidAddressFormat,
-         AddressTooLong,
-         DescriptionTooLong,
-         AddressAlreadyUsed,
-         WhitelistedAddressLimitExceeded
-      };
-
-      enum class RevokeWhitelistedAddressStatus : int
-      {
-         NoError,
-         InternalStorageError,
-         AddressNotFound,
-         CouldNotRemoveLast
-      };
-
    }  //namespace network
 }  //namespace bs
 
