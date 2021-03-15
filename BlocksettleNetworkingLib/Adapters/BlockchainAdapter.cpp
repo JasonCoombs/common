@@ -1523,6 +1523,9 @@ bool BlockchainAdapter::processGetOutputsForOPs(const bs::message::Envelope& env
 bool BlockchainAdapter::processSubscribeAddressTX(const bs::message::Envelope& env
    , const std::string& addr)
 {
+   if (suspended_) {
+      return false;
+   }
    bs::Address address;
    try {
       address = bs::Address::fromAddressString(addr);
