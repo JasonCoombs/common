@@ -338,6 +338,14 @@ namespace bs {
          WhitelistedAddressLimitExceeded
       };
 
+      enum class RevokeWhitelistedAddressStatus : int
+      {
+         NoError,
+         InternalStorageError,
+         AddressNotFound,
+         CouldNotRemoveLast
+      };
+
    }  //namespace network
 }  //namespace bs
 
