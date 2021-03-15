@@ -263,6 +263,13 @@ enum GenoaType
    GetEntityName                 = 34;
    GetUserEmail                  = 35;
    GenoaRegisterAccount          = 48;
+   GenoaNewApiKeyType            = 54;
+   GenoaListApiKeysType          = 55;
+   GenoaDeleteApiKeyType         = 56;
+   GenoaCreateExternalAccountType         = 57;
+   GenoaGetAllExternalAccountsType        = 58;
+   GenoaGetDepositInfoType                = 59;
+   GenoaWithdrawToExternalAccountType     = 60;
 
    GenoaGetCustomerBalance       = 36;
    GenoaLoadCustomerImBalance    = 37;
@@ -284,6 +291,7 @@ enum GenoaType
    GenoaGetIbanAccountsType          = 50;
    GenoaGetIbanAccountDetailsType    = 51;
    GenoaOpenInterestType             = 52;
+   GenoaUserNotify                   = 53;
 }
 
 message GenoaConnectedBroadcast
@@ -689,6 +697,14 @@ message GenoaOpenInterestMsg
    double            open_interest        = 2;
 }
 
+message GenoaUserNotifyMsg
+{
+   string            broadcast_to         = 1;
+   string            message              = 2;
+   string            code                 = 3;
+   string            type                 = 4;
+}
+
 message GenoaRegisterAccountRequest
 {
    string answers = 1;
@@ -743,6 +759,98 @@ message GenoaGetIbanAccountDetailsResponse
    string name = 5;
    string product = 6;
    string cash_account_type = 7;
+}
+
+message GenoaNewApiKeyRequest
+{
+   string entity_name = 1;
+   string label = 2;
+   string ip = 3;
+}
+
+message GenoaNewApiKeyResponse
+{
+   bool error = 1;
+   GenoaListApiKeysResponse.ApiKey key = 2;
+   string secret = 3;
+}
+
+message GenoaListApiKeysRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaListApiKeysResponse
+{
+   message ApiKey
+   {
+      int32 id = 1;
+      string token = 2;
+      string allow = 3;
+      string label = 4;
+      string created = 5;
+   }
+
+   bool loaded = 1;
+   repeated ApiKey keys = 2;
+}
+
+message GenoaDeleteApiKeyRequest
+{
+   string entity_name = 1;
+   int32 key_id = 2;
+}
+
+message GenoaDeleteApiKeyResponse
+{
+   bool error = 1;
+   int32 key_id = 2;
+}
+
+message GenoaCreateExternalAccountRequest
+{
+   string entity_name = 1;
+   string account_ref = 2;
+}
+
+message GenoaCreateExternalAccountResponse
+{
+   bool error = 1;
+}
+
+message GenoaGetAllExternalAccountsRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaGetAllExternalAccountsResponse
+{
+   bool loaded = 1;
+   repeated string names = 2;
+}
+
+message GenoaGetDepositInfoRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaGetDepositInfoResponse
+{
+   bool loaded = 1;
+   string data = 2;
+}
+
+message GenoaWithdrawToExternalAccountRequest
+{
+   string entity_name = 1;
+   string account_name = 2;
+   double amount = 3;
+   string ccy = 4;
+}
+
+message GenoaWithdrawToExternalAccountResponse
+{
+   bool error = 1;
 }
 
 message GenoaMessage
@@ -825,6 +933,23 @@ message GenoaMessage
       GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 61;
       GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 62;
       GenoaOpenInterestMsg                   open_interest                    = 63;
+      GenoaUserNotifyMsg                     user_notify                      = 64;
+
+      GenoaNewApiKeyRequest                  new_api_key_req                  = 65;
+      GenoaNewApiKeyResponse                 new_api_key_resp                 = 66;
+      GenoaListApiKeysRequest                list_api_keys_req                = 67;
+      GenoaListApiKeysResponse               list_api_keys_resp               = 68;
+      GenoaDeleteApiKeyRequest               delete_api_key_req               = 69;
+      GenoaDeleteApiKeyResponse              delete_api_key_resp              = 70;
+
+      GenoaCreateExternalAccountRequest         create_external_account_req        = 71;
+      GenoaCreateExternalAccountResponse        create_external_account_resp       = 72;
+      GenoaGetAllExternalAccountsRequest        get_all_external_accounts_req      = 73;
+      GenoaGetAllExternalAccountsResponse       get_all_external_accounts_resp     = 74;
+      GenoaGetDepositInfoRequest                get_deposit_info_req               = 75;
+      GenoaGetDepositInfoResponse               get_deposit_info_resp              = 76;
+      GenoaWithdrawToExternalAccountRequest     withdraw_to_external_account_req   = 77;
+      GenoaWithdrawToExternalAccountResponse    withdraw_to_external_account_resp  = 78;
    }
 }
 
