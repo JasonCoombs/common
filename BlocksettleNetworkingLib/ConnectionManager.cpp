@@ -11,7 +11,6 @@
 #include "ConnectionManager.h"
 
 #include "Celer/ClientConnection.h"
-#include "Celer/StreamServerConnection.h"
 #include "GenoaConnection.h"
 #include "GenoaStreamServerConnection.h"
 #include "PublisherConnection.h"
@@ -19,6 +18,10 @@
 #include "WsDataConnection.h"
 #include "ZmqContext.h"
 #include "ZmqDataConnection.h"
+
+#ifndef DISABLE_CELER_SUPPORT
+#include "Celer/StreamServerConnection.h"
+#endif
 
 #include <QNetworkAccessManager>
 
@@ -99,10 +102,12 @@ std::shared_ptr<ServerConnection> ConnectionManager::CreateGenoaAPIServerConnect
    return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_);
 }
 
+#ifndef DISABLE_CELER_SUPPORT
 std::shared_ptr<ServerConnection> ConnectionManager::CreateCelerAPIServerConnection() const
 {
    return std::make_shared<CelerStreamServerConnection>(logger_, zmqContext_);
 }
+#endif
 
 std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection() const
 {
