@@ -157,6 +157,7 @@ message Request
         string country_short_code = 1;
         string iban = 2;
         string redirect = 3;
+        bool sandbox = 4;
     }
 
     message GetIbanAccounts
@@ -210,6 +211,12 @@ message Request
         string ccy = 3;
     }
 
+    message WithdrawBitcoin
+    {
+        string address = 1;
+        double amount = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -245,6 +252,7 @@ message Request
         CreateExternalAccount       create_external_account         = 38;
         GetAllExternalAccounts      get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
+        WithdrawBitcoin             withdraw_bitcoin                = 41;
     }
 }
 
@@ -498,6 +506,12 @@ message Response
         string error_msg = 2;
     }
 
+    message WithdrawBitcoin
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -528,6 +542,7 @@ message Response
         CreateExternalAccount         create_external_account        = 42;
         GetAllExternalAccounts        get_all_external_accounts      = 43;
         WithdrawToExternalAccount     withdraw_to_external_account   = 44;
+        WithdrawBitcoin               withdraw_bitcoin               = 45;
 
         MarketData               market_data                = 31;
         Error                    fatal_error                = 32;
