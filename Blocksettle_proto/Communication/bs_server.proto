@@ -413,6 +413,7 @@ message GenoaOrderData
    int32  trade_type       = 10;
    double cut_off_price    = 12;
    double trade_im         = 13;
+   bool   is_rollover      = 14;
 }
 
 message GenoaFindOrdersResponse

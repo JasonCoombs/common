@@ -43,6 +43,7 @@ message Order
    double price = 9;
    double cut_off_price = 10;
    double trade_im = 11;
+   bool   is_rollover = 12;
 }
 
 message ApiKey
