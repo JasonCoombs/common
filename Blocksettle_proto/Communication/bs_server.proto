@@ -880,7 +880,8 @@ message GenoaRegisterXBTDepositRequest
    string entity_name   = 1;
    double price         = 2;
    double xbt_amount    = 3;
-   string deposit_id    = 4;
+   double eur_amount    = 4;
+   string deposit_id    = 5;
 }
 
 message GenoaRegisterXBTDepositResponse
@@ -904,7 +905,8 @@ message GenoaRegiserXBTWithdrawRequest
    string entity_name   = 1;
    double price         = 2;
    double xbt_amount    = 3;
-   string deposit_id    = 4;
+   double eur_amount    = 4;
+   string deposit_id    = 5;
 }
 
 message GenoaRegiserXBTWithdrawResponse
