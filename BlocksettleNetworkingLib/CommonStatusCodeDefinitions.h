@@ -25,7 +25,10 @@ namespace bs {
       enum class WithdrawXbtStatus : int
       {
          NoError,
+         AddressNotFound,
+         InvalidAmount,
          CashReservationFailed,
+         NoPriceOffer,
          TxCreateFailed,
          TxBroadcastFailed
       };

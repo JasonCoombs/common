@@ -1828,6 +1828,7 @@ enum ObligationsManagingMessageType
    LiveCutoffPriceUpdated     = 4;
    WhitelistUserAddress       = 5;
    RevokeUserAddress          = 6;
+   XBTWithdraw                = 7;
 };
 
 message ObligationsManaging
@@ -1885,6 +1886,21 @@ message ObligationsManaging
       int32    status_code = 3;
    }
 
+   message XBTWithdrawRequest
+   {
+      string   entity_name = 1;
+      string   address     = 2;
+      double   xbt_amount  = 3;
+   }
+
+   message XBTWithdrawResponse
+   {
+      string   entity_name = 1;
+      string   address     = 2;
+      double   xbt_amount  = 3;
+      int32    status_code = 4;
+   }
+
    ObligationsManagingMessageType   type = 1;
 
    oneof data
@@ -1897,6 +1913,9 @@ message ObligationsManaging
       SubmitAddressResponse         submit_address_response    = 8;
       RevokeUserAddress             revoke_request             = 9;
       RevokeUserAddressResponse     revoke_response            = 10;
+      XBTWithdrawRequest            xbt_withdraw_request       = 11;
+      XBTWithdrawResponse           xbt_withdraw_response      = 12;
+
    }
 }
 

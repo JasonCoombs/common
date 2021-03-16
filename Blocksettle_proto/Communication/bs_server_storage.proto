@@ -258,6 +258,17 @@ message FindDepositAddressOwnerResponse
    string   entity_name = 1;
 }
 
+message GetWhitelistedAddressSummary
+{
+   string address = 1;
+}
+
+message GetWhitelistedAddressSummaryResponse
+{
+   string   entity_name = 1;
+   bool     revoked     = 2;
+}
+
 message StorageAddressMessage
 {
    oneof data
@@ -317,6 +328,9 @@ message StorageAddressMessage
 
       FindDepositAddressOwner          find_deposit_address_owner          = 36;
       FindDepositAddressOwnerResponse  find_deposit_address_owner_response = 37;
+
+      GetWhitelistedAddressSummary           get_address_summary           = 38;
+      GetWhitelistedAddressSummaryResponse   get_address_summary_response  = 39;
    }
 }
 
