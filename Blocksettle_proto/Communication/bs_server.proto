@@ -314,6 +314,8 @@ enum GenoaType
    GenoaGetIbanAccountDetailsType    = 51;
    GenoaOpenInterestType             = 52;
    GenoaUserNotify                   = 53;
+   GenoaOpenDeliveryPeriodType       = 61;
+   GenoaCloseDeliveryPeriodType      = 62;
 }
 
 message GenoaConnectedBroadcast
@@ -1765,8 +1767,7 @@ enum ObligationsManagingMessageType
 {
    SendCutoffPriceRequest     = 0;
    LoadCustomerObligations    = 1;
-   OpenDelievryPeriod         = 2;
-   CloseDeliveryPeriod        = 3;
+   CustomerObligation         = 2;
    LiveCutoffPriceUpdated     = 4;
    WhitelistUserAddress       = 5;
 };
@@ -1776,7 +1777,7 @@ message ObligationsManaging
    message CustomerObligationsRequest
    {
       string   entity_name    = 1;
-   };
+   }
 
    message CustomerObligationsResponse
    {
@@ -1785,6 +1786,15 @@ message ObligationsManaging
       string   bs_address     = 3;
       double   cutoff_price   = 4;
       bool     detected       = 5;
+   }
+
+   message CustomerObligationRequest
+   {
+      string   entity_name    = 1;
+      string   delivery_id    = 2;
+      int64    value          = 3;
+      string   bs_address     = 4;
+      double   price          = 5;
    }
 
    message TradingDayClose
@@ -1823,6 +1833,7 @@ message ObligationsManaging
       LiveCutOffPriceUpdate         live_cutoff_price          = 6;
       SubmitWhitelistedAddress      submit_address_request     = 7;
       SubmitAddressResponse         submit_address_response    = 8;
+      CustomerObligationRequest     customer_obligation        = 9;
    }
 }
 

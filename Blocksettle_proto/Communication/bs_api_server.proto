@@ -54,15 +54,15 @@ message ApiKey
     string created = 5;
 }
 
+message Empty
+{}
+
+
 message Request
 {
     message Authorize
     {
         string api_key = 1;
-    }
-
-    message EidLogin
-    {
     }
 
     message EidRegister
@@ -76,17 +76,9 @@ message Request
         repeated Answer answers = 1;
     }
 
-    message EidCancel
-    {
-    }
-
     message ResumeSession
     {
         string session_id = 1;
-    }
-
-    message Logout
-    {
     }
 
     message MarketOrder
@@ -96,14 +88,6 @@ message Request
         string product_type = 3;
         double user_expected_price = 4;
         bool max_amount = 5;
-    }
-
-    message LoadOrders
-    {
-    }
-
-    message LoadBalance
-    {
     }
 
     message Subscribe
@@ -139,17 +123,9 @@ message Request
         string product_type = 1;
     }
 
-    message LoadAddresses
-    {
-    }
-
     message RevokeAddress
     {
         string address = 1;
-    }
-
-    message LoadDepositAddress
-    {
     }
 
     message CreateIbanAgreementUrl
@@ -182,10 +158,6 @@ message Request
         string ip = 2;
     }
 
-    message ListApiKeys
-    {
-    }
-
     message DeleteApiKey
     {
         int32 key_id = 1;
@@ -194,14 +166,6 @@ message Request
     message CreateExternalAccount
     {
         string account_ref = 1;
-    }
-
-    message GetAllExternalAccounts
-    {
-    }
-
-    message GetDepositInfo
-    {
     }
 
     message WithdrawToExternalAccount
@@ -220,14 +184,14 @@ message Request
     oneof data
     {
         Authorize                   authorize                   = 10;
-        EidLogin                    eid_login                   = 11;
+        Empty                       eid_login                   = 11;
         EidRegister                 eid_register                = 12;
-        EidCancel                   eid_cancel                  = 13;
+        Empty                       eid_cancel                  = 13;
         ResumeSession               resume_session              = 14;
-        Logout                      logout                      = 15;
+        Empty                       logout                      = 15;
         MarketOrder                 market_order                = 16;
-        LoadOrders                  load_orders                 = 17;
-        LoadBalance                 load_balance                = 18;
+        Empty                       load_orders                 = 17;
+        Empty                       load_balance                = 18;
         Subscribe                   subscribe                   = 19;
         TradingDay                  trading_day                 = 20;
         EstimateIm                  estimate_im                 = 21;
@@ -239,18 +203,18 @@ message Request
         bs.types.PullPricesData             pull_prices         = 26;
 
         WhitelistedAddressRequest   submit_address              = 27;
-        LoadAddresses               load_addresses              = 28;
+        Empty                       load_addresses              = 28;
         RevokeAddress               revoke_address              = 29;
-        LoadDepositAddress          load_deposit_address        = 30;
+        Empty                       load_deposit_address        = 30;
         CreateIbanAgreementUrl      create_iban_agreement       = 31;
         GetIbanAccounts             get_iban_accounts           = 32;
         GetIbanAccountDetails       get_iban_account_details    = 33;
         NewApiKey                   new_api_key                 = 34;
-        ListApiKeys                 list_api_keys               = 35;
+        Empty                       list_api_keys               = 35;
         DeleteApiKey                delete_api_key              = 36;
-        GetDepositInfo              get_deposit_info                = 37;
+        Empty                       get_deposit_info                = 37;
         CreateExternalAccount       create_external_account         = 38;
-        GetAllExternalAccounts      get_all_external_accounts       = 39;
+        Empty                       get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
         WithdrawBitcoin             withdraw_bitcoin                = 41;
     }
@@ -279,10 +243,6 @@ message Response
     {
         bool success = 1;
         string account_name = 2;
-    }
-
-    message Logout
-    {
     }
 
     message MarketOrder
@@ -416,10 +376,6 @@ message Response
         string error_msg = 2;
     }
 
-    message SessionReplaced
-    {
-    }
-
     message SubmitAddress
     {
         string  address         = 1;
@@ -488,7 +444,7 @@ message Response
         string data = 3;
     }
 
-    message CreateExternalAccount
+    message ResponseResult
     {
         bool success = 1;
         string error_msg = 2;
@@ -500,16 +456,12 @@ message Response
         repeated string names = 2;
     }
 
-    message WithdrawToExternalAccount
+    message ObligationRequest
     {
-        bool success = 1;
-        string error_msg = 2;
-    }
-
-    message WithdrawBitcoin
-    {
-        bool success = 1;
-        string error_msg = 2;
+        string   delivery_id    = 1;
+        string   currency       = 2;
+        double   amount         = 3;
+        string   bs_address     = 4;
     }
 
     oneof data
@@ -518,7 +470,7 @@ message Response
         EidLogin                eid_login                   = 11;
         EidRegister             eid_register                = 12;
         ResumeSession           resume_session              = 13;
-        Logout                  logout                      = 14;
+        Empty                   logout                      = 14;
         MarketOrder             market_order                = 15;
         LoadOrders              load_orders                 = 16;
         LoadBalance             load_balance                = 17;
@@ -539,17 +491,18 @@ message Response
         ListApiKeys             list_api_keys               = 39;
         DeleteApiKey            delete_api_key              = 40;
         GetDepositInfo                get_deposit_info               = 41;
-        CreateExternalAccount         create_external_account        = 42;
+        ResponseResult          create_external_account     = 42;
         GetAllExternalAccounts        get_all_external_accounts      = 43;
-        WithdrawToExternalAccount     withdraw_to_external_account   = 44;
-        WithdrawBitcoin               withdraw_bitcoin               = 45;
+        ResponseResult          withdraw_to_external_account= 44;
+        ResponseResult          withdraw_bitcoin            = 45;
+        ObligationRequest       obligation_request          = 46;
 
-        MarketData               market_data                = 31;
-        Error                    fatal_error                = 32;
-        EidLoginUpdate           eid_login_update           = 33;
-        OrderUpdate              order_update               = 34;
-        TradingClosed            trading_closed             = 35;
-        SessionReplaced          session_replaced           = 36;
-        UserNotify               user_notify                = 37;
+        MarketData              market_data                 = 31;
+        Error                   fatal_error                 = 32;
+        EidLoginUpdate          eid_login_update            = 33;
+        OrderUpdate             order_update                = 34;
+        TradingClosed           trading_closed              = 35;
+        Empty                   session_replaced            = 36;
+        UserNotify              user_notify                 = 37;
     }
 }
