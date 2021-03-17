@@ -243,9 +243,30 @@ message RevokeWhitelistedAddress
 
 message RevokeWhitelistedAddressResponse
 {
-   bool     result      = 1;
+   int32    status_code = 1;
    string   entity_name = 2;
    string   address     = 3;
+}
+
+message FindDepositAddressOwner
+{
+   string   address = 1;
+}
+
+message FindDepositAddressOwnerResponse
+{
+   string   entity_name = 1;
+}
+
+message GetWhitelistedAddressSummary
+{
+   string address = 1;
+}
+
+message GetWhitelistedAddressSummaryResponse
+{
+   string   entity_name = 1;
+   bool     revoked     = 2;
 }
 
 message StorageAddressMessage
@@ -304,6 +325,12 @@ message StorageAddressMessage
 
       SubmitDepositAddress             submit_deposit_address              = 34;
       SubmitDepositAddressResponse     submit_deposit_address_response     = 35;
+
+      FindDepositAddressOwner          find_deposit_address_owner          = 36;
+      FindDepositAddressOwnerResponse  find_deposit_address_owner_response = 37;
+
+      GetWhitelistedAddressSummary           get_address_summary           = 38;
+      GetWhitelistedAddressSummaryResponse   get_address_summary_response  = 39;
    }
 }
 
