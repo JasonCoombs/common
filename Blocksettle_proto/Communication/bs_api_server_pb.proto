@@ -138,7 +138,7 @@ message Request
 
     message ListApiKeys
     {
-        ApiServer.Request.ListApiKeys request = 1;
+        ApiServer.Empty request = 1;
         string entity_name = 2;
     }
 
@@ -156,13 +156,13 @@ message Request
 
     message GetAllExternalAccounts
     {
-        ApiServer.Request.GetAllExternalAccounts request = 1;
+        ApiServer.Empty request = 1;
         string entity_name = 2;
     }
 
     message GetDepositInfo
     {
-        ApiServer.Request.GetDepositInfo request = 1;
+        ApiServer.Empty request = 1;
         string entity_name = 2;
     }
 
@@ -384,7 +384,7 @@ message Response
 
     message CreateExternalAccount
     {
-        ApiServer.Response.CreateExternalAccount result = 1;
+        ApiServer.Response.ResponseResult result = 1;
         string entity_name = 2;
     }
 
@@ -402,14 +402,20 @@ message Response
 
     message WithdrawToExternalAccount
     {
-        ApiServer.Response.WithdrawToExternalAccount result = 1;
+        ApiServer.Response.ResponseResult result = 1;
         string entity_name = 2;
     }
 
     message WithdrawBitcoin
     {
-        ApiServer.Response.WithdrawBitcoin result = 1;
+        ApiServer.Response.ResponseResult result = 1;
         string entity_name = 2;
+    }
+
+    message ObligationRequest
+    {
+        string entity_name = 1;
+        ApiServer.Response.ObligationRequest request = 2;
     }
 
     oneof data
@@ -445,5 +451,6 @@ message Response
         GetDepositInfo                get_deposit_info               = 29;
         WithdrawToExternalAccount     withdraw_to_external_account   = 30;
         WithdrawBitcoin               withdraw_bitcoin               = 31;
+        ObligationRequest       obligation_request          = 32;
     }
 }
