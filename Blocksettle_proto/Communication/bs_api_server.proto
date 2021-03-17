@@ -182,10 +182,6 @@ message Request
         double amount = 2;
     }
 
-    message DepositWithdrawPrice
-    {
-    }
-
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -222,7 +218,7 @@ message Request
         Empty                       get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
         WithdrawBitcoin             withdraw_bitcoin                = 41;
-        DepositWithdrawPrice        deposit_withdraw_price          = 42;
+        Empty                       deposit_withdraw_price          = 42;
     }
 }
 
