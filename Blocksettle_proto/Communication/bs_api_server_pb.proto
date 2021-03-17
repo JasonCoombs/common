@@ -178,6 +178,12 @@ message Request
         string entity_name = 2;
     }
 
+    message DepositWithdrawPrice
+    {
+        ApiServer.Request.DepositWithdrawPrice request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -210,6 +216,7 @@ message Request
         GetDepositInfo                  get_deposit_info                = 28;
         WithdrawToExternalAccount       withdraw_to_external_account    = 29;
         WithdrawBitcoin                 withdraw_bitcoin                = 30;
+        DepositWithdrawPrice            deposit_withdraw_price          = 31;
     }
 }
 
@@ -419,6 +426,12 @@ message Response
         ApiServer.Response.ObligationRequest request = 2;
     }
 
+    message DepositWithdrawPrice
+    {
+        ApiServer.Response.DepositWithdrawPrice result = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -453,5 +466,6 @@ message Response
         WithdrawToExternalAccount     withdraw_to_external_account   = 30;
         WithdrawBitcoin               withdraw_bitcoin               = 31;
         ObligationRequest       obligation_request          = 32;
+        DepositWithdrawPrice    deposit_withdraw_price      = 33;
     }
 }

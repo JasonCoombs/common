@@ -182,6 +182,10 @@ message Request
         double amount = 2;
     }
 
+    message DepositWithdrawPrice
+    {
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -218,6 +222,7 @@ message Request
         Empty                       get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
         WithdrawBitcoin             withdraw_bitcoin                = 41;
+        DepositWithdrawPrice        deposit_withdraw_price          = 42;
     }
 }
 
@@ -465,6 +470,12 @@ message Response
         string   bs_address     = 4;
     }
 
+    message DepositWithdrawPrice
+    {
+        bool success = 1;
+        double price = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -497,6 +508,7 @@ message Response
         ResponseResult          withdraw_to_external_account= 44;
         ResponseResult          withdraw_bitcoin            = 45;
         ObligationRequest       obligation_request          = 46;
+        DepositWithdrawPrice    deposit_withdraw_price      = 47;
 
         MarketData              market_data                 = 31;
         Error                   fatal_error                 = 32;
