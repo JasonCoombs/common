@@ -1903,14 +1903,14 @@ message ObligationsManaging
    {
       string   entity_name = 1;
       string   address     = 2;
-      double   xbt_amount  = 3;
+      double   eur_amount  = 3;
    }
 
    message XBTWithdrawResponse
    {
       string   entity_name = 1;
       string   address     = 2;
-      double   xbt_amount  = 3;
+      double   eur_amount  = 3;
       int32    status_code = 4;
    }
 
