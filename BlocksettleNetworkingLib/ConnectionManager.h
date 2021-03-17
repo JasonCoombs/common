@@ -54,7 +54,9 @@ public:
 
    std::shared_ptr<ServerConnection>   CreateGenoaAPIServerConnection() const;
 
+#ifndef DISABLE_CELER_SUPPORT
    std::shared_ptr<ServerConnection>         CreateCelerAPIServerConnection() const;
+#endif
    virtual std::shared_ptr<DataConnection>   CreateCelerClientConnection() const;
    std::shared_ptr<DataConnection>     CreateGenoaClientConnection(
       bool monitored = false) const;
