@@ -96,6 +96,11 @@ message Request
         string product_type = 1;
     }
 
+    message Unsubscribe
+    {
+        string product_type = 1;
+    }
+
     message TradingDay
     {
         string product_type = 1;
@@ -201,6 +206,7 @@ message Request
         Empty                       load_orders                 = 17;
         Empty                       load_balance                = 18;
         Subscribe                   subscribe                   = 19;
+        Unsubscribe                 unsubscribe                 = 43;
         TradingDay                  trading_day                 = 20;
         EstimateIm                  estimate_im                 = 21;
         ProductFee                  product_fee                 = 22;
@@ -274,6 +280,13 @@ message Response
     }
 
     message Subscribe
+    {
+        string product_type = 1;
+        bool success = 2;
+        string error_msg = 3;
+    }
+
+    message Unsubscribe
     {
         string product_type = 1;
         bool success = 2;
@@ -497,6 +510,7 @@ message Response
         LoadOrders              load_orders                 = 16;
         LoadBalance             load_balance                = 17;
         Subscribe               subscribe                   = 18;
+        Unsubscribe             unsubscribe                 = 48;
         TradingDay              trading_day                 = 19;
         EstimateIm              estimate_im                 = 20;
         ProductFee              product_fee                 = 21;
