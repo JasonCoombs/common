@@ -916,6 +916,7 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
 
    const auto &sendError = [this, request, env](const std::string &errMsg) -> bool
    {
+      logger_->error("[BlockchainAdapter::processPushTxRequest] push TX error: {}", errMsg);
       ArmoryMessage msg;
       auto msgResp = msg.mutable_tx_push_result();
       msgResp->set_push_id(request.push_id());

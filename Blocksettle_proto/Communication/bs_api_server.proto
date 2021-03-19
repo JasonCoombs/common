@@ -182,6 +182,13 @@ message Request
         double amount = 2;
     }
 
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double start_time = 2;
+        double end_time = 3;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -218,7 +225,8 @@ message Request
         Empty                       get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
         WithdrawBitcoin             withdraw_bitcoin                = 41;
-        Empty                       deposit_withdraw_price          = 42;
+        Empty                       deposit_withdraw_price      = 42;
+        HistoricalPL                historical_profit_loss      = 43;
     }
 }
 
@@ -472,6 +480,12 @@ message Response
         double price = 2;
     }
 
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double profit_loss = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -513,5 +527,6 @@ message Response
         TradingClosed           trading_closed              = 35;
         Empty                   session_replaced            = 36;
         UserNotify              user_notify                 = 37;
+        HistoricalPL            historical_profit_loss      = 48;
     }
 }
