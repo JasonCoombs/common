@@ -184,7 +184,10 @@ message Request
     message WithdrawBitcoin
     {
         string address = 1;
-        double amount = 2;
+        double eur_amount = 2;
+        double xbt_receive_amount = 3;
+        double fee_amount = 4;
+        double price = 5;
     }
 
     oneof data
@@ -224,7 +227,8 @@ message Request
         Empty                       get_all_external_accounts       = 39;
         WithdrawToExternalAccount   withdraw_to_external_account    = 40;
         WithdrawBitcoin             withdraw_bitcoin                = 41;
-        Empty                       deposit_withdraw_price          = 42;
+        Empty                       subscribe_withdraw_prices       = 44;
+        Empty                       unsubscribe_withdraw_prices     = 45;
     }
 }
 
@@ -479,11 +483,13 @@ message Response
         string   bs_address     = 4;
     }
 
-    message DepositWithdrawPrice
+    message UpdateWithdrawPrices
     {
-        bool success = 1;
-        double price = 2;
-    }
+        double sell_price = 1;
+        double buy_price = 2;
+        double network_fee = 3;
+        double min_xbt_amount = 4;
+   }
 
     oneof data
     {
@@ -518,7 +524,8 @@ message Response
         ResponseResult          withdraw_to_external_account= 44;
         ResponseResult          withdraw_bitcoin            = 45;
         ObligationRequest       obligation_request          = 46;
-        DepositWithdrawPrice    deposit_withdraw_price      = 47;
+        ResponseResult          subscribe_withdraw_prices   = 47;
+        ResponseResult          unsubscribe_withdraw_prices = 49;
 
         MarketData              market_data                 = 31;
         Error                   fatal_error                 = 32;
@@ -527,5 +534,6 @@ message Response
         TradingClosed           trading_closed              = 35;
         Empty                   session_replaced            = 36;
         UserNotify              user_notify                 = 37;
+        UpdateWithdrawPrices    update_withdraw_prices      = 50;
     }
 }
