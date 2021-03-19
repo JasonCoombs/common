@@ -94,6 +94,7 @@ message WalletMessage
       string address = 1;
       int64  value = 2;
       bytes  tx_hash = 3;
+      uint32 nb_conf = 4;
    }
 
    message OutInstaTxRequest
