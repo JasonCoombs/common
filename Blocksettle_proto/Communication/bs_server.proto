@@ -2026,6 +2026,14 @@ message ApiServerMsg
       string product_name = 1;
    }
 
+   message UserNotify
+   {
+      string   broadcast_to   = 1;
+      string   message        = 2;
+      string   code           = 3;
+      string   type           = 4;
+   }
+
    oneof data
    {
       UpdateOrder    update_order   = 2;
@@ -2034,8 +2042,9 @@ message ApiServerMsg
       Empty          send_prices    = 5;
       Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
       Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
-      string         user_connected = 8;
+      string         user_connected    = 8;
       string         user_disconnected = 9;
+      UserNotify     user_notify       = 10;
    }
 }
 
