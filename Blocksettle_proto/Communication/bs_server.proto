@@ -2044,6 +2044,14 @@ message ApiServerMsg
       string   type           = 4;
    }
 
+   message UpdateWithdrawPrices
+   {
+      double   sell_price     = 1;
+      double   buy_price      = 2;
+      double   network_fee    = 3;
+      double   min_xbt_amount = 4;
+   }
+
    oneof data
    {
       UpdateOrder    update_order   = 2;
@@ -2055,6 +2063,7 @@ message ApiServerMsg
       string         user_connected    = 8;
       string         user_disconnected = 9;
       UserNotify     user_notify       = 10;
+      UpdateWithdrawPrices update_withdraw_prices = 11;
    }
 }
 
@@ -2079,11 +2088,18 @@ message DealerConnMessage
       string reject_reason = 7;
    }
 
+   message PriceUpdate
+   {
+      double ask = 1;
+      double bid = 2;
+   }
+
    oneof data
    {
-      Empty         connected = 1;
-      Empty         disconnected = 2;
-      OrderRequest  order_request = 3;
-      OrderResponse order_response = 4;
+      Empty          connected      = 1;
+      Empty          disconnected   = 2;
+      OrderRequest   order_request  = 3;
+      OrderResponse  order_response = 4;
+      PriceUpdate    price_update   = 5;
    }
 }
