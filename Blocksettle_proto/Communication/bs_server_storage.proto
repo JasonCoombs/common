@@ -558,6 +558,11 @@ message TradePL
    string trade_id = 1;
    string entity_name = 2;
    double PL = 3;
+   int32  asset_type = 4;
+   bool   buy = 5;
+   double qty = 6;
+   double price = 7;
+   bool   is_rollover = 8;
 }
 
 message TradePLQuery
