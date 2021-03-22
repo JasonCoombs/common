@@ -911,6 +911,7 @@ message GenoaRegiserXBTWithdrawRequest
    double xbt_amount    = 3;
    double eur_amount    = 4;
    string deposit_id    = 5;
+   double fee           = 6;
 }
 
 message GenoaRegiserXBTWithdrawResponse
