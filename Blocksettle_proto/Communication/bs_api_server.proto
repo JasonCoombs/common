@@ -195,6 +195,7 @@ message Request
         string product_type = 1;
         double start_time = 2;
         double end_time = 3;
+        string reference = 4;
     }
 
     oneof data
@@ -503,6 +504,7 @@ message Response
     {
         string product_type = 1;
         double profit_loss = 2;
+        string reference = 3;
     }
 
     oneof data
