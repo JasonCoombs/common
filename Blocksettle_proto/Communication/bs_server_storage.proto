@@ -560,9 +560,7 @@ message TradePL
    double PL = 3;
    int32  asset_type = 4;
    bool   buy = 5;
-   double qty = 6;
-   double price = 7;
-   bool   is_rollover = 8;
+   uint64 timestamp_utc = 6;
 }
 
 message TradePLQuery
