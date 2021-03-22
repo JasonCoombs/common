@@ -30,7 +30,8 @@ namespace bs {
          CashReservationFailed,
          NoPriceOffer,
          TxCreateFailed,
-         TxBroadcastFailed
+         TxBroadcastFailed,
+         MarketPriceChanged
       };
    }
 }
