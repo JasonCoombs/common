@@ -316,6 +316,7 @@ enum GenoaType
    GenoaConfirmXBTWithdrawType            = 57;
    GenoaOpenDeliveryPeriodType            = 58;
    GenoaCloseDeliveryPeriodType           = 59;
+   GenoaReportRejectedDeposit             = 60;
 }
 
 message GenoaConnectedBroadcast
@@ -931,6 +932,20 @@ message GenoaConfirmXBTWithdrawResponse
    string   error_message  = 2;
 }
 
+message GenoaReportRejectedDepositRequest
+{
+   string entity_name      = 1;
+   string tx_id            = 2;
+   string return_address   = 3;
+   uint64 validation_score = 4;
+}
+
+message GenoaGeneralResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1038,6 +1053,9 @@ message GenoaMessage
       GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 84;
       GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 85;
       GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 86;
+
+      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 87;
+      GenoaGeneralResponse                      report_rejected_deposit_response = 88;
    }
 }
 
