@@ -1746,10 +1746,9 @@ message WebScorechainUtxoRequest
 
 message WebScorechainUtxoResponse
 {
-   bool   success = 1;
-   int32  average_score = 2;
-   int32  min_score = 3;
-   string url = 4;
+   bool   success    = 1;
+   int32  min_score  = 2;
+   string url        = 3;
 }
 
 message WebScorechainCacheTxRequest
