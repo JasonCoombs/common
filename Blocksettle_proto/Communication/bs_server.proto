@@ -109,6 +109,18 @@ message WalletMessage
       bytes  signed_tx = 2;
    }
 
+   message ReturnRejectedDepositRequest
+   {
+      string   deposit_address   = 1;
+      bytes    deposit_tx_id     = 2;
+      string   return_address    = 3;
+   }
+
+   message ReturnRejectedDepositResponse
+   {
+      bytes signed_tx = 1;
+   }
+
    oneof data {
       Empty                                  wallet_reload           = 1;
       string                                 wallet_loaded           = 2;	// wallet id
@@ -123,6 +135,8 @@ message WalletMessage
       DepositAddressTX                       deposit_address_tx      = 11;
       OutInstaTxRequest                      out_insta_tx_request    = 12;
       OutInstaTxResponse                     out_insta_tx_response   = 13;
+      ReturnRejectedDepositRequest           return_deposit_request  = 14;
+      ReturnRejectedDepositResponse          return_deposit_response = 15;
    }
 }
 
