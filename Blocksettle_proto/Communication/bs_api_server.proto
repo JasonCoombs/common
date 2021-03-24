@@ -190,6 +190,14 @@ message Request
         double price = 5;
     }
 
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double start_time = 2;
+        double end_time = 3;
+        string reference = 4;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -229,6 +237,7 @@ message Request
         WithdrawBitcoin             withdraw_bitcoin                = 42;
         Empty                       subscribe_withdraw_prices       = 43;
         Empty                       unsubscribe_withdraw_prices     = 44;
+        HistoricalPL                historical_profit_loss      = 45;
     }
 }
 
@@ -491,6 +500,13 @@ message Response
         double min_xbt_amount = 4;
    }
 
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double profit_loss = 2;
+        string reference = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -535,5 +551,6 @@ message Response
         Empty                   session_replaced            = 48;
         UserNotify              user_notify                 = 49;
         UpdateWithdrawPrices    update_withdraw_prices      = 50;
+        HistoricalPL            historical_profit_loss      = 51;
     }
 }
