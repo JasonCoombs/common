@@ -110,6 +110,18 @@ message WalletMessage
       bytes  signed_tx = 2;
    }
 
+   message ReturnRejectedDepositRequest
+   {
+      string   deposit_address   = 1;
+      bytes    deposit_tx_id     = 2;
+      string   return_address    = 3;
+   }
+
+   message ReturnRejectedDepositResponse
+   {
+      bytes signed_tx = 1;
+   }
+
    oneof data {
       Empty                                  wallet_reload           = 1;
       string                                 wallet_loaded           = 2;	// wallet id
@@ -124,6 +136,8 @@ message WalletMessage
       DepositAddressTX                       deposit_address_tx      = 11;
       OutInstaTxRequest                      out_insta_tx_request    = 12;
       OutInstaTxResponse                     out_insta_tx_response   = 13;
+      ReturnRejectedDepositRequest           return_deposit_request  = 14;
+      ReturnRejectedDepositResponse          return_deposit_response = 15;
    }
 }
 
@@ -317,6 +331,7 @@ enum GenoaType
    GenoaConfirmXBTWithdrawType            = 57;
    GenoaOpenDeliveryPeriodType            = 58;
    GenoaCloseDeliveryPeriodType           = 59;
+   GenoaReportRejectedDeposit             = 60;
 }
 
 message GenoaConnectedBroadcast
@@ -932,6 +947,20 @@ message GenoaConfirmXBTWithdrawResponse
    string   error_message  = 2;
 }
 
+message GenoaReportRejectedDepositRequest
+{
+   string entity_name      = 1;
+   string tx_id            = 2;
+   string return_address   = 3;
+   uint64 validation_score = 4;
+}
+
+message GenoaGeneralResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1039,6 +1068,9 @@ message GenoaMessage
       GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 84;
       GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 85;
       GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 86;
+
+      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 87;
+      GenoaGeneralResponse                      report_rejected_deposit_response = 88;
    }
 }
 
@@ -1752,10 +1784,9 @@ message WebScorechainUtxoRequest
 
 message WebScorechainUtxoResponse
 {
-   bool   success = 1;
-   int32  average_score = 2;
-   int32  min_score = 3;
-   string url = 4;
+   bool   success    = 1;
+   int32  min_score  = 2;
+   string url        = 3;
 }
 
 message WebScorechainCacheTxRequest
