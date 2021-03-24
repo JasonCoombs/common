@@ -175,6 +175,12 @@ message Request
         string entity_name = 2;
     }
 
+    message HistoricalPL
+    {
+        ApiServer.Request.HistoricalPL request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -207,6 +213,7 @@ message Request
         GetDepositInfo                  get_deposit_info                = 28;
         WithdrawToExternalAccount       withdraw_to_external_account    = 29;
         WithdrawBitcoin                 withdraw_bitcoin                = 30;
+        HistoricalPL                    historical_profit_loss      = 31;
     }
 }
 
@@ -421,6 +428,12 @@ message Response
         ApiServer.Response.UpdateWithdrawPrices request = 1;
     }
 
+    message HistoricalPL
+    {
+        ApiServer.Response.HistoricalPL response = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -456,5 +469,6 @@ message Response
         WithdrawBitcoin               withdraw_bitcoin               = 31;
         ObligationRequest       obligation_request          = 32;
         UpdateWithdrawPrices    update_withdraw_prices      = 33;
+        HistoricalPL            historical_profit_loss      = 34;
     }
 }

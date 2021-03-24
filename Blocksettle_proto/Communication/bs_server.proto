@@ -14,6 +14,7 @@ package Blocksettle.Server;
 
 import "bs_api_server.proto";
 import "bs_api_server_pb.proto";
+import "bs_server_storage.proto";
 import "bs_types.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
@@ -1356,6 +1357,8 @@ enum TradeHistType
    TradeHistorySetInitialPrice      = 13;
    TradeHistEODEvent                = 14;
    TradeHistPriceBookUpdate         = 15;
+   TradeHistUpdatePL                = 16;
+   TradeHistQueryPL                 = 17;
 }
 
 message TradeDataMessage
@@ -1544,6 +1547,9 @@ message TradeHistMessage
       SetInitialPriceRequest                       set_initial_price = 14;
       TradeHistEODUpdate                           eod_update        = 15;
       Communication.TradeHistory.PriceBookUpdate   price_book_update = 16;
+      Storage.TradePL                              trade_pl_update   = 17;
+      Storage.TradePLQuery                         trade_pl_query    = 18;
+      Storage.TradePLResult                        trade_pl_result   = 19;
    }
 }
 
