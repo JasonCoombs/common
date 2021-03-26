@@ -281,5 +281,6 @@ message MatchingMarketMessage
       EstimateImResponse         estimate_im_response = 4;
       UsersImInfo                users_im_info = 5;
       string                     order_timeout = 6;
+      GenoaTradingDayOpenMsg     trading_day_open = 7;
    }
 }
