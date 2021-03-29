@@ -100,7 +100,7 @@ namespace bs {
 
             void changeControlPassword(const SecureBinaryData &oldPass, const SecureBinaryData &newPass);
             void eraseControlPassword(const SecureBinaryData &oldPass);
-            void createStructure(bool createLegacyLeaf = false, unsigned lookup = UINT32_MAX);
+            void createStructure(bool createLegacyLeaf, unsigned lookup = UINT32_MAX);
             void createHwStructure(const bs::core::wallet::HwWalletInfo &walletInfo, unsigned lookup = UINT32_MAX);
             void createChatPrivKey();
             void convertHardwareToWo();
