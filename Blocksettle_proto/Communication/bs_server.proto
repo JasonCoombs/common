@@ -794,13 +794,14 @@ message GenoaGetIbanAccountDetailsRequest
 
 message GenoaGetIbanAccountDetailsResponse
 {
-   bool loaded = 1;
-   string resource_id = 2;
-   string iban = 3;
-   string currency = 4;
-   string name = 5;
-   string product = 6;
-   string cash_account_type = 7;
+   bool     loaded            = 1;
+   string   resource_id       = 2;
+   string   iban              = 3;
+   string   currency          = 4;
+   string   name              = 5;
+   string   product           = 6;
+   string   cash_account_type = 7;
+   string   account_ref       = 8;
 }
 
 message GenoaNewApiKeyRequest
