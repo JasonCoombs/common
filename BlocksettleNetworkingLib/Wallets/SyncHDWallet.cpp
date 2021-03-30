@@ -94,6 +94,11 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
          for (const auto &leafData : grpData.leaves) {
             auto leaf = group->getLeaf(leafData.path);
             if (!leaf) {
+               if (leafData.ids.empty()) {
+                  LOG(logger_, error, "[hd::Wallet::synchronize] no id for leaf {}"
+                     , leafData.path.toString());
+                  continue;
+               }
                leaf = group->createLeaf(leafData.path, *leafData.ids.cbegin());
             }
             if (!leaf) {
