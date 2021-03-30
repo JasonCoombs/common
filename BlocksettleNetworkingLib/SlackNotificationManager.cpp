@@ -28,8 +28,6 @@ void initOpenSSL()
 
 using namespace bs::notification;
 
-//static const std::string kWebHookURL = "https://hooks.slack.com/services/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";
-
 static std::string getHost()
 {
    return "hooks.slack.com";
