@@ -481,8 +481,15 @@ message Response
 
     message GetAllExternalAccounts
     {
+        message ExternalAccountInfo
+        {
+            string name         = 1;
+            string created_at   = 2;
+            string bank_name    = 3;
+        }
+
         bool success = 1;
-        repeated string names = 2;
+        repeated ExternalAccountInfo accounts = 2;
     }
 
     message ObligationRequest
