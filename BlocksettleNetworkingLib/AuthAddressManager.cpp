@@ -156,7 +156,7 @@ AuthAddressManager::ReadyError AuthAddressManager::readyError() const
    if (!HaveBSAddressList()) {
       return ReadyError::MissingAddressList;
    }
-   if (armory_ && !armory_->isOnline()) {
+   if (!armory_ || !armory_->isOnline()) {
       return ReadyError::ArmoryOffline;
    }
 
