@@ -176,6 +176,22 @@ protected:
    std::set<BinaryData> pushedZCs_;
    std::unordered_set<std::string>  receivedZCs_;
 
+   struct Settings {
+      std::string host;
+      std::string port;
+      std::string key;
+
+      bool operator==(const Settings& other) const
+      {
+         return ((host == other.host) && (port == other.port) && (key == other.key));
+      }
+      bool operator!=(const Settings& other) const
+      {
+         return !operator==(other);
+      }
+   };
+   Settings currentSettings_;
+
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);
    void singleAddrWalletRegistered(const AddressHistRequest &);

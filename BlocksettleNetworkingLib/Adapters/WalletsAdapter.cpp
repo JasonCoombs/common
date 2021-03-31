@@ -378,6 +378,8 @@ void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
 {
    auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
    if (ccLeaf) {
+      logger_->warn("[{}] added CC leaf {} without proper metadata resolution"
+         , __func__, wallet->walletId());
 //      ccLeaf->setCCDataResolver(ccResolver_);
 //      updateTracker(ccLeaf);   //TODO: should be request to OnChainTrackerClient
    }

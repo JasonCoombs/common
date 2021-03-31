@@ -175,14 +175,26 @@ void BlockchainAdapter::sendState(ArmoryState st)
 
 bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
 {
+   Settings curSet{ settings.host(), settings.port(), settings.bip15x_key() };
+   if (armoryPtr_) {
+      if (curSet == currentSettings_) {
+         logger_->warn("[BlockchainAdapter::processSettings] got the same settings"
+            " and connection exists - aborting reconnect");
+         return true;
+      }
+      currentSettings_ = curSet;
+   }
+   else {
+      currentSettings_ = curSet;
+   }
    if (settings.cache_file_name().empty()) {
       armoryPtr_ = std::make_shared<ArmoryConnection>(logger_);
       init(armoryPtr_.get());
 
       BinaryData serverBIP15xKey;
-      if (!settings.bip15x_key().empty()) {
+      if (!curSet.key.empty()) {
          try {
-            serverBIP15xKey = READHEX(settings.bip15x_key());
+            serverBIP15xKey = READHEX(curSet.key);
          } catch (const std::exception &e) {
             logger_->error("[BlockchainAdapter::processSettings] invalid armory key detected: {}: {}"
                , settings.bip15x_key(), e.what());
@@ -201,9 +213,9 @@ bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
       ArmorySettings armorySettings;
       armorySettings.socketType = static_cast<SocketType>(settings.socket_type());
       armorySettings.netType = static_cast<NetworkType>(settings.network_type());
-      armorySettings.armoryDBIp = QString::fromStdString(settings.host());
-      armorySettings.armoryDBPort = std::stoi(settings.port());
-      armorySettings.armoryDBKey = QString::fromStdString(settings.bip15x_key());
+      armorySettings.armoryDBIp = QString::fromStdString(curSet.host);
+      armorySettings.armoryDBPort = std::stoi(curSet.port);
+      armorySettings.armoryDBKey = QString::fromStdString(curSet.key);
       armorySettings.runLocally = settings.run_locally();
       armorySettings.dataDir = QString::fromStdString(settings.data_dir());
       armorySettings.armoryExecutablePath = QString::fromStdString(settings.executable_path());
