@@ -10,9 +10,12 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #endif
+
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <openssl/ssl.h>
 #include <spdlog/spdlog.h>
+
 #include "NotificationManager.h"
 #include "ProcessingThread.h"
 
@@ -163,7 +166,7 @@ namespace bs {
             });
          }
 
-         static [[nodiscard]] ssl_ctx_ptr CreateSSLCtx()
+         [[nodiscard]] static ssl_ctx_ptr CreateSSLCtx()
          {
             initOpenSSL();
             ssl_ctx_ptr ctx(SSL_CTX_new(TLS_client_method()), SSL_CTX_free);
@@ -173,7 +176,7 @@ namespace bs {
             return ctx;
          }
 
-         static [[nodiscard]] std::string getHost()
+         [[nodiscard]] static std::string getHost()
          {
             return "hooks.slack.com";
          }
