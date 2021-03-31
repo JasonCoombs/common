@@ -16,6 +16,7 @@ import "bs_api_server.proto";
 import "bs_api_server_pb.proto";
 import "bs_server_storage.proto";
 import "bs_types.proto";
+import "common.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
 
@@ -138,6 +139,8 @@ message WalletMessage
       OutInstaTxResponse                     out_insta_tx_response   = 13;
       ReturnRejectedDepositRequest           return_deposit_request  = 14;
       ReturnRejectedDepositResponse          return_deposit_response = 15;
+      Empty                                  get_hot_wallet_balance  = 16;
+      BlockSettle.Common.ArmoryMessage.WalletBalanceResponse hot_wallet_balance = 17;
    }
 }
 
