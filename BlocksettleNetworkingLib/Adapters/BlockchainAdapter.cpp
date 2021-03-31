@@ -376,7 +376,7 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
    ArmoryMessage msg;
    auto zcInv = msg.mutable_zc_invalidated();
    for (const auto& id : ids) {
-      zcInv->add_tx_hashes(id.toBinStr());   //TODO: maybe add only pending TXs?
+      zcInv->add_tx_hashes(id.toBinStr());
       const auto &itPending = pushedZCs_.find(id);
       if (itPending != pushedZCs_.end()) {
          pushedZCs_.erase(itPending);
