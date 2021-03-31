@@ -37,6 +37,7 @@ enum CLIRequestType
    BSDeliveryTransactionType        = 25;
    SyncGenoaUsers                   = 26;
    UsersImInfoType                  = 27;
+   InstaWalletWithdrawType          = 28;
 }
 
 enum ArmoryConnectionState
@@ -283,4 +284,15 @@ message SyncAccountsResponse
    required bool     success              = 1;
    required int32    created_customers    = 2;
    required int32    updated_properties   = 3;
+}
+
+message InstaWalletWithdrawRequest
+{
+   required string address = 1;
+   required uint64 amount = 2;
+}
+
+message InstaWalletWithdrawResponse
+{
+   required bytes signed_tx = 1;
 }
