@@ -389,7 +389,7 @@ message Response
 
     message CreateExternalAccount
     {
-        ApiServer.Response.ResponseResult result = 1;
+        ApiServer.Response.CreateExternalAccount result = 1;
         string entity_name = 2;
     }
 
