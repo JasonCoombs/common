@@ -132,6 +132,7 @@ protected:
    std::shared_ptr<bs::message::User>  user_;
    std::shared_ptr<ArmoryConnection>   armoryPtr_;
    std::shared_ptr<BitcoinFeeCache>    feeEstimationsCache_;
+   PRNG_Fortuna   fortuna_;
 
    struct Wallet {
       std::shared_ptr<AsyncClient::BtcWallet>   wallet;

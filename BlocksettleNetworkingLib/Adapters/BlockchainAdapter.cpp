@@ -1143,7 +1143,7 @@ bool BlockchainAdapter::processAddressHist(const bs::message::Envelope& env
       logger_->error("[{}] invalid address string: {}", __func__, e.what());
       return true;
    }
-   const auto& walletId = PRNG_Fortuna().generateRandom(8).toHexStr();
+   const auto& walletId = fortuna_.generateRandom(8).toHexStr();
    auto& newWallet = wallets_[walletId];
    newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
    newWallet.asNew = true;
