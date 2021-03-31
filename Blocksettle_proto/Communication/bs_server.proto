@@ -797,13 +797,14 @@ message GenoaGetIbanAccountDetailsRequest
 
 message GenoaGetIbanAccountDetailsResponse
 {
-   bool loaded = 1;
-   string resource_id = 2;
-   string iban = 3;
-   string currency = 4;
-   string name = 5;
-   string product = 6;
-   string cash_account_type = 7;
+   bool     loaded            = 1;
+   string   resource_id       = 2;
+   string   iban              = 3;
+   string   currency          = 4;
+   string   name              = 5;
+   string   product           = 6;
+   string   cash_account_type = 7;
+   string   account_ref       = 8;
 }
 
 message GenoaNewApiKeyRequest
@@ -870,8 +871,16 @@ message GenoaGetAllExternalAccountsRequest
 
 message GenoaGetAllExternalAccountsResponse
 {
+   message ExternalAccountInfo
+   {
+      string   name        = 1;
+      string   created_at  = 2;
+      string   bank_name   = 3;
+   }
+
    bool loaded = 1;
-   repeated string names = 2;
+
+   repeated ExternalAccountInfo accounts = 2;
 }
 
 message GenoaGetDepositInfoRequest
