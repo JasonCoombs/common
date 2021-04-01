@@ -492,9 +492,9 @@ void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
       logger_->error("[{}] can't scan non-HD leaves ({})", __func__, wallet->walletId());
       return;
    }
-   if (countMap.wallet_txns_size() != 1) {
+   if (countMap.wallet_tx_counts_size() != 1) {
       logger_->error("[{}] invalid countMap size: {} for {}", __func__
-         , countMap.wallet_txns_size(), scanId);
+         , countMap.wallet_tx_counts_size(), scanId);
       return;
    }
 
@@ -514,12 +514,12 @@ void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
       Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
       pushFill(env);
    };
-   if (!countMap.wallet_txns(0).txns_size()) {
+   if (!countMap.wallet_tx_counts(0).txns_size()) {
       stopScan();
    }
    else {
       std::set<BinaryData> activeAddrs;
-      for (const auto& activeAddr : countMap.wallet_txns(0).txns()) {
+      for (const auto& activeAddr : countMap.wallet_tx_counts(0).txns()) {
          activeAddrs.insert(BinaryData::fromString(activeAddr.address()));
       }
       const bool isFullBatch = (activeAddrs.size() > (itActiveAddrs->second.size() / 5)); //FIXME if needed
@@ -714,7 +714,7 @@ void WalletsAdapter::processUnconfTgtSet(const std::string &walletId)
 
 void WalletsAdapter::processAddrTxCount(const ArmoryMessage_AddressTxCountResponse &response)
 {
-   for (const auto &byWallet : response.wallet_txns()) {
+   for (const auto &byWallet : response.wallet_tx_counts()) {
       bool isScan = false;
       for (const auto& wallet : wallets_) {
          if (wallet.second->hasScanId(byWallet.wallet_id())) {

@@ -168,7 +168,7 @@ message ArmoryMessage
 
    message AddressTxCountResponse
    {
-      message AddressTxNs {
+      message AddressTxCounts {
          string wallet_id = 1;
 
          message AddressTxCount {
@@ -177,7 +177,7 @@ message ArmoryMessage
          }
          repeated AddressTxCount txns = 2;
       }
-      repeated AddressTxNs wallet_txns = 1;
+      repeated AddressTxCounts wallet_tx_counts = 1;
    }
 
    message WalletBalanceResponse

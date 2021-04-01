@@ -827,7 +827,7 @@ bool BlockchainAdapter::processGetTxCount(const bs::message::Envelope &env
       ArmoryMessage msg;
       auto msgResp = msg.mutable_addr_tx_count_response();
       for (const auto &txn : txns) {
-         auto msgByWallet = msgResp->add_wallet_txns();
+         auto msgByWallet = msgResp->add_wallet_tx_counts();
          msgByWallet->set_wallet_id(txn.first);
          for (const auto &byAddr : txn.second.addressTxnCounts_) {
             auto msgByAddr = msgByWallet->add_txns();
