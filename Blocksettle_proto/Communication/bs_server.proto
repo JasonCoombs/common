@@ -39,7 +39,6 @@ enum PrivBridgeType
 message PrivBridgeCreateUserRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message PrivBridgeResponse
@@ -572,12 +571,13 @@ message GenoaAccountMessage
 
 message GenoaAccountData
 {
-   string email = 1;
-   string entity_name = 2;
-   int64  entity_id = 3;
-   string account_name = 4;
-   string account_type = 5;
-   int64  account_id = 6;
+   string   email          = 1;
+   string   entity_name    = 2;
+   int64    entity_id      = 3;
+   string   account_name   = 4;
+   string   account_type   = 5;
+   int64    account_id     = 6;
+   string   email_hashed   = 7;
 }
 
 message GenoaAccountInfoResponse
@@ -1113,7 +1113,6 @@ enum GenoaServerType
 message GenoaServerClientRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message GenoaServerBalanceUpdate
