@@ -781,7 +781,8 @@ message GenoaCreateIbanAgreementUrlResponse
 
 message GenoaGetIbanAccountsRequest
 {
-   string requisitions_id = 1;
+   string requisitions_id  = 1;
+   string entity_name      = 2;
 }
 
 message GenoaGetIbanAccountsResponse
