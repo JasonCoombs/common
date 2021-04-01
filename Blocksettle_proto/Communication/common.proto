@@ -166,16 +166,16 @@ message ArmoryMessage
       repeated string wallet_ids = 1;
    }
 
-   message AddressTxNsResponse
+   message AddressTxCountResponse
    {
       message AddressTxNs {
          string wallet_id = 1;
 
-         message AddressTxN {
+         message AddressTxCount {
             bytes  address = 1;
-            uint32 txn = 2;
+            uint32 tx_count = 2;
          }
-         repeated AddressTxN txns = 2;
+         repeated AddressTxCount txns = 2;
       }
       repeated AddressTxNs wallet_txns = 1;
    }
@@ -352,8 +352,8 @@ message ArmoryMessage
       string            tx_push_timeout = 19;
       WalletUnconfirmedTarget set_unconf_target = 20;
       string            unconf_target_set = 21;
-      WalletIDs         addr_txn_request = 22;
-      AddressTxNsResponse addr_txn_response = 23;
+      WalletIDs         addr_tx_count_request = 22;
+      AddressTxCountResponse addr_tx_count_response = 23;
       WalletIDs         wallet_balance_request = 24;
       WalletBalanceResponse wallet_balance_response = 25;
       TXHashes          get_txs_by_hash = 26;
@@ -696,7 +696,7 @@ message WalletsMessage
 
       message AddressData {
          bytes  address = 1;
-         uint32 txn = 2;
+         uint32 tx_count = 2;
          uint64 total_balance = 3;
          uint64 spendable_balance = 4;
          uint64 unconfirmed_balance = 5;

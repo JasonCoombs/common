@@ -101,8 +101,8 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
    case ArmoryMessage::kUnconfTargetSet:
       processUnconfTgtSet(msg.unconf_target_set());
       break;
-   case ArmoryMessage::kAddrTxnResponse:
-      processAddrTxN(msg.addr_txn_response());
+   case ArmoryMessage::kAddrTxCountResponse:
+      processAddrTxCount(msg.addr_tx_count_response());
       break;
    case ArmoryMessage::kWalletBalanceResponse:
       processWalletBal(msg.wallet_balance_response());
@@ -331,7 +331,7 @@ void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet, bool unr
 
 bool WalletsAdapter::isAddressUsed(const bs::Address& addr, const std::string& walletId) const
 {
-   const auto& hasTxNs = [this, addr](const std::map<BinaryData, uint64_t>& txnMap) -> bool
+   const auto& hasTxCount = [this, addr](const std::map<BinaryData, uint64_t>& txnMap) -> bool
    {
       const auto& itTxN = txnMap.find(addr.id());
       if (itTxN != txnMap.end()) {
@@ -342,7 +342,7 @@ bool WalletsAdapter::isAddressUsed(const bs::Address& addr, const std::string& w
 
    if (walletId.empty()) {
       for (const auto& bal : walletBalances_) {
-         if (hasTxNs(bal.second.addressTxNMap)) {
+         if (hasTxCount(bal.second.addressTxCntMap)) {
             return true;
          }
       }
@@ -350,7 +350,7 @@ bool WalletsAdapter::isAddressUsed(const bs::Address& addr, const std::string& w
    else {
       const auto& itBal = walletBalances_.find(walletId);
       if (itBal != walletBalances_.end()) {
-         return hasTxNs(itBal->second.addressTxNMap);
+         return hasTxCount(itBal->second.addressTxCntMap);
       }
    }
    return false;
@@ -478,14 +478,14 @@ void WalletsAdapter::processScanRegistered(const std::shared_ptr<bs::sync::Walle
    , const std::string &scanId)
 {
    ArmoryMessage msg;
-   auto msgReq = msg.mutable_addr_txn_request();
+   auto msgReq = msg.mutable_addr_tx_count_request();
    msgReq->add_wallet_ids(scanId);
    Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
    pushFill(env);
 }
 
 void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
-   , const std::string& scanId, const ArmoryMessage_AddressTxNsResponse& countMap)
+   , const std::string& scanId, const ArmoryMessage_AddressTxCountResponse& countMap)
 {
    const auto& leaf = std::dynamic_pointer_cast<bs::sync::hd::Leaf>(wallet);
    if (!leaf) {
@@ -706,13 +706,13 @@ void WalletsAdapter::processUnconfTgtSet(const std::string &walletId)
    auto &pendingReg = pendingRegistrations_[itWallet->second->walletId()];
    for (const auto &id : itWallet->second->internalIds()) {
       pendingReg.insert(id + ".bal");
-      pendingReg.insert(id + ".txn");
-      sendTxNRequest(id);
+      pendingReg.insert(id + ".tx#");
+      sendTxCountRequest(id);
       sendBalanceRequest(id);
    }
 }
 
-void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &response)
+void WalletsAdapter::processAddrTxCount(const ArmoryMessage_AddressTxCountResponse &response)
 {
    for (const auto &byWallet : response.wallet_txns()) {
       bool isScan = false;
@@ -727,9 +727,9 @@ void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &res
          continue;
       }
       auto &balanceData = walletBalances_[byWallet.wallet_id()];
-      balanceData.addrTxNUpdated = true;
+      balanceData.addrTxCntUpdated = true;
       for (const auto &txn : byWallet.txns()) {
-         balanceData.addressTxNMap[BinaryData::fromString(txn.address())] = txn.txn();
+         balanceData.addressTxCntMap[BinaryData::fromString(txn.address())] = txn.tx_count();
       }
 
       const auto& wallet = getWalletById(byWallet.wallet_id());
@@ -738,7 +738,7 @@ void WalletsAdapter::processAddrTxN(const ArmoryMessage_AddressTxNsResponse &res
          continue;
       }
       auto& pendingReg = pendingRegistrations_[wallet->walletId()];
-      pendingReg.erase(byWallet.wallet_id() + ".txn");
+      pendingReg.erase(byWallet.wallet_id() + ".tx#");
       if (balanceData.addrBalanceUpdated) {
          if (trackLiveAddresses()) {
             pendingReg.insert(byWallet.wallet_id() + ".tar");
@@ -777,7 +777,7 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
       auto& pendingReg = pendingRegistrations_[wallet->walletId()];
       pendingReg.erase(byWallet.wallet_id() + ".bal");
 
-      if (balanceData.addrTxNUpdated) {
+      if (balanceData.addrTxCntUpdated) {
          if (trackLiveAddresses()) {
             const auto &itReg = pendingReg.find(byWallet.wallet_id() + ".tar");
             if (itReg != pendingReg.end()) {
@@ -799,7 +799,7 @@ void WalletsAdapter::processWalletBal(const ArmoryMessage_WalletBalanceResponse 
 void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
 {
    const auto& balanceData = walletBalances_[walletId];
-   if (!balanceData.addrTxNUpdated || !balanceData.addrBalanceUpdated) {
+   if (!balanceData.addrTxCntUpdated || !balanceData.addrBalanceUpdated) {
       return;  // wait for both requests to complete first
    }
    const auto& wallet = getWalletById(walletId);
@@ -808,7 +808,7 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
       return;
    }
    std::set<BinaryData> usedAddrSet;
-   for (const auto& addrPair : balanceData.addressTxNMap) {
+   for (const auto& addrPair : balanceData.addressTxCntMap) {
       if (addrPair.second != 0) {
          usedAddrSet.insert(addrPair.first);
       }
@@ -830,7 +830,7 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
 
    const auto &cb = [this, walletId, usedAndRegAddrs](bs::sync::SyncState st)
    {
-      walletBalances_[walletId].addrTxNUpdated = true;
+      walletBalances_[walletId].addrTxCntUpdated = true;
       const auto& wallet = getWalletById(walletId);
       if (!wallet) {
          logger_->error("[WalletsAdapter::sendTrackAddrRequest] unknown wallet {}", walletId);
@@ -858,11 +858,11 @@ void WalletsAdapter::sendTrackAddrRequest(const std::string &walletId)
    signerClient_->syncAddressBatch(wallet->walletId(), usedAndRegAddrs, cb);
 }
 
-void WalletsAdapter::sendTxNRequest(const std::string &walletId)
+void WalletsAdapter::sendTxCountRequest(const std::string &walletId)
 {
-   walletBalances_[walletId].addrTxNUpdated = false;
+   walletBalances_[walletId].addrTxCntUpdated = false;
    ArmoryMessage msg;
-   auto msgReq = msg.mutable_addr_txn_request();
+   auto msgReq = msg.mutable_addr_tx_count_request();
    msgReq->add_wallet_ids(walletId);
    Envelope env{ 0, ownUser_, blockchainUser_, {}, {}, msg.SerializeAsString(), true };
    pushFill(env);
@@ -870,7 +870,7 @@ void WalletsAdapter::sendTxNRequest(const std::string &walletId)
 
 void WalletsAdapter::sendBalanceRequest(const std::string &walletId)
 {
-   walletBalances_[walletId].addrTxNUpdated = false;
+   walletBalances_[walletId].addrTxCntUpdated = false;
    ArmoryMessage msg;
    auto msgReq = msg.mutable_wallet_balance_request();
    msgReq->add_wallet_ids(walletId);
@@ -1226,11 +1226,11 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
       spendableBalance += itBal->second.walletBalance.spendableBalance / BTCNumericTypes::BalanceDivider;
       unconfirmedBalance += itBal->second.walletBalance.unconfirmedBalance / BTCNumericTypes::BalanceDivider;
       addrCount += itBal->second.addrCount;
-      for (const auto &addrTxN : itBal->second.addressTxNMap) {
+      for (const auto &addrTxCnt : itBal->second.addressTxCntMap) {
          auto msgAddr = msgResp->add_address_balances();
-         msgAddr->set_address(addrTxN.first.toBinStr());
-         msgAddr->set_txn(addrTxN.second);
-         const auto &itAddrBal = itBal->second.addressBalanceMap.find(addrTxN.first);
+         msgAddr->set_address(addrTxCnt.first.toBinStr());
+         msgAddr->set_tx_count(addrTxCnt.second);
+         const auto &itAddrBal = itBal->second.addressBalanceMap.find(addrTxCnt.first);
          if (itAddrBal != itBal->second.addressBalanceMap.end()) {
             msgAddr->set_total_balance(itAddrBal->second.totalBalance);
             msgAddr->set_spendable_balance(itAddrBal->second.spendableBalance);

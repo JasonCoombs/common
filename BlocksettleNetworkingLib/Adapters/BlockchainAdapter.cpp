@@ -87,8 +87,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          break;
       case ArmoryMessage::kSetUnconfTarget:
          return processUnconfTarget(env, msg.set_unconf_target());
-      case ArmoryMessage::kAddrTxnRequest:
-         return processGetTxNs(env, msg.addr_txn_request());
+      case ArmoryMessage::kAddrTxCountRequest:
+         return processGetTxCount(env, msg.addr_tx_count_request());
       case ArmoryMessage::kWalletBalanceRequest:
          return processBalance(env, msg.wallet_balance_request());
       case ArmoryMessage::kGetTxsByHash:
@@ -818,21 +818,21 @@ bool BlockchainAdapter::processUnconfTarget(const bs::message::Envelope &env
    return true;
 }
 
-bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
+bool BlockchainAdapter::processGetTxCount(const bs::message::Envelope &env
    , const ArmoryMessage_WalletIDs &request)
 {
    const auto &cbTxNs = [this, env, stopped = stopped_]
       (const std::map<std::string, CombinedCounts> &txns)
    {
       ArmoryMessage msg;
-      auto msgResp = msg.mutable_addr_txn_response();
+      auto msgResp = msg.mutable_addr_tx_count_response();
       for (const auto &txn : txns) {
          auto msgByWallet = msgResp->add_wallet_txns();
          msgByWallet->set_wallet_id(txn.first);
          for (const auto &byAddr : txn.second.addressTxnCounts_) {
             auto msgByAddr = msgByWallet->add_txns();
             msgByAddr->set_address(byAddr.first.toBinStr());
-            msgByAddr->set_txn(byAddr.second);
+            msgByAddr->set_tx_count(byAddr.second);
          }
       }
       if (*stopped) {
