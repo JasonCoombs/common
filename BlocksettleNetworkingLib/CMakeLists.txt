@@ -91,7 +91,7 @@ IF (DISABLE_CELER)
       ${BOTAN_LIB}
       ${LIBCP_LIB}
       ${ZMQ_LIB}
-      ${CPP_WALLET_LIB_NAME} 
+      ${CPP_WALLET_LIB_NAME}
       ${AUTH_PROTO_LIB_NAME}
       ${BS_PROTO_LIB_NAME}
       ${PROTO_LIB}
@@ -105,7 +105,7 @@ ELSE ()
       ${BOTAN_LIB}
       ${LIBCP_LIB}
       ${ZMQ_LIB}
-      ${CPP_WALLET_LIB_NAME} 
+      ${CPP_WALLET_LIB_NAME}
       ${AUTH_PROTO_LIB_NAME}
       ${BS_PROTO_LIB_NAME}
       ${PROTO_LIB}
