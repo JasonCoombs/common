@@ -479,6 +479,19 @@ message Response
         string error_msg = 2;
     }
 
+    message CreateExternalAccount
+    {
+        message ExternalAccountInfo
+        {
+            string name         = 1;
+            string created_at   = 2;
+            string bank_name    = 3;
+        }
+
+        bool                success = 1;
+        ExternalAccountInfo account = 2;
+    }
+
     message GetAllExternalAccounts
     {
         message ExternalAccountInfo
@@ -542,9 +555,9 @@ message Response
         NewApiKey               new_api_key                 = 32;
         ListApiKeys             list_api_keys               = 33;
         DeleteApiKey            delete_api_key              = 34;
-        GetDepositInfo                get_deposit_info               = 35;
-        ResponseResult          create_external_account     = 36;
-        GetAllExternalAccounts        get_all_external_accounts      = 37;
+        GetDepositInfo          get_deposit_info            = 35;
+        CreateExternalAccount   create_external_account     = 36;
+        GetAllExternalAccounts  get_all_external_accounts   = 37;
         ResponseResult          withdraw_to_external_account= 38;
         ResponseResult          withdraw_bitcoin            = 39;
         ObligationRequest       obligation_request          = 40;

@@ -39,7 +39,6 @@ enum PrivBridgeType
 message PrivBridgeCreateUserRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message PrivBridgeResponse
@@ -572,12 +571,13 @@ message GenoaAccountMessage
 
 message GenoaAccountData
 {
-   string email = 1;
-   string entity_name = 2;
-   int64  entity_id = 3;
-   string account_name = 4;
-   string account_type = 5;
-   int64  account_id = 6;
+   string   email          = 1;
+   string   entity_name    = 2;
+   int64    entity_id      = 3;
+   string   account_name   = 4;
+   string   account_type   = 5;
+   int64    account_id     = 6;
+   string   email_hashed   = 7;
 }
 
 message GenoaAccountInfoResponse
@@ -765,10 +765,11 @@ message GenoaRegisterAccountResponse
 
 message GenoaCreateIbanAgreementUrlRequest
 {
-   string country_short_code = 1;
-   string iban = 2;
-   string redirect = 3;
-   bool sandbox = 4;
+   string   entity_name          = 1;
+   string   country_short_code   = 2;
+   string   iban                 = 3;
+   string   redirect             = 4;
+   bool     sandbox              = 5;
 }
 
 message GenoaCreateIbanAgreementUrlResponse
@@ -781,7 +782,8 @@ message GenoaCreateIbanAgreementUrlResponse
 
 message GenoaGetIbanAccountsRequest
 {
-   string requisitions_id = 1;
+   string requisitions_id  = 1;
+   string entity_name      = 2;
 }
 
 message GenoaGetIbanAccountsResponse
@@ -861,7 +863,15 @@ message GenoaCreateExternalAccountRequest
 
 message GenoaCreateExternalAccountResponse
 {
-   bool error = 1;
+   message ExternalAccountInfo
+   {
+      string   name        = 1;
+      string   created_at  = 2;
+      string   bank_name   = 3;
+   }
+
+   bool                 created  = 1;
+   ExternalAccountInfo  account  = 2;
 }
 
 message GenoaGetAllExternalAccountsRequest
@@ -1104,7 +1114,6 @@ enum GenoaServerType
 message GenoaServerClientRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message GenoaServerBalanceUpdate
