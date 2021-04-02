@@ -187,6 +187,7 @@ protected:
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::WalletData)>>    cbWalletMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::SyncState)>>     cbSyncAddrsMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbExtAddrsMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbNewAddrsMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, SignTxCb> cbSettlementSignTxMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, SignerStateCb>  cbSignerStateMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const SecureBinaryData &)>>   cbSettlWalletMap_;
@@ -212,17 +213,16 @@ public:
    void connected(const std::string& host) override { emit connected(); }
    void connError(SignContainer::ConnectionError err, const QString& desc) override { emit connectionError(err, desc); }
    void connTorn() override { emit disconnected(); }
-   void onError(bs::signer::RequestId reqId, const std::string& errMsg) override { emit Error(reqId, errMsg); }
+   void onError(bs::signer::RequestId reqId, const std::string& errMsg) override;
    void onAuthComplete() override { emit authenticated(); }
    void onReady() override { emit ready(); }
    void txSigned(bs::signer::RequestId reqId, const BinaryData& signedTX
-      , bs::error::ErrorCode errCode, const std::string& errMsg = {}) override { emit TXSigned(reqId, signedTX, errCode, errMsg); }
+      , bs::error::ErrorCode errCode, const std::string& errMsg = {}) override;
    void walletInfo(bs::signer::RequestId reqId
-      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi) override {
-      emit QWalletInfo(reqId, bs::hd::WalletInfo(wi)); }
+      , const Blocksettle::Communication::headless::GetHDWalletInfoResponse& wi) override;
    void autoSignStateChanged(bs::error::ErrorCode errCode
-      , const std::string& walletId) override { emit AutoSignStateChanged(errCode, walletId); }
-   void authLeafAdded(const std::string& walletId) override { emit AuthLeafAdded(walletId); }
+      , const std::string& walletId) override;
+   void authLeafAdded(const std::string& walletId);
    void newWalletPrompt() override { emit needNewWalletPrompt(); }
    void walletsReady() override { emit walletsReadyToSync(); }
    void walletsChanged() override { emit walletsListUpdated(); }

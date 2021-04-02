@@ -14,11 +14,12 @@
 #include <QTimer>
 
 #include "FutureValue.h"
+#include "MessageUtils.h"
 #include "ProtobufUtils.h"
 #include "WsDataConnection.h"
 
-#include "bs_proxy_terminal.pb.h"
-#include "bs_proxy_terminal_pb.pb.h"
+//#include "bs_proxy_terminal.pb.h"
+//#include "bs_proxy_terminal_pb.pb.h"
 
 using namespace Blocksettle::Communication;
 using namespace Blocksettle::Communication::ProxyTerminal;
@@ -162,6 +163,17 @@ void BsClient::findEmailHash(const std::string &email)
    };
 
    sendRequest(&request, std::chrono::seconds(10), std::move(timeoutCb), std::move(processCb));
+}
+
+void BsClient::sendFutureRequest(const bs::network::FutureRequest &details)
+{
+   ProxyTerminalPb::Request request;
+   auto futureRequest = request.mutable_future_request();
+   futureRequest->set_side(bs::message::toBS(details.side));
+   futureRequest->set_price(details.price);
+   futureRequest->set_amount(details.amount.GetValue());
+   futureRequest->set_type(details.type);
+   sendPbMessage(request.SerializeAsString());
 }
 
 void BsClient::cancelLogin()
@@ -354,6 +366,14 @@ void BsClient::cancelActiveSign()
       request.mutable_cancel_sign();
       sendMessage(&request);
    }
+}
+
+void BsClient::setFuturesDeliveryAddr(const std::string &addr)
+{
+   ProxyTerminalPb::Request request;
+   auto deliveryMessage = request.mutable_delivery_address();
+   deliveryMessage->set_addr(addr);
+   sendPbMessage(request.SerializeAsString());
 }
 
 // static
@@ -581,8 +601,7 @@ void BsClient::processCeler(const Response_Celer &response)
 void BsClient::processProxyPb(const Response_ProxyPb &response)
 {
    Blocksettle::Communication::ProxyTerminalPb::Response message;
-   bool result = message.ParseFromString(response.data());
-   if (!result) {
+   if (!message.ParseFromString(response.data())) {
       SPDLOG_LOGGER_ERROR(logger_, "invalid PB message");
       return;
    }
@@ -635,6 +654,8 @@ BsClientQt::BsClientQt(const std::shared_ptr<spdlog::logger>& logger
    : QObject(parent), BsClient(logger, this)
 {
    qRegisterMetaType<BsClientLoginResult>();
+   qRegisterMetaType<BsClientCallbackTarget::AuthorizeError>();
+   qRegisterMetaType<Blocksettle::Communication::ProxyTerminalPb::Response>();
 }
 
 void BsClientQt::startTimer(std::chrono::milliseconds timeout

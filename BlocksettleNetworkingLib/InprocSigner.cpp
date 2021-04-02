@@ -49,7 +49,6 @@ void InprocSigner::Start()
    if (sct_) {
       sct_->onReady();
    }
-   return;
 }
 
 // All signing code below doesn't include password request support for encrypted wallets - i.e.

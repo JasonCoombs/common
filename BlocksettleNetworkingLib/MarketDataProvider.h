@@ -24,6 +24,7 @@ namespace spdlog {
 class MDCallbackTarget
 {
 public:
+   virtual ~MDCallbackTarget() = default;
    virtual void userWantsToConnect() {}
    virtual void waitingForConnectionDetails() {}
    virtual void startConnecting() {}
