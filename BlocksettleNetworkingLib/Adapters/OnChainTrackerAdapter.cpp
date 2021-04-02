@@ -300,7 +300,8 @@ bool OnChainTrackerAdapter::processOutpoints(uint64_t msgId
 {
    const auto& it = outpointCallbacks_.find(msgId);
    if (it == outpointCallbacks_.end()) {
-      return false;  // wait some time more
+      logger_->error("[{}] unknown response #{}", msgId);
+      return true;
    }
    OutpointBatch batch;
    batch.heightCutoff_ = response.height_cutoff();

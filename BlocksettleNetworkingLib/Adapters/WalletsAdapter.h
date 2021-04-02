@@ -24,7 +24,7 @@ namespace spdlog {
 }
 namespace BlockSettle {
    namespace Common {
-      class ArmoryMessage_AddressTxNsResponse;
+      class ArmoryMessage_AddressTxCountResponse;
       class ArmoryMessage_Transactions;
       class ArmoryMessage_UTXOs;
       class ArmoryMessage_WalletBalanceResponse;
@@ -112,14 +112,14 @@ private:
    void processScanRegistered(const std::shared_ptr<bs::sync::Wallet>&
       , const std::string &scanId);
    void resumeScan(const std::shared_ptr<bs::sync::Wallet>&
-      , const std::string& scanId, const BlockSettle::Common::ArmoryMessage_AddressTxNsResponse&);
+      , const std::string& scanId, const BlockSettle::Common::ArmoryMessage_AddressTxCountResponse&);
    void registerWallet(const std::shared_ptr<bs::sync::hd::Wallet> &);
    void processWalletRegistered(const std::string &walletId);
 
    void processUnconfTgtSet(const std::string &walletId);
    void sendBalanceRequest(const std::string &walletId);
-   void sendTxNRequest(const std::string &walletId);
-   void processAddrTxN(const BlockSettle::Common::ArmoryMessage_AddressTxNsResponse &);
+   void sendTxCountRequest(const std::string &walletId);
+   void processAddrTxCount(const BlockSettle::Common::ArmoryMessage_AddressTxCountResponse &);
    void processWalletBal(const BlockSettle::Common::ArmoryMessage_WalletBalanceResponse &);
    void sendTrackAddrRequest(const std::string &walletId);
 
@@ -217,9 +217,9 @@ private:
       BalanceBreakdown  walletBalance;
       size_t   addrCount = 0;
       std::map<BinaryData, BalanceBreakdown> addressBalanceMap;
-      std::map<BinaryData, uint64_t>         addressTxNMap;
+      std::map<BinaryData, uint64_t>         addressTxCntMap;
       bool  addrBalanceUpdated{ false };
-      bool  addrTxNUpdated{ false };
+      bool  addrTxCntUpdated{ false };
    };
    std::unordered_map<std::string, BalanceData> walletBalances_;
 

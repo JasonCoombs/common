@@ -87,8 +87,8 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          break;
       case ArmoryMessage::kSetUnconfTarget:
          return processUnconfTarget(env, msg.set_unconf_target());
-      case ArmoryMessage::kAddrTxnRequest:
-         return processGetTxNs(env, msg.addr_txn_request());
+      case ArmoryMessage::kAddrTxCountRequest:
+         return processGetTxCount(env, msg.addr_tx_count_request());
       case ArmoryMessage::kWalletBalanceRequest:
          return processBalance(env, msg.wallet_balance_request());
       case ArmoryMessage::kGetTxsByHash:
@@ -177,14 +177,26 @@ void BlockchainAdapter::sendState(ArmoryState st)
 
 bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
 {
+   Settings curSet{ settings.host(), settings.port(), settings.bip15x_key() };
+   if (armoryPtr_) {
+      if (curSet == currentSettings_) {
+         logger_->warn("[BlockchainAdapter::processSettings] got the same settings"
+            " and connection exists - aborting reconnect");
+         return true;
+      }
+      currentSettings_ = curSet;
+   }
+   else {
+      currentSettings_ = curSet;
+   }
    if (settings.cache_file_name().empty()) {
       armoryPtr_ = std::make_shared<ArmoryConnection>(logger_);
       init(armoryPtr_.get());
 
       BinaryData serverBIP15xKey;
-      if (!settings.bip15x_key().empty()) {
+      if (!curSet.key.empty()) {
          try {
-            serverBIP15xKey = READHEX(settings.bip15x_key());
+            serverBIP15xKey = READHEX(curSet.key);
          } catch (const std::exception &e) {
             logger_->error("[BlockchainAdapter::processSettings] invalid armory key detected: {}: {}"
                , settings.bip15x_key(), e.what());
@@ -203,9 +215,9 @@ bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
       ArmorySettings armorySettings;
       armorySettings.socketType = static_cast<SocketType>(settings.socket_type());
       armorySettings.netType = static_cast<NetworkType>(settings.network_type());
-      armorySettings.armoryDBIp = QString::fromStdString(settings.host());
-      armorySettings.armoryDBPort = std::stoi(settings.port());
-      armorySettings.armoryDBKey = QString::fromStdString(settings.bip15x_key());
+      armorySettings.armoryDBIp = QString::fromStdString(curSet.host);
+      armorySettings.armoryDBPort = std::stoi(curSet.port);
+      armorySettings.armoryDBKey = QString::fromStdString(curSet.key);
       armorySettings.runLocally = settings.run_locally();
       armorySettings.dataDir = QString::fromStdString(settings.data_dir());
       armorySettings.armoryExecutablePath = QString::fromStdString(settings.executable_path());
@@ -378,7 +390,7 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
    ArmoryMessage msg;
    auto zcInv = msg.mutable_zc_invalidated();
    for (const auto& id : ids) {
-      zcInv->add_tx_hashes(id.toBinStr());   //TODO: maybe add only pending TXs?
+      zcInv->add_tx_hashes(id.toBinStr());
       const auto &itPending = pushedZCs_.find(id);
       if (itPending != pushedZCs_.end()) {
          pushedZCs_.erase(itPending);
@@ -821,21 +833,21 @@ bool BlockchainAdapter::processUnconfTarget(const bs::message::Envelope &env
    return true;
 }
 
-bool BlockchainAdapter::processGetTxNs(const bs::message::Envelope &env
+bool BlockchainAdapter::processGetTxCount(const bs::message::Envelope &env
    , const ArmoryMessage_WalletIDs &request)
 {
    const auto &cbTxNs = [this, env, stopped = stopped_]
       (const std::map<std::string, CombinedCounts> &txns)
    {
       ArmoryMessage msg;
-      auto msgResp = msg.mutable_addr_txn_response();
+      auto msgResp = msg.mutable_addr_tx_count_response();
       for (const auto &txn : txns) {
-         auto msgByWallet = msgResp->add_wallet_txns();
+         auto msgByWallet = msgResp->add_wallet_tx_counts();
          msgByWallet->set_wallet_id(txn.first);
          for (const auto &byAddr : txn.second.addressTxnCounts_) {
             auto msgByAddr = msgByWallet->add_txns();
             msgByAddr->set_address(byAddr.first.toBinStr());
-            msgByAddr->set_txn(byAddr.second);
+            msgByAddr->set_tx_count(byAddr.second);
          }
       }
       if (*stopped) {
@@ -1159,7 +1171,7 @@ bool BlockchainAdapter::processAddressHist(const bs::message::Envelope& env
       logger_->error("[{}] invalid address string: {}", __func__, e.what());
       return true;
    }
-   const auto& walletId = CryptoPRNG::generateRandom(8).toHexStr();
+   const auto& walletId = fortuna_.generateRandom(8).toHexStr();
    auto& newWallet = wallets_[walletId];
    newWallet.wallet = armoryPtr_->instantiateWallet(walletId);
    newWallet.asNew = true;

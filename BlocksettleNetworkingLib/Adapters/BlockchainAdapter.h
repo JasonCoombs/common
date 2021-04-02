@@ -105,7 +105,7 @@ protected:
       , const BlockSettle::Common::ArmoryMessage_WalletIDs&);
    bool processUnconfTarget(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_WalletUnconfirmedTarget &);
-   bool processGetTxNs(const bs::message::Envelope &
+   bool processGetTxCount(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_WalletIDs &);
    bool processBalance(const bs::message::Envelope &
       , const BlockSettle::Common::ArmoryMessage_WalletIDs &);
@@ -134,6 +134,7 @@ protected:
    std::shared_ptr<bs::message::User>  user_;
    std::shared_ptr<ArmoryConnection>   armoryPtr_;
    std::shared_ptr<BitcoinFeeCache>    feeEstimationsCache_;
+   PRNG_Fortuna   fortuna_;
 
    struct Wallet {
       std::shared_ptr<AsyncClient::BtcWallet>   wallet;
@@ -182,6 +183,22 @@ protected:
       std::shared_ptr<bs::message::User>  subscriber;
    };
    std::map<bs::Address, AddressSubscription>   addrTxSubscriptions_;
+
+   struct Settings {
+      std::string host;
+      std::string port;
+      std::string key;
+
+      bool operator==(const Settings& other) const
+      {
+         return ((host == other.host) && (port == other.port) && (key == other.key));
+      }
+      bool operator!=(const Settings& other) const
+      {
+         return !operator==(other);
+      }
+   };
+   Settings currentSettings_;
 
 private:
    std::string registerWallet(const std::string &walletId, const Wallet &);

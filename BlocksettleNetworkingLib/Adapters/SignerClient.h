@@ -52,7 +52,7 @@ public:
    void signTXRequest(const bs::core::wallet::TXSignRequest&
       , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
          , const std::string& errorReason)>&
-      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override {}
+      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override { throw std::runtime_error("not implemented"); }
 
    bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
       , const bs::sync::PasswordDialogData &dialogData
@@ -97,13 +97,13 @@ public:
    void syncAddressComment(const std::string &walletId, const bs::Address &, const std::string &) override;
    void syncTxComment(const std::string &walletId, const BinaryData &, const std::string &) override;
 
-   void setSettlAuthAddr(const std::string &walletId, const BinaryData &, const bs::Address &addr) override {}
+   void setSettlAuthAddr(const std::string &walletId, const BinaryData &, const bs::Address &addr) override { throw std::runtime_error("not implemented"); }
    void getSettlAuthAddr(const std::string &walletId, const BinaryData &
-      , const std::function<void(const bs::Address &)> &) override {}
+      , const std::function<void(const bs::Address &)> &) override { throw std::runtime_error("not implemented"); }
    void setSettlCP(const std::string &walletId, const BinaryData &payinHash, const BinaryData &settlId
-      , const BinaryData &cpPubKey) override {}
+      , const BinaryData &cpPubKey) override { throw std::runtime_error("not implemented"); }
    void getSettlCP(const std::string &walletId, const BinaryData &payinHash
-      , const std::function<void(const BinaryData &, const BinaryData &)> &) override {}
+      , const std::function<void(const BinaryData &, const BinaryData &)> &) override { throw std::runtime_error("not implemented"); }
 
    void syncAddressBatch(const std::string &walletId,
       const std::set<BinaryData>& addrSet, std::function<void(bs::sync::SyncState)>) override;
@@ -125,7 +125,7 @@ public:
       , const std::function<void(bool, const SecureBinaryData &)> &) override;
 
    void getChatNode(const std::string &walletID
-      , const std::function<void(const BIP32_Node &)> &) override {}
+      , const std::function<void(const BIP32_Node &)> &) override { throw std::runtime_error("not implemented"); }
 
    bool createHDLeaf(const std::string &rootWalletId, const bs::hd::Path &
       , const std::vector<bs::wallet::PasswordData> &pwdData = {}
