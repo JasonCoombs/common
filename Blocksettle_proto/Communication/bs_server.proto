@@ -765,10 +765,11 @@ message GenoaRegisterAccountResponse
 
 message GenoaCreateIbanAgreementUrlRequest
 {
-   string country_short_code = 1;
-   string iban = 2;
-   string redirect = 3;
-   bool sandbox = 4;
+   string   entity_name          = 1;
+   string   country_short_code   = 2;
+   string   iban                 = 3;
+   string   redirect             = 4;
+   bool     sandbox              = 5;
 }
 
 message GenoaCreateIbanAgreementUrlResponse
