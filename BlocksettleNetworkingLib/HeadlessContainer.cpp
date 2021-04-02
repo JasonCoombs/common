@@ -63,7 +63,6 @@ NetworkType HeadlessContainer::mapNetworkType(headless::NetworkType netType)
 
 void HeadlessListener::processDisconnectNotification()
 {
-   SPDLOG_LOGGER_INFO(logger_, "remote signer has been disconnected");
    isConnected_ = false;
    isReady_ = false;
    tryEmitError(HeadlessContainer::SignerGoesOffline
@@ -72,6 +71,9 @@ void HeadlessListener::processDisconnectNotification()
 
 void HeadlessListener::tryEmitError(SignContainer::ConnectionError errorCode, const QString &msg)
 {
+   if (errorCode != SignContainer::ConnectionError::NoError) {
+      logger_->error("[HeadlessListener::tryEmitError] {}", msg.toStdString());
+   }
    // Try to send error only once because only first error should be relevant.
    if (!wasErrorReported_) {
       wasErrorReported_ = true;
@@ -104,9 +106,8 @@ void HeadlessListener::OnDataReceived(const std::string& data)
    }
 
    if (packet.id() > id_) {
-      logger_->error("[HeadlessListener] reply id inconsistency: {} > {}", packet.id(), id_);
       tryEmitError(HeadlessContainer::InvalidProtocol
-         , QObject::tr("reply id inconsistency"));
+         , QObject::tr("reply id inconsistency %1 > %2").arg(packet.id()).arg(id_));
       return;
    }
 
@@ -118,15 +119,12 @@ void HeadlessListener::OnDataReceived(const std::string& data)
    if (packet.type() == headless::AuthenticationRequestType) {
       headless::AuthenticationReply response;
       if (!response.ParseFromString(packet.data())) {
-         logger_->error("[HeadlessListener] failed to parse auth reply");
-
          tryEmitError(HeadlessContainer::SerializationFailed
             , QObject::tr("failed to parse auth reply"));
          return;
       }
 
       if (HeadlessContainer::mapNetworkType(response.nettype()) != netType_) {
-         logger_->error("[HeadlessListener] network type mismatch");
          tryEmitError(HeadlessContainer::NetworkTypeMismatch
             , QObject::tr("Network type mismatch (Mainnet / Testnet)"));
          return;
@@ -157,7 +155,6 @@ void HeadlessListener::OnDisconnected()
    if (isShuttingDown_) {
       return;
    }
-   SPDLOG_LOGGER_ERROR(logger_, "remote signer disconnected unexpectedly");
    isConnected_ = false;
    isReady_ = false;
    tryEmitError(HeadlessContainer::SocketFailed
@@ -166,7 +163,6 @@ void HeadlessListener::OnDisconnected()
 
 void HeadlessListener::OnError(DataConnectionListener::DataConnectionError errorCode)
 {
-   logger_->debug("[HeadlessListener] error {}", errorCode);
    isConnected_ = false;
    isReady_ = false;
 
