@@ -1,3 +1,13 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
 #ifndef __CELER_SUBSCRIBE_TO_SECURITIES_H__
 #define __CELER_SUBSCRIBE_TO_SECURITIES_H__
 
