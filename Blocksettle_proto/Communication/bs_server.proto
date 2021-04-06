@@ -27,8 +27,6 @@ message Empty
 enum PrivBridgeType
 {
    PrivBridgeUnknownType         = 0;
-   PrivBridgeStart               = 1;
-   PrivBridgeReconnect           = 2;
    PrivBridgeSuspendTrading      = 3;
    PrivBridgeResumeTrading       = 4;
    PrivBridgeCreateUser          = 5;
