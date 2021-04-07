@@ -33,6 +33,41 @@ namespace {
 
 } // namespace
 
+#ifdef _WIN32
+#include <wincrypt.h>
+#include <windows.h>
+
+inline bool loadWindowsSystemCert(X509_STORE *store)
+{
+    auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+    if (!hStore)
+    {
+        return false;
+    }
+
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+           nullptr)
+    {
+        auto encoded_cert =
+            static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+        auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+        if (x509)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    return true;
+}
+#endif
+
 SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logger
    , SslDataConnectionParams params)
    : logger_(logger)
@@ -184,7 +219,13 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
             }
          }
 
-         if (params_.caBundlePtr) {
+         if (params_.caBundlePtr == nullptr) {
+#ifdef _WIN32
+            loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx));
+#else
+            SSL_CTX_set_default_verify_paths(ctx);
+#endif
+         } else {
             auto store = SSL_CTX_get_cert_store(ctx);
             auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
             while (true) {
