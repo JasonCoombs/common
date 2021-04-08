@@ -914,7 +914,8 @@ message GenoaWithdrawToExternalAccountRequest
 
 message GenoaWithdrawToExternalAccountResponse
 {
-   bool error = 1;
+   bool success = 1;
+   string error_message  = 2;
 }
 
 message GenoaRegisterXBTDepositRequest
