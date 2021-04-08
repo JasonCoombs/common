@@ -101,6 +101,9 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
+      if (defaultRoute_ && !env.sender->isFallback()) {
+         result.insert(defaultRoute_);
+      }
    } else {
       if (isDefaultRouted(env)) {
          if (defaultRoute_) {
