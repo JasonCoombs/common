@@ -137,6 +137,14 @@ void Router::reset()
 }
 
 
+uint64_t QueueInterface::resetId(uint64_t newId)
+{
+   if (seqNo_ < newId) {
+      seqNo_ = newId;
+   }
+   return seqNo_;
+}
+
 Queue_Locking::Queue_Locking(const std::shared_ptr<RouterInterface> &router
    , const std::shared_ptr<spdlog::logger> &logger, const std::string &name
    , const std::map<int, std::string> &accMap, bool accounting)
