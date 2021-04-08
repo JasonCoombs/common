@@ -22,7 +22,7 @@ class WebsocketsSettings(Configurator):
         self.openssl = OpenSslSettings(settings)
         # Do not forget to update patched file for new version (build_scripts/libwebsockets/openssl-tls.c)
         # It's used if git is not avaialble
-        self._version = '4.0.15'
+        self._version = '4.1.6'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
         self._script_revision = '12'
