@@ -183,4 +183,27 @@ namespace JsonTools
 
       return result;
    }
+
+   double GetDoubleFromObject(const nlohmann::json& jsonObject, bool *converted)
+   {
+      double result = 0;
+      bool convertResult = false;
+
+      if (jsonObject.is_number()) {
+         result = jsonObject.get<double>();
+         convertResult = true;
+      } else if (jsonObject.is_string()) {
+         try {
+            result = std::stod(jsonObject.get<std::string>());
+            convertResult = true;
+         } catch (...) {
+         }
+      }
+
+      if (converted != nullptr) {
+         *converted = convertResult;
+      }
+
+      return result;
+   }
 }
