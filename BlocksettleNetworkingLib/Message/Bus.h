@@ -78,6 +78,7 @@ namespace bs {
          virtual bool pushFill(Envelope &) = 0;
          virtual bool push(const Envelope &) = 0;
          uint64_t nextId() { return seqNo_++; }
+         uint64_t resetId(uint64_t);
 
       protected:
          std::shared_ptr<RouterInterface> router_;

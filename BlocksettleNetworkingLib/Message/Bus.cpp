@@ -101,6 +101,9 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
+      if (env.request && defaultRoute_ && !env.sender->isFallback()) {
+         result.insert(defaultRoute_);
+      }
    } else {
       if (isDefaultRouted(env)) {
          if (defaultRoute_) {
@@ -133,6 +136,14 @@ void Router::reset()
    adapters_.clear();
 }
 
+
+uint64_t QueueInterface::resetId(uint64_t newId)
+{
+   if (seqNo_ < newId) {
+      seqNo_ = newId;
+   }
+   return seqNo_;
+}
 
 Queue_Locking::Queue_Locking(const std::shared_ptr<RouterInterface> &router
    , const std::shared_ptr<spdlog::logger> &logger, const std::string &name
