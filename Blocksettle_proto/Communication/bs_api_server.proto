@@ -198,6 +198,12 @@ message Request
         string reference = 4;
     }
 
+    message TradeHistory
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -238,6 +244,7 @@ message Request
         Empty                       subscribe_withdraw_prices       = 43;
         Empty                       unsubscribe_withdraw_prices     = 44;
         HistoricalPL                historical_profit_loss      = 45;
+        TradeHistory                trade_history               = 46;
     }
 }
 
@@ -528,6 +535,13 @@ message Response
         string reference = 3;
     }
 
+    message TradeHistory
+    {
+        bool loaded = 1;
+        repeated Order orders = 2;
+        uint32 count = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -573,5 +587,6 @@ message Response
         UserNotify              user_notify                 = 49;
         UpdateWithdrawPrices    update_withdraw_prices      = 50;
         HistoricalPL            historical_profit_loss      = 51;
+        TradeHistory            trade_history               = 52;
     }
 }

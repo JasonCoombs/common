@@ -181,6 +181,12 @@ message Request
         string entity_name = 2;
     }
 
+    message TradeHistory
+    {
+        ApiServer.Request.TradeHistory request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -214,6 +220,7 @@ message Request
         WithdrawToExternalAccount       withdraw_to_external_account    = 29;
         WithdrawBitcoin                 withdraw_bitcoin                = 30;
         HistoricalPL                    historical_profit_loss      = 31;
+        TradeHistory                    trade_history               = 32;
     }
 }
 
@@ -434,6 +441,12 @@ message Response
         string entity_name = 2;
     }
 
+    message TradeHistory
+    {
+        ApiServer.Response.TradeHistory response = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -470,5 +483,6 @@ message Response
         ObligationRequest       obligation_request          = 32;
         UpdateWithdrawPrices    update_withdraw_prices      = 33;
         HistoricalPL            historical_profit_loss      = 34;
+        TradeHistory            trade_history               = 35;
     }
 }
