@@ -332,6 +332,7 @@ enum GenoaType
    GenoaOpenDeliveryPeriodType            = 58;
    GenoaCloseDeliveryPeriodType           = 59;
    GenoaReportRejectedDeposit             = 60;
+   GenoaTradeHistory                      = 61;
 }
 
 message GenoaConnectedBroadcast
@@ -982,6 +983,20 @@ message GenoaGeneralResponse
    string   error_message  = 2;
 }
 
+message GenoaTradeHistoryRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTradeHistoryResponse
+{
+   repeated GenoaOrderData orders = 1;
+   uint32 count = 2;
+   bool loaded = 3;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1092,6 +1107,8 @@ message GenoaMessage
 
       GenoaReportRejectedDepositRequest         report_rejected_deposit          = 87;
       GenoaGeneralResponse                      report_rejected_deposit_response = 88;
+      GenoaTradeHistoryRequest                  trade_history                    = 89;
+      GenoaTradeHistoryResponse                 trade_history_response           = 90;
    }
 }
 
