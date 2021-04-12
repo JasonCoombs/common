@@ -1265,6 +1265,7 @@ enum CelerType
    CelerGetUserProperty          = 32;
    CelerRegisterCCDefinition     = 33;
    CelerCheckUser                = 34;
+   CelerRawDataType              = 50;
 }
 
 message SavedTradeInfoMessage
@@ -1354,6 +1355,12 @@ message CelerCheckUserResponse
    bool     xbt_dealing_enabled  = 4;
 }
 
+message CelerRawData
+{
+   int32 type = 1;
+   bytes data = 2;
+}
+
 message CelerMessage
 {
    CelerType type = 1;
@@ -1371,6 +1378,7 @@ message CelerMessage
       string                           cc_name                 = 14;
       CelerCheckUserRequest            check_user_request      = 15;
       CelerCheckUserResponse           check_user_response     = 16;
+      CelerRawData                     raw_data                = 50;
    }
    int64 sequence_num = 17;
 }
@@ -1779,6 +1787,7 @@ enum ProxyMessageType
    ProxyReconnect          = 3;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
+   ProxyOnlineUserStats    = 7;
 }
 
 message ProxyOnlineUsersMessage
