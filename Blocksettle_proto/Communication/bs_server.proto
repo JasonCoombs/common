@@ -2172,3 +2172,36 @@ message DealerConnMessage
       PriceUpdate    price_update   = 5;
    }
 }
+
+message PriceAggregation
+{
+// Internal messages to self
+   message ExternalConnectionStatusChanged
+   {
+      string   exchange_name  = 1;
+      bool     connected      = 2;
+   }
+
+   message ExternalConnectionPriceUpdated
+   {
+      string exchange_name = 1;
+      double bid           = 2;
+      double ask           = 3;
+   }
+
+// broadcast message
+   message AggregatedPriceUpdate
+   {
+      double   ask      = 1;
+      double   bid      = 2;
+   }
+
+   oneof data
+   {
+      // internal messages
+      ExternalConnectionStatusChanged  connection_status_changed  = 1;
+      ExternalConnectionPriceUpdated   exchange_price_update      = 2;
+      // broadcasted messages
+      AggregatedPriceUpdate            aggregated_price           = 3;
+   }
+}
