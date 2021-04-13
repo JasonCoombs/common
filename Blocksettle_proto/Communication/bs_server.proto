@@ -1905,10 +1905,9 @@ enum ObligationsManagingMessageType
    SendCutoffPriceRequest     = 0;
    LoadCustomerObligations    = 1;
    CustomerObligation         = 2;
-   LiveCutoffPriceUpdated     = 4;
-   WhitelistUserAddress       = 5;
-   RevokeUserAddress          = 6;
-   XBTWithdraw                = 7;
+   WhitelistUserAddress       = 3;
+   RevokeUserAddress          = 4;
+   XBTWithdraw                = 5;
 };
 
 message ObligationsManaging
@@ -1997,17 +1996,16 @@ message ObligationsManaging
 
    oneof data
    {
-      CustomerObligationsRequest    load_obligations_request   = 3;
-      CustomerObligationsResponse   load_obligations_response  = 4;
-      TradingDayClose               trading_day_close_request  = 5;
-      LiveCutOffPriceUpdate         live_cutoff_price          = 6;
-      SubmitWhitelistedAddress      submit_address_request     = 7;
-      SubmitAddressResponse         submit_address_response    = 8;
-      RevokeUserAddress             revoke_request             = 9;
-      RevokeUserAddressResponse     revoke_response            = 10;
-      XBTWithdrawRequest            xbt_withdraw_request       = 11;
-      XBTWithdrawResponse           xbt_withdraw_response      = 12;
-      CustomerObligationRequest     customer_obligation        = 13;
+      CustomerObligationsRequest    load_obligations_request   = 2;
+      CustomerObligationsResponse   load_obligations_response  = 3;
+      TradingDayClose               trading_day_close_request  = 4;
+      SubmitWhitelistedAddress      submit_address_request     = 5;
+      SubmitAddressResponse         submit_address_response    = 6;
+      RevokeUserAddress             revoke_request             = 7;
+      RevokeUserAddressResponse     revoke_response            = 8;
+      XBTWithdrawRequest            xbt_withdraw_request       = 9;
+      XBTWithdrawResponse           xbt_withdraw_response      = 10;
+      CustomerObligationRequest     customer_obligation        = 11;
    }
 }
 
@@ -2192,6 +2190,7 @@ message PriceAggregation
 // broadcast message
    message AggregatedPriceUpdate
    {
+      // aggregated price for XBT/EUR
       double   ask      = 1;
       double   bid      = 2;
    }
