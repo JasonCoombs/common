@@ -204,6 +204,18 @@ message Request
         uint32 offset = 2;
     }
 
+    message TransactionsForEntity
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -245,6 +257,8 @@ message Request
         Empty                       unsubscribe_withdraw_prices     = 44;
         HistoricalPL                historical_profit_loss      = 45;
         TradeHistory                trade_history               = 46;
+        TransactionsForEntity       transactions_for_entity     = 47;
+        TradeFeeForEntity           trade_fee_for_entity        = 48;
     }
 }
 
@@ -542,6 +556,42 @@ message Response
         uint32 count = 3;
     }
 
+    message TransactionsForEntity
+    {
+        message Item
+        {
+            string status = 1;
+            string ccy = 2;
+            string description = 3;
+            string entity = 4;
+            double amount = 5;
+            double date = 6;
+            string type = 7;
+        }
+
+        bool loaded = 1;
+        repeated Item items = 2;
+        uint32 count = 3;
+    }
+
+    message TradeFeeForEntity
+    {
+        message Item
+        {
+            double fee = 1;
+            string ccy = 2;
+            double price = 3;
+            string trade_ref = 4;
+            double position_size = 5;
+            double date = 6;
+            string side = 7;
+        }
+
+        bool loaded = 1;
+        repeated Item items = 2;
+        uint32 count = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -577,7 +627,6 @@ message Response
         ObligationRequest       obligation_request          = 40;
         ResponseResult          subscribe_withdraw_prices   = 41;
         ResponseResult          unsubscribe_withdraw_prices = 42;
-
         MarketData              market_data                 = 43;
         Error                   fatal_error                 = 44;
         EidLoginUpdate          eid_login_update            = 45;
@@ -588,5 +637,8 @@ message Response
         UpdateWithdrawPrices    update_withdraw_prices      = 50;
         HistoricalPL            historical_profit_loss      = 51;
         TradeHistory            trade_history               = 52;
+        TransactionsForEntity   transactions_for_entity     = 53;
+        TradeFeeForEntity       trade_fee_for_entity        = 54;
+
     }
 }

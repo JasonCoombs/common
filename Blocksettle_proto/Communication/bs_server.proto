@@ -333,6 +333,8 @@ enum GenoaType
    GenoaCloseDeliveryPeriodType           = 59;
    GenoaReportRejectedDeposit             = 60;
    GenoaTradeHistory                      = 61;
+   GenoaTransactionsForEntity             = 62;
+   GenoaTradeFeeForEntity                 = 63;
 }
 
 message GenoaConnectedBroadcast
@@ -997,6 +999,32 @@ message GenoaTradeHistoryResponse
    bool loaded = 3;
 }
 
+message GenoaTransactionsForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTransactionsForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TransactionsForEntity result = 2;
+}
+
+message GenoaTradeFeeForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTradeFeeForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1109,6 +1137,11 @@ message GenoaMessage
       GenoaGeneralResponse                      report_rejected_deposit_response = 88;
       GenoaTradeHistoryRequest                  trade_history                    = 89;
       GenoaTradeHistoryResponse                 trade_history_response           = 90;
+      GenoaTransactionsForEntityRequest         transactions_for_entity          = 91;
+      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 92;
+      GenoaTradeFeeForEntityRequest             trade_fee_for_entity             = 93;
+      GenoaTradeFeeForEntityResponse            trade_fee_for_entity_response    = 94;
+
    }
 }
 
