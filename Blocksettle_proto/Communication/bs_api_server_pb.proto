@@ -187,6 +187,18 @@ message Request
         string entity_name = 2;
     }
 
+    message TransactionsForEntity
+    {
+        ApiServer.Request.TransactionsForEntity request = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Request.TradeFeeForEntity request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -220,6 +232,8 @@ message Request
         WithdrawBitcoin                 withdraw_bitcoin                = 29;
         HistoricalPL                    historical_profit_loss      = 30;
         TradeHistory                    trade_history               = 31;
+        TransactionsForEntity           transactions_for_entity     = 32;
+        TradeFeeForEntity               trade_fee_for_entity        = 33;
     }
 }
 
@@ -446,6 +460,18 @@ message Response
         string entity_name = 2;
     }
 
+    message TransactionsForEntity
+    {
+        ApiServer.Response.TransactionsForEntity response = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Response.TradeFeeForEntity response = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -483,5 +509,7 @@ message Response
         UpdateWithdrawPrices    update_withdraw_prices      = 33;
         HistoricalPL            historical_profit_loss      = 34;
         TradeHistory            trade_history               = 35;
+        TransactionsForEntity   transactions_for_entity     = 36;
+        TradeFeeForEntity       trade_fee_for_entity        = 37;
     }
 }
