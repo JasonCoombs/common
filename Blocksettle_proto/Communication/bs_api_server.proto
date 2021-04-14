@@ -564,9 +564,8 @@ message Response
             string status = 1;
             string ccy = 2;
             string description = 3;
-            string entity = 4;
             double amount = 5;
-            double date = 6;
+            double timestamp = 6;
             string type = 7;
         }
 
@@ -584,7 +583,7 @@ message Response
             double price = 3;
             string trade_ref = 4;
             double position_size = 5;
-            double date = 6;
+            double timestamp = 6;
             string side = 7;
         }
 
