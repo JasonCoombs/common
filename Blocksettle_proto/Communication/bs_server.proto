@@ -2185,6 +2185,7 @@ message CashResMessage
       bs.types.Side side = 3;
       double price = 4;
       int32  trade_type = 5;
+      string cl_ord_id = 6;
    }
 
    message EstimateImRequest
@@ -2238,6 +2239,8 @@ message CashResMessage
       MaxAmountRequest           max_amount_request = 5;
       MaxAmountResponse          max_amount_response = 6;
       UsersImInfo                users_im_info = 7;
+      Order                      append_order = 10;
+      string                     remove_order = 11;
    }
 }
 
