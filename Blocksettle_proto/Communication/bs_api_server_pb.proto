@@ -187,6 +187,18 @@ message Request
         string entity_name = 2;
     }
 
+    message TransactionsForEntity
+    {
+        ApiServer.Request.TransactionsForEntity request = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Request.TradeFeeForEntity request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -199,28 +211,29 @@ message Request
         EstimateIm                      estimate_im                 = 8;
         ProductFee                      product_fee                 = 9;
         MaxTradeAmount                  max_trade_amount            = 10;
-        ApiServer.Response.MarketData   market_data                 = 11;
-        SubmitPricesData                submit_prices               = 12;
-        PullPricesData                  pull_prices                 = 13;
-        string                          user_connected              = 14;
-        string                          user_disconnected           = 15;
-        SubmitAddressData               submit_address              = 16;
-        LoadAddresses                   load_addresses              = 17;
-        RevokeAddress                   revoke_address              = 18;
-        LoadDepositAddress              load_deposit_address        = 19;
-        CreateIbanAgreementUrl          create_iban_agreement       = 20;
-        GetIbanAccounts                 get_iban_accounts           = 21;
-        GetIbanAccountDetails           get_iban_account_details    = 22;
-        NewApiKey                       new_api_key                 = 23;
-        ListApiKeys                     list_api_keys               = 24;
-        DeleteApiKey                    delete_api_key              = 25;
-        CreateExternalAccount           create_external_account         = 26;
-        GetAllExternalAccounts          get_all_external_accounts       = 27;
-        GetDepositInfo                  get_deposit_info                = 28;
-        WithdrawToExternalAccount       withdraw_to_external_account    = 29;
-        WithdrawBitcoin                 withdraw_bitcoin                = 30;
-        HistoricalPL                    historical_profit_loss      = 31;
-        TradeHistory                    trade_history               = 32;
+        SubmitPricesData                submit_prices               = 11;
+        PullPricesData                  pull_prices                 = 12;
+        string                          user_connected              = 13;
+        string                          user_disconnected           = 14;
+        SubmitAddressData               submit_address              = 15;
+        LoadAddresses                   load_addresses              = 16;
+        RevokeAddress                   revoke_address              = 17;
+        LoadDepositAddress              load_deposit_address        = 18;
+        CreateIbanAgreementUrl          create_iban_agreement       = 19;
+        GetIbanAccounts                 get_iban_accounts           = 20;
+        GetIbanAccountDetails           get_iban_account_details    = 21;
+        NewApiKey                       new_api_key                 = 22;
+        ListApiKeys                     list_api_keys               = 23;
+        DeleteApiKey                    delete_api_key              = 24;
+        CreateExternalAccount           create_external_account         = 25;
+        GetAllExternalAccounts          get_all_external_accounts       = 26;
+        GetDepositInfo                  get_deposit_info                = 27;
+        WithdrawToExternalAccount       withdraw_to_external_account    = 28;
+        WithdrawBitcoin                 withdraw_bitcoin                = 29;
+        HistoricalPL                    historical_profit_loss      = 30;
+        TradeHistory                    trade_history               = 31;
+        TransactionsForEntity           transactions_for_entity     = 32;
+        TradeFeeForEntity               trade_fee_for_entity        = 33;
     }
 }
 
@@ -447,6 +460,18 @@ message Response
         string entity_name = 2;
     }
 
+    message TransactionsForEntity
+    {
+        ApiServer.Response.TransactionsForEntity response = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Response.TradeFeeForEntity response = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -460,7 +485,7 @@ message Response
         ProductFee              product_fee                 = 9;
         OrderUpdate             order_update                = 10;
         MaxTradeAmount          max_trade_amount            = 11;
-        UpdateBook              update_book                 = 12;
+        ApiServer.Response.MarketData update_book           = 12;
         TradeClose              trade_close                 = 13;
         TradeOpen               trade_open                  = 14;
         CreateIbanAgreementUrl  create_iban_agreement       = 15;
@@ -484,5 +509,7 @@ message Response
         UpdateWithdrawPrices    update_withdraw_prices      = 33;
         HistoricalPL            historical_profit_loss      = 34;
         TradeHistory            trade_history               = 35;
+        TransactionsForEntity   transactions_for_entity     = 36;
+        TradeFeeForEntity       trade_fee_for_entity        = 37;
     }
 }

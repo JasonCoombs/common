@@ -333,6 +333,8 @@ enum GenoaType
    GenoaCloseDeliveryPeriodType           = 59;
    GenoaReportRejectedDeposit             = 60;
    GenoaTradeHistory                      = 61;
+   GenoaTransactionsForEntity             = 62;
+   GenoaTradeFeeForEntity                 = 63;
 }
 
 message GenoaConnectedBroadcast
@@ -997,6 +999,32 @@ message GenoaTradeHistoryResponse
    bool loaded = 3;
 }
 
+message GenoaTransactionsForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTransactionsForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TransactionsForEntity result = 2;
+}
+
+message GenoaTradeFeeForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTradeFeeForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1109,6 +1137,11 @@ message GenoaMessage
       GenoaGeneralResponse                      report_rejected_deposit_response = 88;
       GenoaTradeHistoryRequest                  trade_history                    = 89;
       GenoaTradeHistoryResponse                 trade_history_response           = 90;
+      GenoaTransactionsForEntityRequest         transactions_for_entity          = 91;
+      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 92;
+      GenoaTradeFeeForEntityRequest             trade_fee_for_entity             = 93;
+      GenoaTradeFeeForEntityResponse            trade_fee_for_entity_response    = 94;
+
    }
 }
 
@@ -1914,10 +1947,9 @@ enum ObligationsManagingMessageType
    SendCutoffPriceRequest     = 0;
    LoadCustomerObligations    = 1;
    CustomerObligation         = 2;
-   LiveCutoffPriceUpdated     = 4;
-   WhitelistUserAddress       = 5;
-   RevokeUserAddress          = 6;
-   XBTWithdraw                = 7;
+   WhitelistUserAddress       = 3;
+   RevokeUserAddress          = 4;
+   XBTWithdraw                = 5;
 };
 
 message ObligationsManaging
@@ -2006,17 +2038,16 @@ message ObligationsManaging
 
    oneof data
    {
-      CustomerObligationsRequest    load_obligations_request   = 3;
-      CustomerObligationsResponse   load_obligations_response  = 4;
-      TradingDayClose               trading_day_close_request  = 5;
-      LiveCutOffPriceUpdate         live_cutoff_price          = 6;
-      SubmitWhitelistedAddress      submit_address_request     = 7;
-      SubmitAddressResponse         submit_address_response    = 8;
-      RevokeUserAddress             revoke_request             = 9;
-      RevokeUserAddressResponse     revoke_response            = 10;
-      XBTWithdrawRequest            xbt_withdraw_request       = 11;
-      XBTWithdrawResponse           xbt_withdraw_response      = 12;
-      CustomerObligationRequest     customer_obligation        = 13;
+      CustomerObligationsRequest    load_obligations_request   = 2;
+      CustomerObligationsResponse   load_obligations_response  = 3;
+      TradingDayClose               trading_day_close_request  = 4;
+      SubmitWhitelistedAddress      submit_address_request     = 5;
+      SubmitAddressResponse         submit_address_response    = 6;
+      RevokeUserAddress             revoke_request             = 7;
+      RevokeUserAddressResponse     revoke_response            = 8;
+      XBTWithdrawRequest            xbt_withdraw_request       = 9;
+      XBTWithdrawResponse           xbt_withdraw_response      = 10;
+      CustomerObligationRequest     customer_obligation        = 11;
    }
 }
 
@@ -2278,5 +2309,39 @@ message DealerConnMessage
       OrderRequest   order_request  = 3;
       OrderResponse  order_response = 4;
       PriceUpdate    price_update   = 5;
+   }
+}
+
+message PriceAggregation
+{
+// Internal messages to self
+   message ExternalConnectionStatusChanged
+   {
+      string   exchange_name  = 1;
+      bool     connected      = 2;
+   }
+
+   message ExternalConnectionPriceUpdated
+   {
+      string exchange_name = 1;
+      double bid           = 2;
+      double ask           = 3;
+   }
+
+// broadcast message
+   message AggregatedPriceUpdate
+   {
+      // aggregated price for XBT/EUR
+      double   ask      = 1;
+      double   bid      = 2;
+   }
+
+   oneof data
+   {
+      // internal messages
+      ExternalConnectionStatusChanged  connection_status_changed  = 1;
+      ExternalConnectionPriceUpdated   exchange_price_update      = 2;
+      // broadcasted messages
+      AggregatedPriceUpdate            aggregated_price           = 3;
    }
 }

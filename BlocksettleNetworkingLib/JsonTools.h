@@ -34,6 +34,7 @@ namespace JsonTools
 
    double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
    double GetDoubleProperty(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
+   double GetDoubleFromObject(const nlohmann::json& jsonObject, bool *converted = nullptr);
 
    enum class FieldsLoadingRule
    {
