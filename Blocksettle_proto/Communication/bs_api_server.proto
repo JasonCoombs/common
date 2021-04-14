@@ -416,8 +416,9 @@ message Response
             double ask = 3;
         }
 
-        string product_type = 1;
-        repeated Item items = 2;
+        string product_type   = 1;
+        double live_cutoff    = 2;
+        repeated Item items   = 3;
     }
 
     message EidLoginUpdate
