@@ -199,6 +199,18 @@ message Request
         string entity_name = 2;
     }
 
+    message GetStatementDates
+    {
+        ApiServer.Request.GetStatementDates request = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatements
+    {
+        ApiServer.Request.GetStatements request = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey                     check_api_key               = 1;
@@ -235,6 +247,8 @@ message Request
         TradeHistory                    trade_history               = 32;
         TransactionsForEntity           transactions_for_entity     = 33;
         TradeFeeForEntity               trade_fee_for_entity        = 34;
+        GetStatementDates               get_statement_dates         = 35;
+        GetStatements                   get_statements              = 36;
     }
 }
 
@@ -473,6 +487,18 @@ message Response
         string entity_name = 2;
     }
 
+    message GetStatementDates
+    {
+        ApiServer.Response.GetStatementDates response = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatements
+    {
+        ApiServer.Response.GetStatements response = 1;
+        string entity_name = 2;
+    }
+
     oneof data
     {
         CheckApiKey             check_api_key               = 1;
@@ -512,5 +538,7 @@ message Response
         TradeHistory            trade_history               = 35;
         TransactionsForEntity   transactions_for_entity     = 36;
         TradeFeeForEntity       trade_fee_for_entity        = 37;
+        GetStatementDates       get_statement_dates         = 38;
+        GetStatements           get_statements              = 39;
     }
 }

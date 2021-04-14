@@ -216,6 +216,17 @@ message Request
         uint32 offset = 2;
     }
 
+    message GetStatementDates
+    {
+        string start_date = 1;
+        string end_date = 2;
+    }
+
+    message GetStatements
+    {
+        string date = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -259,6 +270,8 @@ message Request
         TradeHistory                trade_history               = 46;
         TransactionsForEntity       transactions_for_entity     = 47;
         TradeFeeForEntity           trade_fee_for_entity        = 48;
+        GetStatementDates           get_statement_dates         = 49;
+        GetStatements               get_statements              = 50;
     }
 }
 
@@ -591,6 +604,19 @@ message Response
         uint32 count = 3;
     }
 
+    message GetStatementDates
+    {
+        bool loaded = 1;
+        repeated string dates = 2;
+    }
+
+    message GetStatements
+    {
+        bool loaded = 1;
+        string html = 2;
+        string pdf = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -638,6 +664,7 @@ message Response
         TradeHistory            trade_history               = 52;
         TransactionsForEntity   transactions_for_entity     = 53;
         TradeFeeForEntity       trade_fee_for_entity        = 54;
-
+        GetStatementDates       get_statement_dates         = 55;
+        GetStatements           get_statements              = 56;
     }
 }
