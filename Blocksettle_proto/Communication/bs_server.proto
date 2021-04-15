@@ -335,6 +335,8 @@ enum GenoaType
    GenoaTradeHistory                      = 61;
    GenoaTransactionsForEntity             = 62;
    GenoaTradeFeeForEntity                 = 63;
+   GenoaGetStatementDates                 = 64;
+   GenoaGetStatements                     = 65;
 }
 
 message GenoaConnectedBroadcast
@@ -1025,6 +1027,30 @@ message GenoaTradeFeeForEntityResponse
    Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
 }
 
+message GenoaGetStatementDatesRequest
+{
+   string entity_name = 1;
+   string start_date = 2;
+   string end_date = 3;
+}
+
+message GenoaGetStatementDatesResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.GetStatementDates result = 2;
+}
+
+message GenoaGetStatementsRequest
+{
+   string entity_name = 1;
+   string date = 2;
+}
+
+message GenoaGetStatementsResponse
+{
+   Blocksettle.Communication.ApiServer.Response.GetStatements result = 2;
+}
+
 message GenoaMessage
 {
    message FutureTradeData
@@ -1141,6 +1167,10 @@ message GenoaMessage
       GenoaTransactionsForEntityResponse        transactions_for_entity_response = 92;
       GenoaTradeFeeForEntityRequest             trade_fee_for_entity             = 93;
       GenoaTradeFeeForEntityResponse            trade_fee_for_entity_response    = 94;
+      GenoaGetStatementDatesRequest             get_statement_dates              = 95;
+      GenoaGetStatementDatesResponse            get_statement_dates_response     = 96;
+      GenoaGetStatementsRequest                 get_statements                   = 97;
+      GenoaGetStatementsResponse                get_statements_response          = 98;
 
    }
 }
