@@ -2252,14 +2252,18 @@ message CashResMessage
 
    message MaxAmountRequest
    {
-      int32 prod_type = 1;
-      bs.types.Side side = 2;
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
    }
 
    message MaxAmountResponse
    {
-      int32 prod_type = 1;
-      double max_amount = 2;
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
+      double max_amount = 4;
+      double fee = 5;
    }
 
    oneof data {
