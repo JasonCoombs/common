@@ -13,6 +13,7 @@ syntax = "proto3";
 package Blocksettle.Communication.ApiServer;
 
 import "bs_types.proto";
+import "market_data_history.proto";
 
 enum EidStatus {
     EID_STATUS_INVALID = 0;
@@ -54,6 +55,17 @@ message ApiKey
     string label = 4;
     string created = 5;
 }
+
+message OhlcCandle
+{
+    double timestamp = 1;
+    double open = 4;
+    double high = 5;
+    double low = 6;
+    double close = 7;
+    uint64 trades = 8;
+    double volume = 9;
+};
 
 message Empty
 {}
@@ -227,6 +239,14 @@ message Request
         string date = 1;
     }
 
+    message Ohlc
+    {
+        string product_type = 1;
+        MarketDataHistory.Interval interval = 2;
+        uint32 count = 3;
+        double timestamp_end = 4;
+    };
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -272,6 +292,7 @@ message Request
         TradeFeeForEntity           trade_fee_for_entity        = 48;
         GetStatementDates           get_statement_dates         = 49;
         GetStatements               get_statements              = 50;
+        Ohlc                        ohlc                        = 51;
     }
 }
 
@@ -618,6 +639,14 @@ message Response
         string pdf = 3;
     }
 
+    message Ohlc
+    {
+        string product_type  = 1;
+        MarketDataHistory.Interval interval = 2;
+        double timestamp_start_db = 3;
+        repeated OhlcCandle candles = 4;
+    };
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -667,5 +696,6 @@ message Response
         TradeFeeForEntity       trade_fee_for_entity        = 54;
         GetStatementDates       get_statement_dates         = 55;
         GetStatements           get_statements              = 56;
+        Ohlc                    ohlc                        = 57;
     }
 }
