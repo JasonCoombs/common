@@ -637,6 +637,7 @@ message Response
         bool loaded = 1;
         string html = 2;
         string pdf = 3;
+        string date = 4;
     }
 
     message Ohlc
