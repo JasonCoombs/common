@@ -2203,6 +2203,8 @@ message ApiServerMsg
       string         user_disconnected = 9;
       UserNotify     user_notify       = 10;
       UpdateWithdrawPrices update_withdraw_prices = 11;
+      Empty          subscribe_price_offers = 12;
+      Communication.TradeHistory.PriceBookUpdate price_offer = 13;
    }
 }
 
