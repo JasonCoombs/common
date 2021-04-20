@@ -22,15 +22,22 @@ message Empty {}
 
 message AdministrativeMessage
 {
+   message RouteTo
+   {
+      string queue = 1;
+      repeated string users = 2;
+   }
+
    oneof data
    {
-      Empty  start = 1;
-      Empty  stop  = 2;
-      Empty  restart = 3;
-      int32  component_created = 4;
-      int32  component_loading = 5;
-      int32  component_ready = 6;
-      string attach_queue = 7;
+      Empty   start = 1;
+      Empty   stop  = 2;
+      Empty   restart = 3;
+      int32   component_created = 4;
+      int32   component_loading = 5;
+      int32   component_ready = 6;
+      string  attach_queue = 7;
+      RouteTo queue_routing = 8;
    }
 }
 

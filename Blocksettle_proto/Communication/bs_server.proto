@@ -2207,6 +2207,109 @@ message ApiServerMsg
 }
 
 
+message UsersImInfo
+{
+   message InfoIM {
+      message PerProduct {
+         int32  product_type = 1;
+         double net_exposure = 2;
+         double leverage_ratio = 3;
+         double balance = 4;
+         double im_balance = 5;
+         double profit_loss = 6;
+      }
+      string account_name = 1;
+      repeated PerProduct per_product = 2;
+      double im_balance = 3;
+      double balance = 4;
+      double profit_loss = 5;
+   }
+   repeated InfoIM im_info = 1;
+   repeated string connected_users = 2;
+   repeated string lp_streaming_users = 3;
+
+   message OpenInterest {
+      int32  product_type = 1;
+      double buy = 2;
+      double sell = 3;
+   }
+   repeated OpenInterest open_interest = 4;
+}
+
+
+message CashResMessage
+{
+   message Order
+   {
+      string entity_name = 1;
+      double qty = 2;
+      bs.types.Side side = 3;
+      double price = 4;
+      int32  trade_type = 5;
+      string cl_ord_id = 6;
+   }
+
+   message EstimateImRequest
+   {
+      string entity_name = 1;
+      string product = 2;
+      double qty = 3;
+      bs.types.Side side = 4;
+      double price = 5;
+   }
+
+   message EstimateImResponse
+   {
+      EstimateImRequest request = 1;
+      bool   success = 2;
+      double im_balance = 3;
+      string error_text = 4;
+   }
+
+   message IMnettingRequest
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      repeated Order orders = 3;
+   }
+
+   message IMnettingResponse
+   {
+      string entity_name = 1;
+      double balance = 2;
+      double net_exposure = 3;
+   }
+
+   message MaxAmountRequest
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
+   }
+
+   message MaxAmountResponse
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
+      double max_amount = 4;
+      double fee = 5;
+   }
+
+   oneof data {
+      IMnettingRequest           im_net_request = 1;
+      IMnettingResponse          im_net_response = 2;
+      EstimateImRequest          estimate_im_request = 3;
+      EstimateImResponse         estimate_im_response = 4;
+      MaxAmountRequest           max_amount_request = 5;
+      MaxAmountResponse          max_amount_response = 6;
+      UsersImInfo                users_im_info = 7;
+      Order                      append_order = 10;
+      string                     remove_order = 11;
+   }
+}
+
+
 message DealerConnMessage
 {
    message OrderRequest
