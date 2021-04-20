@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -91,16 +91,20 @@ public:
    // should be used only if you could not set CB in ctor
    void SetCallback(onTransactionChanged changedCallback);
 
-   bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
+   [[deprecated]] bool setWallet(const std::shared_ptr<bs::sync::Wallet> &, uint32_t topBlock
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
-   bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
+   bool setUTXOs(const std::vector<std::string>& walletsId, uint32_t topBlock
+      , const std::vector<UTXO>&, bool resetInputs = false
+      , const std::function<void()>& cbInputsReset = nullptr);
+   [[deprecated]] bool setGroup(const std::shared_ptr<bs::sync::hd::Group> &, uint32_t topBlock, bool excludeLegacy
       , bool resetInputs = false, const std::function<void()> &cbInputsReset = nullptr);
-   bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
+   [[deprecated]] bool setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet> &
       , const std::vector<UTXO> &, uint32_t topBlock);
-   bool setGroupAndInputs(const std::shared_ptr<bs::sync::hd::Group> &
+   [[deprecated]] bool setGroupAndInputs(const std::shared_ptr<bs::sync::hd::Group> &
       , const std::vector<UTXO> &, uint32_t topBlock);
-   std::shared_ptr<bs::sync::Wallet> getWallet() const { return wallet_; }
-   std::shared_ptr<bs::sync::hd::Group> getGroup() const { return group_; }
+   [[deprecated]] std::shared_ptr<bs::sync::Wallet> getWallet() const { return wallet_; }
+   [[deprecated]] std::shared_ptr<bs::sync::hd::Group> getGroup() const { return group_; }
+   std::vector<std::string> getWallets() const { return walletsId_; }
    void setFeePerByte(float feePerByte);
    void setTotalFee(uint64_t fee, bool overrideFeePerByte = true);
    void setMinTotalFee(uint64_t fee) { minTotalFee_ = fee; }
@@ -166,6 +170,7 @@ private:
    std::shared_ptr<spdlog::logger>  logger_;
 
    std::shared_ptr<bs::sync::Wallet>            wallet_;
+   std::vector<std::string>   walletsId_;
    std::shared_ptr<bs::sync::hd::Group>         group_;
    std::shared_ptr<SelectedTransactionInputs>   selectedInputs_;
 

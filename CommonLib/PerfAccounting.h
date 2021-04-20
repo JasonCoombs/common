@@ -1,3 +1,13 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
 #ifndef PERF_ACCOUNTING_H
 #define PERF_ACCOUNTING_H
 
@@ -19,7 +29,7 @@ namespace bs {
          void addQueueTime(const std::chrono::microseconds &interval);
          void reset();
 
-         void report(const std::shared_ptr<spdlog::logger> &
+         void report(const std::shared_ptr<spdlog::logger> &, const std::string &name
             , const std::map<int, std::string> &keyMapping);
 
       private:

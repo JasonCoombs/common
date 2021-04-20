@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2019 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -21,17 +21,24 @@ ThreadedAdapter::ThreadedAdapter()
 
 ThreadedAdapter::~ThreadedAdapter() noexcept
 {
-   continueExecution_ = false;
-   if (processingThread_.joinable()) {
-      pendingEnvelopesEvent_.SetEvent();
-      processingThread_.join();
-   }
+   stop();
 }
 
 bool ThreadedAdapter::process(const Envelope &envelope)
 {
    SendEnvelopeToThread(envelope);
    return true;
+}
+
+void ThreadedAdapter::stop()
+{
+   continueExecution_ = false;
+   decltype(pendingEnvelopes_) cleanQueue;
+   pendingEnvelopes_.swap(cleanQueue);
+   pendingEnvelopesEvent_.SetEvent();
+   if (processingThread_.joinable()) {
+      processingThread_.join();
+   }
 }
 
 void ThreadedAdapter::processingRoutine()
@@ -61,8 +68,10 @@ void ThreadedAdapter::processingRoutine()
       if (envelope == nullptr) {
          continue;
       }
-
-      processEnvelope(*envelope);
+      if (!processEnvelope(*envelope)) {
+         FastLock locker{ pendingEnvelopesLock_ };
+         pendingEnvelopes_.emplace(envelope);
+      }
    }
 }
 

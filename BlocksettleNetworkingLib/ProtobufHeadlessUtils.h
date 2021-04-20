@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -22,9 +22,9 @@ namespace spdlog {
 
 namespace bs {
 namespace signer {
-   headless::SignTxRequest coreTxRequestToPb(const bs::core::wallet::TXSignRequest &txSignReq
+   [[nodiscard]] headless::SignTxRequest coreTxRequestToPb(const bs::core::wallet::TXSignRequest&
       , bool keepDuplicatedRecipients = false);
-   bs::core::wallet::TXSignRequest pbTxRequestToCore(const headless::SignTxRequest &request
+   [[nodiscard]] bs::core::wallet::TXSignRequest pbTxRequestToCore(const headless::SignTxRequest&
       , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 }
 }

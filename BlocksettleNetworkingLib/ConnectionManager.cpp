@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -10,8 +10,7 @@
 */
 #include "ConnectionManager.h"
 
-#include "CelerClientConnection.h"
-#include "CelerStreamServerConnection.h"
+#include "Celer/ClientConnection.h"
 #include "GenoaConnection.h"
 #include "GenoaStreamServerConnection.h"
 #include "PublisherConnection.h"
@@ -19,6 +18,10 @@
 #include "WsDataConnection.h"
 #include "ZmqContext.h"
 #include "ZmqDataConnection.h"
+
+#ifndef DISABLE_CELER_SUPPORT
+#include "Celer/StreamServerConnection.h"
+#endif
 
 #include <QNetworkAccessManager>
 
@@ -99,14 +102,16 @@ std::shared_ptr<ServerConnection> ConnectionManager::CreateGenoaAPIServerConnect
    return std::make_shared<GenoaStreamServerConnection>(logger_, zmqContext_);
 }
 
+#ifndef DISABLE_CELER_SUPPORT
 std::shared_ptr<ServerConnection> ConnectionManager::CreateCelerAPIServerConnection() const
 {
    return std::make_shared<CelerStreamServerConnection>(logger_, zmqContext_);
 }
+#endif
 
 std::shared_ptr<DataConnection> ConnectionManager::CreateCelerClientConnection() const
 {
-   auto connection = std::make_shared<CelerClientConnection<ZmqDataConnection> >(logger_);
+   auto connection = std::make_shared<bs::celer::ClientConnection<ZmqDataConnection> >(logger_);
    connection->SetContext(zmqContext_);
 
    return connection;

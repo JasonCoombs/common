@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -12,31 +12,38 @@
 #include <QMutexLocker>
 #include <spdlog/spdlog.h>
 #include "AssetManager.h"
-#include "CelerClient.h"
-#include "CelerFindSubledgersForAccountSequence.h"
-#include "CelerGetAssignedAccountsListSequence.h"
+#include "Celer/CelerClient.h"
+#include "Celer/FindSubledgersForAccountSequence.h"
+#include "Celer/GetAssignedAccountsListSequence.h"
 #include "CommonTypes.h"
 #include "CurrencyPair.h"
 #include "MDCallbacksQt.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
+#include "bs_proxy_terminal_pb.pb.h"
 #include "com/celertech/piggybank/api/subledger/DownstreamSubLedgerProto.pb.h"
+
+using namespace Blocksettle::Communication;
 
 
 AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
       , const std::shared_ptr<bs::sync::WalletsManager>& walletsManager
       , const std::shared_ptr<MDCallbacksQt> &mdCallbacks
-      , const std::shared_ptr<BaseCelerClient>& celerClient)
+      , const std::shared_ptr<CelerClientQt>& celerClient)
    : logger_(logger)
    , walletsManager_(walletsManager)
    , mdCallbacks_(mdCallbacks)
    , celerClient_(celerClient)
-{
-   connect(this, &AssetManager::ccPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::xbtPriceChanged, [this] { emit totalChanged(); });
-   connect(this, &AssetManager::balanceChanged, [this] { emit totalChanged(); });
-}
+   , act_(this)
+{}
+
+AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
+   , AssetCallbackTarget *act)
+   : logger_(logger), act_(act)
+{}
+
+AssetManager::~AssetManager() = default;
 
 void AssetManager::init()
 {
@@ -47,13 +54,13 @@ void AssetManager::init()
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletsReady, this, &AssetManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AssetManager::onWalletChanged);
 
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectedToServer, this, &AssetManager::onCelerConnected);
-   connect(celerClient_.get(), &BaseCelerClient::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectedToServer, this, &AssetManager::onCelerConnected);
+   connect(celerClient_.get(), &CelerClientQt::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
 }
 
 double AssetManager::getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const
 {
-   if (currency == bs::network::XbtCurrency) {
+   if (walletsManager_ && (currency == bs::network::XbtCurrency)) {
       if (wallet == nullptr) {
          if (includeZc) {
             return walletsManager_->getSpendableBalance() + walletsManager_->getUnconfirmedBalance();
@@ -193,7 +200,8 @@ bs::network::Asset::Type AssetManager::GetAssetTypeForSecurity(const std::string
 
 void AssetManager::onWalletChanged()
 {
-   emit balanceChanged(bs::network::XbtCurrency);
+   act_->onBalanceChanged(bs::network::XbtCurrency);
+   act_->onTotalChanged();
 }
 
 void AssetManager::onMDSecurityReceived(const std::string &security, const bs::network::SecurityDef &sd)
@@ -221,6 +229,12 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
    if ((at == bs::network::Asset::Undefined) || security.isEmpty()) {
       return;
    }
+
+   if (bs::network::Asset::isFuturesType(at)) {
+      // ignore price update for a futures.
+      return;
+   }
+
    double lastPx = 0;
    double bidPrice = 0;
 
@@ -260,7 +274,8 @@ void AssetManager::onMDUpdate(bs::network::Asset::Type at, const QString &securi
       }
       prices_[ccy] = productPrice;
       if (at == bs::network::Asset::PrivateMarket) {
-         emit ccPriceChanged(ccy);
+         act_->onCcPriceChanged(ccy);
+         act_->onTotalChanged();
       } else {
          sendUpdatesOnXBTPrice(ccy);
       }
@@ -327,7 +342,7 @@ void AssetManager::onCelerConnected()
       }
    };
 
-   auto seq = std::make_shared<CelerGetAssignedAccountsListSequence>(logger_, cb);
+   auto seq = std::make_shared<bs::celer::GetAssignedAccountsListSequence>(logger_, cb);
    celerClient_->ExecuteSequence(seq);
 }
 
@@ -345,9 +360,9 @@ void AssetManager::onCelerDisconnected()
 
    balances_.clear();
    currencies_.clear();
-   emit securitiesChanged();
-   emit fxBalanceCleared();
-   emit totalChanged();
+   act_->onSecuritiesChanged();
+   act_->onFxBalanceCleared();
+   act_->onTotalChanged();
 }
 
 void AssetManager::onAccountBalanceLoaded(const std::string& currency, double value)
@@ -356,7 +371,22 @@ void AssetManager::onAccountBalanceLoaded(const std::string& currency, double va
       return;
    }
    balances_[currency] = value;
-   emit balanceChanged(currency);
+   act_->onBalanceChanged(currency);
+   act_->onTotalChanged();
+}
+
+void AssetManager::onMessageFromPB(const ProxyTerminalPb::Response &response)
+{
+   switch (response.data_case()) {
+      case Blocksettle::Communication::ProxyTerminalPb::Response::kUpdateOrdersObligations:
+         processUpdateOrders(response.update_orders_obligations());
+         break;
+      case Blocksettle::Communication::ProxyTerminalPb::Response::kUpdateOrder:
+         processUpdateOrder(response.update_order());
+         break;
+      default:
+         break;
+   }
 }
 
 void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
@@ -377,6 +407,82 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
    }
 
    if (emitUpdate) {
-      emit xbtPriceChanged(ccy);
+      act_->onXbtPriceChanged(ccy);
+      act_->onTotalChanged();
+   }
+}
+
+double AssetManager::profitLoss(int64_t futuresXbtAmount, double futuresBalance, double currentPrice)
+{
+
+   auto sign = futuresXbtAmount > 0 ? 1 : -1;
+   auto futuresXbtAmountBitcoin = sign * bs::XBTAmount(static_cast<uint64_t>(std::abs(futuresXbtAmount))).GetValueBitcoin();
+   return futuresXbtAmountBitcoin * currentPrice - futuresBalance;
+}
+
+double AssetManager::profitLossDeliverable(double currentPrice)
+{
+   return profitLoss(futuresXbtAmountDeliverable_, futuresBalanceDeliverable_, currentPrice);
+}
+
+double AssetManager::profitLossCashSettled(double currentPrice)
+{
+   return profitLoss(futuresXbtAmountCashSettled_, futuresBalanceCashSettled_, currentPrice);
+}
+
+void AssetManager::processUpdateOrders(const ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg)
+{
+   orders_.clear();
+   for (const auto &order : msg.orders()) {
+      orders_.insert({order.id(), order});
+   }
+   updateFuturesBalances();
+}
+
+void AssetManager::processUpdateOrder(const ProxyTerminalPb::Response_UpdateOrder &msg)
+{
+   switch (msg.action()) {
+      case bs::types::ACTION_CREATED:
+      case bs::types::ACTION_UPDATED:
+         orders_[msg.order().id()] = msg.order();
+         break;
+      case bs::types::ACTION_REMOVED:
+         orders_.erase(msg.order().id());
+         break;
+      default:
+         break;
+   }
+   updateFuturesBalances();
+}
+
+void AssetManager::updateFuturesBalances()
+{
+   int64_t futuresXbtAmountDeliverable = 0;
+   int64_t futuresXbtAmountCashSettled = 0;
+   futuresBalanceDeliverable_ = 0;
+   futuresBalanceCashSettled_ = 0;
+   for (const auto &item : orders_) {
+      const auto &order = item.second;
+      if ((order.trade_type() == bs::network::Asset::DeliverableFutures || order.trade_type() == bs::network::Asset::CashSettledFutures)
+         && order.status() == bs::types::ORDER_STATUS_PENDING) {
+         auto sign = order.quantity() > 0 ? 1 : -1;
+         auto amount = bs::XBTAmount(std::abs(order.quantity()));
+         auto amountXbt = sign * amount.GetValueBitcoin();
+         auto amountSat = sign * static_cast<int64_t>(amount.GetValue());
+         auto balanceChange = amountXbt * order.price();
+         if (order.trade_type() == bs::network::Asset::DeliverableFutures) {
+            futuresXbtAmountDeliverable += amountSat;
+            futuresBalanceDeliverable_ += balanceChange;
+         } else {
+            futuresXbtAmountCashSettled += amountSat;
+            futuresBalanceCashSettled_ += balanceChange;
+         }
+      }
+   }
+   if (futuresXbtAmountDeliverable != futuresXbtAmountDeliverable_
+      || futuresXbtAmountCashSettled != futuresXbtAmountCashSettled_) {
+      futuresXbtAmountDeliverable_ = futuresXbtAmountDeliverable;
+      futuresXbtAmountCashSettled_ = futuresXbtAmountCashSettled;
+      emit netDeliverableBalanceChanged();
    }
 }

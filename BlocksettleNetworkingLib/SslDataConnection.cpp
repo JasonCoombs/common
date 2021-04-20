@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2020 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -33,6 +33,41 @@ namespace {
 
 } // namespace
 
+#ifdef _WIN32
+#include <wincrypt.h>
+#include <windows.h>
+
+inline bool loadWindowsSystemCert(X509_STORE *store)
+{
+    auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+    if (!hStore)
+    {
+        return false;
+    }
+
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+           nullptr)
+    {
+        auto encoded_cert =
+            static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+        auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+        if (x509)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    return true;
+}
+#endif
+
 SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logger
    , SslDataConnectionParams params)
    : logger_(logger)
@@ -50,6 +85,14 @@ SslDataConnection::SslDataConnection(const std::shared_ptr<spdlog::logger> &logg
 SslDataConnection::~SslDataConnection()
 {
    closeConnection();
+}
+
+bool SslDataConnection::openConnectionWithPath(const std::string& host, const std::string& port
+                               , const std::string& path
+                               , DataConnectionListener* listener)
+{
+   path_ = path;
+   return openConnection(host, port, listener);
 }
 
 bool SslDataConnection::openConnection(const std::string &host, const std::string &port
@@ -176,7 +219,13 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
             }
          }
 
-         if (params_.caBundlePtr) {
+         if (params_.caBundlePtr == nullptr) {
+#ifdef _WIN32
+            loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx));
+#else
+            SSL_CTX_set_default_verify_paths(ctx);
+#endif
+         } else {
             auto store = SSL_CTX_get_cert_store(ctx);
             auto bio = BIO_new_mem_buf(params_.caBundlePtr, static_cast<int>(params_.caBundleSize));
             while (true) {
@@ -230,7 +279,8 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
          }
          auto packet = std::move(allPackets_.front());
          allPackets_.pop();
-         int rc = lws_write(wsi, packet.getPtr(), packet.getSize(), LWS_WRITE_BINARY);
+         int rc = lws_write(wsi, packet.getPtr(), packet.getSize()
+            , params_.sendAsText ? LWS_WRITE_TEXT : LWS_WRITE_BINARY);
          if (rc == -1) {
             SPDLOG_LOGGER_ERROR(logger_, "write failed");
             reportFatalError(DataConnectionListener::UndefinedSocketError);
@@ -258,6 +308,11 @@ int SslDataConnection::callback(lws *wsi, int reason, void *user, void *in, size
       }
 
       case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
+         if (in) {
+            SPDLOG_LOGGER_ERROR(logger_, "Connection error: {}", (const char*)in);
+         } else {
+            SPDLOG_LOGGER_ERROR(logger_, "undefined socket connection error");
+         }
          reportFatalError(DataConnectionListener::UndefinedSocketError);
          break;
       }
@@ -274,7 +329,7 @@ void SslDataConnection::listenFunction()
    i.host = i.address;
    i.port = port_;
    i.origin = i.address;
-   i.path = "/";
+   i.path = path_.c_str();
    i.context = context_;
    i.protocol = kProtocolNameWs;
    i.userdata = this;

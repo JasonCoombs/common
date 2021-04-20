@@ -1,0 +1,543 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Communication.ApiServerPb;
+
+import "bs_types.proto";
+import "bs_api_server.proto";
+import "trade_history.proto";
+
+message Request
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string ip_addr = 3;
+    }
+
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+    }
+
+    message RegisterEid
+    {
+        bytes client_id = 1;
+        string answers = 2;
+        string kyc = 3;
+    }
+
+    message MarketOrder
+    {
+        string entity_name = 1;
+        ApiServer.Request.MarketOrder order = 2;
+    }
+
+    message LoadOrders
+    {
+        string entity_name = 1;
+    }
+
+    message LoadBalance
+    {
+        string entity_name = 1;
+    }
+
+    message TradingDay
+    {
+        bytes client_id = 1;
+        ApiServer.Request.TradingDay order = 2;
+    }
+
+    message EstimateIm
+    {
+        string entity_name = 1;
+        ApiServer.Request.EstimateIm order = 2;
+    }
+
+    message ProductFee
+    {
+        bytes client_id = 1;
+        ApiServer.Request.ProductFee order = 2;
+    }
+
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        ApiServer.Request.MaxTradeAmount request = 2;
+    }
+
+    message SubmitPricesData
+    {
+        string                      entity_name = 1;
+        bs.types.SubmitPricesData   request     = 2;
+    }
+
+    message PullPricesData
+    {
+        string                      entity_name = 1;
+        bs.types.PullPricesData     request     = 2;
+    }
+
+    message SubmitAddressData
+    {
+        string                                      entity_name = 1;
+        ApiServer.Request.WhitelistedAddressRequest request     = 2;
+    }
+
+    message LoadAddresses
+    {
+        string entity_name = 1;
+    }
+
+    message RevokeAddress
+    {
+        string  entity_name = 1;
+        string  address     = 2;
+    }
+
+    message LoadDepositAddress
+    {
+        string entity_name = 1;
+    }
+
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Request.CreateIbanAgreementUrl request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Request.GetIbanAccounts request = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Request.GetIbanAccountDetails request = 1;
+        string entity_name = 2;
+    }
+
+    message NewApiKey
+    {
+        ApiServer.Request.NewApiKey request = 1;
+        string entity_name = 2;
+    }
+
+    message ListApiKeys
+    {
+        string entity_name = 1;
+    }
+
+    message DeleteApiKey
+    {
+        ApiServer.Request.DeleteApiKey request = 1;
+        string entity_name = 2;
+    }
+
+    message CreateExternalAccount
+    {
+        ApiServer.Request.CreateExternalAccount request = 1;
+        string entity_name = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        string entity_name = 1;
+    }
+
+    message GetDepositInfo
+    {
+        string entity_name = 1;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        ApiServer.Request.WithdrawToExternalAccount request = 1;
+        string entity_name = 2;
+    }
+
+    message WithdrawBitcoin
+    {
+        ApiServer.Request.WithdrawBitcoin request = 1;
+        string entity_name = 2;
+    }
+
+    message HistoricalPL
+    {
+        ApiServer.Request.HistoricalPL request = 1;
+        string entity_name = 2;
+    }
+
+    message TradeHistory
+    {
+        ApiServer.Request.TradeHistory request = 1;
+        string entity_name = 2;
+    }
+
+    message TransactionsForEntity
+    {
+        ApiServer.Request.TransactionsForEntity request = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Request.TradeFeeForEntity request = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatementDates
+    {
+        ApiServer.Request.GetStatementDates request = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatements
+    {
+        ApiServer.Request.GetStatements request = 1;
+        string entity_name = 2;
+    }
+
+    oneof data
+    {
+        CheckApiKey                     check_api_key               = 1;
+        CheckEid                        check_eid                   = 2;
+        RegisterEid                     register_eid                = 3;
+        MarketOrder                     market_order                = 4;
+        LoadOrders                      load_orders                 = 5;
+        LoadBalance                     load_balance                = 6;
+        TradingDay                      trading_day                 = 7;
+        EstimateIm                      estimate_im                 = 8;
+        ProductFee                      product_fee                 = 9;
+        MaxTradeAmount                  max_trade_amount            = 10;
+        SubmitPricesData                submit_prices               = 11;
+        PullPricesData                  pull_prices                 = 12;
+        string                          user_connected              = 13;
+        string                          user_disconnected           = 14;
+        SubmitAddressData               submit_address              = 15;
+        LoadAddresses                   load_addresses              = 16;
+        RevokeAddress                   revoke_address              = 17;
+        LoadDepositAddress              load_deposit_address        = 18;
+        CreateIbanAgreementUrl          create_iban_agreement       = 19;
+        GetIbanAccounts                 get_iban_accounts           = 20;
+        GetIbanAccountDetails           get_iban_account_details    = 21;
+        NewApiKey                       new_api_key                 = 22;
+        ListApiKeys                     list_api_keys               = 23;
+        DeleteApiKey                    delete_api_key              = 24;
+        CreateExternalAccount           create_external_account         = 25;
+        GetAllExternalAccounts          get_all_external_accounts       = 26;
+        GetDepositInfo                  get_deposit_info                = 27;
+        WithdrawToExternalAccount       withdraw_to_external_account    = 28;
+        WithdrawBitcoin                 withdraw_bitcoin                = 29;
+        HistoricalPL                    historical_profit_loss      = 30;
+        TradeHistory                    trade_history               = 31;
+        TransactionsForEntity           transactions_for_entity     = 32;
+        TradeFeeForEntity               trade_fee_for_entity        = 33;
+        GetStatementDates               get_statement_dates         = 34;
+        GetStatements                   get_statements              = 35;
+    }
+}
+
+message Response
+{
+    message CheckApiKey
+    {
+        bytes client_id = 1;
+        string api_key = 2;
+        string entity_name = 3;
+        bs.types.ApiKeyError error = 4;
+    }
+
+    message CheckEid
+    {
+        bytes client_id = 1;
+        string email = 2;
+        string entity_name = 3;
+    }
+
+    message RegisterEid
+    {
+        bytes client_id = 1;
+        bool success = 2;
+        string error_code = 3;
+        string entity_name = 4;
+    }
+
+    message MarketOrder
+    {
+        string entity_name = 1;
+        ApiServer.Response.MarketOrder result = 2;
+    }
+
+    message LoadOrders
+    {
+        string entity_name = 1;
+        ApiServer.Response.LoadOrders result = 2;
+    }
+
+    message LoadBalance
+    {
+        string entity_name = 1;
+        ApiServer.Response.LoadBalance result = 2;
+        bool user_requested = 3;
+    }
+
+    message TradingDay
+    {
+        bytes client_id = 1;
+        ApiServer.Response.TradingDay result = 2;
+    }
+
+    message EstimateIm
+    {
+        string entity_name = 1;
+        ApiServer.Response.EstimateIm result = 2;
+    }
+
+    message ProductFee
+    {
+        bytes client_id = 1;
+        ApiServer.Response.ProductFee result = 2;
+    }
+
+    message OrderUpdate
+    {
+        string entity_name = 1;
+        ApiServer.Response.OrderUpdate result = 2;
+    }
+
+    message MaxTradeAmount
+    {
+        string entity_name = 1;
+        ApiServer.Response.MaxTradeAmount result = 2;
+    }
+
+    message UpdateBook
+    {
+        Communication.TradeHistory.PriceBookUpdate data = 1;
+    }
+
+    message TradeClose
+    {
+        string product_name = 1;
+    }
+
+    message TradeOpen
+    {
+        string  product_name        = 1;
+        int64   cut_off_at          = 2;
+        double  seconds_to_cut_off  = 3;
+        double  last_cut_off_price  = 4;
+    }
+
+    message CreateIbanAgreementUrl
+    {
+        ApiServer.Response.CreateIbanAgreementUrl result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccounts
+    {
+        ApiServer.Response.GetIbanAccounts result = 1;
+        string entity_name = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        ApiServer.Response.GetIbanAccountDetails result = 1;
+        string entity_name = 3;
+    }
+
+    message OpenInterest
+    {
+        string product_type = 1;
+        double open_interest = 2;
+    }
+
+    message LoadDepositAddress
+    {
+        string entity_name = 1;
+        string address     = 2;
+    }
+
+    message LoadAddresses
+    {
+        string                                                  entity_name = 1;
+        repeated ApiServer.Response.WhitelistedAddressResponse  addresses   = 2;
+    }
+
+    message SubmitAddress
+    {
+        string  entity_name     = 1;
+        bool    success         = 2;
+        string  address         = 3;
+        string  description     = 4;
+        int64   added_timestamp = 5;
+        string  error_message   = 6;
+    }
+
+    message RevokeAddress
+    {
+        string  entity_name   = 1;
+        string  address       = 2;
+        bool    success       = 3;
+        string  error_message = 4;
+    }
+
+    message UserNotify
+    {
+        string broadcast_to = 1;
+        ApiServer.Response.UserNotify user_notify = 2;
+    }
+
+    message NewApiKey
+    {
+        ApiServer.Response.NewApiKey result = 1;
+        string entity_name = 2;
+    }
+
+    message ListApiKeys
+    {
+        ApiServer.Response.ListApiKeys result = 1;
+        string entity_name = 2;
+    }
+
+    message DeleteApiKey
+    {
+        ApiServer.Response.DeleteApiKey result = 1;
+        string entity_name = 2;
+    }
+
+    message CreateExternalAccount
+    {
+        ApiServer.Response.CreateExternalAccount result = 1;
+        string entity_name = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        ApiServer.Response.GetAllExternalAccounts result = 1;
+        string entity_name = 2;
+    }
+
+    message GetDepositInfo
+    {
+        ApiServer.Response.GetDepositInfo result = 1;
+        string entity_name = 2;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        ApiServer.Response.ResponseResult result = 1;
+        string entity_name = 2;
+    }
+
+    message WithdrawBitcoin
+    {
+        ApiServer.Response.ResponseResult result = 1;
+        string entity_name = 2;
+    }
+
+    message ObligationRequest
+    {
+        string entity_name = 1;
+        ApiServer.Response.ObligationRequest request = 2;
+    }
+
+    message UpdateWithdrawPrices
+    {
+        ApiServer.Response.UpdateWithdrawPrices request = 1;
+    }
+
+    message HistoricalPL
+    {
+        ApiServer.Response.HistoricalPL response = 1;
+        string entity_name = 2;
+    }
+
+    message TradeHistory
+    {
+        ApiServer.Response.TradeHistory response = 1;
+        string entity_name = 2;
+    }
+
+    message TransactionsForEntity
+    {
+        ApiServer.Response.TransactionsForEntity response = 1;
+        string entity_name = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        ApiServer.Response.TradeFeeForEntity response = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatementDates
+    {
+        ApiServer.Response.GetStatementDates response = 1;
+        string entity_name = 2;
+    }
+
+    message GetStatements
+    {
+        ApiServer.Response.GetStatements response = 1;
+        string entity_name = 2;
+    }
+
+    oneof data
+    {
+        CheckApiKey             check_api_key               = 1;
+        CheckEid                check_eid                   = 2;
+        RegisterEid             register_eid                = 3;
+        MarketOrder             market_order                = 4;
+        LoadOrders              load_orders                 = 5;
+        LoadBalance             load_balance                = 6;
+        TradingDay              trading_day                 = 7;
+        EstimateIm              estimate_im                 = 8;
+        ProductFee              product_fee                 = 9;
+        OrderUpdate             order_update                = 10;
+        MaxTradeAmount          max_trade_amount            = 11;
+        ApiServer.Response.MarketData update_book           = 12;
+        TradeClose              trade_close                 = 13;
+        TradeOpen               trade_open                  = 14;
+        CreateIbanAgreementUrl  create_iban_agreement       = 15;
+        GetIbanAccounts         get_iban_accounts           = 16;
+        GetIbanAccountDetails   get_iban_account_details    = 17;
+        LoadDepositAddress      load_deposit_address        = 18;
+        LoadAddresses           load_addresses              = 19;
+        SubmitAddress           submit_address              = 20;
+        RevokeAddress           revoke_address              = 21;
+        OpenInterest            open_interest               = 22;
+        UserNotify              user_notify                 = 23;
+        NewApiKey               new_api_key                 = 24;
+        ListApiKeys             list_api_keys               = 25;
+        DeleteApiKey            delete_api_key              = 26;
+        CreateExternalAccount         create_external_account        = 27;
+        GetAllExternalAccounts        get_all_external_accounts      = 28;
+        GetDepositInfo                get_deposit_info               = 29;
+        WithdrawToExternalAccount     withdraw_to_external_account   = 30;
+        WithdrawBitcoin               withdraw_bitcoin               = 31;
+        ObligationRequest       obligation_request          = 32;
+        UpdateWithdrawPrices    update_withdraw_prices      = 33;
+        HistoricalPL            historical_profit_loss      = 34;
+        TradeHistory            trade_history               = 35;
+        TransactionsForEntity   transactions_for_entity     = 36;
+        TradeFeeForEntity       trade_fee_for_entity        = 37;
+        GetStatementDates       get_statement_dates         = 38;
+        GetStatements           get_statements              = 39;
+    }
+}

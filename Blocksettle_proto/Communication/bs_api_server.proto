@@ -1,0 +1,702 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Communication.ApiServer;
+
+import "bs_types.proto";
+import "market_data_history.proto";
+
+enum EidStatus {
+    EID_STATUS_INVALID = 0;
+    EID_STATUS_WAITING_SIGN = 10;
+    EID_STATUS_TIMEOUT = 20;
+    EID_STATUS_CANCELLED = 21;
+    EID_STATUS_SERVER_ERROR = 22;
+    EID_STATUS_ACCOUNT_NOT_FOUND = 23;
+    EID_STATUS_REGISTRATION_FAILED = 24;
+    EID_STATUS_ACCOUNT_NOT_VERIFIED = 25;
+    EID_STATUS_SUCCESS = 30;
+}
+
+enum ErrorCode {
+    ERROR_CODE_SERVER_ERROR = 0;
+    ERROR_CODE_INVALID_REQUEST = 1;
+}
+
+message Order
+{
+   string id = 1;
+   bs.types.OrderStatus status = 2;
+   string status_text = 3;
+   double timestamp = 4;
+   string product_type = 5;
+   bs.types.Side side = 6;
+   double quantity = 8;
+   double price = 9;
+   double cut_off_price = 10;
+   double trade_im = 11;
+   bool   is_rollover = 12;
+}
+
+message ApiKey
+{
+    int32 id = 1;
+    string token = 2;
+    string allow = 3;
+    string label = 4;
+    string created = 5;
+}
+
+message OhlcCandle
+{
+    double timestamp = 1;
+    double open = 4;
+    double high = 5;
+    double low = 6;
+    double close = 7;
+    uint64 trades = 8;
+    double volume = 9;
+};
+
+message Empty
+{}
+
+
+message Request
+{
+    message Authorize
+    {
+        string api_key = 1;
+    }
+
+    message EidRegister
+    {
+        message Answer
+        {
+            string question = 1;
+            string answer = 2;
+        }
+
+        repeated Answer answers = 1;
+    }
+
+    message ResumeSession
+    {
+        string session_id = 1;
+    }
+
+    message MarketOrder
+    {
+        double amount = 1;
+        bs.types.Side side = 2;
+        string product_type = 3;
+        double user_expected_price = 4;
+        bool max_amount = 5;
+    }
+
+    message Subscribe
+    {
+        string product_type = 1;
+    }
+
+    message Unsubscribe
+    {
+        string product_type = 1;
+    }
+
+    message TradingDay
+    {
+        string product_type = 1;
+    }
+
+    message EstimateIm
+    {
+        string product_type = 1;
+        double qty = 2;
+        bs.types.Side side = 3;
+    }
+
+    message ProductFee
+    {
+        string product_type = 1;
+    }
+
+    message MaxTradeAmount
+    {
+        string product_type = 1;
+        bs.types.Side side = 2;
+    }
+
+    message TradingStats
+    {
+        string product_type = 1;
+    }
+
+    message RevokeAddress
+    {
+        string address = 1;
+    }
+
+    message CreateIbanAgreementUrl
+    {
+        string country_short_code = 1;
+        string iban = 2;
+        string redirect = 3;
+        bool sandbox = 4;
+    }
+
+    message GetIbanAccounts
+    {
+        string requisitions_id = 1;
+    }
+
+    message GetIbanAccountDetails
+    {
+        string account_ref = 1;
+    }
+
+    message WhitelistedAddressRequest
+    {
+        string  address         = 1;
+        string  description     = 2;
+    }
+
+    message NewApiKey
+    {
+        string label = 1;
+        string ip = 2;
+    }
+
+    message DeleteApiKey
+    {
+        int32 key_id = 1;
+    }
+
+    message CreateExternalAccount
+    {
+        string account_ref = 1;
+    }
+
+    message WithdrawToExternalAccount
+    {
+        string account_name = 1;
+        double amount = 2;
+        string ccy = 3;
+    }
+
+    message WithdrawBitcoin
+    {
+        string address = 1;
+        double eur_amount = 2;
+        double xbt_receive_amount = 3;
+        double fee_amount = 4;
+        double price = 5;
+    }
+
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double start_time = 2;
+        double end_time = 3;
+        string reference = 4;
+    }
+
+    message TradeHistory
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
+    message TransactionsForEntity
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
+    message TradeFeeForEntity
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+    }
+
+    message GetStatementDates
+    {
+        string start_date = 1;
+        string end_date = 2;
+    }
+
+    message GetStatements
+    {
+        string date = 1;
+    }
+
+    message Ohlc
+    {
+        string product_type = 1;
+        MarketDataHistory.Interval interval = 2;
+        uint32 count = 3;
+        double timestamp_end = 4;
+    };
+
+    oneof data
+    {
+        Authorize                   authorize                   = 10;
+        Empty                       eid_login                   = 11;
+        EidRegister                 eid_register                = 12;
+        Empty                       eid_cancel                  = 13;
+        ResumeSession               resume_session              = 14;
+        Empty                       logout                      = 15;
+        MarketOrder                 market_order                = 16;
+        Empty                       load_orders                 = 17;
+        Empty                       load_balance                = 18;
+        Subscribe                   subscribe                   = 19;
+        Unsubscribe                 unsubscribe                 = 20;
+        TradingDay                  trading_day                 = 21;
+        EstimateIm                  estimate_im                 = 22;
+        ProductFee                  product_fee                 = 23;
+        MaxTradeAmount              max_trade_amount            = 24;
+        TradingStats                trading_stats               = 25;
+
+        bs.types.SubmitPricesData           submit_prices       = 26;
+        bs.types.PullPricesData             pull_prices         = 27;
+
+        WhitelistedAddressRequest   submit_address              = 28;
+        Empty                       load_addresses              = 29;
+        RevokeAddress               revoke_address              = 30;
+        Empty                       load_deposit_address        = 31;
+        CreateIbanAgreementUrl      create_iban_agreement       = 32;
+        GetIbanAccounts             get_iban_accounts           = 33;
+        GetIbanAccountDetails       get_iban_account_details    = 34;
+        NewApiKey                   new_api_key                 = 35;
+        Empty                       list_api_keys               = 36;
+        DeleteApiKey                delete_api_key              = 37;
+        Empty                       get_deposit_info                = 38;
+        CreateExternalAccount       create_external_account         = 39;
+        Empty                       get_all_external_accounts       = 40;
+        WithdrawToExternalAccount   withdraw_to_external_account    = 41;
+        WithdrawBitcoin             withdraw_bitcoin                = 42;
+        Empty                       subscribe_withdraw_prices       = 43;
+        Empty                       unsubscribe_withdraw_prices     = 44;
+        HistoricalPL                historical_profit_loss      = 45;
+        TradeHistory                trade_history               = 46;
+        TransactionsForEntity       transactions_for_entity     = 47;
+        TradeFeeForEntity           trade_fee_for_entity        = 48;
+        GetStatementDates           get_statement_dates         = 49;
+        GetStatements               get_statements              = 50;
+        Ohlc                        ohlc                        = 51;
+    }
+}
+
+message Response
+{
+    message Authorize
+    {
+        bool success = 1;
+        string session_id = 2;
+        string account_name = 3;
+    }
+
+    message EidLogin
+    {
+        string qr_code = 1;
+    }
+
+    message EidRegister
+    {
+        string qr_code = 1;
+    }
+
+    message ResumeSession
+    {
+        bool success = 1;
+        string account_name = 2;
+    }
+
+    message MarketOrder
+    {
+        bool success = 1;
+        string order_id = 2;
+        string error_msg = 3;
+        double price = 4;
+    }
+
+    message LoadOrders
+    {
+        repeated Order orders = 1;
+    }
+
+    message LoadBalance
+    {
+        repeated bs.types.Balance balances = 1;
+    }
+
+    message Subscribe
+    {
+        string product_type = 1;
+        bool success = 2;
+        string error_msg = 3;
+    }
+
+    message Unsubscribe
+    {
+        string product_type = 1;
+        bool success = 2;
+        string error_msg = 3;
+    }
+
+    message TradingDay
+    {
+        string product_type = 1;
+        double time_to_cut_off = 2;
+        double cut_off_at = 3;
+        double last_cut_off_price = 4;
+    }
+
+    message EstimateIm
+    {
+        bool success = 1;
+        string error_msg = 2;
+
+        double expected_im_reservation = 10;
+        double fee_amount = 12;
+        string product_type = 14;
+    }
+
+    message ProductFee
+    {
+        bool   success        = 1;
+        string error_msg      = 2;
+        string product_type   = 3;
+        double fee            = 4;
+        string fee_ccy        = 5;
+        double im             = 6;
+    }
+
+    message MaxTradeAmount
+    {
+        string product_type = 1;
+        bs.types.Side side = 2;
+        double qty = 3;
+        double fee = 4;
+    }
+
+    message TradingStats
+    {
+        string product_type = 2;
+        double daily_volume = 4;
+        double open_interest = 5;
+    }
+
+    message CreateIbanAgreementUrl
+    {
+        bool error = 1;
+        string message = 2;
+        string ref = 3;
+        string initiate = 4;
+    }
+
+    message GetIbanAccounts
+    {
+        bool loaded = 1;
+        repeated string results = 2;
+    }
+
+    message GetIbanAccountDetails
+    {
+        bool    loaded              = 1;
+        string  resource_id         = 2;
+        string  iban                = 3;
+        string  currency            = 4;
+        string  name                = 5;
+        string  product             = 6;
+        string  cash_account_type   = 7;
+        string  account_ref         = 8;
+    }
+
+    message OrderUpdate
+    {
+        Order order = 1;
+        bs.types.Action action = 2;
+    }
+
+    message MarketData
+    {
+        message Item
+        {
+            string quantity = 1;
+            double bid = 2;
+            double ask = 3;
+        }
+
+        string product_type   = 1;
+        double live_cutoff    = 2;
+        repeated Item items   = 3;
+    }
+
+    message EidLoginUpdate
+    {
+        EidStatus status = 1;
+        string session_id = 2;
+        string account_name = 3;
+        string error_msg = 4;
+    }
+
+    message TradingClosed
+    {
+        string product_type = 1;
+    }
+
+    message Error
+    {
+        ErrorCode error_code = 1;
+        string error_msg = 2;
+    }
+
+    message SubmitAddress
+    {
+        string  address         = 1;
+        string  description     = 2;
+        bool    success         = 3;
+        string  error_msg       = 4;
+        double  added_timestamp = 5;
+    }
+
+    message WhitelistedAddressResponse
+    {
+        string  address         = 1;
+        string  description     = 2;
+        double  added_timestamp = 3;
+    }
+
+    message LoadAddresses
+    {
+        repeated WhitelistedAddressResponse addresses = 1;
+    }
+
+    message RevokeAddress
+    {
+        string  address     = 1;
+        bool    success     = 2;
+        string  error_msg   = 3;
+    }
+
+    message LoadDepositAddress
+    {
+        string  address  = 1;
+    }
+
+    message UserNotify
+    {
+        string message = 1;
+        string code = 2;
+        string type = 3;
+    }
+
+    message NewApiKey
+    {
+        bool success = 1;
+        string error_msg = 2;
+        ApiKey key = 3;
+        string secret = 4;
+    }
+
+    message ListApiKeys
+    {
+        bool success = 1;
+        repeated ApiKey keys = 2;
+    }
+
+    message DeleteApiKey
+    {
+        bool success = 1;
+        string error_msg = 2;
+        int32 key_id = 3;
+    }
+
+    message GetDepositInfo
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string data = 3;
+    }
+
+    message ResponseResult
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message CreateExternalAccount
+    {
+        message ExternalAccountInfo
+        {
+            string name         = 1;
+            string created_at   = 2;
+            string bank_name    = 3;
+        }
+
+        bool                success = 1;
+        ExternalAccountInfo account = 2;
+    }
+
+    message GetAllExternalAccounts
+    {
+        message ExternalAccountInfo
+        {
+            string name         = 1;
+            string created_at   = 2;
+            string bank_name    = 3;
+        }
+
+        bool success = 1;
+        repeated ExternalAccountInfo accounts = 2;
+    }
+
+    message ObligationRequest
+    {
+        string   delivery_id    = 1;
+        string   currency       = 2;
+        double   amount         = 3;
+        string   bs_address     = 4;
+    }
+
+    message UpdateWithdrawPrices
+    {
+        double sell_price = 1;
+        double buy_price = 2;
+        double network_fee = 3;
+        double min_xbt_amount = 4;
+   }
+
+    message HistoricalPL
+    {
+        string product_type = 1;
+        double profit_loss = 2;
+        string reference = 3;
+    }
+
+    message TradeHistory
+    {
+        bool loaded = 1;
+        repeated Order orders = 2;
+        uint32 count = 3;
+    }
+
+    message TransactionsForEntity
+    {
+        message Item
+        {
+            string status = 1;
+            string ccy = 2;
+            string description = 3;
+            double amount = 5;
+            double timestamp = 6;
+            string type = 7;
+        }
+
+        bool loaded = 1;
+        repeated Item items = 2;
+        uint32 count = 3;
+    }
+
+    message TradeFeeForEntity
+    {
+        message Item
+        {
+            double fee = 1;
+            string ccy = 2;
+            double price = 3;
+            string trade_ref = 4;
+            double position_size = 5;
+            double timestamp = 6;
+            string side = 7;
+        }
+
+        bool loaded = 1;
+        repeated Item items = 2;
+        uint32 count = 3;
+    }
+
+    message GetStatementDates
+    {
+        bool loaded = 1;
+        repeated string dates = 2;
+    }
+
+    message GetStatements
+    {
+        bool loaded = 1;
+        string html = 2;
+        string pdf = 3;
+        string date = 4;
+    }
+
+    message Ohlc
+    {
+        string product_type  = 1;
+        MarketDataHistory.Interval interval = 2;
+        double timestamp_start_db = 3;
+        repeated OhlcCandle candles = 4;
+    };
+
+    oneof data
+    {
+        Authorize               authorize                   = 10;
+        EidLogin                eid_login                   = 11;
+        EidRegister             eid_register                = 12;
+        ResumeSession           resume_session              = 13;
+        Empty                   logout                      = 14;
+        MarketOrder             market_order                = 15;
+        LoadOrders              load_orders                 = 16;
+        LoadBalance             load_balance                = 17;
+        Subscribe               subscribe                   = 18;
+        Unsubscribe             unsubscribe                 = 19;
+        TradingDay              trading_day                 = 20;
+        EstimateIm              estimate_im                 = 21;
+        ProductFee              product_fee                 = 22;
+        MaxTradeAmount          max_trade_amount            = 23;
+        TradingStats            trading_stats               = 24;
+        SubmitAddress           submit_address              = 25;
+        LoadAddresses           load_addresses              = 26;
+        RevokeAddress           revoke_address              = 27;
+        LoadDepositAddress      load_deposit_address        = 28;
+        CreateIbanAgreementUrl  create_iban_agreement       = 29;
+        GetIbanAccounts         get_iban_accounts           = 30;
+        GetIbanAccountDetails   get_iban_account_details    = 31;
+        NewApiKey               new_api_key                 = 32;
+        ListApiKeys             list_api_keys               = 33;
+        DeleteApiKey            delete_api_key              = 34;
+        GetDepositInfo          get_deposit_info            = 35;
+        CreateExternalAccount   create_external_account     = 36;
+        GetAllExternalAccounts  get_all_external_accounts   = 37;
+        ResponseResult          withdraw_to_external_account= 38;
+        ResponseResult          withdraw_bitcoin            = 39;
+        ObligationRequest       obligation_request          = 40;
+        ResponseResult          subscribe_withdraw_prices   = 41;
+        ResponseResult          unsubscribe_withdraw_prices = 42;
+        MarketData              market_data                 = 43;
+        Error                   fatal_error                 = 44;
+        EidLoginUpdate          eid_login_update            = 45;
+        OrderUpdate             order_update                = 46;
+        TradingClosed           trading_closed              = 47;
+        Empty                   session_replaced            = 48;
+        UserNotify              user_notify                 = 49;
+        UpdateWithdrawPrices    update_withdraw_prices      = 50;
+        HistoricalPL            historical_profit_loss      = 51;
+        TradeHistory            trade_history               = 52;
+        TransactionsForEntity   transactions_for_entity     = 53;
+        TradeFeeForEntity       trade_fee_for_entity        = 54;
+        GetStatementDates       get_statement_dates         = 55;
+        GetStatements           get_statements              = 56;
+        Ohlc                    ohlc                        = 57;
+    }
+}

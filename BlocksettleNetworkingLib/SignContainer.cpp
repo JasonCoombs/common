@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -18,8 +18,9 @@
 Q_DECLARE_METATYPE(std::shared_ptr<bs::sync::hd::Wallet>)
 
 
-SignContainer::SignContainer(const std::shared_ptr<spdlog::logger> &logger, OpMode opMode)
-   : logger_(logger), mode_(opMode)
+SignContainer::SignContainer(const std::shared_ptr<spdlog::logger> &logger
+   , SignerCallbackTarget *sct, OpMode opMode)
+   : logger_(logger), sct_(sct), mode_(opMode)
 {
    qRegisterMetaType<std::shared_ptr<bs::sync::hd::Wallet>>();
 }

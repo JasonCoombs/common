@@ -30,6 +30,9 @@ static bs::hd::Path fixedPath(const bs::hd::Path &path)
 
 std::shared_ptr<hd::Leaf> hd::Group::getLeaf(const bs::hd::Path &path) const
 {
+   if (path.length() == 0) {
+      return nullptr;
+   }
    const auto itLeaf = leaves_.find(fixedPath(path));
    if (itLeaf == leaves_.end()) {
       return nullptr;

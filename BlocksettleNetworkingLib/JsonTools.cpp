@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -23,6 +23,17 @@ namespace JsonTools
       } else {
          return value.toString().toDouble(&converted);
       }
+   }
+
+   double GetDouble(const QJsonValue& value)
+   {
+      bool converted;
+      return GetDouble(value, converted);
+   }
+
+   int64_t GetInt64(const QJsonValue &value)
+   {
+      return static_cast<int64_t>(GetDouble(value));
    }
 
    QString GetStringProperty(const QVariantMap& settingsMap, const QString& propertyName)
@@ -143,4 +154,56 @@ namespace JsonTools
       return true;
    }
 
+   double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted)
+   {
+      return GetDoubleProperty(jsonObject, propertyName, converted);
+   }
+
+   double GetDoubleProperty(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted)
+   {
+      double result = 0;
+      bool convertResult = false;
+      auto it = jsonObject.find(propertyName);
+      if (it != jsonObject.end()) {
+         if (it->is_number()) {
+            result = it->get<double>();
+            convertResult = true;
+         } else if (it->is_string()) {
+            try {
+               result = std::stod(it->get<std::string>());
+               convertResult = true;
+            } catch (...) {
+            }
+         }
+      }
+
+      if (converted != nullptr) {
+         *converted = convertResult;
+      }
+
+      return result;
+   }
+
+   double GetDoubleFromObject(const nlohmann::json& jsonObject, bool *converted)
+   {
+      double result = 0;
+      bool convertResult = false;
+
+      if (jsonObject.is_number()) {
+         result = jsonObject.get<double>();
+         convertResult = true;
+      } else if (jsonObject.is_string()) {
+         try {
+            result = std::stod(jsonObject.get<std::string>());
+            convertResult = true;
+         } catch (...) {
+         }
+      }
+
+      if (converted != nullptr) {
+         *converted = convertResult;
+      }
+
+      return result;
+   }
 }

@@ -1,7 +1,7 @@
 ﻿/*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -23,6 +23,10 @@
 #include "ZmqHelperFunctions.h"
 
 #include <spdlog/spdlog.h>
+
+#include "headless.pb.h"
+#include "bs_signer.pb.h"
+#include "Blocksettle_Communication_Internal.pb.h"
 
 using namespace Blocksettle::Communication;
 using namespace bs::error;
@@ -161,7 +165,7 @@ void HeadlessContainerListener::onClientError(const std::string &clientId, Serve
 bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, headless::RequestPacket packet)
 {
    if (!connection_) {
-      logger_->error("[HeadlessContainerListener::{}] connection_ is not set");
+      logger_->error("[HeadlessContainerListener::onRequestPacket] connection is not set");
       return false;
    }
 
@@ -179,6 +183,7 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::SignSettlementTxRequestType:
    case headless::SignPartialTXRequestType:
    case headless::SignSettlementPartialTxType:
+   case headless::AutoSignFullType:
       return onSignTxRequest(clientId, packet, packet.type());
 
    case headless::SignSettlementPayoutTxType:
@@ -271,6 +276,7 @@ bool HeadlessContainerListener::AuthResponse(const std::string &clientId, headle
 
    packet.set_data(response.SerializeAsString());
    bool rc = sendData(packet.SerializeAsString(), clientId);
+   logger_->debug("[HeadlessContainerListener] sent auth response");
 
    if (rc) {
       const auto &priWallet = walletsMgr_->getPrimaryWallet();
@@ -334,24 +340,50 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       return false;
    }
 
-   std::vector<std::shared_ptr<bs::core::hd::Leaf>> wallets;
+   bs::core::WalletMap wallets;
    std::string rootWalletId;
 
    for (const auto &walletId : txSignReq.walletIds) {
       const auto wallet = walletsMgr_->getWalletById(walletId);
-      if (!wallet) {
-         logger_->error("[HeadlessContainerListener] failed to find wallet {}", walletId);
-         SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
-         return false;
+      if (wallet) {
+         wallets[wallet->walletId()] = wallet;
+         const auto curRootWalletId = walletsMgr_->getHDRootForLeaf(walletId)->walletId();
+         if (!rootWalletId.empty() && (rootWalletId != curRootWalletId)) {
+            logger_->error("[HeadlessContainerListener] can't sign leaves from many roots");
+            SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletAlreadyPresent);
+            return false;
+         }
+         rootWalletId = curRootWalletId;
       }
-      wallets.push_back(wallet);
-      const auto curRootWalletId = walletsMgr_->getHDRootForLeaf(walletId)->walletId();
-      if (!rootWalletId.empty() && (rootWalletId != curRootWalletId)) {
-         logger_->error("[HeadlessContainerListener] can't sign leaves from many roots");
-         SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
-         return false;
+      else {
+         const auto& hdWallet = walletsMgr_->getHDWalletById(walletId);
+         if (!hdWallet) {
+            logger_->error("[HeadlessContainerListener] failed to find wallet {}", walletId);
+            SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
+            return false;
+         }
+         if (!rootWalletId.empty()) {
+            logger_->error("[HeadlessContainerListener] can't sign leaves from many roots");
+            SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletAlreadyPresent);
+            return false;
+         }
+         rootWalletId = hdWallet->walletId();
+         for (const auto& input : txSignReq.getInputs([](const bs::Address&) { return true; })) {
+            const auto& addr = bs::Address::fromUTXO(input);
+            const auto& wallet = walletsMgr_->getWalletByAddress(addr);
+            if (wallet) {
+               wallets[wallet->walletId()] = wallet;
+            }
+            else {
+               if (!partial) {
+                  logger_->error("[HeadlessContainerListener] failed to find "
+                     "wallet for input address {}", addr.display());
+                  SignTXResponse(clientId, packet.id(), reqType, ErrorCode::WalletNotFound);
+                  return false;
+               }
+            }
+         }
       }
-      rootWalletId = curRootWalletId;
    }
 
    if (txSignReq.change.value > 0) {
@@ -379,7 +411,8 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
    uint64_t amount = sentAmount < receivedAmount ? 0 : sentAmount - receivedAmount;
 
    auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
-   const bool autoSign = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer) && isAutoSignActive(rootWalletId);
+   const bool autoSign = ((autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer)
+      || (reqType == headless::RequestType::AutoSignFullType)) && isAutoSignActive(rootWalletId);
 
    if (amount && !checkSpendLimit(amount, rootWalletId, autoSign)) {
       SignTXResponse(clientId, packet.id(), reqType, ErrorCode::TxSpendLimitExceed);
@@ -392,7 +425,8 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
       (bs::error::ErrorCode result, const SecureBinaryData &pass)
    {
       if (result == ErrorCode::TxCancelled) {
-         logger_->error("[HeadlessContainerListener] transaction cancelled for wallet {}", wallets.front()->name());
+         logger_->error("[HeadlessContainerListener] transaction cancelled for wallet {}"
+            , wallets.cbegin()->second->name());
          SignTXResponse(clientId, id, reqType, result);
          return;
       }
@@ -446,12 +480,13 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
 
       try {
          if (!rootWallet->encryptionTypes().empty() && pass.empty()) {
-            logger_->error("[HeadlessContainerListener] empty password for wallet {}", wallets.front()->name());
+            logger_->error("[HeadlessContainerListener] empty password for wallet {}"
+               , wallets.cbegin()->second->name());
             SignTXResponse(clientId, id, reqType, ErrorCode::MissingPassword);
             return;
          }
          if (wallets.size() == 1) {
-            const auto wallet = wallets.front();
+            const auto wallet = wallets.cbegin()->second;
             const bs::core::WalletPasswordScoped passLock(rootWallet, pass);
             auto txSignCopy = txSignReq; //TODO: txSignReq should be passed as a shared_ptr instead
             const auto tx = partial ? BinaryData::fromString(wallet->signPartialTXRequest(txSignCopy).SerializeAsString())
@@ -471,7 +506,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
             multiReq.armorySigner_.merge(txSignReq.armorySigner_);
             multiReq.RBF |= txSignReq.RBF;
 
-            bs::core::WalletMap wallets;
             for (unsigned i=0; i<txSignReq.armorySigner_.getTxInCount(); i++) {
                const auto& utxo = txSignReq.armorySigner_.getSpender(i)->getUtxo();
                const auto addr = bs::Address::fromUTXO(utxo);
@@ -485,7 +519,6 @@ bool HeadlessContainerListener::onSignTxRequest(const std::string &clientId, con
                   }
                } else {
                   multiReq.addWalletId(wallet->walletId());
-                  wallets[wallet->walletId()] = wallet;
                }
             }
 
@@ -843,7 +876,8 @@ bool HeadlessContainerListener::RequestPasswordIfNeeded(const std::string &clien
 
    auto autoSignCategory = static_cast<bs::signer::AutoSignCategory>(dialogData.value<int>(PasswordDialogData::AutoSignCategory));
    // currently only dealer can use autosign
-   bool autoSignAllowed = (autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer);
+   bool autoSignAllowed = ((autoSignCategory == bs::signer::AutoSignCategory::SettlementDealer)
+      || (reqType == headless::RequestType::AutoSignFullType));
 
    SecureBinaryData password;
    if (autoSignAllowed && needPassword) {
@@ -1902,6 +1936,8 @@ void HeadlessContainerListener::windowVisibilityChanged(bool visible)
 
 void HeadlessContainerListener::resetConnection(ServerConnection *connection)
 {
+   logger_->debug("[{}:{}] terminal connection is set {}", __func__, (void*)this
+      , (connection != nullptr));
    connection_ = connection;
 }
 

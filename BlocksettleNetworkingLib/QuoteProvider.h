@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -30,7 +30,7 @@ namespace bs {
 }
 
 class AssetManager;
-class BaseCelerClient;
+class CelerClientQt;
 
 class QuoteProvider : public QObject
 {
@@ -51,7 +51,7 @@ public:
    QuoteProvider(QuoteProvider&&) = delete;
    QuoteProvider& operator = (QuoteProvider&&) = delete;
 
-   void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>& celerClient);
+   void ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient);
 
    bs::network::QuoteNotification getSubmittedXBTQuoteNotification(const std::string& settlementId);
 
@@ -115,10 +115,10 @@ private:
 private:
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<AssetManager>    assetManager_;
-   std::shared_ptr<BaseCelerClient>     celerClient_;
+   std::shared_ptr<CelerClientQt>   celerClient_;
    std::unordered_map<std::string, bs::network::RFQ>   submittedRFQs_;
 
-   std::unordered_map<std::string, std::string> quoteIdMap_;
+   std::unordered_map<std::string, std::string>                      quoteIdMap_;
    std::unordered_map<std::string, std::unordered_set<std::string>>  quoteIds_;
 
    // key - quoteRequestId

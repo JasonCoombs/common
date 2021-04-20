@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2019 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -41,8 +41,8 @@ namespace spdlog {
 }
 class ApplicationSettings;
 class ColoredCoinTrackerClient;
-class WalletSignerContainer;
 class CcTrackerClient;
+class WalletSignerContainer;
 
 namespace bs {
    namespace hd {
@@ -79,7 +79,7 @@ namespace bs {
          WalletsManager(WalletsManager&&) = delete;
          WalletsManager& operator = (WalletsManager&&) = delete;
 
-         void setSignContainer(const std::shared_ptr<WalletSignerContainer> &container);
+         [[deprecated]] void setSignContainer(const std::shared_ptr<WalletSignerContainer>&);
          void reset();
 
          bool syncWallets(const CbProgress &cb = nullptr);
@@ -117,8 +117,8 @@ namespace bs {
             , const std::function<void(const SecureBinaryData &)> &);
 
          std::vector<HDWalletPtr> hdWallets() const { return hdWallets_; }
-         const HDWalletPtr getHDWalletById(const std::string &walletId) const;
-         const HDWalletPtr getHDRootForLeaf(const std::string &walletId) const;
+         HDWalletPtr getHDWalletById(const std::string &walletId) const;
+         HDWalletPtr getHDRootForLeaf(const std::string &walletId) const;
          bool walletNameExists(const std::string &walletName) const;
          bool isWatchingOnly(const std::string &walletId) const;
 
@@ -266,7 +266,7 @@ namespace bs {
          void checkTrackerUpdate(const std::string &cc);
 
       private:
-         std::shared_ptr<WalletSignerContainer>         signContainer_;
+         std::shared_ptr<WalletSignerContainer> signContainer_;
          std::shared_ptr<spdlog::logger>        logger_;
          std::shared_ptr<ApplicationSettings>   appSettings_;
          std::shared_ptr<ArmoryConnection>      armoryPtr_;

@@ -1,0 +1,984 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+// Messages common between systems (e.g. terminal and PB)
+package BlockSettle.Common;
+
+import "Blocksettle_Communication_Internal.proto";
+import "headless.proto";
+
+
+message Empty {}
+
+
+message AdministrativeMessage
+{
+   message RouteTo
+   {
+      string queue = 1;
+      repeated string users = 2;
+   }
+
+   oneof data
+   {
+      Empty   start = 1;
+      Empty   stop  = 2;
+      Empty   restart = 3;
+      int32   component_created = 4;
+      int32   component_loading = 5;
+      int32   component_ready = 6;
+      string  attach_queue = 7;
+      RouteTo queue_routing = 8;
+   }
+}
+
+
+message NewKeyCompare
+{
+   bytes  old_key = 1;
+   bytes  new_key = 2;
+   string server_id = 3;
+}
+
+message TXEntry
+{
+   bytes  tx_hash = 1;
+   repeated string wallet_ids = 2;
+   int64  value = 3;
+   uint32 block_num = 4;
+   uint32 tx_time = 5;
+   bool   RBF = 6;
+   bool   chained_ZC = 7;
+   repeated string addresses = 8;
+   uint64 recv_time = 9;
+   uint32 nb_conf = 10;
+}
+
+message OutPoints {
+   bytes tx_hash = 1;
+   repeated uint32 out_indices = 2;
+}
+
+
+message ArmoryMessage
+{
+   message Loading
+   {
+      int32 network_type = 1;
+   }
+
+   message Settings
+   {
+      int32  socket_type = 1;
+      int32  network_type = 2;
+      string host = 3;
+      string port = 4;
+      string bip15x_key = 5;
+      bool   run_locally = 6;
+      string data_dir = 7;
+      string executable_path = 8;
+      string bitcoin_dir = 9;
+      string db_dir = 10;
+      string cache_file_name = 11;
+   }
+
+   enum ArmoryStateData
+   {
+      ArmoryStateOffline = 0;
+      ArmoryStateConnecting = 1;
+      ArmoryStateCancelled = 2;
+      ArmoryStateConnected = 3;
+      ArmoryStateScanning = 4;
+      ArmoryStateError = 5;
+      ArmoryStateClosing = 6;
+      ArmoryStateReady = 7;
+   }	//TODO: use this enum in the message below
+
+   message State
+   {
+      int32  state = 1;
+      uint32 top_block = 2;
+   }
+
+   message RegisterWallet
+   {
+      string wallet_id = 1;
+      bool   as_new = 2;
+      repeated bytes addresses = 3;
+   }
+
+   message WalletRegistered
+   {
+      string wallet_id = 1;
+      bool   success = 2;
+   }
+
+   message Refresh
+   {
+      repeated string ids = 1;
+      bool online = 2;
+   }
+
+   message NewBlock
+   {
+      uint32 top_block = 1;
+      uint32 branch_height = 2;
+   }
+
+   message ZCInvalidated
+   {
+      repeated bytes tx_hashes = 1;
+   }
+   
+   message ZCReceived
+   {
+      string request_id = 1;
+      repeated TXEntry tx_entries = 2;
+   }
+
+   message TXPushData
+   {
+      bytes expected_tx_hash = 1;
+      bytes tx = 2;
+   }
+
+   message TXPushRequest
+   {
+      repeated TXPushData txs_to_push = 1;
+      string push_id = 2;	// optional
+   }
+
+   enum PushTxResult
+   {
+      PushTxSuccess = 0;
+      PushTxInvalidated = 1;
+      PushTxMempoolConflict = 2;
+      PushTxMempoolFull = 3;
+      PushTxOtherError = 5;
+      PushTxAlreadyInChain = 6;
+      PushTxAlreadyInMempool = 7;
+   }
+
+   message TXPushResult
+   {
+      string request_id = 1;
+      string push_id = 2;
+      repeated bytes tx_hashes = 3;
+      PushTxResult result = 4;
+      string error_message = 5;
+      bool   pushed_by_us = 6;	//?
+   }
+
+   message WalletUnconfirmedTarget
+   {
+      string wallet_id = 1;
+      uint32 conf_count = 2;
+   }
+
+   message WalletIDs
+   {
+      repeated string wallet_ids = 1;
+   }
+
+   message AddressTxCountResponse
+   {
+      message AddressTxCounts {
+         string wallet_id = 1;
+
+         message AddressTxCount {
+            bytes  address = 1;
+            uint32 tx_count = 2;
+         }
+         repeated AddressTxCount txns = 2;
+      }
+      repeated AddressTxCounts wallet_tx_counts = 1;
+   }
+
+   message WalletBalanceResponse
+   {
+      message WalletBalance {
+         string wallet_id = 1;
+         uint64 full_balance = 2;
+         uint64 spendable_balance = 3;
+         uint64 unconfirmed_balance = 4;
+         uint32 address_count = 5;
+
+         message AddressBalance {
+            bytes  address = 1;
+            uint64 full_balance = 2;
+            uint64 spendable_balance = 3;
+            uint64 unconfirmed_balance = 4;
+         }
+         repeated AddressBalance addr_balances = 6;
+      }
+      repeated WalletBalance balances = 1;
+   }
+
+   message TXHashes
+   {
+      repeated bytes tx_hashes = 1;
+      bool disable_cache = 2;
+   }
+
+   message TX
+   {
+      bytes  tx = 1;
+      uint32 height = 2;
+   }
+
+   message Transactions
+   {
+      repeated TX transactions = 1;
+   }
+
+   message LedgerEntries
+   {
+      string filter = 1;
+      uint32 total_pages = 2;
+      uint32 cur_page = 3;
+      uint32 cur_block = 4;
+      repeated TXEntry entries = 5;
+   }
+
+   message AddressHistory
+   {
+      string address = 1;
+      uint32 cur_block = 2;
+      repeated TXEntry entries = 3;
+   }
+
+   message FeeLevelsRequest
+   {
+      repeated uint32 levels = 1;
+   }
+
+   message FeeLevelsResponse
+   {
+      message ByBlockCnt {
+         uint32 level = 1;
+         float  fee = 2;
+      }
+      repeated ByBlockCnt fee_levels = 1;
+   }
+
+   message UTXOsForAddr
+   {
+      string address = 1;
+      bool   with_ZC = 2;
+   }
+
+   message UTXOs
+   {
+      string wallet_id = 1;
+      repeated bytes utxos = 2;
+   }
+
+   message OutPointData
+   {
+      bytes  hash = 1;
+      uint32 index = 2;
+      uint32 tx_height = 3;
+      uint32 tx_index = 4;
+      uint64 value = 5;
+      bool   spent = 6;
+      bytes  spender_hash = 7;
+   }
+
+   message GetOutpointsForAddrList
+   {
+      repeated string addresses = 1;
+      uint32 height = 2;
+      uint32 zc_index = 3;
+   }
+
+   message OutpointsForAddrList
+   {
+      message OutPoint {
+         bytes id = 1;
+         repeated OutPointData outpoints = 2;
+      }
+      repeated OutPoint outpoints = 1;
+      uint32 height_cutoff = 2;
+      uint32 zc_index_cutoff = 3;   
+   }
+
+   message GetSpentness
+   {
+      repeated OutPoints outpoints = 1;
+      bool  allow_ZC = 2;
+      bytes tx_hash = 3;
+   }
+
+   message Spentness
+   {
+      enum State {
+         Unknown = 0;
+         Unspent = 1;
+         Spent = 2;
+         Invalid = 3;
+      }
+      message Spentness {
+         message SpentnessData {
+            uint32 out_index = 1;
+            bytes tx_hash = 2;
+            uint32 height = 3;
+            State  state = 4;
+         }
+         bytes utxo_hash = 1;
+         repeated SpentnessData spentness = 2;
+      }
+      repeated Spentness inputs = 1;
+      string error_text = 2;
+   }
+
+   message GetOutputsForOPs
+   {
+      repeated OutPoints outpoints = 1;
+      bool with_ZC = 2;
+      string request_id = 3;
+   }
+
+   message OutputsForOPs
+   {
+      repeated bytes utxos = 1;
+      string request_id = 2;
+   }
+
+   message AddressTX
+   {
+      string address = 1;
+      int64  value = 2;
+      bytes  tx_hash = 3;
+   }
+
+   oneof data
+   {
+      Loading           loading = 1;
+      Empty             ready   = 2;
+      Empty             reconnect = 3;
+      Empty             settings_request = 4;
+      Settings          settings_response = 5;
+      State             state_changed = 6;
+      NewKeyCompare     compare_key = 7;
+      bool              key_compared = 8;
+      RegisterWallet    register_wallet = 10;
+      WalletRegistered  wallet_registered = 11;
+      WalletIDs         unregister_wallets = 12;
+      Refresh           refresh = 13;
+      NewBlock          new_block = 14;
+      ZCInvalidated     zc_invalidated = 15;
+      ZCReceived        zc_received = 16;
+      TXPushRequest     tx_push = 17;
+      TXPushResult      tx_push_result = 18;
+      string            tx_push_timeout = 19;
+      WalletUnconfirmedTarget set_unconf_target = 20;
+      string            unconf_target_set = 21;
+      WalletIDs         addr_tx_count_request = 22;
+      AddressTxCountResponse addr_tx_count_response = 23;
+      WalletIDs         wallet_balance_request = 24;
+      WalletBalanceResponse wallet_balance_response = 25;
+      TXHashes          get_txs_by_hash = 26;
+      Transactions      transactions = 27;
+      string            get_ledger_entries = 28;
+      LedgerEntries     ledger_entries = 29;
+      string            ledger_unsubscribe = 30;
+      string            get_address_history = 31;
+      AddressHistory    address_history = 32;
+      FeeLevelsRequest  fee_levels_request = 33;
+      FeeLevelsResponse fee_levels_response = 34;
+      WalletIDs	        get_spendable_utxos = 35;
+      WalletIDs         get_zc_utxos = 36;
+      WalletIDs         get_rbf_utxos = 37;
+      UTXOsForAddr      get_utxos_for_addr = 38;
+      UTXOs             utxos = 39;
+      GetOutpointsForAddrList get_out_points = 40;
+      OutpointsForAddrList    out_points = 41;
+      GetSpentness      get_spentness = 42;
+      Spentness         spentness = 43;
+      GetOutputsForOPs  get_outputs_for_ops = 44;
+      OutputsForOPs     outputs_for_ops = 45;
+      string            subscribe_tx_for_address = 46;
+      AddressTX         address_tx = 47;
+   }
+}
+
+
+message ConnectionState
+{
+   int32  code = 1;
+   string text = 2;
+}
+
+
+message WalletSyncInfo
+{
+   int32  format = 1;
+   repeated string ids = 2;
+   string name = 3;
+   string description = 4;
+   int32  network_type = 5;
+   bool   watch_only = 6;
+   repeated int32 encryption_types = 7;
+   repeated bytes encryption_keys = 8;
+
+   message KeyRank {
+      uint32 m = 1;
+      uint32 n = 2;
+   }
+   KeyRank encryption_rank = 9;
+}
+
+
+message WalletInfo
+{
+   repeated string id = 1;
+   int32  format = 2;
+   string name = 3;
+   string description = 4;
+   int32  network_type = 5;
+   bool   watch_only = 6;
+   repeated int32 encryption_types = 7; 
+   repeated bytes encryption_keys = 8;
+
+   message KeyRank {
+      uint32 m = 1;
+      uint32 n = 2;
+   }
+   KeyRank encryption_rank = 9;
+   int32  wallet_type = 10;
+   uint32 purpose = 11;
+   bool   primary = 12;
+}
+
+message HDWalletData
+{
+   message Leaf {
+      repeated string ids = 1;
+      string path = 2;
+      bool   ext_only = 3;
+      string name = 4;
+      string desc = 5;
+      bytes  extra_data = 6;	// optional
+   }
+   message Group {
+      uint32 type = 1;
+      string name = 2;
+      string desc = 3;
+      repeated Leaf leaves = 4;
+      bool  ext_only = 5;
+      bytes salt = 6;	// optional - for Auth group
+   }
+   string wallet_id = 1;
+   repeated Group groups = 2;
+   string name = 3;
+   bool   is_primary = 4;
+   bool   is_offline = 5;
+}
+
+
+message SignerMessage
+{
+   message WalletsInfo
+   {
+      repeated WalletSyncInfo wallets = 1;
+   }
+
+   message SyncAddresses
+   {
+      string wallet_id = 1;
+      repeated bytes addresses = 2;
+   }
+
+   message SyncAddrResult
+   {
+      string wallet_id = 1;
+      int32  status = 2;
+   }
+
+   message SyncNewAddresses
+   {
+      string wallet_id = 1;
+      repeated string indices = 2;
+      bool single = 3;
+   }
+
+   message NewAddressesSynced
+   {
+      message AddrIndexPair {
+         string address = 1;
+         string index = 2;
+      }
+
+      string wallet_id = 1;
+      repeated AddrIndexPair addresses = 2;
+   }
+
+   message ExtendAddrChain
+   {
+      string wallet_id = 1;
+      uint32 count = 2;
+      bool   ext_int = 3;
+   }
+
+   message WalletData
+   {
+      string wallet_id = 1;
+      uint32 high_ext_index = 2;
+      uint32 high_int_index = 3;
+
+      message AddressData {
+         string index = 1;
+         string address = 2;
+         string comment = 3;
+      }
+      repeated AddressData addresses = 4;
+      repeated AddressData addr_pool = 5;
+
+      message TxComment {
+         bytes  tx_hash = 1;
+         string comment = 2;
+      }
+      repeated TxComment tx_comments = 6;
+   }
+
+   message SyncAddressComment
+   {
+      string wallet_id = 1;
+      string address = 2;
+      string comment = 3;
+   }
+
+   message SyncTxComment
+   {
+      string wallet_id = 1;
+      bytes  tx_hash = 2;
+      string comment = 3;
+   }
+
+   message SetSettlementId
+   {
+      string wallet_id = 1;
+      bytes  settlement_id = 2;
+   }
+
+   message RootPubKey
+   {
+      string wallet_id = 1;
+      bytes  pub_key = 2;
+      bool   success = 3;
+   }
+
+   message SignTxRequest
+   {
+      string id = 1;
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 2;
+      int32  sign_mode = 3;
+      bool   keep_dup_recips = 4;
+   }
+
+   message SignTxResponse
+   {
+      bytes  id = 1;
+      bytes  signed_tx = 2;
+      int32  error_code = 3;
+      string error_text = 4;
+   }
+
+   message SetUserId
+   {
+      string wallet_id = 1;
+      bytes  user_id = 2;
+   }
+
+   message SignSettlementTx
+   {
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 1;
+      bytes  settlement_id = 2;
+      bytes  contra_auth_pubkey = 3;
+      bool   own_key_first = 4;
+      Blocksettle.Communication.Internal.PasswordDialogData details = 5;
+   }
+
+   message AddressResult
+   {
+      bool   success = 1;
+      string address = 2;
+   }
+
+   message GetSettlPayinAddr
+   {
+      string wallet_id = 1;
+      bytes  settlement_id = 2;
+      bytes  contra_auth_pubkey = 3;
+      bool   own_key_first = 4;
+   }
+
+   message SignerState
+   {
+      int32 result = 1;
+      bytes signer_state = 2;
+   }
+
+   message AutoSign
+   {
+      string wallet_id = 1;
+      bool   enable = 2;	//add limits here, maybe?
+   }
+
+   message DialogRequest
+   {
+      int32 dialog_type = 1;
+      message KeyValue {
+         string key = 1;
+         string value = 2;
+      }
+      repeated KeyValue data = 2;
+   }
+   
+   oneof data
+   {
+      NewKeyCompare      new_key_request  = 1;
+      bool               new_key_response = 2;
+      ConnectionState    state = 3;
+      string             auth_leaf_added = 4;
+      Empty              wallets_list_updated = 5;
+      Empty              wallet_storage_decrypted = 6;
+      Empty              need_new_wallet_prompt = 7;
+      Empty              wallets_ready_to_sync = 8;
+      bool               window_visible_changed = 9;
+      Empty              start_wallets_sync = 10;
+      WalletsInfo        wallets_info = 11;
+      SyncAddresses      sync_addresses = 12;
+      SyncAddrResult     sync_addr_result = 13;
+      SyncNewAddresses   sync_new_addresses = 14;
+      NewAddressesSynced new_addresses = 15;
+      ExtendAddrChain    ext_addr_chain = 16;
+      NewAddressesSynced addr_chain_extended = 17;
+      string             sync_wallet = 18;
+      WalletData         wallet_synced = 19;
+      string             sync_hd_wallet = 20;
+      HDWalletData       hd_wallet_synced = 21;
+      SyncAddressComment sync_addr_comment = 22;
+      SyncTxComment      sync_tx_comment = 23;
+      SetSettlementId    set_settl_id = 24;
+      bool               settl_id_set = 25;
+      string             get_root_pubkey = 26;
+      RootPubKey         root_pubkey = 27;
+      string             del_hd_root = 28;
+      string             del_hd_leaf = 29;
+      SignTxRequest      sign_tx_request = 30;
+      SignTxResponse     sign_tx_response = 31;
+      SetUserId          set_user_id = 32;
+      string             create_settl_wallet = 33;
+      bytes              auth_pubkey = 34;
+      SignSettlementTx   sign_settlement_tx = 35;
+      GetSettlPayinAddr  get_settl_payin_addr = 36;
+      AddressResult      payin_address = 37;
+      Blocksettle.Communication.headless.SignTxRequest resolve_pub_spenders = 38;
+      SignerState        resolved_spenders = 39;
+      AutoSign           auto_sign = 40;
+      DialogRequest      dialog_request = 41;
+   }
+}
+
+
+message WalletsMessage
+{
+   message Loading
+   {
+      uint32 nb_wallets = 1;
+      repeated string wallet_id = 2;
+   }
+
+   message WalletError
+   {
+      string wallet_id = 1;
+      string error_message = 2;
+      int32  error_code = 3;
+   }
+
+   message WalletData
+   {
+      message AddressData {
+         string index = 1;
+         string address = 2;
+         string comment = 3;
+      }
+
+      string  wallet_id = 1;
+      repeated AddressData used_addresses = 2;
+   }
+
+   message WalletBalances
+   {
+      string wallet_id = 1;
+      double total_balance = 2;
+      double spendable_balance = 3;
+      double unconfirmed_balance = 4;
+      uint32 nb_addresses = 5;
+
+      message AddressData {
+         bytes  address = 1;
+         uint32 tx_count = 2;
+         uint64 total_balance = 3;
+         uint64 spendable_balance = 4;
+         uint64 unconfirmed_balance = 5;
+      }
+      repeated AddressData address_balances = 6;
+   }
+
+   message TXComment
+   {
+      bytes  tx_hash = 1;
+      string comment = 2;
+      string wallet_id = 3;
+   }
+
+   message WalletAddresses
+   {
+      message Address {
+         string address = 1;
+         string index = 2;
+         string wallet_id = 3;
+      }
+      string wallet_id = 1;
+      repeated Address addresses = 2;
+   }
+
+   message AddressComments
+   {
+      message AddrComment {
+         string address = 1;
+         string comment = 2;
+      }
+      string wallet_id = 1;
+      repeated AddrComment comments = 2;
+   }
+
+   message TXDetailsRequest
+   {
+      message TXDetail {
+         bytes  tx_hash = 1;
+         string wallet_id = 2;
+         int64  value = 3;
+      }
+      repeated TXDetail requests = 1;
+      string address = 2;
+      bool   use_cache = 3;
+   }
+
+   message TXDetailsResponse
+   {
+      message TXDetail {
+         bytes  tx_hash = 1;
+         string wallet_id = 2;
+         string wallet_name = 3;
+         int32  wallet_type = 4;
+         string wallet_symbol = 5;
+         int32  direction = 6;
+         string comment = 7;
+         bool   valid = 8;
+         string amount = 9;
+         repeated string out_addresses = 10;
+         bytes  tx = 11;
+
+         message AddrDetail {
+            string address = 1;
+            string wallet_name = 2;
+            uint64 value = 3;
+            string value_string = 4;
+            int32  script_type = 5;
+            bytes  out_hash = 6;
+            int32  out_index = 7;
+         }
+         repeated AddrDetail input_addresses = 12;
+         repeated AddrDetail output_addresses = 13;
+         AddrDetail change_address = 14;
+      }
+      repeated TXDetail responses = 1;
+   }
+
+   message WalletsListRequest
+   {
+      string id = 1;
+      bool   full = 2;
+      bool   legacy = 3;
+      bool   native_sw = 4;
+      bool   nested_sw = 5;
+      bool   hardware = 6;
+      bool   watch_only = 7;
+      bool   auth_group = 8;
+      bool   cc_group = 9;
+   }
+
+   message WalletsListResponse
+   {
+      string id = 1;
+      repeated HDWalletData wallets = 2;
+   }
+
+   message UtxoListRequest
+   {
+      string id = 1;
+      string wallet_id = 2;
+      bool   confirmed_only = 3;
+      bool   segwit_only = 4;
+   }
+
+   message UtxoListResponse
+   {
+      string id = 1;
+      string wallet_id = 2;
+      repeated bytes utxos = 3;
+   }
+
+   message AuthKey
+   {
+      string auth_address = 1;
+      bytes  auth_key = 2;
+   }
+
+   message ReserveUTXOs
+   {
+      string id = 1;
+      string sub_id = 2;
+      uint64 amount = 3;
+      bool   use_ZC = 4;
+      bool   partial = 5;	// optional
+      repeated bytes utxos = 6;	// optional
+   }
+
+   message ReservedUTXOs
+   {
+      string id = 1;
+      string sub_id = 2;
+      repeated bytes utxos = 3;
+   }
+
+   message ReservationKey
+   {
+      string id = 1;
+      string sub_id = 2;
+   }
+
+   message PayinRequest
+   {
+      string own_auth_address = 1;
+      string counter_auth_address = 2;
+      bytes  counter_auth_pubkey = 3;
+      bytes  settlement_id = 4;
+      string reserve_id = 5;
+      uint64 amount = 6;
+   }
+
+   message XbtTxResponse
+   {
+      string settlement_address = 1;
+      Blocksettle.Communication.headless.SignTxRequest tx_request = 2;
+      string error_text = 3;
+   }
+
+   message PayoutRequest
+   {
+      string own_auth_address = 1;
+      bytes  settlement_id = 2;
+      bytes  counter_auth_pubkey = 3;
+      bytes  payin_hash = 4;
+      uint64 amount = 5;
+      string wallet_id = 6;
+      string recv_address = 7;
+   }
+
+   oneof data
+   {
+      Loading             loading = 1;
+      Empty               ready   = 2;
+      WalletError         error = 3;
+      WalletInfo          wallet_loaded = 4;
+      string              auth_leaf_created = 5;
+      string              balance_updated = 6;
+      string              wallet_changed = 7;
+      string              wallet_meta_changed = 8;
+      string              wallet_ready = 9;
+      string              wallet_reset = 10;
+      WalletInfo          wallet_deleted = 11;
+      Empty               start_wallets_sync = 12;
+      string              hd_wallet_get = 13;
+      HDWalletData        hd_wallet = 14;
+      string              wallet_get = 15;
+      WalletData          wallet_data = 16;
+      string              get_wallet_balances = 17;
+      WalletBalances      wallet_balances = 18;
+      bytes               tx_comment_get = 19;
+      TXComment           tx_comment = 20;
+      string              get_used_addresses = 21;
+      string              get_ext_addresses = 22;
+      string              get_int_addresses = 23;
+      WalletAddresses     wallet_addresses = 24;
+      string              create_ext_address = 25;	// walletId
+      WalletAddresses     get_addr_comments = 26;
+      AddressComments     addr_comments = 27;
+      AddressComments     set_addr_comments = 28;
+      TXComment           set_tx_comment = 29;
+      TXDetailsRequest    tx_details_request = 30;
+      TXDetailsResponse   tx_details_response = 31;
+      WalletsListRequest  wallets_list_request = 32;
+      WalletsListResponse wallets_list_response = 33;
+      UtxoListRequest     get_utxos = 34;
+      UtxoListResponse    utxos = 35;
+      string              set_user_id = 36;
+      float               set_settlement_fee = 37;
+      WalletData          auth_wallet = 38;
+      string              get_auth_key = 39;
+      AuthKey             auth_key = 40;
+      ReserveUTXOs        reserve_utxos = 41;
+      ReservedUTXOs       reserved_utxos = 42;
+      ReservationKey      get_reserved_utxos = 43;
+      ReservationKey      unreserve_utxos = 44;
+      PayinRequest        payin_request = 45;
+      PayoutRequest       payout_request = 46;
+      XbtTxResponse       xbt_tx_response = 47;
+   }
+}
+
+
+message OnChainTrackMessage
+{
+   message AuthAddresses
+   {
+      string wallet_id = 1;
+      repeated string addresses = 2;
+   }
+
+   message AuthState
+   {
+      string address = 1;
+      int32  state = 2;
+   }
+
+   oneof data
+   {
+      Empty         loading = 1;
+      AuthAddresses set_auth_addresses = 2;
+      AuthState     auth_state = 3;
+      AuthAddresses verified_auth_addresses = 4;
+      Empty         get_verified_auth_addresses = 5;
+   }
+}
+
+message AuthEidMessage
+{
+   oneof data
+   {
+      Empty    loading = 1;
+   }
+}

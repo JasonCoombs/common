@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -53,9 +53,11 @@ public:
    std::shared_ptr<spdlog::logger>     GetLogger() const;
 
    std::shared_ptr<ServerConnection>   CreateGenoaAPIServerConnection() const;
-   virtual std::shared_ptr<ServerConnection>   CreateCelerAPIServerConnection() const;
 
-   virtual std::shared_ptr<DataConnection>     CreateCelerClientConnection() const;
+#ifndef DISABLE_CELER_SUPPORT
+   std::shared_ptr<ServerConnection>         CreateCelerAPIServerConnection() const;
+#endif
+   virtual std::shared_ptr<DataConnection>   CreateCelerClientConnection() const;
    std::shared_ptr<DataConnection>     CreateGenoaClientConnection(
       bool monitored = false) const;
 

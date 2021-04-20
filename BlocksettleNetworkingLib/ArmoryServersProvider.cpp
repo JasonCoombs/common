@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -153,12 +153,12 @@ int ArmoryServersProvider::indexOfIpPort(const std::string &srvIPPort) const
    return -1;
 }
 
-int ArmoryServersProvider::getIndexOfMainNetServer() const
+int ArmoryServersProvider::getIndexOfMainNetServer()
 {
    return static_cast<int>(ServerIndexes::MainNet);
 }
 
-int ArmoryServersProvider::getIndexOfTestNetServer() const
+int ArmoryServersProvider::getIndexOfTestNetServer()
 {
    return static_cast<int>(ServerIndexes::TestNet);
 }

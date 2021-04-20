@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -11,18 +11,10 @@
 #ifndef __BS_COMMON_TYPES_H__
 #define __BS_COMMON_TYPES_H__
 
-#include <QObject>
 #include <QDateTime>
+#include <QObject>
 #include <QString>
 #include "Address.h"
-#include "com/celertech/marketmerchant/api/enums/SideProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketmerchant/api/enums/MarketDataEntryTypeProto.pb.h"
-
-#include "com/celertech/marketdata/api/enums/AssetTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/ProductTypeProto.pb.h"
-#include "com/celertech/marketdata/api/enums/MarketDataEntryTypeProto.pb.h"
 
 #ifndef NDEBUG
 #include <stdexcept>
@@ -62,10 +54,9 @@ namespace bs {
             Sell
          };
 
-         static Type fromCeler(com::celertech::marketmerchant::api::enums::side::Side side);
-         static com::celertech::marketmerchant::api::enums::side::Side toCeler(Type side);
          static const char *toString(Type side);
          static const char *responseToString(Type side);
+
          static Type invert(Type side);
       };
 
@@ -77,18 +68,15 @@ namespace bs {
             SpotFX = first,
             SpotXBT,
             PrivateMarket,
+            DeliverableFutures,
+            CashSettledFutures,
             last
          };
 
-         static Type fromCelerProductType(com::celertech::marketdata::api::enums::producttype::ProductType pt);
-
-         static Type fromCelerProductType(com::celertech::marketmerchant::api::enums::producttype::ProductType pt);
-         static com::celertech::marketmerchant::api::enums::assettype::AssetType toCeler(Type at);
-         static com::celertech::marketdata::api::enums::assettype::AssetType toCelerMDAssetType(Type at);
-         static com::celertech::marketmerchant::api::enums::producttype::ProductType toCelerProductType(Type at);
-         static com::celertech::marketdata::api::enums::producttype::ProductType toCelerMDProductType(Type at);
-         static const char *toCelerSettlementType(Type at);
          static const char *toString(Type at);
+
+         static bool isSpotType(const Type type);
+         static bool isFuturesType(const Type type);
       };
 
 
@@ -155,7 +143,7 @@ namespace bs {
          QDateTime dateTime;
          std::string security;
          std::string product;
-         std::string settlementId;
+         BinaryData  settlementId;
          std::string reqTransaction;
          std::string dealerTransaction;
          std::string pendingStatus;
@@ -174,6 +162,16 @@ namespace bs {
             Filled
          };
          Status status{};
+         std::string info;
+      };
+
+
+      struct FutureRequest
+      {
+         bs::XBTAmount amount;
+         double price{};
+         bs::network::Side::Type side{};
+         bs::network::Asset::Type type{};
       };
 
 
@@ -191,8 +189,6 @@ namespace bs {
          std::string requestorAuthPublicKey;
          std::string sessionToken;
          std::string party;
-         std::string reason;
-         std::string account;
          std::string settlementId;
          std::string requestorRecvAddress;
 
@@ -209,9 +205,9 @@ namespace bs {
          };
          Status status{};
 
-         QDateTime   expirationTime;
+         uint64_t    expirationTime;
          int         timeSkewMs{};
-         uint64_t    celerTimestamp{};
+         uint64_t    timestamp{};
 
          bool empty() const { return quoteRequestId.empty(); }
       };
@@ -226,20 +222,17 @@ namespace bs {
          std::string quoteRequestId;
          std::string security;
          std::string product;
-         std::string account;
          std::string transactionData;
          std::string receiptAddress;
          Asset::Type assetType;
          Side::Type  side;
          int         validityInS{};
 
-         double      bidPx{};
-         double      bidSz{};
-         double      bidFwdPts{};
+         double      price{};
+         double      quantity{};
+         double      bidFwdPts{};   // looks like this field and all ones below are not used
          double      bidContraQty{};
 
-         double      offerPx{};
-         double      offerSz{};
          double      offerFwdPts{};
          double      offerContraQty{};
 
@@ -282,12 +275,12 @@ namespace bs {
          };
          Type     type;
          double   value;
-         QString  desc;
-
-         static Type fromCeler(com::celertech::marketdata::api::enums::marketdataentrytype::MarketDataEntryType mdType);
+         QString  levelQuantity;
 
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
+         // used for bid/offer only
+         bool           isIndicativeForFutures() const;
       };
 
 
@@ -337,7 +330,7 @@ namespace bs {
    }  //namespace network
 }  //namespace bs
 
-
+//TODO: remove below declarations (no Qt signals/slots in common)
 Q_DECLARE_METATYPE(bs::network::Asset::Type)
 Q_DECLARE_METATYPE(bs::network::Quote)
 Q_DECLARE_METATYPE(bs::network::Order)
@@ -350,6 +343,5 @@ Q_DECLARE_METATYPE(bs::network::CCSecurityDef)
 Q_DECLARE_METATYPE(bs::network::NewTrade)
 Q_DECLARE_METATYPE(bs::network::NewPMTrade)
 Q_DECLARE_METATYPE(bs::network::UnsignedPayinData)
-
 
 #endif //__BS_COMMON_TYPES_H__

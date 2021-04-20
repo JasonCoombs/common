@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -73,6 +73,7 @@ namespace bs {
 
 
       enum Purpose : Path::Elem {
+         Unknown     = 0,
          Native      = 84, // BIP84
          Nested      = 49, // BIP49
          NonSegWit   = 44, // BIP44
@@ -90,6 +91,7 @@ namespace bs {
          BlockSettle_CC = hardFlag + 0x4253, // 0x80000000 | "BS" in hex
          BlockSettle_Auth = hardFlag + 0x41757468,  // 0x80000000 | "Auth" in hex
          Blocksettle_Sign = hardFlag + 0x5369676e, // Sign in hex
+         Blocksettle_Trade = hardFlag + 0x01646179,
 
          //this is a place holder for the Group ctor, settlement accounts
          //are not deterministic

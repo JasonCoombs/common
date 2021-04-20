@@ -22,7 +22,7 @@ class WebsocketsSettings(Configurator):
         self.openssl = OpenSslSettings(settings)
         # Do not forget to update patched file for new version (build_scripts/libwebsockets/openssl-tls.c)
         # It's used if git is not avaialble
-        self._version = '4.0.15'
+        self._version = '4.1.6'
         self._package_name = 'libwebsockets'
         self._package_url = 'https://github.com/warmcat/libwebsockets/archive/v' + self._version + '.zip'
         self._script_revision = '12'
@@ -116,7 +116,6 @@ class WebsocketsSettings(Configurator):
         # Workaround for data race: https://github.com/warmcat/libwebsockets/issues/1836
         env_vars['CFLAGS'] = "-Dmalloc_usable_size=INVALID_DEFINE_TO_DISABLE_FLAG"
 
-        result = subprocess.call(command, env=env_vars)
         if self._project_settings.on_windows():
             cmdStr = r' '.join(command)
             result = subprocess.call(cmdStr, env=env_vars)

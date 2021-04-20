@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -20,6 +20,16 @@
 #include <QMutex>
 #include <QObject>
 
+namespace Blocksettle {
+   namespace Communication {
+      namespace ProxyTerminalPb {
+         class Response;
+         class Response_UpdateOrdersAndObligations;
+         class Response_UpdateOrder;
+      }
+   }
+}
+
 namespace spdlog {
    class logger;
 }
@@ -28,21 +38,37 @@ namespace bs {
       class Wallet;
       class WalletsManager;
    }
+   namespace types {
+      class Order;
+   }
 }
-
 class MDCallbacksQt;
-class BaseCelerClient;
+class CelerClientQt;
 
-class AssetManager : public QObject
+struct AssetCallbackTarget
+{
+   virtual void onCcPriceChanged(const std::string& currency) {}
+   virtual void onXbtPriceChanged(const std::string& currency) {}
+
+   virtual void onFxBalanceLoaded() {}
+   virtual void onFxBalanceCleared() {}
+
+   virtual void onBalanceChanged(const std::string& currency) {}
+   virtual void onTotalChanged() {}
+   virtual void onSecuritiesChanged() {}
+};
+
+class AssetManager : public QObject, public AssetCallbackTarget
 {
     Q_OBJECT
 
 public:
-   AssetManager(const std::shared_ptr<spdlog::logger> &
+   [[deprecated]] AssetManager(const std::shared_ptr<spdlog::logger> &
       , const std::shared_ptr<bs::sync::WalletsManager> &
       , const std::shared_ptr<MDCallbacksQt> &
-      , const std::shared_ptr<BaseCelerClient> &);
-   ~AssetManager() = default;
+      , const std::shared_ptr<CelerClientQt> &);
+   AssetManager(const std::shared_ptr<spdlog::logger>&, AssetCallbackTarget *);
+   ~AssetManager() override;
 
    virtual void init();
 
@@ -58,6 +84,11 @@ public:
    uint64_t getCCLotSize(const std::string &cc) const;
    bs::Address getCCGenesisAddr(const std::string &cc) const;
 
+   double futuresBalanceDeliverable() const { return futuresBalanceDeliverable_; }
+   double futuresBalanceCashSettled() const { return futuresBalanceCashSettled_; }
+   int64_t futuresXbtAmountDeliverable() const { return futuresXbtAmountDeliverable_; }
+   int64_t futuresXbtAmountCashSettled() const { return futuresXbtAmountCashSettled_; }
+
    bool hasSecurities() const { return securitiesReceived_; }
    std::vector<QString> securities(bs::network::Asset::Type = bs::network::Asset::Undefined) const;
 
@@ -65,6 +96,10 @@ public:
 
    bool HaveAssignedAccount() const { return !assignedAccount_.empty(); }
    std::string GetAssignedAccount() const { return assignedAccount_; }
+
+   static double profitLoss(int64_t futuresXbtAmount, double futuresBalance, double currentPrice);
+   double profitLossDeliverable(double currentPrice);
+   double profitLossCashSettled(double currentPrice);
 
 signals:
    void ccPriceChanged(const std::string& currency);
@@ -74,6 +109,7 @@ signals:
    void fxBalanceCleared();
 
    void balanceChanged(const std::string& currency);
+   void netDeliverableBalanceChanged();
 
    void totalChanged();
    void securitiesChanged();
@@ -84,8 +120,8 @@ signals:
     void onMDSecurityReceived(const std::string &security, const bs::network::SecurityDef &sd);
     void onMDSecuritiesReceived();
     void onAccountBalanceLoaded(const std::string& currency, double value);
+    void onMessageFromPB(const Blocksettle::Communication::ProxyTerminalPb::Response &response);
 
- private slots:
    void onCelerConnected();
    void onCelerDisconnected();
    void onWalletChanged();
@@ -95,12 +131,26 @@ protected:
 
 private:
   void sendUpdatesOnXBTPrice(const std::string& ccy);
+  void processUpdateOrders(const Blocksettle::Communication::ProxyTerminalPb::Response_UpdateOrdersAndObligations &msg);
+  void processUpdateOrder(const Blocksettle::Communication::ProxyTerminalPb::Response_UpdateOrder &msg);
+
+  void onCcPriceChanged(const std::string& currency) override { emit ccPriceChanged(currency); }
+  void onXbtPriceChanged(const std::string& currency) override { emit xbtPriceChanged(currency); }
+  void onFxBalanceLoaded() override { emit fxBalanceLoaded(); }
+  void onFxBalanceCleared() override { emit fxBalanceCleared(); }
+
+  void onBalanceChanged(const std::string& currency) override { emit balanceChanged(currency); }
+  void onTotalChanged() override { emit totalChanged(); }
+  void onSecuritiesChanged() override { emit securitiesChanged(); }
+
+  void updateFuturesBalances();
 
 protected:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<bs::sync::WalletsManager> walletsManager_;
    std::shared_ptr<MDCallbacksQt>         mdCallbacks_;
-   std::shared_ptr<BaseCelerClient>       celerClient_;
+   std::shared_ptr<CelerClientQt>         celerClient_;
+   AssetCallbackTarget* act_{ nullptr };
 
    bool     securitiesReceived_ = false;
    std::vector<std::string>   currencies_;
@@ -113,6 +163,14 @@ protected:
    std::string assignedAccount_;
 
    std::unordered_map<std::string, QDateTime>  xbtPriceUpdateTimes_;
+
+   std::map<std::string, bs::types::Order> orders_;
+
+   double futuresBalanceDeliverable_{};
+   double futuresBalanceCashSettled_{};
+   int64_t futuresXbtAmountDeliverable_{};
+   int64_t futuresXbtAmountCashSettled_{};
+
 };
 
 #endif // __ASSET__MANAGER_H__

@@ -1,7 +1,7 @@
 #
 #
 # ***********************************************************************************
-# * Copyright (C) 2018 - 2020, BlockSettle AB
+# * Copyright (C) 2018 - 2021, BlockSettle AB
 # * Distributed under the GNU Affero General Public License (AGPL v3)
 # * See LICENSE or http://www.gnu.org/licenses/agpl.html
 # *
@@ -10,6 +10,7 @@
 #
 # CMake 3.10 fixes automoc Q_NAMESPACE detection
 CMAKE_MINIMUM_REQUIRED( VERSION 3.10 )
+SET(CMAKE_CXX_STANDARD 17)
 
 PROJECT( ${BS_NETWORK_LIB_NAME} )
 
@@ -18,42 +19,23 @@ FILE(GLOB SOURCES
    Wallets/*.cpp
    ChatProtocol/*.cpp
    Encryption/*.cpp
+   Adapters/*.cpp
    Message/*.cpp
 )
 
-IF (DISABLE_CELER)
+IF (NOT DISABLE_CELER)
+   ADD_SUBDIRECTORY(Celer)
+ELSE ()
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/AssetManager.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/AuthAddressManager.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/BaseCelerClient.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/BsClient.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/BSMarketDataProvider.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CCFileManager.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CCPubConnection.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelOrderSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelQuoteNotifSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelRFQSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerClient.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerClientProxy.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerCreateFxOrderSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerCreateOrderSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerFindSubledgersForAccountSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetAssignedAccountsListSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetUserIdSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetUserPropertySequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoadMDDefinitionsSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoadUserInfoSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoginSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerMessageMapper.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerPropertiesDefinitions.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerSetUserPropertySequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerSignTxSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerSubmitQuoteNotifSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CelerSubmitRFQSequence.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CommonTypes.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/MarketDataProvider.cpp)
    list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/QuoteProvider.cpp)
-   list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/SingleCelerConnectionListener.cpp)
-ENDIF()
+ENDIF (DISABLE_CELER)
+
 
 FILE(GLOB HEADERS
    *.h
@@ -64,42 +46,21 @@ FILE(GLOB HEADERS
    ChatProtocol/ResponseObjects/*.h
    ChatClientTree/*.h
    Encryption/*.h
+   Adapters/*.h
    Message/*.h
 )
 
 IF (DISABLE_CELER)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/AssetManager.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/AuthAddressManager.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/BaseCelerClient.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/BsClient.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/BSMarketDataProvider.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CCFileManager.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CCPubConnection.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelOrderSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelQuoteNotifSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerCancelRFQSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerClient.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerClientProxy.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerCreateFxOrderSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerCreateOrderSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerFindSubledgersForAccountSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetAssignedAccountsListSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetUserIdSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerGetUserPropertySequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoadMDDefinitionsSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoadUserInfoSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerLoginSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerMessageMapper.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerPropertiesDefinitions.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerSetUserPropertySequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerSignTxSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerSubmitQuoteNotifSequence.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CelerSubmitRFQSequence.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CommonTypes.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/MarketDataProvider.h)
    list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/QuoteProvider.h)
-   list(REMOVE_ITEM HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/SingleCelerConnectionListener.h)
-ENDIF()
+ENDIF (DISABLE_CELER)
 
 
 # for bdmenums.h include in ApplicationSettings.h ( ugly :( )
@@ -123,17 +84,34 @@ ADD_LIBRARY( ${BS_NETWORK_LIB_NAME} ${SOURCES} ${HEADERS})
 
 TARGET_INCLUDE_DIRECTORIES(${BS_NETWORK_LIB_NAME} PRIVATE )
 
-TARGET_LINK_LIBRARIES(${BS_NETWORK_LIB_NAME}
-   ${COMMON_LIB_NAME}
-   ${BOTAN_LIB}
-   ${LIBCP_LIB}
-   ${ZMQ_LIB}
-   ${CPP_WALLET_LIB_NAME} 
-   ${AUTH_PROTO_LIB_NAME}
-   ${BS_PROTO_LIB_NAME}
-   ${CELER_PROTO_LIB_NAME}
-   ${PROTO_LIB}
-   Qt5::Core
-   Qt5::Network
-   Qt5::Sql
-)
+#      ${CELER_PROTO_LIB_NAME}
+IF (DISABLE_CELER)
+   TARGET_LINK_LIBRARIES(${BS_NETWORK_LIB_NAME}
+      ${COMMON_LIB_NAME}
+      ${BOTAN_LIB}
+      ${LIBCP_LIB}
+      ${ZMQ_LIB}
+      ${CPP_WALLET_LIB_NAME}
+      ${AUTH_PROTO_LIB_NAME}
+      ${BS_PROTO_LIB_NAME}
+      ${PROTO_LIB}
+      Qt5::Core
+      Qt5::Network
+      Qt5::Sql
+   )
+ELSE ()
+   TARGET_LINK_LIBRARIES(${BS_NETWORK_LIB_NAME}
+      ${COMMON_LIB_NAME}
+      ${BOTAN_LIB}
+      ${LIBCP_LIB}
+      ${ZMQ_LIB}
+      ${CPP_WALLET_LIB_NAME}
+      ${AUTH_PROTO_LIB_NAME}
+      ${BS_PROTO_LIB_NAME}
+      ${PROTO_LIB}
+      CelerLib
+      Qt5::Core
+      Qt5::Network
+      Qt5::Sql
+   )
+ENDIF (DISABLE_CELER)

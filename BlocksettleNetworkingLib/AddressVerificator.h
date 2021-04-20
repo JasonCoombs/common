@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -25,6 +25,7 @@
 #include "ArmoryConnection.h"
 #include "AsyncClient.h"
 #include "AuthAddress.h"
+#include "AuthAddressLogic.h"
 
 namespace spdlog {
    class logger;
@@ -47,8 +48,8 @@ private:
    using ExecutionCommand = std::function<void (void)>;
 
 public:
-   AddressVerificator(const std::shared_ptr<spdlog::logger>& logger, const std::shared_ptr<ArmoryConnection> &
-      , VerificationCallback callback);
+   AddressVerificator(const std::shared_ptr<spdlog::logger>& logger
+      , const std::shared_ptr<ArmoryConnection> &, VerificationCallback callback);
    ~AddressVerificator() noexcept override;
 
    AddressVerificator(const AddressVerificator&) = delete;
@@ -96,7 +97,7 @@ private:
 
 private:
    std::shared_ptr<spdlog::logger>           logger_;
-   std::unique_ptr<ValidationAddressManager> validationMgr_;
+   std::unique_ptr<AuthAddressValidator>     validationMgr_;
    VerificationCallback    userCallback_;
 
    //bsAddressList_ - list received from public bridge

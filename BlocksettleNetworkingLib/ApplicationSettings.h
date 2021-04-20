@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -55,7 +55,8 @@ public:
 
    enum class EnvConfiguration
    {
-      Production,
+      Unknown = -1,
+      Production = 0,
       Test,
 #ifndef PRODUCTION_BUILD
       Staging,
@@ -107,6 +108,7 @@ public:
       FxRfqLimit,
       XbtRfqLimit,
       PmRfqLimit,
+      FuturesLimit,
       DisableBlueDotOnTabOfRfqBlotter,
       PriceUpdateInterval,
       ShowQuoted,
@@ -172,8 +174,10 @@ public:
    int GetArmoryRemotePort(NetworkType networkType = NetworkType::Invalid) const;
 
    static QString localSignerDefaultName();
+   static QString appSubDir();
 
    QString GetSettingsPath() const;
+   QString AppendToWritableDir(const QString& filename) const;
 
    QString  GetHomeDir() const;
    QString  GetBackupDir() const;
@@ -204,6 +208,8 @@ public:
    QString bootstrapFilePath() const;
    QString bootstrapResourceFileName() const;
 
+   static bs::LogConfig parseLogConfig(const QStringList&);
+
    void setDefaultWalletId(const std::string& walletId);
    std::string getDefaultWalletId() const;
 
@@ -219,9 +225,7 @@ private:
    void SetBitcoinsDir(const QString& path);
    void SetDBDir(const QString& path);
 
-   QString AppendToWritableDir(const QString &filename) const;
-   bs::LogConfig parseLogConfig(const QStringList &) const;
-   bs::LogLevel parseLogLevel(QString) const;
+   static bs::LogLevel parseLogLevel(QString);
 
    QString getPath(const SettingDef &s) const;
 

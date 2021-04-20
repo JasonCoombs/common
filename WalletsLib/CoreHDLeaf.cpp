@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -578,17 +578,18 @@ std::pair<bs::Address, bool> hd::Leaf::synchronizeUsedAddressChain(
    //is it internal or external?
    bool ext = true;
    auto elem = path.get(-2);
-   if (elem == addrTypeInternal_)
+   if (elem == addrTypeInternal_) {
       ext = false;
-   else if (elem != addrTypeExternal_)
+   } else if (elem != addrTypeExternal_) {
       throw AccountException("invalid address path");
-
+   }
    //is the path ahead of the underlying Armory wallet used index?
    unsigned topIndex;
-   if (ext)
+   if (ext) {
       topIndex = getExtAddressCount() - 1;
-   else
+   } else {
       topIndex = getIntAddressCount() - 1;
+   }
    unsigned addrIndex = path.get(-1);
 
    std::pair<bs::Address, bool> result;

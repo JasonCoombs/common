@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -63,9 +63,18 @@ void SelectedTransactionInputs::Reload(const std::vector<UTXO> &utxos)
 
 void SelectedTransactionInputs::SetFixedInputs(const std::vector<UTXO> &inputs)
 {
-   cpfpInputs_.clear();
-   inputs_ = isSegWitInputsOnly_ ? filterNonSWInputs(inputs) : inputs;
-
+   std::vector<UTXO> zcInputs, confirmedInputs;
+   for (const auto& utxo : inputs) {
+      if (utxo.getHeight() == UINT32_MAX) {
+         zcInputs.push_back(utxo);
+      }
+      else {
+         confirmedInputs.push_back(utxo);
+      }
+   }
+   cpfpInputs_ = zcInputs;
+   inputs_ = isSegWitInputsOnly_ ? filterNonSWInputs(confirmedInputs)
+      : confirmedInputs;
    resetSelection();
 }
 

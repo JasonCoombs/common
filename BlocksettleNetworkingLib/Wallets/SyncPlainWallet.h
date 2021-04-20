@@ -48,7 +48,7 @@ namespace bs {
             , bool sync = true) override;
          bool containsAddress(const bs::Address &addr) override;
 
-         const std::string& walletId() const override { return walletId_; }
+         std::string walletId() const override { return walletId_; }
          std::string description() const override { return desc_; }
          void setDescription(const std::string &desc) override { desc_ = desc; }
          bs::core::wallet::Type type() const override { return bs::core::wallet::Type::Bitcoin; }

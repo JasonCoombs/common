@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -41,8 +41,8 @@ public:
    int indexOf(const QString &name) const;
    int indexOf(const ArmoryServer &server) const;
    int indexOfIpPort(const std::string &srvIPPort) const;
-   int getIndexOfMainNetServer() const;
-   int getIndexOfTestNetServer() const;
+   static int getIndexOfMainNetServer();
+   static int getIndexOfTestNetServer();
 
    bool add(const ArmoryServer &server);
    bool replace(int index, const ArmoryServer &server);

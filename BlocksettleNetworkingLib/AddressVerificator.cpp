@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -11,7 +11,6 @@
 #include "AddressVerificator.h"
 
 #include "ArmoryConnection.h"
-#include "AuthAddressLogic.h"
 #include "BinaryData.h"
 #include "BlockDataManagerConfig.h"
 #include "FastLock.h"
@@ -189,7 +188,7 @@ void AddressVerificator::validateAddress(const std::shared_ptr<AddressVerificati
       return;
    }
 
-   if (!armory_ || (armory_->state() != ArmoryState::Ready)) {
+   if (armory_ && (armory_->state() != ArmoryState::Ready)) {
       logger_->error("[AddressVerificator::ValidateAddress] invalid BlockSettleDB state {}", (int)armory_->state());
       state->currentState = AddressVerificationState::VerificationFailed;
       ReturnValidationResult(state);

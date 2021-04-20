@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -191,6 +191,10 @@ void ArmoryConnection::setupConnection(NetworkType netType
    , const std::string& datadir
    , bool oneWayAuth, const BIP151Cb &cbBIP151)
 {
+   if (host.empty()) {
+      logger_->error("[ArmoryConnection::setupConnection] invalid connection host");
+      return;
+   }
    addToQueue([netType, host, port](ArmoryCallbackTarget *tgt) {
       tgt->onPrepareConnection(netType, host, port);
    });
@@ -307,6 +311,7 @@ bool ArmoryConnection::goOnline()
                      , static_cast<int>(state_.load()));
       return false;
    }
+   logger_->debug("[ArmoryConnection::goOnline]");
    bdv_->goOnline();
    isOnline_ = true;
    return true;
@@ -406,27 +411,42 @@ bool ArmoryConnection::getWalletsHistory(const std::vector<std::string> &walletI
 
 bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId, const bs::Address &addr)
 {
+   const auto &cbWrap = [this, walletId, addr]
+      (const std::shared_ptr<AsyncClient::LedgerDelegate> &delegate)
+   {
+      addToQueue([addr, delegate] (ArmoryCallbackTarget *tgt) {
+         tgt->onLedgerForAddress(addr, delegate);
+      });
+   };
+   return getLedgerDelegateForAddress(walletId, addr, cbWrap);
+}
+
+bool ArmoryConnection::getLedgerDelegateForAddress(const std::string &walletId
+   , const bs::Address &addr
+   , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &cb)
+{
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::getLedgerDelegateForAddress] invalid state: {}", (int)state_.load());
       return false;
    }
-   const auto &cbWrap = [this, walletId, addr]
-                        (ReturnMessage<AsyncClient::LedgerDelegate> delegate) {
+   const auto &cbWrap = [this, cb, walletId, addr]
+      (ReturnMessage<AsyncClient::LedgerDelegate> delegate)
+   {
       try {
          auto ld = std::make_shared<AsyncClient::LedgerDelegate>(delegate.get());
-         addToQueue([addr, ld] (ArmoryCallbackTarget *tgt) {
-            tgt->onLedgerForAddress(addr, ld);
-         });
-      }
-      catch (const std::exception &e) {
+         if (cb) {
+            cb(ld);
+         }
+      } catch (const std::exception &e) {
          logger_->error("[ArmoryConnection::getLedgerDelegateForAddress (cbWrap)] Return data "
             "error - {} - Wallet {} - Address {}", e.what(), walletId
             , addr.empty() ? "<empty>" : addr.display());
-         addToQueue([addr](ArmoryCallbackTarget *tgt) {
-            tgt->onLedgerForAddress(addr, nullptr);
-         });
+         if (cb) {
+            cb(nullptr);
+         }
       }
    };
+   logger_->debug("[{}] {}.{} ({})", __func__, walletId, addr.display(), addr.id().toHexStr());
    bdv_->getLedgerDelegateForScrAddr(walletId, addr.id(), cbWrap);
    return true;
 }
@@ -1068,7 +1088,8 @@ void ArmoryConnection::onRefresh(const std::vector<BinaryData>& ids)
    });
 }
 
-void ArmoryConnection::onZCsReceived(const std::string& requestId, const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
+void ArmoryConnection::onZCsReceived(const std::string& requestId
+   , const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
 {
    const auto newEntries = bs::TXEntry::fromLedgerEntries(entries);
 

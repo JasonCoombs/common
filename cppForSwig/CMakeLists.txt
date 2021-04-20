@@ -1,7 +1,7 @@
 #
 #
 # ***********************************************************************************
-# * Copyright (C) 2018 - 2020, BlockSettle AB
+# * Copyright (C) 2018 - 2021, BlockSettle AB
 # * Distributed under the GNU Affero General Public License (AGPL v3)
 # * See LICENSE or http://www.gnu.org/licenses/agpl.html
 # *
@@ -24,7 +24,7 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.cpp
    ${CPP_FOR_SWIG_ROOT}/BinaryData.cpp
    ${CPP_FOR_SWIG_ROOT}/BIP150_151.cpp
-   ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.cpp   
+   ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.cpp
    ${CPP_FOR_SWIG_ROOT}/BIP32_Node.cpp
    ${CPP_FOR_SWIG_ROOT}/BlockDataManagerConfig.cpp
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.cpp
@@ -244,7 +244,7 @@ ENDIF (BUILD_TEST_TOOLS)
 
 TARGET_LINK_LIBRARIES(${CRYPTO_LIB_NAME}
    ${WS_LIB}
-   ${CRYPTOPP_LIB}
+   ${LIBBTC_LIB}
    )
 
 IF(NOT WIN32)

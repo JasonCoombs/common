@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2019 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -37,6 +37,9 @@ namespace bs {
          virtual std::vector<std::shared_ptr<bs::message::Adapter>> process(const Envelope &) const = 0;
          virtual void reset() = 0;
          virtual std::set<UserValue> supportedReceivers() const = 0;
+
+      protected:
+         virtual bool isDefaultRouted(const bs::message::Envelope &) const = 0;
       };
 
       class Router : public RouterInterface
@@ -49,8 +52,12 @@ namespace bs {
          std::vector<std::shared_ptr<bs::message::Adapter>> process(const Envelope &) const override;
          void reset() override;
 
+      protected:
+         bool isDefaultRouted(const bs::message::Envelope &) const override;
+
       private:
          std::shared_ptr<spdlog::logger>           logger_;
+         mutable std::mutex mutex_;
          std::map<UserValue, std::shared_ptr<Adapter>>   adapters_;
          std::shared_ptr<Adapter>   supervisor_;
          std::shared_ptr<Adapter>   defaultRoute_;
@@ -59,8 +66,9 @@ namespace bs {
       class QueueInterface
       {
       public:
-         QueueInterface(const std::shared_ptr<RouterInterface> &router)
-            : router_(router) {}
+         QueueInterface(const std::shared_ptr<RouterInterface> &router
+            , const std::string& name = {})
+            : router_(router), name_(name) {}
          virtual ~QueueInterface() = default;
 
          virtual void terminate() = 0;
@@ -70,16 +78,19 @@ namespace bs {
          virtual bool pushFill(Envelope &) = 0;
          virtual bool push(const Envelope &) = 0;
          uint64_t nextId() { return seqNo_++; }
+         uint64_t resetId(uint64_t);
 
       protected:
          std::shared_ptr<RouterInterface> router_;
+         const std::string       name_;
          std::atomic<uint64_t>   seqNo_{ 1 };
       };
 
       class Queue_Locking : public QueueInterface
       {
       public:
-         Queue_Locking(const std::shared_ptr<RouterInterface> &, const std::shared_ptr<spdlog::logger> &
+         Queue_Locking(const std::shared_ptr<RouterInterface> &
+            , const std::shared_ptr<spdlog::logger> &, const std::string& name = {}
             , const std::map<int, std::string> & = {}, bool accounting = true);
          ~Queue_Locking() override;
 

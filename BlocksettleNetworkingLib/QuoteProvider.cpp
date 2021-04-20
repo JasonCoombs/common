@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2018 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -11,15 +11,16 @@
 #include "QuoteProvider.h"
 
 #include "AssetManager.h"
-#include "CelerCancelOrderSequence.h"
-#include "CelerCancelQuoteNotifSequence.h"
-#include "CelerCancelRFQSequence.h"
-#include "CelerClient.h"
-#include "CelerCreateFxOrderSequence.h"
-#include "CelerCreateOrderSequence.h"
-#include "CelerSignTxSequence.h"
-#include "CelerSubmitQuoteNotifSequence.h"
-#include "CelerSubmitRFQSequence.h"
+#include "Celer/CommonUtils.h"
+#include "Celer/CancelOrderSequence.h"
+#include "Celer/CancelQuoteNotifSequence.h"
+#include "Celer/CancelRFQSequence.h"
+#include "Celer/CelerClient.h"
+#include "Celer/CreateFxOrderSequence.h"
+#include "Celer/CreateOrderSequence.h"
+#include "Celer/SignTxSequence.h"
+#include "Celer/SubmitQuoteNotifSequence.h"
+#include "Celer/SubmitRFQSequence.h"
 #include "CurrencyPair.h"
 #include "FastLock.h"
 #include "ProtobufUtils.h"
@@ -58,7 +59,7 @@ QuoteProvider::QuoteProvider(const std::shared_ptr<AssetManager>& assetManager
 
 QuoteProvider::~QuoteProvider() noexcept = default;
 
-void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>& celerClient)
+void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient)
 {
    celerClient_ = celerClient;
 
@@ -94,7 +95,7 @@ void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<BaseCelerClient>&
       return this->onQuoteNotifCancelled(data);
    });
 
-   connect(celerClient.get(), &BaseCelerClient::OnConnectedToServer, this, &QuoteProvider::onConnectedToCeler);
+   connect(celerClient.get(), &CelerClientQt::OnConnectedToServer, this, &QuoteProvider::onConnectedToCeler);
 }
 
 void QuoteProvider::onConnectedToCeler()
@@ -120,8 +121,8 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
    quote.quoteId = response.quoteid();
    quote.requestId = response.quoterequestid();
    quote.security = response.securitycode();
-   quote.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   quote.side = bs::network::Side::fromCeler(response.side());
+   quote.assetType = bs::celer::fromCelerProductType(response.producttype());
+   quote.side = bs::celer::fromCeler(response.side());
 
    if (quote.assetType == bs::network::Asset::PrivateMarket) {
       quote.dealerAuthPublicKey = response.dealerreceiptaddress();
@@ -375,7 +376,8 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::SubmitRFQ] submitting RFQ with empty account name");
    }
-   auto sequence = std::make_shared<CelerSubmitRFQSequence>(assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
+   const auto &sequence = std::make_shared<bs::celer::SubmitRFQSequence>(
+      assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitRFQ] failed to execute CelerSubmitRFQSequence");
    } else {
@@ -389,7 +391,10 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
-   auto sequence = std::make_shared<CelerCreateOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, payoutTx, logger_);
+   assert(quote.assetType != bs::network::Asset::DeliverableFutures);
+
+   auto sequence = std::make_shared<bs::celer::CreateOrderSequence>(assetManager_->GetAssignedAccount()
+      , reqId, quote, payoutTx, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuote] failed to execute CelerCreateOrderSequence");
    } else {
@@ -402,7 +407,8 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] accepting FX quote with empty account name");
    }
-   auto sequence = std::make_shared<CelerCreateFxOrderSequence>(assetManager_->GetAssignedAccount(), reqId, quote, logger_);
+   auto sequence = std::make_shared<bs::celer::CreateFxOrderSequence>(assetManager_->GetAssignedAccount()
+      , reqId, quote, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] failed to execute CelerCreateFxOrderSequence");
    }
@@ -413,7 +419,7 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
 
 void QuoteProvider::CancelQuote(const QString &reqId)
 {
-   auto sequence = std::make_shared<CelerCancelRFQSequence>(reqId, logger_);
+   auto sequence = std::make_shared<bs::celer::CancelRFQSequence>(reqId, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::CancelQuote] failed to execute CelerCancelRFQSequence sequence");
    }
@@ -424,7 +430,7 @@ void QuoteProvider::CancelQuote(const QString &reqId)
 
 void QuoteProvider::SignTxRequest(const QString &orderId, const std::string &txData)
 {
-   auto sequence = std::make_shared<CelerSignTxSequence>(orderId, txData, logger_);
+   auto sequence = std::make_shared<bs::celer::SignTxSequence>(orderId, txData, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SignTxRequest] failed to execute CelerSignTxSequence sequence");
    }
@@ -479,11 +485,13 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    order.quantity = response.qty();
    order.price = response.price();
    order.product = response.currency();
-   order.side = bs::network::Side::fromCeler(response.side());
-   order.assetType = bs::network::Asset::fromCelerProductType(response.producttype());
-   order.settlementId = response.settlementid();
+   order.side = bs::celer::fromCeler(response.side());
+   order.assetType = bs::celer::fromCelerProductType(response.producttype());
+   order.settlementId = BinaryData::fromString(response.settlementid());   // hex data passed as is here for compatibility with the old code
    order.reqTransaction = response.requestortransaction();
    order.dealerTransaction = response.dealertransaction();
+
+   assert(order.assetType != bs::network::Asset::SpotFX);
 
    order.status = mapBtcOrderStatus(response.orderstatus());
    order.pendingStatus = response.info();
@@ -536,7 +544,7 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    order.price = response.price();
    order.avgPx = response.avgpx();
    order.product = response.currency();
-   order.side = bs::network::Side::fromCeler(response.side());
+   order.side = bs::celer::fromCeler(response.side());
    order.assetType = bs::network::Asset::SpotFX;
 
    order.status = mapFxOrderStatus(response.orderstatus());
@@ -594,7 +602,8 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
       logger_->error("[QuoteProvider::SubmitQuoteNotif] account name not set");
    }
 
-   auto sequence = std::make_shared<CelerSubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount(), qn, logger_);
+   auto sequence = std::make_shared<bs::celer::SubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount()
+      , qn, logger_);
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::SubmitQuoteNotif] failed to execute CelerSubmitQuoteNotifSequence");
    } else {
@@ -608,7 +617,7 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
 
 void QuoteProvider::CancelQuoteNotif(const QString &reqId, const QString &reqSessToken)
 {
-   auto sequence = std::make_shared<CelerCancelQuoteNotifSequence>(reqId, reqSessToken, logger_);
+   auto sequence = std::make_shared<bs::celer::CancelQuoteNotifSequence>(reqId, reqSessToken, logger_);
 
    if (!celerClient_->ExecuteSequence(sequence)) {
       logger_->error("[QuoteProvider::CancelQuoteNotif] failed to execute CelerCancelQuoteNotifSequence");
@@ -649,14 +658,14 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
    qrn.quantity = legGroup.qty();
    qrn.product = respgrp.currency();
    qrn.party = respgrp.partyid();
-   qrn.reason = response.reason();
-   qrn.account = response.account();
-   qrn.expirationTime = QDateTime::fromMSecsSinceEpoch(response.expiretimeinutcinmillis());
-   qrn.celerTimestamp = response.timestampinutcinmillis();
-   qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(response.timestampinutcinmillis()).msecsTo(QDateTime::currentDateTime());
+//   qrn.reason = response.reason();
+//   qrn.account = response.account();
+   qrn.expirationTime = response.expiretimeinutcinmillis();
+   qrn.timestamp = response.timestampinutcinmillis();
+   qrn.timeSkewMs = QDateTime::fromMSecsSinceEpoch(qrn.timestamp).msecsTo(QDateTime::currentDateTime());
 
-   qrn.side = bs::network::Side::fromCeler(legGroup.side());
-   qrn.assetType = bs::network::Asset::fromCelerProductType(respgrp.producttype());
+   qrn.side = bs::celer::fromCeler(legGroup.side());
+   qrn.assetType = bs::celer::fromCelerProductType(respgrp.producttype());
 
    switch (response.quotenotificationtype()) {
       case QUOTE_WITHDRAWN:
@@ -786,7 +795,7 @@ void QuoteProvider::CleanupXBTOrder(const bs::network::Order& order)
 {
    logger_->debug("[QuoteProvider::CleanupXBTOrder] complete quote: {}", order.quoteId);
 
-   eraseSubmittedXBTQuoteNotification(order.settlementId);
+   eraseSubmittedXBTQuoteNotification(order.settlementId.toBinStr());
 }
 
 void QuoteProvider::saveQuoteReqId(const std::string &quoteReqId, const std::string &quoteId)

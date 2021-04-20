@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2019 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -36,6 +36,7 @@ namespace bs {
 
       protected:
          virtual bool processEnvelope(const Envelope &) = 0;
+         void stop();
 
       private:
          void processingRoutine();
@@ -43,8 +44,7 @@ namespace bs {
 
       private:
          std::thread processingThread_;
-
-         std::atomic_bool                       continueExecution_ { true };
+         std::atomic_bool                       continueExecution_{ true };
          mutable std::atomic_flag               pendingEnvelopesLock_ = ATOMIC_FLAG_INIT;
          ManualResetEvent                       pendingEnvelopesEvent_;
          std::queue<std::shared_ptr<Envelope>>  pendingEnvelopes_;

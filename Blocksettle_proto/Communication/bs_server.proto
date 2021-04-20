@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -12,9 +12,13 @@ syntax = "proto3";
 
 package Blocksettle.Server;
 
+import "bs_api_server.proto";
+import "bs_api_server_pb.proto";
+import "bs_server_storage.proto";
+import "bs_types.proto";
+import "common.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
-import "bs_types.proto";
 
 message Empty
 {
@@ -23,8 +27,6 @@ message Empty
 enum PrivBridgeType
 {
    PrivBridgeUnknownType         = 0;
-   PrivBridgeStart               = 1;
-   PrivBridgeReconnect           = 2;
    PrivBridgeSuspendTrading      = 3;
    PrivBridgeResumeTrading       = 4;
    PrivBridgeCreateUser          = 5;
@@ -35,7 +37,6 @@ enum PrivBridgeType
 message PrivBridgeCreateUserRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message PrivBridgeResponse
@@ -73,240 +74,70 @@ message PrivateBridgeMessage
 }
 
 
-enum ArmoryMessageType
+message WalletMessage
 {
-   ArmoryUnknownType             = 0;
-   ArmoryStateChanged            = 1;
-   ArmoryReconnect               = 2;
-   ArmoryWalletReady             = 3;
-   ArmoryWalletLoaded            = 4;
-   ArmoryWalletReload            = 5;
-   ArmoryGetWalletUTXOs          = 6;
-   ArmoryNewBlock                = 7;
-   ArmoryPushTX                  = 8;
-   ArmoryFeePerByte              = 9;
-   ArmoryStartSettlement         = 10;
-   ArmoryStopSettlement          = 11;
-   ArmoryGetSpentness            = 12;
-   ArmoryGetTxByHash             = 13;
-   ArmoryAuthWalletLoaded        = 14;
-   ArmoryBroadcastTimeout        = 15;
-   ArmoryGetOutpointsForAddrList = 16;
-   ArmoryPushXbtTXs              = 19;
-   ArmoryGetOutputsForOPs        = 20;
-   ArmorySettlementsStatus       = 21;
-   ArmoryGetSpendableUTXOs       = 22;
-   ArmoryUpdateBootstrapData     = 23;
-}
-
-enum ArmoryStateData
-{
-   ArmoryStateOffline = 0;
-   ArmoryStateConnecting = 1;
-   ArmoryStateCancelled = 2;
-   ArmoryStateConnected = 3;
-   ArmoryStateScanning = 4;
-   ArmoryStateError = 5;
-   ArmoryStateClosing = 6;
-   ArmoryStateReady = 7;
-}
-
-message ArmoryStateBroadcast
-{
-   ArmoryStateData state = 1;
-   uint32 top_block = 2;
-}
-
-message ArmoryNewBlockBroadcast
-{
-   uint32 top_block = 1;
-   uint32 branch_height = 2;
-}
-
-message ArmoryPushTxRequest
-{
-   bytes  tx = 1;
-   bytes  tx_hash = 2;
-   string settlement_id = 3;	// optional
-}
-
-enum ArmoryPushTxResult
-{
-   ArmoryPushTxSuccess = 0;
-   ArmoryPushTxInvalidated = 1;
-   ArmoryPushTxMempoolConflict = 2;
-   ArmoryPushTxMempoolFull = 3;
-   ArmoryPushTxOtherError = 5;
-   ArmoryPushTxAlreadyInChain = 6;
-   ArmoryPushTxAlreadyInMempool = 7;
-}
-
-message ArmoryPushTxResponse
-{
-   bytes                tx_hash        = 1;
-   ArmoryPushTxResult   result         = 2;
-   string               error_message  = 3;
-   string               settlement_id  = 4;
-   bool                 pushed_by_us   = 5;
-}
-
-message ArmoryPushXbtTXsRequest
-{
-   ArmoryPushTxRequest payin_tx  = 1;
-   ArmoryPushTxRequest payout_tx = 2;
-}
-
-message ArmoryFeeRequest
-{
-   uint32 block_count = 1;
-}
-
-message ArmoryFeeResponse
-{
-   uint32 block_count = 1;
-   float  fee_per_byte = 2;
-}
-
-message ArmoryStartSettlementRequest
-{
-   string settlement_id = 1;
-   repeated string settlement_address = 2;
-}
-
-message ArmoryStartSettlementResponse
-{
-   string settlement_id = 1;
-   bool success = 2;
-}
-
-message ArmoryStopSettlementRequest
-{
-   string settlement_id = 1;
-}
-
-message OutPoints {
-   bytes tx_hash = 1;
-   repeated uint32 out_indices = 2;
-}
-
-message ArmorySpentnessRequest
-{
-   repeated OutPoints outpoints = 1;
-   bool  allow_ZC = 2;
-   bytes tx_hash = 3;
-}
-
-message ArmorySpentnessResponse
-{
-   enum State {
-      Unknown = 0;
-      Unspent = 1;
-      Spent = 2;
-      Invalid = 3;
+   message AuthWalletLoaded
+   {
+      string wallet_id = 1;	// not set atm
+      repeated string addresses = 2;
    }
-   message Spentness {
-      message SpentnessData {
-         uint32 out_index = 1;
-         bytes tx_hash = 2;
-         uint32 height = 3;
-         State  state = 4;
-      }
-      bytes utxo_hash = 1;
-      repeated SpentnessData spentness = 2;
+
+   message Addresses
+   {
+      string wallet_id = 1;
+      repeated string addresses = 2;
    }
-   repeated Spentness inputs = 1;
-   string error_text = 2;
-}
 
-message ArmoryGetTxRequest
-{
-   repeated bytes tx_hash = 1;
-}
-
-message ArmoryGetTxResponse
-{
-   repeated bytes tx = 1;
-   string error_text = 2;
-}
-
-message ArmoryAuthAddresses
-{
-   repeated string addresses = 1;
-}
-
-message ArmoryGetOutpointsForAddrListRequest
-{
-   repeated string addresses = 1;
-   uint32 height = 2;
-   uint32 zc_index = 3;
-}
-
-message ArmoryGetOutpointsForAddrListResponse
-{
-   message OutPoint {
-      bytes id = 1;
-      repeated OutPointData outpoints = 2;
+   message DepositAddressTX
+   {
+      string address = 1;
+      int64  value = 2;
+      bytes  tx_hash = 3;
+      uint32 nb_conf = 4;
    }
-   repeated OutPoint outpoints = 1;
-   uint32 height_cutoff = 2;
-   uint32 zc_index_cutoff = 3;   
-}
 
-message ArmoryGetOutputsForOPsRequest
-{
-   repeated OutPoints outpoints = 1;
-   bool with_ZC = 2;
-   string settlement_id = 3;
-}
+   message OutInstaTxRequest
+   {
+      string out_address = 1;
+      uint64 amount = 2;
+   }
 
-message ArmoryGetOutputsForOPsResponse
-{
-   repeated bytes utxos = 1;
-   string settlement_id = 2;
-}
+   message OutInstaTxResponse
+   {
+      string out_address = 1;
+      bytes  signed_tx = 2;
+   }
 
-message ArmoryGetSpendableUTXOsRequest
-{
-   string wallet_id = 1;
-   string address = 2;
-   bool   with_ZC = 3;
-}
+   message ReturnRejectedDepositRequest
+   {
+      string   deposit_address   = 1;
+      bytes    deposit_tx_id     = 2;
+      string   return_address    = 3;
+   }
 
-message ArmoryGetSpendableUTXOsResponse
-{
-   repeated bytes utxos = 1;
-}
+   message ReturnRejectedDepositResponse
+   {
+      bytes signed_tx = 1;
+   }
 
-message ArmoryMessage
-{
-   ArmoryMessageType type = 1;
    oneof data {
-      ArmoryStateBroadcast state = 2;
-      Blocksettle.Communication.pbcli.LoadUTXOResponse utxos         = 3;
-      ArmoryNewBlockBroadcast                new_block               = 4;
-      ArmoryPushTxRequest                    push_tx_request         = 5;
-      ArmoryPushTxResponse                   push_tx_response        = 6;
-      ArmoryFeeRequest                       fee_request             = 7;
-      ArmoryFeeResponse                      fee_response            = 8;
-      ArmoryStartSettlementRequest           settlement_request      = 9;
-      ArmoryStartSettlementResponse          settlement_response     = 10;
-      ArmoryStopSettlementRequest            settl_stop_request      = 11;
-      ArmorySpentnessRequest                 spentness_request       = 12;
-      ArmorySpentnessResponse                spentness_response      = 13;
-      ArmoryGetTxRequest                     tx_request              = 14;
-      ArmoryGetTxResponse                    tx_response             = 15;
-      ArmoryAuthAddresses                    auth_addresses          = 16;
-      ArmoryGetOutpointsForAddrListRequest   out_points_request      = 19;
-      ArmoryGetOutpointsForAddrListResponse  out_points_response     = 20;
-      ArmoryPushXbtTXsRequest                push_xbt_txs_request    = 23;
-      ArmoryGetOutputsForOPsRequest          outs_for_ops_request    = 24;
-      ArmoryGetOutputsForOPsResponse         outs_for_ops_response   = 25;
-      bytes                                  timeout_id              = 26;
-      bool                                   get_all_utxo            = 27;
-      bool                                   settlements_suspended   = 28;
-      ArmoryGetSpendableUTXOsRequest         spendable_utxos_request = 29;
-      ArmoryGetSpendableUTXOsResponse        spendable_utxos_response= 30;
-      bytes                                  bootstrap_data          = 31;
+      Empty                                  wallet_reload           = 1;
+      string                                 wallet_loaded           = 2;	// wallet id
+      AuthWalletLoaded                       auth_wallet_loaded      = 3;
+      Blocksettle.Communication.pbcli.LoadUTXOResponse utxos         = 4;
+      bool                                   get_all_utxo            = 5;
+      bytes                                  bootstrap_data          = 6;
+      uint32                                 get_new_trading_addrs   = 7;
+      Addresses                              trading_addresses       = 8;
+      uint32                                 get_new_deposit_addrs   = 9;
+      Addresses                              deposit_addresses       = 10;
+      DepositAddressTX                       deposit_address_tx      = 11;
+      OutInstaTxRequest                      out_insta_tx_request    = 12;
+      OutInstaTxResponse                     out_insta_tx_response   = 13;
+      ReturnRejectedDepositRequest           return_deposit_request  = 14;
+      ReturnRejectedDepositResponse          return_deposit_response = 15;
+      Empty                                  get_hot_wallet_balance  = 16;
+      BlockSettle.Common.ArmoryMessage.WalletBalanceResponse hot_wallet_balance = 17;
    }
 }
 
@@ -440,36 +271,72 @@ message CcTrackMessage
 
 enum GenoaType
 {
-   GenoaUnknownType              = 0;
-   GenoaReconnect                = 1;
-   GenoaHeartbeat                = 2;
-   GenoaClientConnected          = 3;
-   GenoaAccountsAvailable        = 7;
-   GenoaAccounts                 = 8;
-   GenoaNewAccount               = 9;
-   GenoaGetXBTReservations       = 10;
-   GenoaGetCCReservations        = 11;
-   GenoaCancelCCReservation      = 12;
-   GenoaCancelXBTReservation     = 13;
-   GenoaReserveCashXBT           = 14;
-   GenoaUpdateReservation        = 15;
-   GenoaCompleteXbtCashTransfer  = 16;
-   GenoaExecuteFxTrade           = 19;
-   GenoaFindOrdersForUser        = 20;
-   GenoaUserTradingStatus        = 21;
-   GenoaTradeXbtUpdate           = 22;
-   GenoaSendCCToken              = 24;
-   GenoaReserveCC                = 25;
-   GenoaCompleteCCReserve        = 26;
-   GenoaGetUserAccounts          = 29;
-   GenoaGetAccountBalance        = 30;
-   GenoaEODUpdate                = 31;
-   GenoaMigrateUserIds           = 32;
-   GenoaApiKey                   = 33;
-   GetEntityName                 = 34;
-   GetUserEmail                  = 35;
-   GenoaReloadAccounts           = 36;
-   GenoaAccountReloaded          = 37;
+   GenoaUnknownType                       = 0;
+   GenoaReconnect                         = 1;
+   GenoaHeartbeat                         = 2;
+   GenoaClientConnected                   = 3;
+   GenoaAccountsAvailable                 = 4;
+   GenoaAccounts                          = 5;
+   GenoaNewAccount                        = 6;
+   GenoaGetXBTReservations                = 7;
+   GenoaGetCCReservations                 = 8;
+   GenoaCancelCCReservation               = 9;
+   GenoaCancelXBTReservation              = 10;
+   GenoaReserveCashXBT                    = 11;
+   GenoaUpdateReservation                 = 12;
+   GenoaCompleteXbtCashTransfer           = 13;
+   GenoaUpdateBalanceType                 = 14;
+   GenoaExecuteFxTrade                    = 15;
+   GenoaFindOrdersForUser                 = 16;
+   GenoaUserTradingStatus                 = 17;
+   GenoaTradeXbtUpdate                    = 18;
+   GenoaSendCCToken                       = 19;
+   GenoaReserveCC                         = 20;
+   GenoaCompleteCCReserve                 = 21;
+   GenoaGetUserAccounts                   = 22;
+   GenoaReloadCustomerBalance             = 23;
+   GenoaEODUpdate                         = 24;
+   GenoaMigrateUserIds                    = 25;
+   GenoaApiKey                            = 26;
+   GetEntityName                          = 27;
+   GetUserEmail                           = 28;
+   GenoaRegisterAccount                   = 29;
+   GenoaNewApiKeyType                     = 30;
+   GenoaListApiKeysType                   = 31;
+   GenoaDeleteApiKeyType                  = 32;
+   GenoaCreateExternalAccountType         = 33;
+   GenoaGetAllExternalAccountsType        = 34;
+   GenoaGetDepositInfoType                = 35;
+   GenoaWithdrawToExternalAccountType     = 36;
+   GenoaGetCustomerBalance                = 37;
+   GenoaLoadCustomerImBalance             = 38;
+   GenoaRegisterXBT1DayDeliverableTrade   = 39;
+   GenoaRegisterXBT1DayCashSettledTrade   = 40;
+   GenoaSendCutoffPrice                   = 41;
+   GenoaLoadDeliveryObligations           = 42;
+   GenoaSetDeliveryAddress                = 43;
+   GenoaSettleDelivery                    = 44;
+   GenoaTradeCycleStatus                  = 45;
+   GenoaTradingDayOpen                    = 46;
+   GenoaReloadAccounts                    = 47;
+   GenoaAccountReloaded                   = 48;
+   GenoaCreateIbanAgreementUrlType        = 49;
+   GenoaGetIbanAccountsType               = 50;
+   GenoaGetIbanAccountDetailsType         = 51;
+   GenoaOpenInterestType                  = 52;
+   GenoaUserNotify                        = 53;
+   GenoaRegisterXBTDepositType            = 54;
+   GenoaConfirmXBTDepositType             = 55;
+   GenoaRegisterXBTWithdrawType           = 56;
+   GenoaConfirmXBTWithdrawType            = 57;
+   GenoaOpenDeliveryPeriodType            = 58;
+   GenoaCloseDeliveryPeriodType           = 59;
+   GenoaReportRejectedDeposit             = 60;
+   GenoaTradeHistory                      = 61;
+   GenoaTransactionsForEntity             = 62;
+   GenoaTradeFeeForEntity                 = 63;
+   GenoaGetStatementDates                 = 64;
+   GenoaGetStatements                     = 65;
 }
 
 message GenoaConnectedBroadcast
@@ -556,22 +423,28 @@ message GenoaUserRequest
 
 message GenoaOrderData
 {
-   int32  subsystem = 1;
-   double price = 2;
-   string contra_product = 3;
-   double quantity = 4;
-   double contra_quantity = 5;
-   string product = 6;
-   int32  trade_status = 7;
-   uint64 timestamp = 8;
-   string status = 9;
+   string id               = 11;
+   int32  subsystem        = 1;
+   double price            = 2;
+   string contra_product   = 3;
+   double quantity         = 4;
+   double contra_quantity  = 5;
+   string product          = 6;
+   int32  trade_status     = 7;
+   uint64 timestamp        = 8;
+   string status           = 9;
+   int32  trade_type       = 10;
+   double cut_off_price    = 12;
+   double trade_im         = 13;
+   bool   is_rollover      = 14;
 }
 
 message GenoaFindOrdersResponse
 {
    bool   loaded = 1;
    string error_text = 2;
-   repeated GenoaOrderData orders = 3;
+   string entity_name = 3;
+   repeated GenoaOrderData orders = 4;
 }
 
 message GenoaTradingStatusResponse
@@ -681,32 +554,33 @@ message GenoaAccountsBalanceUpdate
 
 enum GenoaAccountRequestType
 {
-   GenoaAccountUnknown = 0;
-   GenoaAccountUser    = 1;
-   GenoaAccountUsers   = 2;
-   GenoaAccountBalance = 3;
+   GenoaAccountUnknown           = 0;
+   GenoaAccountUser              = 1;
+   GenoaAccountUsers             = 2;
+   GenoaAccountBalancesSnapshot  = 3;
 }
 
 message GenoaAccountMessage
 {
    GenoaAccountRequestType type = 1;
    oneof data {
-      GenoaAccountUserRequest   user_request = 2;
-      CustomerAccountData account_data = 3;
-      GenoaAccountsData accounts = 4;
-      bytes balance_snapshot = 5;
-      GenoaAccountsBalanceUpdate balance_update = 6;
+      GenoaAccountUserRequest    user_request      = 2;
+      CustomerAccountData        account_data      = 3;
+      GenoaAccountsData          accounts          = 4;
+      bytes                      balance_snapshot  = 5;
+      GenoaAccountsBalanceUpdate balance_update    = 6;
    }
 }
 
 message GenoaAccountData
 {
-   string email = 1;
-   string entity_name = 2;
-   int64  entity_id = 3;
-   string account_name = 4;
-   string account_type = 5;
-   int64  account_id = 6;
+   string   email          = 1;
+   string   entity_name    = 2;
+   int64    entity_id      = 3;
+   string   account_name   = 4;
+   string   account_type   = 5;
+   int64    account_id     = 6;
+   string   email_hashed   = 7;
 }
 
 message GenoaAccountInfoResponse
@@ -765,8 +639,432 @@ message UserEntityInfo
    string entity_name   = 2;
 }
 
+message AffectedEntities
+{
+   repeated string entity_name = 1;
+}
+
+message CutoffPriceProcessingResult
+{
+   bool              result            = 1;
+   AffectedEntities  affected_entities = 2;
+}
+
+message XBT1DayTradeResult
+{
+   string   cl_ord_id      = 1;
+   bool     matched        = 2;
+   string   error_text     = 3;
+}
+
+message SetDeliveryAddress
+{
+   string trade_id            = 1;
+   string bs_delivery_address = 2;
+}
+
+message SetDeliveryAddressResponse
+{
+   string   trade_id = 1;
+   bool     result   = 2;
+}
+
+message SettleDelivery
+{
+   string trade_id = 1;
+}
+
+
+message LoadedGenoaObligationData
+{
+   string entity_name         = 1;
+   string product             = 2;
+   string trade_id            = 3;
+   string bs_delivery_address = 4;
+   double price               = 5;
+   double xbt_amount          = 6;
+}
+
+message LoadAllObligationsResponse
+{
+   bool                                loaded      = 1;
+   repeated LoadedGenoaObligationData  obligation  = 2;
+}
+
+message GenoaGetCurrentTradeCycleDetails
+{
+   bool success                     = 1;
+   string error_msg                 = 2;
+   string product_name              = 3;
+   int64 cut_off_at                 = 4;
+   double seconds_time_to_cut_off   = 5;
+   double open_interest             = 6;
+   double last_cut_off_price        = 7;
+   double fee                       = 8;
+   string fee_ccy                   = 9;
+   double im                        = 10;
+}
+
+message GenoaEstimateImRequest
+{
+   string product_name = 1;
+   double qty = 2;
+   string entity_name = 3;
+}
+
+message GenoaEstimateImResponse
+{
+   bool success = 1;
+   string error_msg = 2;
+   string entity_name = 3;
+
+   double expected_im_reservation = 10;
+   double fee_amount = 12;
+   string product_name = 13;
+}
+
+message GenoaSendCutoffPriceReq
+{
+   string   product_name      = 1;
+   double   cutoff_price      = 2;
+   bool     price_available   = 3;
+}
+
+message GenoaTradingDayOpenMsg
+{
+   string            product_name         = 1;
+   int64             cut_off_at           = 2;
+   double            seconds_to_cut_off   = 3;
+   double            last_cut_off_price   = 4;
+}
+
+message GenoaOpenInterestMsg
+{
+   string            product_name         = 1;
+   double            open_interest        = 2;
+}
+
+message GenoaUserNotifyMsg
+{
+   string            broadcast_to         = 1;
+   string            message              = 2;
+   string            code                 = 3;
+   string            type                 = 4;
+}
+
+message GenoaRegisterAccountRequest
+{
+   string answers = 1;
+   string kyc = 2;
+}
+
+message GenoaRegisterAccountResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   string error_msg = 3;
+   string entity_name = 4;
+}
+
+message GenoaCreateIbanAgreementUrlRequest
+{
+   string   entity_name          = 1;
+   string   country_short_code   = 2;
+   string   iban                 = 3;
+   string   redirect             = 4;
+   bool     sandbox              = 5;
+}
+
+message GenoaCreateIbanAgreementUrlResponse
+{
+   bool error = 1;
+   string message = 2;
+   string ref = 3;
+   string initiate = 4;
+}
+
+message GenoaGetIbanAccountsRequest
+{
+   string requisitions_id  = 1;
+   string entity_name      = 2;
+}
+
+message GenoaGetIbanAccountsResponse
+{
+   bool loaded = 1;
+   repeated string results = 2;
+}
+
+message GenoaGetIbanAccountDetailsRequest
+{
+   string account_ref = 1;
+}
+
+message GenoaGetIbanAccountDetailsResponse
+{
+   bool     loaded            = 1;
+   string   resource_id       = 2;
+   string   iban              = 3;
+   string   currency          = 4;
+   string   name              = 5;
+   string   product           = 6;
+   string   cash_account_type = 7;
+   string   account_ref       = 8;
+}
+
+message GenoaNewApiKeyRequest
+{
+   string entity_name = 1;
+   string label = 2;
+   string ip = 3;
+}
+
+message GenoaNewApiKeyResponse
+{
+   bool error = 1;
+   GenoaListApiKeysResponse.ApiKey key = 2;
+   string secret = 3;
+}
+
+message GenoaListApiKeysRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaListApiKeysResponse
+{
+   message ApiKey
+   {
+      int32 id = 1;
+      string token = 2;
+      string allow = 3;
+      string label = 4;
+      string created = 5;
+   }
+
+   bool loaded = 1;
+   repeated ApiKey keys = 2;
+}
+
+message GenoaDeleteApiKeyRequest
+{
+   string entity_name = 1;
+   int32 key_id = 2;
+}
+
+message GenoaDeleteApiKeyResponse
+{
+   bool error = 1;
+   int32 key_id = 2;
+}
+
+message GenoaCreateExternalAccountRequest
+{
+   string entity_name = 1;
+   string account_ref = 2;
+}
+
+message GenoaCreateExternalAccountResponse
+{
+   message ExternalAccountInfo
+   {
+      string   name        = 1;
+      string   created_at  = 2;
+      string   bank_name   = 3;
+   }
+
+   bool                 created  = 1;
+   ExternalAccountInfo  account  = 2;
+}
+
+message GenoaGetAllExternalAccountsRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaGetAllExternalAccountsResponse
+{
+   message ExternalAccountInfo
+   {
+      string   name        = 1;
+      string   created_at  = 2;
+      string   bank_name   = 3;
+   }
+
+   bool loaded = 1;
+
+   repeated ExternalAccountInfo accounts = 2;
+}
+
+message GenoaGetDepositInfoRequest
+{
+   string entity_name = 1;
+}
+
+message GenoaGetDepositInfoResponse
+{
+   bool loaded = 1;
+   string data = 2;
+}
+
+message GenoaWithdrawToExternalAccountRequest
+{
+   string entity_name = 1;
+   string account_name = 2;
+   double amount = 3;
+   string ccy = 4;
+}
+
+message GenoaWithdrawToExternalAccountResponse
+{
+   bool success = 1;
+   string error_message  = 2;
+}
+
+message GenoaRegisterXBTDepositRequest
+{
+   string entity_name   = 1;
+   double price         = 2;
+   double xbt_amount    = 3;
+   double eur_amount    = 4;
+   string deposit_id    = 5;
+}
+
+message GenoaRegisterXBTDepositResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaConfirmXBTDepositRequest
+{
+   string deposit_id = 1;
+}
+
+message GenoaConfirmXBTDepositResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+message GenoaRegiserXBTWithdrawRequest
+{
+   string entity_name   = 1;
+   double price         = 2;
+   double xbt_amount    = 3;
+   double eur_amount    = 4;
+   string deposit_id    = 5;
+   double fee           = 6;
+}
+
+message GenoaRegiserXBTWithdrawResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaConfirmXBTWithdrawRequest
+{
+   string deposit_id = 1;
+}
+
+message GenoaConfirmXBTWithdrawResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaReportRejectedDepositRequest
+{
+   string entity_name      = 1;
+   string tx_id            = 2;
+   string return_address   = 3;
+   uint64 validation_score = 4;
+}
+
+message GenoaGeneralResponse
+{
+   bool     result         = 1;
+   string   error_message  = 2;
+}
+
+message GenoaTradeHistoryRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTradeHistoryResponse
+{
+   repeated GenoaOrderData orders = 1;
+   uint32 count = 2;
+   bool loaded = 3;
+}
+
+message GenoaTransactionsForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTransactionsForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TransactionsForEntity result = 2;
+}
+
+message GenoaTradeFeeForEntityRequest
+{
+   string entity_name = 1;
+   uint32 limit = 2;
+   uint32 offset = 3;
+}
+
+message GenoaTradeFeeForEntityResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
+}
+
+message GenoaGetStatementDatesRequest
+{
+   string entity_name = 1;
+   string start_date = 2;
+   string end_date = 3;
+}
+
+message GenoaGetStatementDatesResponse
+{
+   string entity_name = 1;
+   Blocksettle.Communication.ApiServer.Response.GetStatementDates result = 2;
+}
+
+message GenoaGetStatementsRequest
+{
+   string entity_name = 1;
+   string date = 2;
+}
+
+message GenoaGetStatementsResponse
+{
+   Blocksettle.Communication.ApiServer.Response.GetStatements result = 2;
+}
+
 message GenoaMessage
 {
+   message FutureTradeData
+   {
+      TradeDataMessage  trade                      = 1;
+      double            IM_reserve_acquirer        = 2;
+      double            DM_reserve                 = 3;
+      double            IM_reserve_counterparty    = 4;
+      string            dealer_trading_account     = 5;
+      double            net_exposure_acquirer      = 6;
+      double            net_exposure_counterparty  = 7;
+      int64             valid_duration             = 8;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaConnectedBroadcast          connected                  = 2;
@@ -788,6 +1086,7 @@ message GenoaMessage
       GenoaXbtCompleteTransferResponse xbt_transfer_complete      = 19;
       GenoaAccountMessage              account                    = 20;
       CustomerAccountData              new_account                = 6;
+      GenoaAccountsBalanceUpdate       balance_update             = 54;
       GenoaSendCCTokenRequest          cc_token                   = 21;
       TradeInfoCcData                  cc_reserve                 = 22;
       string                           settlement_id              = 23;
@@ -801,24 +1100,99 @@ message GenoaMessage
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
       string                           entity_name                = 37;
+
+      FutureTradeData                  xbt1day_deliverable_trade_request   = 38;
+      XBT1DayTradeResult               xbt1day_deliverable_trade_response  = 39;
+
+      FutureTradeData                  xbt1day_cash_settled_trade_request  = 40;
+      XBT1DayTradeResult               xbt1day_cash_settled_trade_response = 41;
+
+      GenoaSendCutoffPriceReq          cutoff_price               = 42;
+      CutoffPriceProcessingResult      cutoff_processing_result   = 43;
+
+      SetDeliveryAddress               set_delivery_address          = 44;
+      SetDeliveryAddressResponse       set_delivery_address_response = 45;
+
+      LoadAllObligationsResponse       loaded_obligations            = 46;
+      SettleDelivery                   settle_delivery_status        = 47;
+
+      string                           trade_cycle_status            = 53;
+      GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 48;
+      GenoaEstimateImRequest           estimate_im                   = 49;
+      GenoaEstimateImResponse          estimate_im_response          = 50;
+      GenoaTradingDayOpenMsg           trading_day_open              = 51;
+      GenoaRegisterAccountRequest      register_account_req          = 55;
+      GenoaRegisterAccountResponse     register_account_resp         = 56;
+
+      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 57;
+      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 58;
+      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 59;
+      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 60;
+      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 61;
+      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 62;
+      GenoaOpenInterestMsg                   open_interest                    = 63;
+      GenoaUserNotifyMsg                     user_notify                      = 64;
+
+      GenoaNewApiKeyRequest                  new_api_key_req                  = 65;
+      GenoaNewApiKeyResponse                 new_api_key_resp                 = 66;
+      GenoaListApiKeysRequest                list_api_keys_req                = 67;
+      GenoaListApiKeysResponse               list_api_keys_resp               = 68;
+      GenoaDeleteApiKeyRequest               delete_api_key_req               = 69;
+      GenoaDeleteApiKeyResponse              delete_api_key_resp              = 70;
+
+      GenoaCreateExternalAccountRequest         create_external_account_req        = 71;
+      GenoaCreateExternalAccountResponse        create_external_account_resp       = 72;
+      GenoaGetAllExternalAccountsRequest        get_all_external_accounts_req      = 73;
+      GenoaGetAllExternalAccountsResponse       get_all_external_accounts_resp     = 74;
+      GenoaGetDepositInfoRequest                get_deposit_info_req               = 75;
+      GenoaGetDepositInfoResponse               get_deposit_info_resp              = 76;
+      GenoaWithdrawToExternalAccountRequest     withdraw_to_external_account_req   = 77;
+      GenoaWithdrawToExternalAccountResponse    withdraw_to_external_account_resp  = 78;
+
+      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 79;
+      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 80;
+      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 81;
+      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 82;
+
+      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 83;
+      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 84;
+      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 85;
+      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 86;
+
+      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 87;
+      GenoaGeneralResponse                      report_rejected_deposit_response = 88;
+      GenoaTradeHistoryRequest                  trade_history                    = 89;
+      GenoaTradeHistoryResponse                 trade_history_response           = 90;
+      GenoaTransactionsForEntityRequest         transactions_for_entity          = 91;
+      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 92;
+      GenoaTradeFeeForEntityRequest             trade_fee_for_entity             = 93;
+      GenoaTradeFeeForEntityResponse            trade_fee_for_entity_response    = 94;
+      GenoaGetStatementDatesRequest             get_statement_dates              = 95;
+      GenoaGetStatementDatesResponse            get_statement_dates_response     = 96;
+      GenoaGetStatementsRequest                 get_statements                   = 97;
+      GenoaGetStatementsResponse                get_statements_response          = 98;
+
    }
 }
 
 enum GenoaServerType
 {
-   GenoaServerResponse        = 0;
-   GenoaServerNewClient       = 1;
-   GenoaServerUpdBalance      = 2;
-   GenoaServerUpdTrdStatus    = 3;
-   GenoaServerXbtTrdStatus    = 4;
-   GenoaServerNewCcSeed       = 5;
-   GenoaServerNewCCDeposit    = 6;
+   GenoaServerResponse           = 0;
+   GenoaServerNewClient          = 1;
+   GenoaServerUpdBalance         = 2;
+   GenoaServerUpdTrdStatus       = 3;
+   GenoaServerXbtTrdStatus       = 4;
+   GenoaServerNewCcSeed          = 5;
+   GenoaServerNewCCDeposit       = 6;
+   GenoaTradingDayClosedSignal   = 7;
+   GenoaOpenDeliveryPeriod       = 8;
+   GenoaCloseDeliveryPeriod      = 9;
+   GenoaTradeUpdateEvent         = 10;
 }
 
 message GenoaServerClientRequest
 {
    string email = 1;
-   string full_name = 2;
 }
 
 message GenoaServerBalanceUpdate
@@ -856,18 +1230,32 @@ message GenoaServerNewCCDepositRequest
    string      correlation_id = 4;
 }
 
+message GenoaServerTradeUpdateEvent
+{
+   string            entity_name    = 1;
+   bs.types.Action   action         = 2;
+   bs.types.Order    order          = 3;
+}
+
+message GenoaServerTradingDayClose
+{
+   string            product_name   = 1;
+}
+
 message GenoaServerMessage
 {
    GenoaServerType type = 1;
    oneof data {
-      GenoaServerClientRequest         new_client     = 2;
-      GenoaServerBalanceUpdate         balance_update = 3;
-      GenoaServerTradingStatusUpdate   trd_status     = 4;
-      GenoaServerXbtTradingStatus      xbt_trd_status = 5;
-      GenoaServerNewCcSeedRequest      new_cc_seed    = 6;
-      GenoaServerNewCCDepositRequest   new_cc_deposit = 7;
+      GenoaServerClientRequest         new_client           = 2;
+      GenoaServerBalanceUpdate         balance_update       = 3;
+      GenoaServerTradingStatusUpdate   trd_status           = 4;
+      GenoaServerXbtTradingStatus      xbt_trd_status       = 5;
+      GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
+      GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
+      GenoaServerTradeUpdateEvent      trade_update         = 8;
+      GenoaServerTradingDayClose       trading_day_close    = 9;
 
-      bool                             response       = 10;
+      bool                             response             = 50;
    }
 }
 
@@ -885,11 +1273,13 @@ message MktDataUpdateMessage
 {
    message MktDataField
    {
-      int32  type = 1;
-      double value = 2;
+      int32  type             = 1;
+      double value            = 2;
+      string level_quantity   = 3;
    }
-   int32  asset = 1;
-   string security = 2;
+   int32  asset      = 1;
+   string security   = 2;
+
    repeated MktDataField fields = 3;
 }
 
@@ -938,9 +1328,10 @@ enum CelerType
    CelerGetUserProperty          = 32;
    CelerRegisterCCDefinition     = 33;
    CelerCheckUser                = 34;
+   CelerRawDataType              = 50;
 }
 
-message CelerSavedTrade
+message SavedTradeInfoMessage
 {
    string product = 1;
    double price = 2;
@@ -1027,6 +1418,12 @@ message CelerCheckUserResponse
    bool     xbt_dealing_enabled  = 4;
 }
 
+message CelerRawData
+{
+   int32 type = 1;
+   bytes data = 2;
+}
+
 message CelerMessage
 {
    CelerType type = 1;
@@ -1044,6 +1441,7 @@ message CelerMessage
       string                           cc_name                 = 14;
       CelerCheckUserRequest            check_user_request      = 15;
       CelerCheckUserResponse           check_user_response     = 16;
+      CelerRawData                     raw_data                = 50;
    }
    int64 sequence_num = 17;
 }
@@ -1055,15 +1453,20 @@ enum TradeHistType
    TradeHistSaveFxTrade             = 1;
    TradeHistSaveXbtTrade            = 2;
    TradeHistSaveCcTrade             = 3;
-   TradeHistSaveTradeResult         = 4;
-   TradeHistRequestLastTrade        = 5;
-   TradeHistRequestLastBuySellTrade = 6;
-   TradeHistRequestSnapshot         = 7;
-   TradeHistRequestCcPrices         = 8;
-   TradeHistRequestEOD              = 9;
-   TradeHistRequestEODSnapshot      = 10;
-   TradeHistorySetInitialPrice      = 11;
-   TradeHistEODEvent                = 12;
+   TradeHistSaveCashSettledTrade    = 4;
+   TradeHistSaveDeliverableTrade    = 5;
+   TradeHistSaveTradeResult         = 6;
+   TradeHistRequestLastTrade        = 7;
+   TradeHistRequestLastBuySellTrade = 8;
+   TradeHistRequestSnapshot         = 9;
+   TradeHistRequestCcPrices         = 10;
+   TradeHistRequestEOD              = 11;
+   TradeHistRequestEODSnapshot      = 12;
+   TradeHistorySetInitialPrice      = 13;
+   TradeHistEODEvent                = 14;
+   TradeHistPriceBookUpdate         = 15;
+   TradeHistUpdatePL                = 16;
+   TradeHistQueryPL                 = 17;
 }
 
 message TradeDataMessage
@@ -1239,20 +1642,22 @@ message TradeHistMessage
 {
    TradeHistType type = 1;
    oneof data {
-      bytes                                     fx_trade          = 2;
-      bytes                                     xbt_trade         = 3;
-      bytes                                     cc_trade          = 4;
-      TradeHistResponse                         response          = 5;
-      TradeHistRequest                          hist_request      = 6;
-      bytes                                     last_trade        = 7;
-      TradeHistBuySellResponse                  buy_sell_trades   = 8;
-      TradeHistSnapshotResponse                 trades_snapshot   = 9;
-      TradeHistPricesResponse                   prices            = 10;
-      Communication.TradeHistory.DateContainer  eod_request       = 11;
-      bytes                                     eod_data          = 12;
-      TradeHistEODSnapshotResponse              eod_snapshot      = 13;
-      SetInitialPriceRequest                    set_initial_price = 14;
-      TradeHistEODUpdate                        eod_update        = 15;
+      bytes                                        serialized_trade  = 2;
+      TradeHistResponse                            response          = 5;
+      TradeHistRequest                             hist_request      = 6;
+      bytes                                        last_trade        = 7;
+      TradeHistBuySellResponse                     buy_sell_trades   = 8;
+      TradeHistSnapshotResponse                    trades_snapshot   = 9;
+      TradeHistPricesResponse                      prices            = 10;
+      Communication.TradeHistory.DateContainer     eod_request       = 11;
+      bytes                                        eod_data          = 12;
+      TradeHistEODSnapshotResponse                 eod_snapshot      = 13;
+      SetInitialPriceRequest                       set_initial_price = 14;
+      TradeHistEODUpdate                           eod_update        = 15;
+      Communication.TradeHistory.PriceBookUpdate   price_book_update = 16;
+      Storage.TradePL                              trade_pl_update   = 17;
+      Storage.TradePLQuery                         trade_pl_query    = 18;
+      Storage.TradePLResult                        trade_pl_result   = 19;
    }
 }
 
@@ -1280,23 +1685,25 @@ message SettlementTxMessage
 
 enum TerminalMessageType
 {
-   TerminalUnknownType           = 0;
-   TerminalSendBlotterUpdate     = 1;
-   TerminalUnsignedPayinRequest  = 2;
-   TerminalSignedPayinRequest    = 3;
-   TerminalSignedPayoutRequest   = 4;
-   TerminalXBTTradeCancel        = 5;
-   TerminalCCTradeCancel         = 6;
-   TerminalOtcStart              = 10;
-   TerminalOtcVerify             = 11;
-   TerminalOtcSealPayin          = 12;
-   TerminalOtcTxProcess          = 13;
-   TerminalOtcCancel             = 14;
-   TerminalOtcUpdate             = 15;
-   TerminalUpdateBalance         = 16;
-   TerminalOTCcVerify            = 17;
-   TerminalOTCcAccept            = 18;
-   TerminalOTCcTrade             = 19;
+   TerminalUnknownType              = 0;
+   TerminalUnsignedPayinRequest     = 2;
+   TerminalSignedPayinRequest       = 3;
+   TerminalSignedPayoutRequest      = 4;
+   TerminalXBTTradeCancel           = 5;
+   TerminalCCTradeCancel            = 6;
+   TerminalOtcStart                 = 10;
+   TerminalOtcVerify                = 11;
+   TerminalOtcSealPayin             = 12;
+   TerminalOtcTxProcess             = 13;
+   TerminalOtcCancel                = 14;
+   TerminalOtcUpdate                = 15;
+   TerminalUpdateBalance            = 16;
+   TerminalOTCcVerify               = 17;
+   TerminalOTCcAccept               = 18;
+   TerminalOTCcTrade                = 19;
+   TerminalUpdateBlotterForEntities = 21;
+   TerminalReportDelivery           = 22;
+   TerminalUpdateTrade              = 23;
 }
 
 message PreimageData {
@@ -1388,23 +1795,49 @@ message TerminalUpdateBalanceMessage
    repeated bs.types.Balance balances = 1;
 }
 
+message TerminalDeliveryReport
+{
+   enum Status {
+      INVALID = 0;
+      PENDING = 1;
+      DELIVERED = 2;
+      //REJECTED ?
+   }
+   string entity = 1;
+   string id = 2;
+   int64  to_deliver = 3;
+   string bs_address = 4;
+   double price = 5;
+   Status status = 6;
+}
+
+message TerminalUpdateOrder
+{
+   bs.types.Order order = 1;
+   bs.types.Action action = 2;
+}
+
 message TerminalMessage
 {
-   TerminalMessageType type = 1;
-   string address_email = 2;
+   TerminalMessageType  type           = 1;
+   string               address_email  = 2;
+
    oneof data {
-      string settlement_id = 3;
-      TerminalUnsignedPayin unsigned_payin = 4;
-      TerminalSignPayinRequest sign_payin_request = 5;
-      TerminalSignedData signed_data = 6;
-      TerminalOtcStartRequest   otc_start = 10;
-      TerminalOtcStartResponse  otc_response = 11;
-      TerminalOtcVerifyRequest  otc_verify = 12;
-      TerminalOtcUpdateMessage  otc_update = 13;
-      TerminalOtcTxMessage      otc_tx = 14;
-      TerminalUpdateBalanceMessage update_balance_message = 15;
-      TerminalOTCcVerifyRequest otcc_verify = 16;
-      TerminalOTCcSignedTX      otcc_tx = 17;
+      string                        settlement_id              = 3;
+      TerminalUnsignedPayin         unsigned_payin             = 4;
+      TerminalSignPayinRequest      sign_payin_request         = 5;
+      TerminalSignedData            signed_data                = 6;
+      TerminalOtcStartRequest       otc_start                  = 10;
+      TerminalOtcStartResponse      otc_response               = 11;
+      TerminalOtcVerifyRequest      otc_verify                 = 12;
+      TerminalOtcUpdateMessage      otc_update                 = 13;
+      TerminalOtcTxMessage          otc_tx                     = 14;
+      TerminalUpdateBalanceMessage  update_balance_message     = 15;
+      TerminalOTCcVerifyRequest     otcc_verify                = 16;
+      TerminalOTCcSignedTX          otcc_tx                    = 17;
+      AffectedEntities              entities_to_update         = 20;
+      TerminalDeliveryReport        delivery_report            = 21;
+      TerminalUpdateOrder           update_order               = 22;
    }
 }
 
@@ -1415,9 +1848,9 @@ enum ProxyMessageType
    ProxyConnected          = 1;
    ProxyDisconnected       = 2;
    ProxyReconnect          = 3;
-   ProxyBlotterUpdates     = 4;
    ProxyOnlineUsers        = 5;
    ProxyUserStatusUpdated  = 6;
+   ProxyOnlineUserStats    = 7;
 }
 
 message ProxyOnlineUsersMessage
@@ -1440,6 +1873,8 @@ message ProxyMessage
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
+      string                        user_connected = 10;
+      string                        user_disconnected = 11;
    }
 }
 
@@ -1458,10 +1893,9 @@ message WebScorechainUtxoRequest
 
 message WebScorechainUtxoResponse
 {
-   bool   success = 1;
-   int32  average_score = 2;
-   int32  min_score = 3;
-   string url = 4;
+   bool   success    = 1;
+   int32  min_score  = 2;
+   string url        = 3;
 }
 
 message WebScorechainCacheTxRequest
@@ -1483,13 +1917,14 @@ message WebClientMessage
 
 enum RelayUser
 {
-   UserUnknown = 0;
-   UserPrivateBridge = 1;
-   UserStorage = 2;
-   UserCCTracker = 3;
-   UserCeler = 4;
-   UserGenoa = 5;
-   UserTradeHist = 6;
+   UserUnknown          = 0;
+   UserPrivateBridge    = 1;
+   UserStorage          = 2;
+   UserCCTracker        = 3;
+   UserCeler            = 4;
+   UserGenoa            = 5;
+   UserTradeHist        = 6;
+   StreamPriceOffering  = 7;
 }
 
 message RelayedMessage
@@ -1534,5 +1969,415 @@ message AuthManaging
       FilterAuthFundUTXOs  auth_fund_utxos = 4;
 
       string               user_promoted_to_dealer = 5;
+   }
+}
+
+enum ObligationsManagingMessageType
+{
+   SendCutoffPriceRequest     = 0;
+   LoadCustomerObligations    = 1;
+   CustomerObligation         = 2;
+   WhitelistUserAddress       = 3;
+   RevokeUserAddress          = 4;
+   XBTWithdraw                = 5;
+};
+
+message ObligationsManaging
+{
+   message CustomerObligationsRequest
+   {
+      string   entity_name    = 1;
+   }
+
+   message CustomerObligationsResponse
+   {
+      string   entity_name    = 1;
+      int64    to_deliver     = 2;
+      string   bs_address     = 3;
+      double   cutoff_price   = 4;
+      bool     detected       = 5;
+   }
+
+   message CustomerObligationRequest
+   {
+      string   entity_name    = 1;
+      string   delivery_id    = 2;
+      int64    value          = 3;
+      string   bs_address     = 4;
+      double   price          = 5;
+   }
+
+   message TradingDayClose
+   {
+      string   product_name   = 1;
+   }
+
+   message LiveCutOffPriceUpdate
+   {
+      bs.types.PriceBookType  price_book  = 1;
+      int64                   ask         = 2;
+      int64                   bid         = 3;
+   }
+
+   message SubmitWhitelistedAddress
+   {
+      string entity_name = 1;
+      Blocksettle.Communication.ApiServer.Request.WhitelistedAddressRequest  address_data   = 2;
+   }
+
+   message SubmitAddressResponse
+   {
+      // bs::network::SubmitWhitelistedAddressStatus
+      int32    status_code = 1;
+      string   entity_name = 2;
+      Blocksettle.Communication.ApiServer.Response.WhitelistedAddressResponse address_data = 3;
+   }
+
+   message RevokeUserAddress
+   {
+      string entity_name   = 1;
+      string address       = 2;
+   }
+
+   message RevokeUserAddressResponse
+   {
+      string   entity_name = 1;
+      string   address     = 2;
+      int32    status_code = 3;
+   }
+
+   message XBTWithdrawRequest
+   {
+      string   entity_name = 1;
+      string   address     = 2;
+      double   eur_amount  = 3;
+      double   price       = 4;
+      double   xbt_receive_amount = 5;
+      double   fee_amount  = 6;
+   }
+
+   message XBTWithdrawResponse
+   {
+      string   entity_name = 1;
+      string   address     = 2;
+      double   eur_amount  = 3;
+      int32    status_code = 4;
+   }
+
+   ObligationsManagingMessageType   type = 1;
+
+   oneof data
+   {
+      CustomerObligationsRequest    load_obligations_request   = 2;
+      CustomerObligationsResponse   load_obligations_response  = 3;
+      TradingDayClose               trading_day_close_request  = 4;
+      SubmitWhitelistedAddress      submit_address_request     = 5;
+      SubmitAddressResponse         submit_address_response    = 6;
+      RevokeUserAddress             revoke_request             = 7;
+      RevokeUserAddressResponse     revoke_response            = 8;
+      XBTWithdrawRequest            xbt_withdraw_request       = 9;
+      XBTWithdrawResponse           xbt_withdraw_response      = 10;
+      CustomerObligationRequest     customer_obligation        = 11;
+   }
+}
+
+message PriceStreamManaging
+{
+   enum MessageType
+   {
+      GetBestOfferingPriceForOrder  = 0;
+      CleanupExpiredPriceOfferings  = 1;
+      PriceConsumed                 = 2;
+      SubmitPrices                  = 3;
+      PullPrices                    = 4;
+      DealerConnected               = 10;
+      DealerDisconnected            = 11;
+   };
+
+   message GetBestOfferRequest
+   {
+      uint64                  xbt_amount        = 1;
+      string                  requesting_entity = 2;
+      bool                    get_ask_price     = 3;
+      bs.types.PriceBookType  price_book        = 4;
+   }
+
+   message GetBestOfferResponse
+   {
+
+      message PriceOffer
+      {
+         string   owner_entity_name = 1;
+         double   price             = 2;
+         uint64   timestamp         = 3;
+      }
+
+      int64       xbt_amount  = 1;
+      PriceOffer  best_offer  = 2;
+      bool        matched     = 3;
+   }
+
+   message ClientData
+   {
+      bytes    client_id   = 1;
+      bytes    client_data = 2;
+   }
+
+   message PriceConsumedData
+   {
+      string   owner_entity_name = 1;
+      uint64   timestamp         = 2;
+   }
+
+   message SubmitPricesRequest
+   {
+      string                     owner_entity_name = 1;
+      bs.types.SubmitPricesData  submit_price_data = 2;
+   }
+
+   message PullPricesRequest
+   {
+      string                     owner_entity_name = 1;
+      bs.types.PullPricesData    pull_price_data   = 2;
+   }
+
+
+   MessageType   message_type = 1;
+
+   oneof data
+   {
+      GetBestOfferRequest  get_best_price_offer = 2;
+      GetBestOfferResponse best_price_offer     = 3;
+      ClientData           client_data          = 4;
+      PriceConsumedData    consumed_price       = 5;
+      string               entity_name          = 6;
+      SubmitPricesRequest  submit_prices        = 7;
+      PullPricesRequest    pull_prices          = 8;
+   }
+}
+
+message ApiServerMsg
+{
+   message UpdateOrder
+   {
+      string entity_name = 1;
+      bs.types.Order order = 2;
+      bs.types.Action action = 3;
+   }
+
+   message UpdateBook
+   {
+      Communication.TradeHistory.PriceBookUpdate data = 1;
+   }
+
+   message TradeClose
+   {
+      string product_name = 1;
+   }
+
+   message UserNotify
+   {
+      string   broadcast_to   = 1;
+      string   message        = 2;
+      string   code           = 3;
+      string   type           = 4;
+   }
+
+   message UpdateWithdrawPrices
+   {
+      double   sell_price     = 1;
+      double   buy_price      = 2;
+      double   network_fee    = 3;
+      double   min_xbt_amount = 4;
+   }
+
+   oneof data
+   {
+      UpdateOrder    update_order   = 2;
+      UpdateBook     update_book    = 3;
+      TradeClose     trade_close    = 4;
+      Empty          send_prices    = 5;
+      Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
+      Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
+      string         user_connected    = 8;
+      string         user_disconnected = 9;
+      UserNotify     user_notify       = 10;
+      UpdateWithdrawPrices update_withdraw_prices = 11;
+      Empty          subscribe_price_offers = 12;
+      Communication.TradeHistory.PriceBookUpdate price_offer = 13;
+   }
+}
+
+
+message UsersImInfo
+{
+   message InfoIM {
+      message PerProduct {
+         int32  product_type = 1;
+         double net_exposure = 2;
+         double leverage_ratio = 3;
+         double balance = 4;
+         double im_balance = 5;
+         double profit_loss = 6;
+      }
+      string account_name = 1;
+      repeated PerProduct per_product = 2;
+      double im_balance = 3;
+      double balance = 4;
+      double profit_loss = 5;
+   }
+   repeated InfoIM im_info = 1;
+   repeated string connected_users = 2;
+   repeated string lp_streaming_users = 3;
+
+   message OpenInterest {
+      int32  product_type = 1;
+      double buy = 2;
+      double sell = 3;
+   }
+   repeated OpenInterest open_interest = 4;
+}
+
+
+message CashResMessage
+{
+   message Order
+   {
+      string entity_name = 1;
+      double qty = 2;
+      bs.types.Side side = 3;
+      double price = 4;
+      int32  trade_type = 5;
+      string cl_ord_id = 6;
+   }
+
+   message EstimateImRequest
+   {
+      string entity_name = 1;
+      string product = 2;
+      double qty = 3;
+      bs.types.Side side = 4;
+      double price = 5;
+   }
+
+   message EstimateImResponse
+   {
+      EstimateImRequest request = 1;
+      bool   success = 2;
+      double im_balance = 3;
+      string error_text = 4;
+   }
+
+   message IMnettingRequest
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      repeated Order orders = 3;
+   }
+
+   message IMnettingResponse
+   {
+      string entity_name = 1;
+      double balance = 2;
+      double net_exposure = 3;
+   }
+
+   message MaxAmountRequest
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
+   }
+
+   message MaxAmountResponse
+   {
+      string entity_name = 1;
+      int32  prod_type = 2;
+      bs.types.Side side = 3;
+      double max_amount = 4;
+      double fee = 5;
+   }
+
+   oneof data {
+      IMnettingRequest           im_net_request = 1;
+      IMnettingResponse          im_net_response = 2;
+      EstimateImRequest          estimate_im_request = 3;
+      EstimateImResponse         estimate_im_response = 4;
+      MaxAmountRequest           max_amount_request = 5;
+      MaxAmountResponse          max_amount_response = 6;
+      UsersImInfo                users_im_info = 7;
+      Order                      append_order = 10;
+      string                     remove_order = 11;
+   }
+}
+
+
+message DealerConnMessage
+{
+   message OrderRequest
+   {
+      string product = 1;
+      double qty = 2;
+      bs.types.Side side = 3;
+   }
+
+   message OrderResponse
+   {
+      bool   success = 1;
+      string product = 2;
+      double qty = 3;
+      bs.types.Side side = 4;
+      string exchange_order_id = 5;
+      double price = 6;
+      string reject_reason = 7;
+   }
+
+   message PriceUpdate
+   {
+      double ask = 1;
+      double bid = 2;
+   }
+
+   oneof data
+   {
+      Empty          connected      = 1;
+      Empty          disconnected   = 2;
+      OrderRequest   order_request  = 3;
+      OrderResponse  order_response = 4;
+      PriceUpdate    price_update   = 5;
+   }
+}
+
+message PriceAggregation
+{
+// Internal messages to self
+   message ExternalConnectionStatusChanged
+   {
+      string   exchange_name  = 1;
+      bool     connected      = 2;
+   }
+
+   message ExternalConnectionPriceUpdated
+   {
+      string exchange_name = 1;
+      double bid           = 2;
+      double ask           = 3;
+   }
+
+// broadcast message
+   message AggregatedPriceUpdate
+   {
+      // aggregated price for XBT/EUR
+      double   ask      = 1;
+      double   bid      = 2;
+   }
+
+   oneof data
+   {
+      // internal messages
+      ExternalConnectionStatusChanged  connection_status_changed  = 1;
+      ExternalConnectionPriceUpdated   exchange_price_update      = 2;
+      // broadcasted messages
+      AggregatedPriceUpdate            aggregated_price           = 3;
    }
 }

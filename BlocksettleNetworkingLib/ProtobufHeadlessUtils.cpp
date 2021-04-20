@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -80,8 +80,12 @@ bs::core::wallet::TXSignRequest pbTxRequestToCoreImpl(const headless::SignTxRequ
 
    if (!request.unsigned_state().empty()) {
       Codec_SignerState::SignerState state;
-      state.ParseFromString(request.unsigned_state());
-      txSignReq.armorySigner_.deserializeState(state);
+      if (state.ParseFromString(request.unsigned_state())) {
+         txSignReq.armorySigner_.deserializeState(state);
+      }
+      else {
+         throw std::invalid_argument("failed to parse unsigned state");
+      }
    }
 
    txSignReq.allowBroadcasts = request.allow_broadcasts();

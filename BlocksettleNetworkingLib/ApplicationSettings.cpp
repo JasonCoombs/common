@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -35,13 +35,6 @@ static const QString armoryDBAppPathName = QLatin1String("/usr/bin/ArmoryDB");
 static const QString appDirName = QLatin1String("blocksettle");
 static const QString bitcoinDirName = QLatin1String(".bitcoin");
 static const QString armoryDBAppPathName = QLatin1String("/usr/bin/ArmoryDB");
-#endif
-
-#ifdef __linux__
-// Needed for consistency (headless now uses company name in lowercase on Linux)
-static const QString SettingsCompanyName = QLatin1String("blocksettle");
-#else
-static const QString SettingsCompanyName = QLatin1String("BlockSettle");
 #endif
 
 static const QString LogFileName = QLatin1String("bs_terminal.log");
@@ -95,12 +88,17 @@ namespace {
 } // namespace
 
 
+QString ApplicationSettings::appSubDir()
+{
+   return appDirName;
+}
+
 ApplicationSettings::ApplicationSettings(const QString &appName
    , const QString& rootDir)
-   : settings_(QSettings::IniFormat, QSettings::UserScope, SettingsCompanyName, appName)
+   : settings_(QSettings::IniFormat, QSettings::UserScope, appDirName, appName)
 {
    if (rootDir.isEmpty()) {
-      commonRoot_ = AppendToWritableDir(QLatin1String(".."));
+      commonRoot_ = AppendToWritableDir(QLatin1Literal(".."));
    } else {
       commonRoot_ = rootDir;
    }
@@ -155,6 +153,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { FxRfqLimit,              SettingDef(QLatin1String("FxRfqLimit"), 5) },
       { XbtRfqLimit,             SettingDef(QLatin1String("XbtRfqLimit"), 5) },
       { PmRfqLimit,              SettingDef(QLatin1String("PmRfqLimit"), 5) },
+      { FuturesLimit,            SettingDef(QLatin1String("FuturesLimit"), 5) },
       { PriceUpdateInterval,     SettingDef(QLatin1String("PriceUpdateInterval"), -1) },
       { ShowQuoted,              SettingDef(QLatin1String("ShowQuoted"), true) },
       { DisableBlueDotOnTabOfRfqBlotter,  SettingDef(QLatin1String("DisableBlueDotOnTabOfRfqBlotter"), false) },
@@ -180,7 +179,7 @@ ApplicationSettings::ApplicationSettings(const QString &appName
       { AutoSigning,             SettingDef(QLatin1String("AutoSigning"), false) },
       { ExtConnName,             SettingDef(QLatin1String("ExtConnName")) },
       { ExtConnHost,             SettingDef(QLatin1String("ExtConnHost")) },
-      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort")) },
+      { ExtConnPort,             SettingDef(QLatin1String("ExtConnPort"), 4567) },
       { ExtConnPubKey,           SettingDef(QLatin1String("ExtConnPubKey")) },
       { SubmittedAddressXbtLimit,   SettingDef(QLatin1String("SubmittedAddressXbtLimit"), 100000000) },
       { ExtConnOwnPubKey,        SettingDef(QLatin1String("ExtConnOwnPubKey")) },
@@ -392,8 +391,6 @@ bool ApplicationSettings::LoadApplicationSettings(const QStringList& argList)
    parser.addOption({ chatServerPortName, chatServerPortHelp, QLatin1String("chatport") });
 #endif // NDEBUG
 
-
-
    if (!parser.parse(argList)) {
       errorText_ = parser.errorText();
       return false;
@@ -443,11 +440,11 @@ QString ApplicationSettings::GetDefaultHomeDir() const
 {
    switch (get<NetworkType>(netType)) {
    case NetworkType::TestNet:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + testnetSubdir);
+      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/ + QDir::separator() + testnetSubdir);
    case NetworkType::RegTest:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName + QDir::separator() + regtestSubdir);
+      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/ + QDir::separator() + regtestSubdir);
    default:
-      return QDir::cleanPath(commonRoot_ + QDir::separator() + appDirName);
+      return QDir::cleanPath(commonRoot_ /*+ QDir::separator() + appDirName*/);
    }
 }
 
@@ -580,19 +577,27 @@ void ApplicationSettings::SaveSettings()
 std::vector<bs::LogConfig> ApplicationSettings::GetLogsConfig() const
 {
    std::vector<bs::LogConfig> result;
-   result.push_back(parseLogConfig(get<QStringList>(ApplicationSettings::logDefault)));
-   result.push_back(parseLogConfig(get<QStringList>(ApplicationSettings::logMessages)));
+   auto cfgDefault = parseLogConfig(get<QStringList>(ApplicationSettings::logDefault));
+   if (!QDir::toNativeSeparators(QString::fromStdString(cfgDefault.fileName)).contains(QDir::separator())) {
+      cfgDefault.fileName = AppendToWritableDir(QString::fromStdString(cfgDefault.fileName)).toStdString();
+   }
+   result.push_back(cfgDefault);
+   auto cfgMessages = parseLogConfig(get<QStringList>(ApplicationSettings::logMessages));
+   if (!QDir::toNativeSeparators(QString::fromStdString(cfgMessages.fileName)).contains(QDir::separator())) {
+      cfgMessages.fileName = AppendToWritableDir(QString::fromStdString(cfgMessages.fileName)).toStdString();
+   }
+   result.push_back(cfgMessages);
    return result;
 }
 
-bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config) const
+bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config)
 {
    bs::LogConfig result;
    if (config.size() > 0) {
       if (QDir::toNativeSeparators(config[0]).contains(QDir::separator())) {
          result.fileName = QDir().absoluteFilePath(config[0]).toStdString();
       } else {
-         result.fileName = AppendToWritableDir(config[0]).toStdString();
+         result.fileName = config[0].toStdString();
       }
    }
    if (config.size() > 1) {
@@ -607,7 +612,7 @@ bs::LogConfig ApplicationSettings::parseLogConfig(const QStringList &config) con
    return result;
 }
 
-bs::LogLevel ApplicationSettings::parseLogLevel(QString level) const
+bs::LogLevel ApplicationSettings::parseLogLevel(QString level)
 {
    level = level.toLower();
    if (level.contains(QLatin1String("trace"))) {

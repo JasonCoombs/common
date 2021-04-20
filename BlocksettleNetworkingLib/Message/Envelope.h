@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2019 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -19,7 +19,12 @@
 namespace bs {
    namespace message {
       using UserValue = int;
-      using TimeStamp = std::chrono::time_point<std::chrono::system_clock>;
+      using bus_clock = std::chrono::steady_clock;
+
+      static_assert(bus_clock::is_steady, "Should be steady clock");
+      static_assert(bus_clock::period::den >= 10000, "Should be at least ms");
+
+      using TimeStamp = std::chrono::time_point<bus_clock>;
 
       class User
       {

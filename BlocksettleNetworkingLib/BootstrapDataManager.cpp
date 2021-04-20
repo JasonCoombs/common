@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2020 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -58,11 +58,16 @@ bool BootstrapDataManager::loadFromLocalFile()
 
 bool BootstrapDataManager::setReceivedData(const std::string& data)
 {
-   if (loadData(data)) {
-      saveToLocalFile(data);
-      return true;
+   try {
+      if (loadData(data)) {
+         saveToLocalFile(data);
+         return true;
+      }
    }
-
+   catch (const std::exception& e) {
+      logger_->error("[BootstrapDataManager::setReceivedData] failed to load: {}"
+         , e.what());
+   }
    return false;
 }
 
@@ -87,10 +92,15 @@ bool BootstrapDataManager::loadData(const std::string& data)
 
    const auto payload = BinaryData::fromString(response.responsedata());
    const auto signature = BinaryData::fromString(response.datasignature());
-   const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
-
-   if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
-      logger_->error("[BootstrapDataManager::loadData] signature invalid");
+   try {
+      const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
+      if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
+         logger_->error("[BootstrapDataManager::loadData] signature invalid");
+         return false;
+      }
+   }
+   catch (const std::exception& e) {
+      logger_->error("[BootstrapDataManager::loadData] invalid BS sign address: {}", e.what());
       return false;
    }
 

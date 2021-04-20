@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2020 - 2020, BlockSettle AB
+* Copyright (C) 2020 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -91,6 +91,7 @@ bool WsDataConnection::openConnection(const std::string &host, const std::string
       return false;
    }
 
+   std::lock_guard<std::mutex> lock(mutex_);
    listenThread_ = std::thread(&WsDataConnection::listenFunction, this);
 
    return true;
@@ -153,9 +154,13 @@ bool WsDataConnection::timer(std::chrono::milliseconds timeout, DataConnection::
       SPDLOG_LOGGER_ERROR(logger_, "can't start timer because connection is not active");
       return false;
    }
-   if (listenThread_.get_id() != std::this_thread::get_id()) {
-      SPDLOG_LOGGER_ERROR(logger_, "starting timer from non-listening thread is not supported");
-      return false;
+   {
+      // Fix for the TSAN report
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (listenThread_.get_id() != std::this_thread::get_id()) {
+         SPDLOG_LOGGER_ERROR(logger_, "starting timer from non-listening thread is not supported");
+         return false;
+      }
    }
    timers_.scheduleCallback(context_, timeout, std::move(callback));
    return true;

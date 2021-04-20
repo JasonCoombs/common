@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2018 - 2020, BlockSettle AB
+* Copyright (C) 2019 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -51,6 +51,7 @@ message OhlcRequest
 	Interval interval = 2;
 	uint32   count    = 3;
 	int64 lesser_then = 4;
+	uint64 request_id = 5;
 };
 
 message OhlcCandle
@@ -72,6 +73,7 @@ message OhlcResponse
     Interval            interval = 2;
 	uint64     first_stamp_in_db = 3;
     repeated OhlcCandle candles  = 4;
+    uint64 request_id = 5;
 };
 
 message EodPrice

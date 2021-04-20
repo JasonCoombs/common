@@ -21,7 +21,7 @@ class OpenSslSettings(Configurator):
         Configurator.__init__(self, settings)
         self._major_ver = '1'
         self._minor_ver = '1'
-        self._patch_ver = '1g'
+        self._patch_ver = '1k'
         self._version = self._major_ver + '_' + self._minor_ver + '_' + self._patch_ver
         self._package_name = 'openssl-OpenSSL_' + self._version
         self._script_revision = '5'
