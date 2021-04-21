@@ -16,79 +16,122 @@ import "trade_history.proto";
 
 enum Interval
 {
-	OneYear         = 0;
-	SixMonths       = 1;
-	OneMonth        = 2;
-	OneWeek         = 3;
-	TwentyFourHours = 4;
-	TwelveHours     = 5;
-	SixHours        = 6;
-	OneHour         = 7;
+   OneYear         = 0;
+   SixMonths       = 1;
+   OneMonth        = 2;
+   OneWeek         = 3;
+   TwentyFourHours = 4;
+   TwelveHours     = 5;
+   SixHours        = 6;
+   OneHour         = 7;
+};
+
+enum FuturesCandleIntervals
+{
+   OneMinuteInterval       = 0;
+   FiveMinutesInterval     = 1;
+   FifteenMinutesInterval  = 2;
+   ThirtyMinutesInterval   = 3;
+   OneHourInterval         = 4;
+   TwentyFourHoursInterval = 5;
 };
 
 enum MarketDataHistoryMessageType
 {
-	ProductsListType = 0;
-	OhlcHistoryType  = 1;
-	EoDPriceType     = 2;
+   ProductsListType        = 0;
+   OhlcHistoryType         = 1;
+   EoDPriceType            = 2;
+   OhlcFuturesHistoryType  = 3;
 };
 
 message MarketDataHistoryRequest
 {
-	MarketDataHistoryMessageType request_type = 1;
-	bytes                        request      = 2;
+   MarketDataHistoryMessageType request_type = 1;
+   bytes                        request      = 2;
 };
 
 message MarketDataHistoryResponse
 {
-	MarketDataHistoryMessageType response_type = 1;
-	bytes                        response      = 2;
+   MarketDataHistoryMessageType response_type = 1;
+   bytes                        response      = 2;
+};
+
+message FuturesSessionOpenedUpdate
+{
+   string   product     = 1;
+   uint64   timestamp   = 2;
+   double   open_price  = 3;
+};
+
+message FuturesSessionClosedUpdate
+{
+   string   product     = 1;
+   uint64   timestamp   = 2;
+   double   close_price = 3;
 };
 
 message OhlcRequest
 {
-	string   product  = 1;
-	Interval interval = 2;
-	uint32   count    = 3;
-	int64 lesser_then = 4;
-	uint64 request_id = 5;
+   string   product     = 1;
+   Interval interval    = 2;
+   uint32   count       = 3;
+   int64    lesser_then = 4;
+   uint64   request_id  = 5;
+};
+
+message OhlcFuturesRequest
+{
+   string                  product     = 1;
+   FuturesCandleIntervals  interval    = 2;
+   uint32                  count       = 3;
+   int64                   lesser_then = 4;
+   uint64                  request_id  = 5;
 };
 
 message OhlcCandle
 {
-	uint64 timestamp = 1;
-	uint64 start     = 2;
-	uint64 end       = 3;
-	double open      = 4;
-	double high      = 5;
-	double low       = 6;
-	double close     = 7;
-	uint64 trades    = 8;
-	double volume    = 9;
+   uint64 timestamp = 1;
+   uint64 start     = 2;
+   uint64 end       = 3;
+   double open      = 4;
+   double high      = 5;
+   double low       = 6;
+   double close     = 7;
+   uint64 trades    = 8;
+   double volume    = 9;
+};
+
+message OhlcFuturesResponse
+{
+   string                  product           = 1;
+   FuturesCandleIntervals  interval          = 2;
+   uint64                  first_stamp_in_db = 3;
+   repeated OhlcCandle     candles           = 4;
+   uint64                  request_id        = 5;
 };
 
 message OhlcResponse
 {
-    string              product  = 1;
-    Interval            interval = 2;
-	uint64     first_stamp_in_db = 3;
-    repeated OhlcCandle candles  = 4;
-    uint64 request_id = 5;
+   string               product           = 1;
+   Interval             interval          = 2;
+   uint64               first_stamp_in_db = 3;
+   repeated OhlcCandle  candles           = 4;
+   uint64               request_id        = 5;
 };
 
 message EodPrice
 {
-	string product   = 1;
-	Interval interval = 2;
-	uint64 timestamp = 3;
-	double price     = 4;
+   string   product     = 1;
+   Interval interval    = 2;
+   uint64   timestamp   = 3;
+   double   price       = 4;
 };
 
 message ProductsListResponse
 {
-	message Product{
-		string product = 1;
-		Blocksettle.Communication.TradeHistory.TradeHistoryTradeType type = 2;
-	}
+   message Product{
+      string product = 1;
+      Blocksettle.Communication.TradeHistory.TradeHistoryTradeType type = 2;
+   }
     repeated Product products = 1;
 };

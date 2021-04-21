@@ -241,10 +241,10 @@ message Request
 
     message Ohlc
     {
-        string product_type = 1;
-        MarketDataHistory.Interval interval = 2;
-        uint32 count = 3;
-        double timestamp_end = 4;
+        string                                     product_type   = 1;
+        MarketDataHistory.FuturesCandleIntervals   interval       = 2;
+        uint32                                     count          = 3;
+        double                                     timestamp_end  = 4;
     };
 
     oneof data
@@ -642,10 +642,10 @@ message Response
 
     message Ohlc
     {
-        string product_type  = 1;
-        MarketDataHistory.Interval interval = 2;
-        double timestamp_start_db = 3;
-        repeated OhlcCandle candles = 4;
+        string                                     product_type         = 1;
+        MarketDataHistory.FuturesCandleIntervals   interval             = 2;
+        double                                     timestamp_start_db   = 3;
+        repeated OhlcCandle                        candles              = 4;
     };
 
     oneof data
