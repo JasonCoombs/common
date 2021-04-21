@@ -203,8 +203,6 @@ message EODSnapshot
    repeated EODPrice fx_prices            = 3;
    repeated EODPrice xbt_prices           = 4;
    repeated EODPrice pm_prices            = 5;
-   repeated EODPrice cash_settled_prices  = 6;
-   repeated EODPrice deliverable_prices   = 7;
 }
 
 message LoadEODPricesResponse
