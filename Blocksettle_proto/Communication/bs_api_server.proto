@@ -59,12 +59,12 @@ message ApiKey
 message OhlcCandle
 {
     double timestamp = 1;
-    double open = 4;
-    double high = 5;
-    double low = 6;
-    double close = 7;
-    uint64 trades = 8;
-    double volume = 9;
+    double open      = 2;
+    double high      = 3;
+    double low       = 4;
+    double close     = 5;
+    uint64 trades    = 6;
+    double volume    = 7;
 };
 
 message Empty
