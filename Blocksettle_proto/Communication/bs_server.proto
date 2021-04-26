@@ -13,7 +13,6 @@ syntax = "proto3";
 package Blocksettle.Server;
 
 import "bs_api_server.proto";
-import "bs_api_server_pb.proto";
 import "bs_server_storage.proto";
 import "bs_types.proto";
 import "common.proto";
@@ -2197,8 +2196,6 @@ message ApiServerMsg
       UpdateBook     update_book    = 3;
       TradeClose     trade_close    = 4;
       Empty          send_prices    = 5;
-      Blocksettle.Communication.ApiServerPb.Request.MaxTradeAmount get_max_trade_amount = 6;
-      Blocksettle.Communication.ApiServerPb.Response.MaxTradeAmount max_trade_amount = 7;
       string         user_connected    = 8;
       string         user_disconnected = 9;
       UserNotify     user_notify       = 10;
