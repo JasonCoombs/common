@@ -58,6 +58,7 @@ enum TradeHistoryResponseType
    EODSnapshotResponseType                      = 11;
    LoadFuturesPriceBookResponseType             = 12;
    PriceBookUpdateType                          = 13;
+   LiveCutoffUpdateType                         = 14;
 }
 
 message TradeHistoryRequest
@@ -249,4 +250,12 @@ message PriceBookUpdate
    string         product_name   = 1;
    PriceBookType  book_type      = 2;
    repeated Entry prices         = 3;
+}
+
+message LiveCutoffUpdate
+{
+   string         product_name   = 1;
+   PriceBookType  book_type      = 2;
+   uint64         timestamp      = 3;
+   double         price          = 4;
 }
