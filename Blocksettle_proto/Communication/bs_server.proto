@@ -274,7 +274,6 @@ enum GenoaType
    GenoaReconnect                         = 1;
    GenoaHeartbeat                         = 2;
    GenoaClientConnected                   = 3;
-   GenoaAccountsAvailable                 = 4;
    GenoaAccounts                          = 5;
    GenoaNewAccount                        = 6;
    GenoaGetXBTReservations                = 7;
