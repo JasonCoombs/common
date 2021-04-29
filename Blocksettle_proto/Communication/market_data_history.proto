@@ -24,7 +24,7 @@ enum Interval
    TwelveHours     = 5;
    SixHours        = 6;
    OneHour         = 7;
-};
+}
 
 enum FuturesCandleIntervals
 {
@@ -34,7 +34,7 @@ enum FuturesCandleIntervals
    ThirtyMinutesInterval   = 3;
    OneHourInterval         = 4;
    TwentyFourHoursInterval = 5;
-};
+}
 
 enum MarketDataHistoryMessageType
 {
@@ -42,51 +42,51 @@ enum MarketDataHistoryMessageType
    OhlcHistoryType         = 1;
    EoDPriceType            = 2;
    OhlcFuturesHistoryType  = 3;
-};
+}
 
 message MarketDataHistoryRequest
 {
    MarketDataHistoryMessageType request_type = 1;
    bytes                        request      = 2;
-};
+}
 
 message MarketDataHistoryResponse
 {
    MarketDataHistoryMessageType response_type = 1;
    bytes                        response      = 2;
-};
+}
 
 message FuturesSessionOpenedUpdate
 {
    string   product     = 1;
    uint64   timestamp   = 2;
    double   open_price  = 3;
-};
+}
 
 message FuturesSessionClosedUpdate
 {
    string   product     = 1;
    uint64   timestamp   = 2;
    double   close_price = 3;
-};
+}
 
 message OhlcRequest
 {
    string   product     = 1;
    Interval interval    = 2;
    uint32   count       = 3;
-   int64    lesser_then = 4;
+   int64    lesser_than = 4;
    uint64   request_id  = 5;
-};
+}
 
 message OhlcFuturesRequest
 {
    string                  product     = 1;
    FuturesCandleIntervals  interval    = 2;
    uint32                  count       = 3;
-   int64                   lesser_then = 4;
+   int64                   lesser_than = 4;
    uint64                  request_id  = 5;
-};
+}
 
 message OhlcCandle
 {
@@ -98,7 +98,7 @@ message OhlcCandle
    double close     = 7;
    uint64 trades    = 8;
    double volume    = 9;
-};
+}
 
 message OhlcFuturesResponse
 {
@@ -107,7 +107,7 @@ message OhlcFuturesResponse
    uint64                  first_stamp_in_db = 3;
    repeated OhlcCandle     candles           = 4;
    uint64                  request_id        = 5;
-};
+}
 
 message OhlcResponse
 {
@@ -116,7 +116,7 @@ message OhlcResponse
    uint64               first_stamp_in_db = 3;
    repeated OhlcCandle  candles           = 4;
    uint64               request_id        = 5;
-};
+}
 
 message EodPrice
 {
@@ -124,7 +124,7 @@ message EodPrice
    Interval interval    = 2;
    uint64   timestamp   = 3;
    double   price       = 4;
-};
+}
 
 message ProductsListResponse
 {
@@ -133,4 +133,4 @@ message ProductsListResponse
       Blocksettle.Communication.TradeHistory.TradeHistoryTradeType type = 2;
    }
     repeated Product products = 1;
-};
+}
