@@ -274,7 +274,6 @@ enum GenoaType
    GenoaReconnect                         = 1;
    GenoaHeartbeat                         = 2;
    GenoaClientConnected                   = 3;
-   GenoaAccountsAvailable                 = 4;
    GenoaAccounts                          = 5;
    GenoaNewAccount                        = 6;
    GenoaGetXBTReservations                = 7;
@@ -1933,6 +1932,7 @@ enum RelayUser
    UserGenoa            = 5;
    UserTradeHist        = 6;
    StreamPriceOffering  = 7;
+   PriceAggregationUser = 8;
 }
 
 message RelayedMessage
