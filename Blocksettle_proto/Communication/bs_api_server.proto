@@ -103,6 +103,11 @@ message Request
         bool max_amount = 5;
     }
 
+    message LoadOrders
+    {
+       string product_type = 1;
+    }
+
     message Subscribe
     {
         string product_type = 1;
@@ -256,7 +261,7 @@ message Request
         ResumeSession               resume_session              = 14;
         Empty                       logout                      = 15;
         MarketOrder                 market_order                = 16;
-        Empty                       load_orders                 = 17;
+        LoadOrders                  load_orders                 = 17;
         Empty                       load_balance                = 18;
         Subscribe                   subscribe                   = 19;
         Unsubscribe                 unsubscribe                 = 20;

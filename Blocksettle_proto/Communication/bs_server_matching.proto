@@ -233,6 +233,5 @@ message MatchingMarketMessage
       RFSMarketOrder             rfs_market_order = 1;
       RFSMarketOrderResponse     rfs_market_order_response = 2;
       string                     order_timeout = 3;
-      GenoaTradingDayOpenMsg     trading_day_open = 4;
    }
 }
