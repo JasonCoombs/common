@@ -2295,6 +2295,13 @@ message CashResMessage
       double fee = 5;
    }
 
+   message OrderResponse
+   {
+      string cl_ord_id = 1;
+      bool   success = 2;
+      string error_text = 3;
+   }
+
    oneof data {
       IMnettingRequest           im_net_request = 1;
       IMnettingResponse          im_net_response = 2;
@@ -2304,7 +2311,8 @@ message CashResMessage
       MaxAmountResponse          max_amount_response = 6;
       UsersImInfo                users_im_info = 7;
       Order                      append_order = 10;
-      string                     remove_order = 11;
+      OrderResponse              order_response = 11;
+      Empty                      session_event = 12;
    }
 }
 
