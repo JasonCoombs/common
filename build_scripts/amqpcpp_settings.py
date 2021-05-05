@@ -18,7 +18,7 @@ from component_configurator import Configurator
 class AMQPCPPSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '4.1.5'
+        self._version = '4.3.11'
         self._script_revision = '1'
         self._package_name = 'amqpcpp-' + self._version
         self._package_url = 'https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/v' + self._version + '.tar.gz'
@@ -57,9 +57,6 @@ class AMQPCPPSettings(Configurator):
                 command.append('"-DCMAKE_CXX_FLAGS_RELEASE=/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('"-DCMAKE_C_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
                 command.append('"-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=/MT /O2 /Ob2 /D NDEBUG"')
-
-        if self._project_settings.on_linux():
-            command.append('-DAMQP-CPP_LINUX_TCP=ON')
 
         # if self._project_settings.on_windows():
         #     if self._project_settings.get_link_mode() == 'shared':
