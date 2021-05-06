@@ -662,6 +662,9 @@ message Response
     message TradeCreated
     {
         string product_type = 1;
+        double price = 2;
+        double amount = 3;
+        double timestamp = 4;
     }
 
     oneof data
