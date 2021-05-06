@@ -252,6 +252,11 @@ message Request
         double                                     timestamp_end  = 4;
     };
 
+    message SubscribeTradeCreated
+    {
+        string product_type = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -298,6 +303,7 @@ message Request
         GetStatementDates           get_statement_dates         = 49;
         GetStatements               get_statements              = 50;
         Ohlc                        ohlc                        = 51;
+        SubscribeTradeCreated       subscribe_trade_created     = 52;
     }
 }
 
@@ -653,6 +659,14 @@ message Response
         repeated OhlcCandle                        candles              = 4;
     };
 
+    message TradeCreated
+    {
+        string product_type = 1;
+        double price = 2;
+        double amount = 3;
+        double timestamp = 4;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -703,5 +717,7 @@ message Response
         GetStatementDates       get_statement_dates         = 55;
         GetStatements           get_statements              = 56;
         Ohlc                    ohlc                        = 57;
+        Empty                   subscribe_trade_created     = 58;
+        TradeCreated            trade_created               = 59;
     }
 }
