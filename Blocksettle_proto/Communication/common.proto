@@ -36,7 +36,7 @@ message AdministrativeMessage
       int32   component_created = 4;
       int32   component_loading = 5;
       int32   component_ready = 6;
-      string  attach_queue = 7;
+      RouteTo attach_queue = 7;
       RouteTo queue_routing = 8;
    }
 }
