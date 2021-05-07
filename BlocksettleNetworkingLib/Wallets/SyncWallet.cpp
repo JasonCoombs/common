@@ -820,7 +820,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
    request.RBF = isRBF;
    request.fee = fee;
 
-   const uint64_t changeAmount = inputAmount - (spendAmount + fee);
+   const bs::XBTAmount::satoshi_type changeAmount = inputAmount - (spendAmount + fee);
    if (changeAmount) {
       if (changeAddr.empty()) {
          throw std::logic_error("can't get change address for " + std::to_string(changeAmount));

@@ -13,7 +13,7 @@
 using namespace ArmorySigner;
 
 namespace {
-   constexpr uint64_t kAuthValueThreshold = 1000;
+   constexpr bs::XBTAmount::satoshi_type kAuthValueThreshold = 1000;
 
    const auto kMaxFutureWaitTime = std::chrono::seconds(30);
 
@@ -721,13 +721,13 @@ BinaryData AuthAddressValidator::fundUserAddress(
    }
 
    //change: vetting coin value + fee
-   const int64_t changeVal = vettingUtxo.getValue() - kAuthValueThreshold - 1000;
+   const bs::XBTAmount::satoshi_type changeVal = vettingUtxo.getValue() - kAuthValueThreshold - 1000;
    if (changeVal < 0) {
       throw AuthLogicException("insufficient spend volume");
    }
    else if (changeVal > 0) {
       auto&& addrObj = bs::Address::fromHash(addrIter->first);
-      signer.addRecipient(addrObj.getRecipient(bs::XBTAmount{ static_cast<uint64_t>(changeVal) }));
+      signer.addRecipient(addrObj.getRecipient(bs::XBTAmount{ changeVal }));
    }
 
    //sign & serialize tx
@@ -749,7 +749,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
       signer.addRecipient(addr.getRecipient(bs::XBTAmount{ kAuthValueThreshold }));
    }
 
-   int64_t changeVal = 0;
+   bs::XBTAmount::satoshi_type changeVal = 0;
    //spenders
    for (const auto &vettingUtxo : vettingUtxos) {
       auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
@@ -769,7 +769,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
       throw AuthLogicException("attempting to spend more than allowed");
    }
    else if (changeVal > 0) {
-      signer.addRecipient(validationAddress.getRecipient(bs::XBTAmount{ static_cast<uint64_t>(changeVal) }));
+      signer.addRecipient(validationAddress.getRecipient(bs::XBTAmount{ changeVal }));
    }
 
    //sign & serialize tx
@@ -836,7 +836,7 @@ BinaryData AuthAddressValidator::revokeValidationAddress(
    signer.addSpender(spenderPtr);
 
    //revocation output, no need for change
-   const uint64_t revokeAmount = firstUtxo.getValue() - 1000;
+   const bs::XBTAmount::satoshi_type revokeAmount = firstUtxo.getValue() - 1000;
    signer.addRecipient(addr.getRecipient(bs::XBTAmount{revokeAmount}));
 
    //sign & serialize tx
@@ -903,7 +903,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
 
    //change
    {
-      const bs::XBTAmount changeAmount{ addrUtxo.getValue() - kAuthValueThreshold - 1000 };
+      const bs::XBTAmount changeAmount{ static_cast<bs::XBTAmount::satoshi_type>(addrUtxo.getValue() - kAuthValueThreshold - 1000) };
       auto addrObj = bs::Address::fromHash(validationAddr);
       signer.addRecipient(addrObj.getRecipient(changeAmount));
    }

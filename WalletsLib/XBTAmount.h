@@ -48,7 +48,7 @@ namespace bs {
       }
       bool isValid() const
       {
-         return (value_ != UINT64_MAX);
+         return (value_ != INT64_MAX);
       }
 
       bool operator == (const XBTAmount &other) const

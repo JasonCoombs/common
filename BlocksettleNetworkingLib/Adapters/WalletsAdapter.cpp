@@ -2259,7 +2259,7 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
          auto utxos = bs::Address::decorateUTXOsCopy(inputs);
          std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>> recipientsMap;
          std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> recVec({
-            settlAddr.getRecipient(bs::XBTAmount{request.amount()}) });
+            settlAddr.getRecipient(bs::XBTAmount{static_cast<bs::XBTAmount::satoshi_type>(request.amount())}) });
          recipientsMap.emplace(0, recVec);
          const auto &payment = PaymentStruct(recipientsMap, 0, settlementFee_, 0);
          const auto& coinSelection = CoinSelection(nullptr, {}, request.amount(), topBlock_);
@@ -2490,7 +2490,7 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
 
          const auto& payinTxHash = BinaryData::fromString(request.payin_hash());
          auto payinUTXO = bs::tradeutils::getInputFromTX(settlAddr, payinTxHash
-            , 0, bs::XBTAmount{ request.amount() });
+            , 0, bs::XBTAmount{ static_cast<bs::XBTAmount::satoshi_type>(request.amount()) });
 
          const auto &txReq = bs::tradeutils::createPayoutTXRequest(
             payinUTXO, recvAddr, settlementFee_, topBlock_);
