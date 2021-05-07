@@ -18,7 +18,7 @@ from component_configurator import Configurator
 class LibUVSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '1.34.2'
+        self._version = '1.41.0'
         self._script_revision = '2'
         self._package_name = 'libuv-' + self._version
         self._package_url = 'https://github.com/libuv/libuv/archive/v' + self._version + '.tar.gz'
