@@ -90,7 +90,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
 {
    std::set<std::shared_ptr<bs::message::Adapter>> result;
    if (supervisor_ && !supervisor_->process(env)) {
-      logger_->debug("[Router::process] msg {} skipped by supervisor", env.id);
+      logger_->debug("[Router::process] msg {} skipped by supervisor", env.id());
       return {};
    }
    if (!env.receiver || env.receiver->isBroadcast()) {
@@ -112,7 +112,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          else {
             logger_->error("[Router::process] failed to find route for {} - "
-               "dropping message #{} from {} ({})", env.receiver->name(), env.id
+               "dropping message #{} from {} ({})", env.receiver->name(), env.id()
                , env.sender->name(), env.sender->value());
             return {};
          }
@@ -146,6 +146,19 @@ SeqId QueueInterface::resetId(SeqId newId)
    return seqNo_;
 }
 
+bool bs::message::QueueInterface::isValid(const Envelope& env)
+{
+   if (!env.sender) {
+      return false;
+   }
+   const auto& itDeferred = deferredIds_.find(env.id());
+   if (itDeferred != deferredIds_.end()) {
+      deferredIds_.erase(itDeferred);
+      return true;
+   }
+   return (env.id() > lastProcessedSeqNo_);
+}
+
 Queue_Locking::Queue_Locking(const std::shared_ptr<RouterInterface> &router
    , const std::shared_ptr<spdlog::logger> &logger, const std::string &name
    , const std::map<int, std::string> &accMap, bool accounting)
@@ -173,14 +186,14 @@ void Queue_Locking::terminate()
 void Queue_Locking::stop()
 {
    Envelope envQuit{ std::make_shared<UserSystem>(), std::make_shared<UserSystem>()
-      , {}, {}, kQuitMessage };
+      , kQuitMessage };
    pushFill(envQuit);
 }
 
 bool Queue_Locking::pushFill(Envelope &env)
 {
-   if (env.id == 0) {
-      env.id = nextId();
+   if (env.id() == 0) {
+      env.setId(nextId());
    }
    if (env.posted.time_since_epoch().count() == 0) {
       env.posted = bus_clock::now();
@@ -212,6 +225,7 @@ void Queue_Locking::process()
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {
+               deferredIds_.insert(env.id());
                deferredQueue.emplace_back(env);
                continue;
             }
@@ -219,9 +233,9 @@ void Queue_Locking::process()
             acc.addQueueTime(std::chrono::duration_cast<std::chrono::microseconds>(timeNow - env.posted));
          }
 
-         if (!env.sender) {
-            logger_->info("[Queue::process] {} no sender found - skipping msg #{}"
-               , name_, env.id);
+         if (!isValid(env)) {
+            logger_->info("[Queue::process] {}: envelope #{} failed to pass "
+               "validity checks - skipping", name_, env.id());
             continue;
          }
 
@@ -239,25 +253,20 @@ void Queue_Locking::process()
          } else {
             const auto &adapters = router_->process(env);
             if (adapters.empty()) {
+               logger_->warn("[Queue::process] {}: no receivers found for #{} - "
+                  "skipping", name_, env.id());
                continue;
             }
             if (accounting_) {
                procStart = bus_clock::now();
             }
-            if (adapters.size() == 1) {
-               if (!adapters[0]->process(env)) {
-                  deferredQueue.emplace_back(env);
-               }
-               if (accounting_) {
-                  acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
-                     , std::chrono::duration_cast<std::chrono::microseconds>(bus_clock::now() - procStart));
-               }
-            } else {
-               // Multiple adapters to process a message typically means broadcast. We don't requeue such messages
-               // on processing failed, as it's hard to signify the failure: if all adapters return false, or only one.
-               // Also semantically broadcasts are not supposed to be re-queued
-               for (const auto &adapter : adapters) {
-                  const bool processed = adapter->process(env);
+
+            const bool isBroadcast = (!env.receiver || env.receiver->isBroadcast());
+            const auto& process = [this, env, isBroadcast, timeNow, &procStart, &acc, &deferredQueue]
+               (const std::shared_ptr<bs::message::Adapter>&adapter)
+            {
+               if (isBroadcast) {
+                  const bool processed = adapter->processBroadcast(env);
                   if (accounting_ && processed) {
                      const auto& timeNow = bus_clock::now();
                      acc.add(static_cast<int>((*adapter->supportedReceivers().cbegin())->value() + 0x1000)
@@ -265,7 +274,24 @@ void Queue_Locking::process()
                      procStart = timeNow;
                   }
                }
+               else {
+                  if (!adapter->process(env)) {
+                     deferredIds_.insert(env.id());
+                     deferredQueue.emplace_back(env);
+                  }
+                  if (accounting_) {
+                     acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
+                        , std::chrono::duration_cast<std::chrono::microseconds>(bus_clock::now() - procStart));
+                  }
+               }
+            };
+
+            for (const auto &adapter : adapters) {
+               process(adapter);
             }
+         }
+         if (env.id() > lastProcessedSeqNo_) {
+            lastProcessedSeqNo_ = env.id();
          }
       }
    };
@@ -297,8 +323,8 @@ void Queue_Locking::process()
 
       if ((deferredQueue.size() > 100) && ((timeNow - dqTime) > deferredQueueInterval_)) {
          dqTime = bus_clock::now();
-         logger_->warn("[Queue::process] {} deferred queue has grown to {} elements"
-            , name_, deferredQueue.size());
+         logger_->warn("[Queue::process] {} deferred queue has grown to {}/{} elements"
+            , name_, deferredQueue.size(), deferredIds_.size());
       }
       if (accounting_ && ((timeNow - accTime) >= accountingInterval_)) {
          accTime = bus_clock::now();

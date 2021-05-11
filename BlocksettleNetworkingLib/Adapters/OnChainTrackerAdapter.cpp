@@ -36,8 +36,7 @@ public:
       msgReq->set_push_id(walletId_);
       auto msgTx = msgReq->add_txs_to_push();
       msgTx->set_tx(tx.toBinStr());
-      Envelope env{ 0, parent_->user_, parent_->userBlockchain_, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ parent_->user_, parent_->userBlockchain_, msg.SerializeAsString() };
       parent_->pushFill(env);
    }
 
@@ -50,10 +49,9 @@ public:
       for (const auto& addr : addrs) {
          msgReq->add_addresses(addr.display());
       }
-      Envelope env{ 0, parent_->user_, parent_->userBlockchain_, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ parent_->user_, parent_->userBlockchain_, msg.SerializeAsString() };
       parent_->pushFill(env);
-      return std::to_string(env.id);
+      return std::to_string(env.id());
    }
 
    void getOutpointsForAddresses(const std::vector<bs::Address>& addrs
@@ -67,10 +65,9 @@ public:
       msgReq->set_height(topBlock);
       msgReq->set_zc_index(zcIndex);
 
-      Envelope env{ 0, parent_->user_, parent_->userBlockchain_, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ parent_->user_, parent_->userBlockchain_, msg.SerializeAsString() };
       parent_->pushFill(env);
-      parent_->outpointCallbacks_[env.id] = cb;
+      parent_->outpointCallbacks_[env.id()] = cb;
    }
    
    void getSpendableTxOuts(const UTXOsCb& cb) override
@@ -78,10 +75,9 @@ public:
       ArmoryMessage msg;
       auto msgReq = msg.mutable_get_spendable_utxos();
       msgReq->add_wallet_ids(walletId_);
-      Envelope env{ 0, parent_->user_, parent_->userBlockchain_, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ parent_->user_, parent_->userBlockchain_, msg.SerializeAsString() };
       parent_->pushFill(env);
-      parent_->utxoCallbacks_[env.id] = cb;
+      parent_->utxoCallbacks_[env.id()] = cb;
    }
 
    void getUTXOsForAddress(const bs::Address& addr, const UTXOsCb& cb
@@ -91,10 +87,9 @@ public:
       auto msgReq = msg.mutable_get_utxos_for_addr();
       msgReq->set_address(addr.display());
       msgReq->set_with_zc(withZC);
-      Envelope env{ 0, parent_->user_, parent_->userBlockchain_, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ parent_->user_, parent_->userBlockchain_, msg.SerializeAsString() };
       parent_->pushFill(env);
-      parent_->utxoCallbacks_[env.id] = cb;
+      parent_->utxoCallbacks_[env.id()] = cb;
    }
 
 private:
@@ -127,7 +122,7 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
    else if (env.sender->value() == userBlockchain_->value()) {
       ArmoryMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse armory msg #{}", __func__, env.id);
+         logger_->error("[{}] failed to parse armory msg #{}", __func__, env.id());
          return true;
       }
       switch (msg.data_case()) {
@@ -136,18 +131,18 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
       case ArmoryMessage::kNewBlock:
          return processNewBlock(msg.new_block().top_block());
       case ArmoryMessage::kWalletRegistered:
-         return processWalletRegistered(env.id, msg.wallet_registered());
+         return processWalletRegistered(env.responseId, msg.wallet_registered());
       case ArmoryMessage::kOutPoints:
-         return processOutpoints(env.id, msg.out_points());
+         return processOutpoints(env.responseId, msg.out_points());
       case ArmoryMessage::kUtxos:
-         return processUTXOs(env.id, msg.utxos());
+         return processUTXOs(env.responseId, msg.utxos());
       default: break;
       }
    }
    else if (env.sender->value() == userWallet_->value()) {
       WalletsMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse wallets msg #{}", __func__, env.id);
+         logger_->error("[{}] failed to parse wallets msg #{}", __func__, env.id());
          return true;
       }
       switch (msg.data_case()) {
@@ -156,10 +151,10 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
          default: break;
       }
    }
-   else if (env.receiver && (env.receiver->value() == user_->value())) {
+   else if (!env.responseId && (env.receiver->value() == user_->value())) {
       OnChainTrackMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse own msg #{}", __func__, env.id);
+         logger_->error("[{}] failed to parse own msg #{}", __func__, env.id());
          return true;
       }
       switch (msg.data_case()) {
@@ -182,7 +177,8 @@ void OnChainTrackerAdapter::onStart()
 
    OnChainTrackMessage msg;
    msg.mutable_loading();
-   Envelope envBC{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope envBC{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(envBC);
 }
 
@@ -258,7 +254,8 @@ void OnChainTrackerAdapter::completeAuthVerification(const bs::Address& addr
    auto msgState = msg.mutable_auth_state();
    msgState->set_address(addr.display());
    msgState->set_state((int)state);
-   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
    sendVerifiedAuthAddresses();
 }
@@ -288,14 +285,14 @@ bool OnChainTrackerAdapter::processNewBlock(uint32_t topBlock)
    return true;
 }
 
-bool OnChainTrackerAdapter::processWalletRegistered(uint64_t msgId,
-   const ArmoryMessage_WalletRegistered& response)
+bool OnChainTrackerAdapter::processWalletRegistered(bs::message::SeqId msgId
+   , const ArmoryMessage_WalletRegistered& response)
 {
    authVerificator_->pushRefreshID({ BinaryData::fromString(std::to_string(msgId)) });
    return true;
 }
 
-bool OnChainTrackerAdapter::processOutpoints(uint64_t msgId
+bool OnChainTrackerAdapter::processOutpoints(bs::message::SeqId msgId
    , const ArmoryMessage_OutpointsForAddrList& response)
 {
    const auto& it = outpointCallbacks_.find(msgId);
@@ -319,7 +316,7 @@ bool OnChainTrackerAdapter::processOutpoints(uint64_t msgId
    return true;
 }
 
-bool OnChainTrackerAdapter::processUTXOs(uint64_t msgId
+bool OnChainTrackerAdapter::processUTXOs(bs::message::SeqId msgId
    , const ArmoryMessage_UTXOs& response)
 {
    const auto& it = utxoCallbacks_.find(msgId);
@@ -374,7 +371,8 @@ void OnChainTrackerAdapter::sendVerifiedAuthAddresses()
          msgVerified->add_addresses(state.first.display());
       }
    }
-   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
 }
 

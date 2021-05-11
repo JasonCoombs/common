@@ -171,17 +171,17 @@ private:
    std::function<void()>   cbWalletsListUpdated_{ nullptr };
    std::function<void(const std::string &)> cbAuthLeaf_{ nullptr };
 
-   std::map<uint64_t, std::function<void(std::vector<bs::sync::WalletInfo>)>>    reqSyncWalletInfoMap_;
-   std::map<uint64_t, std::pair<std::string, std::function<void(bs::sync::SyncState)>>>   reqSyncAddrMap_;
-   std::map<uint64_t, std::function<void(const bs::Address &)>>   reqSyncNewAddrSingle_;
-   std::map<uint64_t, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>>  reqSyncNewAddrMulti_;
-   std::map<uint64_t, std::function<void(bs::sync::WalletData)>>     reqSyncWalletMap_;
-   std::map<uint64_t, std::function<void(bs::sync::HDWalletData)>>   reqSyncHdWalletMap_;
-   std::map<uint64_t, std::function<void(bool)>>                  reqSettlIdMap_;
-   std::map<uint64_t, std::function<void(bool, const SecureBinaryData &)>> reqPubKeyMap_;
-   std::map<uint64_t, std::function<void(const SecureBinaryData&)>>        settlWltMap_;
-   std::map<uint64_t, std::function<void(bool, bs::Address)>>  payinAddrMap_;
-   std::map<uint64_t, SignerStateCb>   signerStateCbMap_;
+   std::map<bs::message::SeqId, std::function<void(std::vector<bs::sync::WalletInfo>)>>    reqSyncWalletInfoMap_;
+   std::map<bs::message::SeqId, std::pair<std::string, std::function<void(bs::sync::SyncState)>>>   reqSyncAddrMap_;
+   std::map<bs::message::SeqId, std::function<void(const bs::Address &)>>   reqSyncNewAddrSingle_;
+   std::map<bs::message::SeqId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>>  reqSyncNewAddrMulti_;
+   std::map<bs::message::SeqId, std::function<void(bs::sync::WalletData)>>     reqSyncWalletMap_;
+   std::map<bs::message::SeqId, std::function<void(bs::sync::HDWalletData)>>   reqSyncHdWalletMap_;
+   std::map<bs::message::SeqId, std::function<void(bool)>>                  reqSettlIdMap_;
+   std::map<bs::message::SeqId, std::function<void(bool, const SecureBinaryData &)>> reqPubKeyMap_;
+   std::map<bs::message::SeqId, std::function<void(const SecureBinaryData&)>>        settlWltMap_;
+   std::map<bs::message::SeqId, std::function<void(bool, bs::Address)>>  payinAddrMap_;
+   std::map<bs::message::SeqId, SignerStateCb>   signerStateCbMap_;
 };
 
 

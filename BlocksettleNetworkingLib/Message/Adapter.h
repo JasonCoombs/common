@@ -30,6 +30,9 @@ namespace bs {
          // if false is returned, the message is automatically pushed back
          virtual bool process(const Envelope &) = 0;
 
+         // if false is returned, it's not counted in processing stats (broadcast will never return back anyway)
+         virtual bool processBroadcast(const Envelope&) = 0;
+
          virtual Users supportedReceivers() const = 0;
          virtual std::string name() const = 0;
 

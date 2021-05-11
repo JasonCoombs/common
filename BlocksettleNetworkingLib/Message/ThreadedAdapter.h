@@ -33,6 +33,7 @@ namespace bs {
          ThreadedAdapter& operator = (ThreadedAdapter&&) = delete;
 
          bool process(const Envelope &) final;
+         bool processBroadcast(const Envelope&) final;
 
       protected:
          virtual bool processEnvelope(const Envelope &) = 0;

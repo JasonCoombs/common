@@ -81,9 +81,14 @@ namespace bs {
          SeqId resetId(SeqId);
 
       protected:
+         virtual bool isValid(const bs::message::Envelope&);
+
+      protected:
          std::shared_ptr<RouterInterface> router_;
          const std::string       name_;
          std::atomic<SeqId>      seqNo_{ 1 };
+         SeqId             lastProcessedSeqNo_{ 0 };
+         std::set<SeqId>   deferredIds_;
       };
 
       class Queue_Locking : public QueueInterface

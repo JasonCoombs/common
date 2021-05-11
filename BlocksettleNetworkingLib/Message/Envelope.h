@@ -78,18 +78,36 @@ namespace bs {
       enum class EnvelopeFlags : SeqId
       {
          GlobalBroadcast = UINT64_MAX,
-         MinValue = GlobalBroadcast
+         Publish = UINT64_MAX - 1,           // response to subscription request
+         Response = UINT64_MAX - 2,          // response without specific request id - just to signify a non-request
+         MinValue = UINT64_MAX - 15          // all values above should be treated as flags only
       };
 
       struct Envelope
       {
+         Envelope() {}
+         Envelope(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const std::string& msg, SeqId respId = 0)
+            : sender(s), receiver(r), message(msg), responseId(respId)
+         {}
+         Envelope(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const TimeStamp& execAt, const std::string& msg, SeqId respId = 0)
+            : sender(s), receiver(r), executeAt(execAt), message(msg)
+            , responseId(respId)
+         {}
+
+         SeqId id() const { return id_; }
+         void setId(SeqId id) { id_ = id; }
+
          std::shared_ptr<User>   sender;
          std::shared_ptr<User>   receiver;
          TimeStamp   posted;
          TimeStamp   executeAt;
          std::string message;
          SeqId responseId{ 0 };  // should be set in reply and for special flags
-         SeqId id{ 0 };          // always unique and growing (no 2 envelopes can have the same id)
+
+      private:
+         SeqId id_{ 0 };   // always unique and growing (no 2 envelopes can have the same id)
       };
 
    } // namespace message

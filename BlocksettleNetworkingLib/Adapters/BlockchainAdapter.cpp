@@ -55,13 +55,10 @@ BlockchainAdapter::~BlockchainAdapter()
 
 bool BlockchainAdapter::process(const bs::message::Envelope &env)
 {
-   if (!env.receiver) {
-      return true;   // broadcast
-   }
    if (env.receiver->value() == user_->value()) {
       ArmoryMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse own request #{}", __func__, env.id);
+         logger_->error("[{}] failed to parse own request #{}", __func__, env.id());
          return true;
       }
       switch (msg.data_case()) {
@@ -119,7 +116,7 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processSubscribeAddressTX(env, msg.subscribe_tx_for_address());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
-            , env.id, msg.data_case());
+            , env.id(), msg.data_case());
          break;
       }
    }
@@ -143,8 +140,8 @@ void BlockchainAdapter::start()
    else {
       ArmoryMessage msg;
       msg.mutable_settings_request();  // broadcast - ask for someone to provide settings
-      bs::message::Envelope env{ 0, user_, nullptr, {}, {}
-         , msg.SerializeAsString(), true };
+      Envelope env{ user_, nullptr, msg.SerializeAsString()
+         , (SeqId)EnvelopeFlags::GlobalBroadcast };
       pushFill(env);
    }
 }
@@ -153,7 +150,8 @@ void BlockchainAdapter::sendReady()
 {
    ArmoryMessage msg;
    msg.mutable_ready();
-   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
 }
 
@@ -161,7 +159,7 @@ void BlockchainAdapter::sendLoadingBC()
 {
    ArmoryMessage msg;
    msg.mutable_loading();
-   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString() };
    pushFill(env);
 }
 
@@ -171,7 +169,8 @@ void BlockchainAdapter::sendState(ArmoryState st)
    auto msgState = msg.mutable_state_changed();
    msgState->set_state(static_cast<int32_t>(st));
    msgState->set_top_block(armory_->topBlock());
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
 }
 
@@ -231,7 +230,8 @@ bool BlockchainAdapter::processSettings(const ArmoryMessage_Settings &settings)
          auto msgReq = msg.mutable_compare_key();
          msgReq->set_new_key(srvPubKey.toBinStr());
          msgReq->set_server_id(srvIPPort);
-         Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString(), true };
+         Envelope env{ user_, nullptr, msg.SerializeAsString()
+            , (SeqId)EnvelopeFlags::GlobalBroadcast };
          pushFill(env);
 
 /*         auto futureObj = connKeyProm_->get_future();
@@ -256,8 +256,8 @@ void BlockchainAdapter::reconnect()
    ArmoryMessage msg;
    msg.mutable_reconnect();
    const auto timeNow = bs::message::bus_clock::now();
-   bs::message::Envelope env{ 0, user_, user_, timeNow
-      , timeNow + kReconnectInterval, msg.SerializeAsString() };
+   bs::message::Envelope env{ user_, user_, timeNow + kReconnectInterval
+      , msg.SerializeAsString() };
    pushFill(env);
 }
 
@@ -313,11 +313,11 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
          const auto &itRegReq = reqByRegId_.find(idStr);
          Envelope env;
          if (itRegReq == reqByRegId_.end()) {
-            env = Envelope{ 0, user_, nullptr, {}, {}, msgReg.SerializeAsString() };
+            env = Envelope{ user_, nullptr, msgReg.SerializeAsString() };
          }
          else {
-            env = Envelope{ itRegReq->second.id, user_, itRegReq->second.sender
-               , {}, {}, msgReg.SerializeAsString() };
+            env = Envelope{ user_, itRegReq->second.sender
+               , msgReg.SerializeAsString(), itRegReq->second.id() };
             reqByRegId_.erase(itRegReq);
          }
          pushFill(env);
@@ -330,9 +330,8 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
       if (itUnconfTgt != unconfTgtMap_.end()) {
          ArmoryMessage msgUnconfTgt;
          msgUnconfTgt.set_unconf_target_set(itUnconfTgt->second.first);
-         bs::message::Envelope env{ itUnconfTgt->second.second.id, user_
-            , itUnconfTgt->second.second.sender, {}, {}
-            , msgUnconfTgt.SerializeAsString() };
+         bs::message::Envelope env{ user_, itUnconfTgt->second.second.sender
+            , msgUnconfTgt.SerializeAsString(), itUnconfTgt->second.second.id() };
          pushFill(env);
          unconfTgtMap_.erase(itUnconfTgt);
          logger_->debug("[{}] unconf tgt reg {}", __func__, idStr);
@@ -364,13 +363,14 @@ void BlockchainAdapter::onRefresh(const std::vector<BinaryData> &ids, bool onlin
          auto msgWalletRegged = msgReg.mutable_wallet_registered();
          msgWalletRegged->set_wallet_id("");
          msgWalletRegged->set_success(true);
-         bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msgReg.SerializeAsString() };
+         Envelope env{ user_, nullptr, msgReg.SerializeAsString() };
          pushFill(env);
       }
    }
    if (msgRefresh->ids_size() > 0) {
       msgRefresh->set_online(online);
-      bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+      Envelope env{ user_, nullptr, msg.SerializeAsString()
+         , (SeqId)EnvelopeFlags::GlobalBroadcast };
       pushFill(env);
    }
 }
@@ -381,7 +381,8 @@ void BlockchainAdapter::onNewBlock(unsigned int height, unsigned int branchHeigh
    auto msgBlock = msg.mutable_new_block();
    msgBlock->set_top_block(height);
    msgBlock->set_branch_height(branchHeight);
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
 }
 
@@ -397,7 +398,8 @@ void BlockchainAdapter::onZCInvalidated(const std::set<BinaryData> &ids)
       }  // If the TX was invalidated without being received in mempool, this could
    }     // be a sign of some rare and severe issue. Otherwise it will be removed
 
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   bs::message::Envelope env{ user_, nullptr, msg.SerializeAsString()
+      , (SeqId)EnvelopeFlags::GlobalBroadcast };
    pushFill(env);
 }
 
@@ -459,7 +461,7 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
             msgResult->set_push_id(*entry.walletIds.cbegin());
          }
       }
-      Envelope env{ 0, user_, nullptr, {}, {}, msgPushTxResult.SerializeAsString() };
+      Envelope env{ user_, nullptr, msgPushTxResult.SerializeAsString() };
       pushFill(env);
    };
    if (requestId.empty()) {
@@ -484,8 +486,8 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
          for (const auto& entry : mergedEntries) {
             msgResult->add_tx_hashes(entry.txHash.toBinStr());
          }
-         Envelope envResp{ itPending->second.env.id, user_, itPending->second.env.sender
-            , {}, {}, msgPushTxResult.SerializeAsString() };
+         Envelope envResp{ user_, itPending->second.env.sender
+            , msgPushTxResult.SerializeAsString(), itPending->second.env.id() };
          pushFill(envResp);
 
          if (!itPending->second.monitored) {
@@ -512,7 +514,7 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
       msgTX->set_recv_time(entry.recvTime.time_since_epoch().count());
       msgTX->set_nb_conf(entry.nbConf);
    }
-   bs::message::Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   bs::message::Envelope env{ user_, nullptr, msg.SerializeAsString() };
    pushFill(env);
 
    const auto &itLedgerSub = ledgerSubscriptions_.find({});
@@ -540,7 +542,8 @@ void BlockchainAdapter::onZCReceived(const std::string &requestId, const std::ve
          }
       }
       for (const auto &recv : itLedgerSub->second) {
-         Envelope envResp{ 0, user_, recv, {}, {}, msg.SerializeAsString() };
+         Envelope envResp{ user_, recv, msg.SerializeAsString()
+            , (SeqId)EnvelopeFlags::Publish };
          pushFill(envResp);
       }
    }
@@ -603,7 +606,7 @@ void BlockchainAdapter::onTxBroadcastError(const std::string& requestId
       }
    }
 
-   bs::message::Envelope env{ pushData.env.id, user_, pushData.env.sender, {}, {}, {} };
+   Envelope env{ user_, pushData.env.sender, {}, pushData.env.id() };
    receivedZCs_.insert(requestId);
    ArmoryMessage msg;
    auto msgResp = msg.mutable_tx_push_result();
@@ -700,7 +703,7 @@ void BlockchainAdapter::onBroadcastTimeout(const std::string &timeoutId)
       for (const auto& txSingle : pendingTxMap_) {
          if (!txSingle.second.resultReported) {
             const auto& env = txSingle.second.env;
-            requestsPool_.emplace(env.id, env);
+            requestsPool_.emplace(env.id(), env);
          }
       }
    }
@@ -708,7 +711,7 @@ void BlockchainAdapter::onBroadcastTimeout(const std::string &timeoutId)
    logger_->info("[BlockchainAdapter::onBroadcastTimeout] {}",timeoutId);
    ArmoryMessage msg;
    msg.set_tx_push_timeout(timeoutId);
-   Envelope env{ 0, user_, nullptr, {}, {}, msg.SerializeAsString() };
+   Envelope env{ user_, nullptr, msg.SerializeAsString() };
    pushFill(env);
 
    suspend();
@@ -731,8 +734,7 @@ bool BlockchainAdapter::processRegisterWallet(const bs::message::Envelope &env
       auto msgResp = msg.mutable_wallet_registered();
       msgResp->set_wallet_id(request.wallet_id());
       msgResp->set_success(false);
-      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-         , msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
    Wallet wallet;
@@ -761,8 +763,7 @@ bool BlockchainAdapter::processUnregisterWallets(const bs::message::Envelope& en
          msgResp->add_wallet_ids(walletId);
       }
    }
-   bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-      , msg.SerializeAsString() };
+   Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
    return pushFill(envResp);
 }
 
@@ -853,7 +854,7 @@ bool BlockchainAdapter::processGetTxCount(const bs::message::Envelope &env
       if (*stopped) {
          return;
       }
-      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
    std::vector<std::string> walletIDs;
@@ -905,7 +906,7 @@ bool BlockchainAdapter::processBalance(const bs::message::Envelope &env
             }
          }
       }
-      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
    std::vector<std::string> walletIDs;
@@ -922,7 +923,7 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
    if (suspended_) {
       logger_->debug("[BlockchainAdapter::processPushTxRequest] suspended");
       std::unique_lock<std::mutex> lock(mtxReqPool_);
-      requestsPool_[env.id] = env;
+      requestsPool_[env.id()] = env;
       return true;
    }
 
@@ -934,8 +935,7 @@ bool BlockchainAdapter::processPushTxRequest(const bs::message::Envelope &env
       msgResp->set_push_id(request.push_id());
       msgResp->set_result(ArmoryMessage::PushTxOtherError);
       msgResp->set_error_message(errMsg);
-      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-         , msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       return pushFill(envResp);
    };
 
@@ -1006,8 +1006,8 @@ void BlockchainAdapter::sendBroadcastTimeout(const std::string &timeoutId)
    ArmoryMessage msg;
    msg.set_tx_push_timeout(timeoutId);
    const auto &timeNow = bs::message::bus_clock::now();
-   bs::message::Envelope env{ 0, user_, user_, timeNow
-      , timeNow + kBroadcastTimeout, msg.SerializeAsString() };
+   bs::message::Envelope env{ user_, user_, timeNow + kBroadcastTimeout
+      , msg.SerializeAsString() };
    pushFill(env);
 }
 
@@ -1031,7 +1031,7 @@ bool BlockchainAdapter::processGetTXsByHash(const bs::message::Envelope &env
          return;
       }
       // broadcast intentionally even as a reply to some request
-      Envelope envResp{ env.id, user_, nullptr, {}, {}, msg.SerializeAsString() };
+      Envelope envResp{ user_, nullptr, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
 
@@ -1109,7 +1109,7 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
                   if (*stopped) {
                      return;
                   }
-                  Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+                  Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
                   pushFill(envResp);
                }
                catch (const std::exception &) {}
@@ -1227,7 +1227,7 @@ bool BlockchainAdapter::processFeeLevels(const bs::message::Envelope& env
             if (*stopped) {
                return;
             }
-            Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+            Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
             pushFill(envResp);
          }
       };
@@ -1260,7 +1260,7 @@ bool BlockchainAdapter::processGetUTXOs(const bs::message::Envelope& env
       if (*stopped) {
          return;
       }
-      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
    if (walletIDs.empty()) {
@@ -1297,7 +1297,7 @@ bool BlockchainAdapter::processUTXOsForAddr(const bs::message::Envelope& env
       if (*stopped) {
          return;
       }
-      Envelope envResp{ env.id, user_, env.sender, {}, {}, msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       pushFill(envResp);
    };
 
@@ -1339,16 +1339,15 @@ bool BlockchainAdapter::processGetOutpoints(const bs::message::Envelope& env
       if (*stopped) {
          return;
       }
-      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-         , msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       if (pushFill(envResp)) {
          std::unique_lock<std::mutex> lock(mtxReqPool_);
-         requestsPool_.erase(env.id);
+         requestsPool_.erase(env.id());
       }
    };
    {
       std::unique_lock<std::mutex> lock(mtxReqPool_);
-      requestsPool_[env.id] = env;
+      requestsPool_[env.id()] = env;
    }
    std::vector<BinaryData> addrVec;
    for (const auto& addr : request.addresses()) {
@@ -1416,11 +1415,10 @@ bool BlockchainAdapter::processSpentnessRequest(const bs::message::Envelope& env
       } else {
          msgResp->set_error_text(errMsg);
       }
-      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-         , msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       if (pushFill(envResp)) {
          std::unique_lock<std::mutex> lock(mtxReqPool_);
-         requestsPool_.erase(env.id);
+         requestsPool_.erase(env.id());
       }
    };
 
@@ -1480,7 +1478,7 @@ bool BlockchainAdapter::processSpentnessRequest(const bs::message::Envelope& env
 
    {
       std::unique_lock<std::mutex> lock(mtxReqPool_);
-      requestsPool_[env.id] = env;
+      requestsPool_[env.id()] = env;
    }
    armory_->getSpentnessForOutputs(inputs, cbSpentness);
    return true;
@@ -1503,16 +1501,15 @@ bool BlockchainAdapter::processGetOutputsForOPs(const bs::message::Envelope& env
       if (*stopped) {
          return;
       }
-      bs::message::Envelope envResp{ env.id, user_, env.sender, {}, {}
-         , msg.SerializeAsString() };
+      Envelope envResp{ user_, env.sender, msg.SerializeAsString(), env.id() };
       if (pushFill(envResp)) {
          std::unique_lock<std::mutex> lock(mtxReqPool_);
-         requestsPool_.erase(env.id);
+         requestsPool_.erase(env.id());
       }
    };
    {
       std::unique_lock<std::mutex> lock(mtxReqPool_);
-      requestsPool_[env.id] = env;
+      requestsPool_[env.id()] = env;
    }
    std::map<BinaryData, std::set<uint32_t>> outpoints;
    for (int i = 0; i < request.outpoints_size(); ++i) {
@@ -1559,7 +1556,7 @@ bool BlockchainAdapter::processSubscribeAddressTX(const bs::message::Envelope& e
    addrWallet.addresses = { address };
    addrWallet.asNew = true;
    registerWallet(addr, addrWallet);
-   addrTxSubscriptions_[address] = { env.id, env.sender };
+   addrTxSubscriptions_[address] = { env.id(), env.sender };
    return true;
 }
 
@@ -1577,8 +1574,8 @@ void BlockchainAdapter::processZcForAddrSubscriptions(const bs::TXEntry& entry)
       msgResp->set_address(addrStr);
       msgResp->set_value(entry.value);
       msgResp->set_tx_hash(entry.txHash.toBinStr());
-      Envelope env{ 0, user_, subscription.second.subscriber, {}, {}
-         , msg.SerializeAsString() };
+      Envelope env{ user_, subscription.second.subscriber
+         , msg.SerializeAsString(), (SeqId)EnvelopeFlags::Publish };
       pushFill(env);
    }
 }
@@ -1650,7 +1647,8 @@ void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& req
                   if (*stopped) {
                      return;
                   }
-                  Envelope envResp{ request.env.id, user_, request.env.sender, {}, {}, msg.SerializeAsString() };
+                  Envelope envResp{ user_, request.env.sender, msg.SerializeAsString()
+                     , request.env.id() };
                   pushFill(envResp);
                }
             };

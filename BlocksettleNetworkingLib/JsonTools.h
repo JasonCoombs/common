@@ -17,7 +17,9 @@
 #include <string>
 #include <vector>
 
+#ifdef USE_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
+#endif
 
 class QJsonValue;
 
@@ -32,9 +34,11 @@ namespace JsonTools
    double   GetDoubleProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted = nullptr);
    uint64_t GetUIntProperty(const QVariantMap& settingsMap, const QString& propertyName, bool *converted = nullptr);
 
+#ifdef USE_NLOHMANN_JSON
    double GetDouble(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
    double GetDoubleProperty(const nlohmann::json& jsonObject, const std::string& propertyName, bool *converted = nullptr);
    double GetDoubleFromObject(const nlohmann::json& jsonObject, bool *converted = nullptr);
+#endif
 
    enum class FieldsLoadingRule
    {
