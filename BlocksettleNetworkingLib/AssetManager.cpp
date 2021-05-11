@@ -416,7 +416,7 @@ double AssetManager::profitLoss(int64_t futuresXbtAmount, double futuresBalance,
 {
 
    auto sign = futuresXbtAmount > 0 ? 1 : -1;
-   auto futuresXbtAmountBitcoin = sign * bs::XBTAmount(static_cast<uint64_t>(std::abs(futuresXbtAmount))).GetValueBitcoin();
+   auto futuresXbtAmountBitcoin = sign * bs::XBTAmount(static_cast<bs::XBTAmount::satoshi_type>(std::abs(futuresXbtAmount))).GetValueBitcoin();
    return futuresXbtAmountBitcoin * currentPrice - futuresBalance;
 }
 

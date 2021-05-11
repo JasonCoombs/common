@@ -120,7 +120,7 @@ uint64_t bs::tradeutils::estimatePayinFeeWithoutChange(const std::vector<UTXO> &
    auto bsAddr = bs::Address::fromHash(prefixed);
    // Select some random amount
    std::vector<std::shared_ptr<ScriptRecipient>> recVec(
-      {bsAddr.getRecipient(bs::XBTAmount(uint64_t(1000)))});
+      {bsAddr.getRecipient(bs::XBTAmount(bs::XBTAmount::satoshi_type{1000}))});
    recipientsMap.emplace(0, std::move(recVec));
 
    auto inputsCopy = bs::Address::decorateUTXOsCopy(inputs);
@@ -322,7 +322,7 @@ uint64_t bs::tradeutils::getEstimatedFeeFor(UTXO input, const bs::Address &recvA
    if (!input.isInitialized()) {
       return 0;
    }
-   const auto inputAmount = input.getValue();
+   const bs::XBTAmount::satoshi_type inputAmount = input.getValue();
    if (input.txinRedeemSizeBytes_ == UINT32_MAX) {
       const auto scrAddr = bs::Address::fromHash(input.getRecipientScrAddr());
       input.txinRedeemSizeBytes_ = (unsigned int)scrAddr.getInputSize();
@@ -342,8 +342,8 @@ uint32_t bs::tradeutils::payoutMaxTxSize()
 
 bs::XBTAmount bs::tradeutils::minXbtAmount(float feePerByte)
 {
-   auto networkFee = static_cast<uint64_t>(std::round(feePerByte * payoutMaxTxSize()));
-   return bs::XBTAmount(networkFee + bs::Address::getNestedSegwitDustAmount());
+   const bs::XBTAmount::satoshi_type networkFee = std::round(feePerByte * payoutMaxTxSize());
+   return bs::XBTAmount(static_cast<bs::XBTAmount::satoshi_type>(networkFee + bs::Address::getNestedSegwitDustAmount()));
 }
 
 bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
@@ -363,7 +363,7 @@ bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    }
 
    txReq.fee = fee;
-   txReq.armorySigner_.addRecipient(recvAddr.getRecipient(bs::XBTAmount{ value }));
+   txReq.armorySigner_.addRecipient(recvAddr.getRecipient(bs::XBTAmount{ static_cast<bs::XBTAmount::satoshi_type>(value) }));
    return txReq;
 }
 

@@ -2053,7 +2053,7 @@ bs::core::wallet::TXSignRequest bs::sync::WalletsManager::createPartialTXRequest
    }
 
    if (inputAmount > (spendVal + fee)) {
-      const uint64_t changeVal = inputAmount - (spendVal + fee);
+      const bs::XBTAmount::satoshi_type changeVal = inputAmount - (spendVal + fee);
       if (changeAddress.empty()) {
          throw std::invalid_argument("Change address required, but missing");
       }

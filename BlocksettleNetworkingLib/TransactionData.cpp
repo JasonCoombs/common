@@ -387,7 +387,7 @@ bs::XBTAmount TransactionData::CalculateMaxAmount(const bs::Address &recipient, 
       if (logger_) {
          logger_->error("[TransactionData::CalculateMaxAmount] wallet is missing");
       }
-      return bs::XBTAmount{ UINT64_MAX };
+      return {};
    }
    if ((maxAmount_.GetValue() != 0) && !force) {
       return maxAmount_;

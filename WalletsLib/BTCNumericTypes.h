@@ -16,7 +16,7 @@
 namespace BTCNumericTypes
 {
    using balance_type = double;
-   using satoshi_type = uint64_t;
+   using satoshi_type = int64_t;
    constexpr int default_precision = 8;
 
    const balance_type  BalanceDivider = 100000000;

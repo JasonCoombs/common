@@ -17,7 +17,7 @@ namespace bs {
 
 // class XBTAmount should be used to unify getting satoshi amount from double BTC
 // across all codebase
-// basically it is strongly typed wrapper for uint64_t
+// basically it is strongly typed wrapper for int64_t ( BTCNumericTypes::satoshi_type )
    class XBTAmount
    {
    public:
@@ -45,10 +45,6 @@ namespace bs {
       bool isZero() const
       {
          return (value_ == 0);
-      }
-      bool isValid() const
-      {
-         return (value_ != UINT64_MAX);
       }
 
       bool operator == (const XBTAmount &other) const
