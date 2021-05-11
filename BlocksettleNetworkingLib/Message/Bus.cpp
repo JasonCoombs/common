@@ -101,7 +101,8 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
-      if (env.request && defaultRoute_ && !env.sender->isFallback()) {
+      if ((static_cast<EnvelopeFlags>(env.responseId) == EnvelopeFlags::GlobalBroadcast)
+         && defaultRoute_ && !env.sender->isFallback()) {
          result.insert(defaultRoute_);
       }
    } else {
@@ -137,7 +138,7 @@ void Router::reset()
 }
 
 
-uint64_t QueueInterface::resetId(uint64_t newId)
+SeqId QueueInterface::resetId(SeqId newId)
 {
    if (seqNo_ < newId) {
       seqNo_ = newId;
@@ -171,7 +172,7 @@ void Queue_Locking::terminate()
 
 void Queue_Locking::stop()
 {
-   Envelope envQuit{ 0, std::make_shared<UserSystem>(), std::make_shared<UserSystem>()
+   Envelope envQuit{ std::make_shared<UserSystem>(), std::make_shared<UserSystem>()
       , {}, {}, kQuitMessage };
    pushFill(envQuit);
 }

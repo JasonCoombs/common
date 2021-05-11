@@ -73,15 +73,23 @@ namespace bs {
       };
 
 
+      using SeqId = uint64_t;
+
+      enum class EnvelopeFlags : SeqId
+      {
+         GlobalBroadcast = UINT64_MAX,
+         MinValue = GlobalBroadcast
+      };
+
       struct Envelope
       {
-         uint64_t id;
          std::shared_ptr<User>   sender;
          std::shared_ptr<User>   receiver;
          TimeStamp   posted;
          TimeStamp   executeAt;
          std::string message;
-         bool  request{ false };
+         SeqId responseId{ 0 };  // should be set in reply and for special flags
+         SeqId id{ 0 };          // always unique and growing (no 2 envelopes can have the same id)
       };
 
    } // namespace message
