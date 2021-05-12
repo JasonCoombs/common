@@ -582,9 +582,9 @@ message Response
 
     message UpdateWithdrawPrices
     {
-        double sell_price = 1;
-        double buy_price = 2;
-        double network_fee = 3;
+        string sell_price     = 1;
+        string buy_price      = 2;
+        double network_fee    = 3;
         double min_xbt_amount = 4;
    }
 

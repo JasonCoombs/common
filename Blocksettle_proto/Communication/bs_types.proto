@@ -111,6 +111,14 @@ message TradeSettings
     uint32 dealer_auth_submit_address_limit  = 5;
 }
 
+// XBTPrice from DecimalPriceAmount.h
+// XBTPrice.SerializeToProto(msg.mutable_xbt_price());
+// auto xbtPrice = XBTPrice::DeserializeFromProto(msg.xbt_price());
+message XBTPrice
+{
+    int64 price_value = 1;
+}
+
 enum ApiKeyError
 {
     API_KEY_ERROR_NO_ERROR = 0;
