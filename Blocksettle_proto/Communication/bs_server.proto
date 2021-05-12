@@ -334,6 +334,8 @@ enum GenoaType
    GenoaTradeFeeForEntity                 = 63;
    GenoaGetStatementDates                 = 64;
    GenoaGetStatements                     = 65;
+   GenoaPoolMargins                       = 66;
+   GenoaProfitLossPayout                  = 67;
 }
 
 message GenoaConnectedBroadcast
@@ -1074,6 +1076,42 @@ message GenoaMessage
       repeated AccountBalance account_balances = 5;
    }
 
+   message FuturePoolMarginsRequest
+   {
+      string pooling_account_id = 1;
+      repeated string reservation_ids = 2;
+   }
+
+   message FuturePoolMarginsResponse
+   {
+      bool     success = 1;
+      string   operation_id = 2;
+   }
+
+   message FuturePayoutRequest
+   {
+      message Payout
+      {
+         string entity_name = 1;
+         double amount = 3;
+      }
+
+      string product_name = 1;
+      string currency = 2;
+      repeated Payout user_payout = 3;
+   }
+
+   message FuturePayoutResponse
+   {
+      message AccountBalance {
+         int64  entity_id = 1;
+         int64  account_id = 2;
+         double amount = 3;
+      }
+
+      bool success = 1;
+      repeated AccountBalance account_balances = 2;
+   }
 
    GenoaType type = 1;
    oneof data {
@@ -1179,6 +1217,10 @@ message GenoaMessage
       GenoaGetStatementsRequest                 get_statements                   = 97;
       GenoaGetStatementsResponse                get_statements_response          = 98;
 
+      FuturePoolMarginsRequest                  future_pool_margins_request      = 99;
+      FuturePoolMarginsResponse                 future_pool_margins_response     = 100;
+      FuturePayoutRequest                       future_payout_request            = 101;
+      FuturePayoutResponse                      future_payout_response           = 102;
    }
 }
 
