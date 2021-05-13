@@ -292,8 +292,10 @@ void Queue_Locking::process()
                }
                else {
                   if (!adapter->process(env)) {
-                     deferredIds_.insert(env.id());
-                     deferredQueue.emplace_back(env);
+                     const auto& result = deferredIds_.insert(env.id());
+                     if (result.second) { // avoid duplicates
+                        deferredQueue.emplace_back(env);
+                     }
                   }
                   if (accounting_) {
                      acc.add(static_cast<int>(env.receiver ? env.receiver->value() : 0)
