@@ -103,8 +103,8 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
-      if ((static_cast<EnvelopeFlags>(env.responseId) == EnvelopeFlags::GlobalBroadcast)
-         && defaultRoute_ && !env.sender->isFallback()) {
+      if (((static_cast<EnvelopeFlags>(env.responseId) == EnvelopeFlags::GlobalBroadcast)
+         || env.sender->isSystem()) && defaultRoute_ && !env.sender->isFallback()) {
          result.insert(defaultRoute_);
       }
    } else {
