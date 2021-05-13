@@ -336,6 +336,7 @@ enum GenoaType
    GenoaGetStatements                     = 65;
    GenoaPoolMargins                       = 66;
    GenoaProfitLossPayout                  = 67;
+   GenoaFutureCreateReservations          = 68;
 }
 
 message GenoaConnectedBroadcast
@@ -1090,8 +1091,7 @@ message GenoaMessage
 
    message FuturePayoutRequest
    {
-      message Payout
-      {
+      message Payout {
          string entity_name = 1;
          double amount = 3;
       }
@@ -1104,13 +1104,24 @@ message GenoaMessage
    message FuturePayoutResponse
    {
       message AccountBalance {
-         int64  entity_id = 1;
-         int64  account_id = 2;
-         double amount = 3;
+         string entity_name = 1;
+         double amount = 2;
       }
 
       bool success = 1;
       repeated AccountBalance account_balances = 2;
+   }
+
+   message FutureCreateReservations
+   {
+      message AccountMargin {
+         string entity_name = 1;
+         double amount = 2;
+      }
+
+      string product_name = 1;
+      string currency = 2;
+      repeated AccountMargin margins = 3;
    }
 
    GenoaType type = 1;
@@ -1221,6 +1232,7 @@ message GenoaMessage
       FuturePoolMarginsResponse                 future_pool_margins_response     = 100;
       FuturePayoutRequest                       future_payout_request            = 101;
       FuturePayoutResponse                      future_payout_response           = 102;
+      FutureCreateReservations                  future_create_reservations       = 103;
    }
 }
 
