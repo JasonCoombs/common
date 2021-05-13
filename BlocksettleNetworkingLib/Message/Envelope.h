@@ -97,7 +97,16 @@ namespace bs {
          {}
 
          SeqId id() const { return id_; }
-         void setId(SeqId id) { id_ = id; }
+         void setId(SeqId id)
+         {
+            id_ = id;
+            if (!foreignId_) {
+               foreignId_ = id;
+            }
+         }
+
+         SeqId foreignId() const { return foreignId_; }
+         void setForeignId(SeqId id) { foreignId_ = id; }
 
          std::shared_ptr<User>   sender;
          std::shared_ptr<User>   receiver;
@@ -107,7 +116,8 @@ namespace bs {
          SeqId responseId{ 0 };  // should be set in reply and for special flags
 
       private:
-         SeqId id_{ 0 };   // always unique and growing (no 2 envelopes can have the same id)
+         SeqId id_{ 0 };         // always unique and growing (no 2 envelopes can have the same id)
+         SeqId foreignId_{ 0 };  // used at gatewaying from external bus
       };
 
    } // namespace message

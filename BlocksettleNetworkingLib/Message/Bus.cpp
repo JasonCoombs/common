@@ -12,7 +12,9 @@
 #include <spdlog/spdlog.h>
 #include "Message/Adapter.h"
 #include "PerfAccounting.h"
+#include "StringUtils.h"
 
+//#define MSG_DEBUGGING   // comment this out to disable queue message logging
 using namespace bs::message;
 
 static const std::string kQuitMessage("QUIT");
@@ -90,7 +92,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
 {
    std::set<std::shared_ptr<bs::message::Adapter>> result;
    if (supervisor_ && !supervisor_->process(env)) {
-      logger_->debug("[Router::process] msg {} skipped by supervisor", env.id());
+      logger_->info("[Router::process] msg #{} skipped by supervisor", env.id());
       return {};
    }
    if (!env.receiver || env.receiver->isBroadcast()) {
@@ -111,10 +113,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
             return { defaultRoute_ };
          }
          else {
-            logger_->error("[Router::process] failed to find route for {} - "
-               "dropping message #{} from {} ({})", env.receiver->name(), env.id()
-               , env.sender->name(), env.sender->value());
-            return {};
+            throw std::runtime_error("no route");
          }
       }
       else {
@@ -122,11 +121,12 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
             return { adapters_.at(env.receiver->value()) };
          }
          catch (const std::exception &) {
-            logger_->error("[Router::process] can't find receiver {}"
-               , env.receiver->name());
-            return {};
+            throw std::runtime_error("receiver not found");
          }
       }
+   }
+   if (result.empty()) {
+      throw std::runtime_error("no destination found");
    }
    return { result.cbegin(), result.cend() };
 }
@@ -203,6 +203,31 @@ bool Queue_Locking::pushFill(Envelope &env)
 
 bool Queue_Locking::push(const Envelope &env)
 {
+#ifdef MSG_DEBUGGING
+   std::string msgBody;
+   for (const char c : env.message) {
+      if ((c < 32) || (c > 126)) {
+         break;
+      }
+      msgBody += c;
+      if (msgBody.length() >= 8) {
+         break;
+      }
+   }
+   if (msgBody.empty() && !env.message.empty()) {
+      msgBody = bs::toHex(env.message.substr(0, 8));
+      if (env.message.size() > 8) {
+         msgBody += "...";
+      }
+   }
+   logger_->debug("[Queue::push] {}: #{}/{} {}({}) -> {}({}) #{} [{}] {}"
+      , name_, env.id(), env.foreignId()
+      , env.sender->name(), env.sender->value()
+      , env.receiver ? env.receiver->name() : "null"
+      , env.receiver ? env.receiver->value() : 0, env.responseId, env.message.size()
+      , msgBody.empty() ? msgBody : "'" + msgBody + "'");
+#endif   //MSG_DEBUGGING
+
    std::unique_lock<std::mutex> lock(cvMutex_);
    queue_.push_back(env);
    cvQueue_.notify_one();
@@ -221,7 +246,6 @@ void Queue_Locking::process()
    const auto &processPortion = [this, &deferredQueue, &dqTime, &accTime, &acc]
       (const decltype(queue_) &tempQueue, const bus_clock::time_point &timeNow)
    {
-      TimeStamp procStart;
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {
@@ -243,6 +267,7 @@ void Queue_Locking::process()
             if (env.message == kQuitMessage) {
                logger_->info("[Queue::process] {} detected quit system message", name_);
                running_ = false;
+               break;
             } else if (env.message == kAccResetMessage) {
                acc.reset();
                continue;
@@ -251,16 +276,7 @@ void Queue_Locking::process()
                   , name_, env.message);
             }
          } else {
-            const auto &adapters = router_->process(env);
-            if (adapters.empty()) {
-               logger_->warn("[Queue::process] {}: no receivers found for #{} - "
-                  "skipping", name_, env.id());
-               continue;
-            }
-            if (accounting_) {
-               procStart = bus_clock::now();
-            }
-
+            TimeStamp procStart;
             const bool isBroadcast = (!env.receiver || env.receiver->isBroadcast());
             const auto& process = [this, env, isBroadcast, timeNow, &procStart, &acc, &deferredQueue]
                (const std::shared_ptr<bs::message::Adapter>&adapter)
@@ -286,8 +302,29 @@ void Queue_Locking::process()
                }
             };
 
-            for (const auto &adapter : adapters) {
-               process(adapter);
+            if (accounting_) {
+               procStart = bus_clock::now();
+            }
+            try {
+               const auto& adapters = router_->process(env);
+               if (adapters.empty()) {
+                  continue;   // empty result is intended for skipping a message silently (e.g. by supervisor)
+               }
+               for (const auto& adapter : adapters) {
+#ifdef MSG_DEBUGGING
+                  logger_->debug("[Queue::process] {}: #{} by {}", name_, env.id()
+                     , adapter->name());
+#endif
+                  process(adapter);
+               }
+            }
+            catch (const std::exception& e) {
+               logger_->error("[Queue::process] {}: {} for #{} "
+                  "from {} ({}) to {} ({}) - skipping", name_, e.what(), env.id()
+                  , env.sender->value(), env.sender->name()
+                  , env.receiver ? env.receiver->value() : 0
+                  , env.receiver ? env.receiver->name() : "null");
+               continue;
             }
          }
          if (env.id() > lastProcessedSeqNo_) {
