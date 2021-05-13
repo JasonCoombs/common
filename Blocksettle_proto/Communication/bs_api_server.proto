@@ -584,8 +584,8 @@ message Response
     {
         string sell_price     = 1;
         string buy_price      = 2;
-        double network_fee    = 3;
-        double min_xbt_amount = 4;
+        string network_fee    = 3;
+        string min_xbt_amount = 4;
    }
 
     message HistoricalPL

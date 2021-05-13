@@ -119,6 +119,11 @@ message XBTPrice
     int64 price_value = 1;
 }
 
+message XBTAmountValue
+{
+    int64 amount_value = 1;
+}
+
 enum ApiKeyError
 {
     API_KEY_ERROR_NO_ERROR = 0;
