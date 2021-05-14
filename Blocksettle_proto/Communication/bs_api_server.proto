@@ -126,7 +126,7 @@ message Request
     message EstimateIm
     {
         string product_type = 1;
-        string qty = 2;
+        double qty = 2;
         bs.types.Side side = 3;
     }
 
