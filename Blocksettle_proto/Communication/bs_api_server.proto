@@ -194,7 +194,7 @@ message Request
     message WithdrawToExternalAccount
     {
         string account_name = 1;
-        double amount = 2;
+        string amount = 2;
         string ccy = 3;
     }
 
