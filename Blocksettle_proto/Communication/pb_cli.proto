@@ -8,189 +8,191 @@
 **********************************************************************************
 
 */
-syntax = "proto2";
+syntax = "proto3";
 
 package Blocksettle.Communication.pbcli;
 
+import "bs_types.proto";
+
 enum CLIRequestType
 {
-   ErrorMessageType                 = 1;
-   GetStatusMessageType             = 2;
-   LoadUTXOMessageType              = 3;
-   CheckAuthAddressMessageType      = 4;
-   ReloadWalletMessageType          = 5;
-   SendCCTokenMessageType           = 6;
-   AuthVerificationTransactionType  = 8;
-   AuthRevokeTransactionType        = 9;
-   CCDistributionTransactionType    = 10;
-   AuthVerificationRejectedType     = 11;
-   GetRequestsStatType              = 14;
-   GetPendingSettlementsInfo        = 15;
-   SetInitialPMPriceType            = 17;
-   DisablePMProductType             = 18;
-   ExportRequestsType               = 19;
-   ChangeUserStatusType             = 20;
-   LoadConfigType                   = 21;
-   SetConfigType                    = 22;
-   MigrateUserIds                   = 23;
-   BroadcastBSAuthRevokeTX          = 24;
-   BSDeliveryTransactionType        = 25;
-   SyncGenoaUsers                   = 26;
-   UsersImInfoType                  = 27;
-   InstaWalletWithdrawType          = 28;
+   ErrorMessageType                 = 0;
+   GetStatusMessageType             = 1;
+   LoadUTXOMessageType              = 2;
+   CheckAuthAddressMessageType      = 3;
+   ReloadWalletMessageType          = 4;
+   SendCCTokenMessageType           = 5;
+   AuthVerificationTransactionType  = 6;
+   AuthRevokeTransactionType        = 7;
+   CCDistributionTransactionType    = 8;
+   AuthVerificationRejectedType     = 9;
+   GetRequestsStatType              = 10;
+   GetPendingSettlementsInfo        = 11;
+   SetInitialPMPriceType            = 12;
+   DisablePMProductType             = 13;
+   ExportRequestsType               = 14;
+   ChangeUserStatusType             = 15;
+   LoadConfigType                   = 16;
+   SetConfigType                    = 17;
+   MigrateUserIds                   = 18;
+   BroadcastBSAuthRevokeTX          = 19;
+   BSDeliveryTransactionType        = 20;
+   SyncGenoaUsers                   = 21;
+   UsersImInfoType                  = 22;
+   InstaWalletWithdrawType          = 23;
 }
 
 enum ArmoryConnectionState
 {
-   ArmoryConnectionOffline    = 1;
-   ArmoryConnectionScanning   = 2;
-   ArmoryConnectionConnected  = 3;
-   ArmoryConnectionReady      = 4;
+   ArmoryConnectionOffline    = 0;
+   ArmoryConnectionScanning   = 1;
+   ArmoryConnectionConnected  = 2;
+   ArmoryConnectionReady      = 3;
 }
 
 enum AuthAddressVerificationState
 {
-   VerificationFailedState    = 1;
-   InProgressState            = 2;
-   NotSubmittedState          = 3;
-   SubmittedState             = 4;
-   PendingVerificationState   = 5;
-   VerificationSubmittedState = 6;
-   VerifiedState              = 7;
-   RevokedState               = 8;
-   RevokedByBSState           = 9;
+   VerificationFailedState    = 0;
+   InProgressState            = 1;
+   NotSubmittedState          = 2;
+   SubmittedState             = 3;
+   PendingVerificationState   = 4;
+   VerificationSubmittedState = 5;
+   VerifiedState              = 6;
+   RevokedState               = 7;
+   RevokedByBSState           = 8;
 }
 
 enum ArmoryNodeStatus
 {
-   NodeStatus_Offline   = 1;
-   NodeStatus_Online    = 2;
-   NodeStatus_OffSync   = 3;
+   NodeStatus_Offline   = 0;
+   NodeStatus_Online    = 1;
+   NodeStatus_OffSync   = 2;
 }
 
 enum ArmoryNodeRpcStatus
 {
-   RpcStatus_Disabled   = 1;
-   RpcStatus_BadAuth    = 2;
-   RpcStatus_Online     = 3;
-   RpcStatus_Error_28   = 4;
+   RpcStatus_Disabled   = 0;
+   RpcStatus_BadAuth    = 1;
+   RpcStatus_Online     = 2;
+   RpcStatus_Error_28   = 3;
 };
 
 message CLIRequestPacket
 {
-   required CLIRequestType requestType = 1;
-   optional bytes          requestData = 2;
+   CLIRequestType requestType = 1;
+   bytes          requestData = 2;
 }
 
 message CLIResponsePacket
 {
-   required CLIRequestType responseType = 1;
-   required bytes          responseData = 2;
+   CLIRequestType responseType = 1;
+   bytes          responseData = 2;
 }
 
 message PBStatusResponse
 {
-   required bool ConnectedToCeler         = 1;
-   required bool ConnectedToGenoa         = 2;
-   required bool CelerMerchantConnected   = 3;
-   required bool CelerPiggyBankConnected  = 4;
-   required bool CelerStaticDataConnected = 5;
+   bool ConnectedToCeler         = 1;
+   bool ConnectedToGenoa         = 2;
+   bool CelerMerchantConnected   = 3;
+   bool CelerPiggyBankConnected  = 4;
+   bool CelerStaticDataConnected = 5;
 
-   required string PBVersion              = 6;
+   string PBVersion              = 6;
 
-   optional string GenoaVersion           = 7;
-   optional string BlocksettleVersion     = 8;
-   optional string UnifyVersion           = 9;
-   optional string LandfallVersion        = 10;
+   string GenoaVersion           = 7;
+   string BlocksettleVersion     = 8;
+   string UnifyVersion           = 9;
+   string LandfallVersion        = 10;
 
-   required ArmoryConnectionState   armoryConnectionState   = 12;
-   required int32                   currentBlock            = 13;
-   required ArmoryNodeStatus        nodeStatus              = 14;
-   required bool                    segwitEnabled           = 15;
-   required ArmoryNodeRpcStatus     armoryRpcStatus         = 16;
+   ArmoryConnectionState   armoryConnectionState   = 12;
+   int32                   currentBlock            = 13;
+   ArmoryNodeStatus        nodeStatus              = 14;
+   bool                    segwitEnabled           = 15;
+   ArmoryNodeRpcStatus     armoryRpcStatus         = 16;
 
-   required string uptime           = 17;
-   required uint64 uptime_seconds   = 18;
+   string uptime           = 17;
+   uint64 uptime_seconds   = 18;
 
-   required bool ConnectedToMD      = 19;
-   required bool ConnectedToProxy   = 20;
-   required bool connected_to_dealer = 21;
+   bool ConnectedToMD      = 19;
+   bool ConnectedToProxy   = 20;
+   bool connected_to_dealer = 21;
 }
 
 message ErrorMessage
 {
-   required string messageText = 1;
-   optional bytes originalMessage = 2;
+   string messageText = 1;
+   bytes originalMessage = 2;
 }
 
 message LoadUTXOResponse
 {
    repeated Transactions serializedUTXO = 1;
 
-   optional float feePerByte = 2;
+   float feePerByte = 2;
 
    message Transactions {
-      required string wallet = 1;
+      string wallet = 1;
       repeated bytes  transactions = 2;
    }
 }
 
 message CheckAuthAddressRequestPacket
 {
-   required string authAddress = 1;
+   string authAddress = 1;
 }
 
 message CheckAuthAddressResponsePacket
 {
-   required string authAddress = 1;
-   required AuthAddressVerificationState verificationState = 2;
+   string authAddress = 1;
+   AuthAddressVerificationState verificationState = 2;
 }
 
 
 message ReloadWalletRequest
 {
-   required string reason = 1;
+   string reason = 1;
 }
 
 
 message SendCCTokenRequest
 {
-   required string userId = 1;
-   required string ccToken = 2;
-   required string ccProduct = 3;
-   required uint32 amount = 4;
-   required string request_id = 5;
+   string userId = 1;
+   string ccToken = 2;
+   string ccProduct = 3;
+   uint32 amount = 4;
+   string request_id = 5;
 }
 
 message TransactionBroadcastResponse
 {
-   required bool transaction_broadcasted = 1;
+   bool transaction_broadcasted = 1;
 }
 
 message AuthVerificationRejectReponse
 {
-   required bool fee_released = 1;
-   optional string debug_message = 2;
+   bool fee_released = 1;
+   string debug_message = 2;
 }
 
 message GetRequestsStatResopnse
 {
-   required uint32 submit_auth_count               = 1;
-   required uint32 revoke_auth_count               = 2;
-   required uint32 generate_cc_seed_count          = 4;
-   required uint32 cc_initial_distribution_count   = 5;
-   required uint32 delivery_tx_count               = 6;
+   uint32 submit_auth_count               = 1;
+   uint32 revoke_auth_count               = 2;
+   uint32 generate_cc_seed_count          = 4;
+   uint32 cc_initial_distribution_count   = 5;
+   uint32 delivery_tx_count               = 6;
 }
 
 message ProductStatistics
 {
-   required string product_name = 1;
-   required int32  trades_count = 2;
+   string product_name = 1;
+   int32  trades_count = 2;
 }
 
 message GetPendingSettlementsResponse
 {
-   required string snapshot_date_time = 1;
+   string snapshot_date_time = 1;
 
    repeated ProductStatistics cc_trades = 2;
    repeated ProductStatistics xbt_trades = 3;
@@ -198,64 +200,64 @@ message GetPendingSettlementsResponse
 
 message SetInitialPMPriceRequest
 {
-   required string product       = 1;
-   required double bid_price     = 2;
-   required double offer_price   = 3;
+   string product       = 1;
+   double bid_price     = 2;
+   double offer_price   = 3;
 }
 
 message SetInitialPMPriceResponse
 {
-   required string   product  = 1;
-   required bool     result   = 2;
+   string   product  = 1;
+   bool     result   = 2;
 }
 
 message DisablePMProductRequest
 {
-   required string   product = 1;
+   string   product = 1;
 }
 
 message DisablePMProductResponse
 {
-   required string   product  = 1;
-   required bool     result   = 2;
-   optional string   message  = 3;
+   string   product  = 1;
+   bool     result   = 2;
+   string   message  = 3;
 }
 
 message ExportRequestsRequests
 {
-   required string   path = 1;
+   string   path = 1;
 }
 
 message ExportRequestsResponse
 {
-   required string   path           = 1;
-   required uint32   requests_count = 2;
-   required bool     result         = 3;
-   optional string   message        = 4;
+   string   path           = 1;
+   uint32   requests_count = 2;
+   bool     result         = 3;
+   string   message        = 4;
 }
 
 message ChangeUserStatusRequest
 {
-   required string   user_email     = 1;
-   required bool     status_enabled = 2;
+   string   user_email     = 1;
+   bool     status_enabled = 2;
 }
 
 message ChangeUserStatusResponse
 {
-   required string   user_email  = 1;
-   required int32    new_score   = 2;
-   required bool     processed   = 3;
+   string   user_email  = 1;
+   int32    new_score   = 2;
+   bool     processed   = 3;
 }
 
 message LoadConfigsRquest
 {
-   required string   pattern = 1;
+   string   pattern = 1;
 }
 
 message ConfigContainer
 {
-   required string name    = 1;
-   required string value   = 2;
+   string name    = 1;
+   string value   = 2;
 }
 
 message LoadConfigResponse
@@ -265,34 +267,34 @@ message LoadConfigResponse
 
 message SetConfigRequest
 {
-   required ConfigContainer config = 1;
+   ConfigContainer config = 1;
 }
 
 message SetConfigResponse
 {
-   required bool     result         = 1;
-   optional string   error_message  = 2;
+   bool     result         = 1;
+   string   error_message  = 2;
 }
 
 message LoadUTXORequest
 {
-   required bool     load_all = 1;
+   bool     load_all = 1;
 }
 
 message SyncAccountsResponse
 {
-   required bool     success              = 1;
-   required int32    created_customers    = 2;
-   required int32    updated_properties   = 3;
+   bool     success              = 1;
+   int32    created_customers    = 2;
+   int32    updated_properties   = 3;
 }
 
 message InstaWalletWithdrawRequest
 {
-   required string address = 1;
-   required uint64 amount = 2;
+   string                  address  = 1;
+   bs.types.XBTAmountValue amount   = 2;
 }
 
 message InstaWalletWithdrawResponse
 {
-   required bytes signed_tx = 1;
+   bytes signed_tx = 1;
 }
