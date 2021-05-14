@@ -54,8 +54,8 @@ enum PriceRangeId
 message StreamPriceData
 {
    PriceRangeId   range_id = 1;
-   double         ask      = 2;
-   double         bid      = 3;
+   string         ask      = 2;
+   string         bid      = 3;
 }
 
 message SubmitPricesData
