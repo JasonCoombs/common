@@ -40,10 +40,10 @@ message Order
    double timestamp = 4;
    string product_type = 5;
    bs.types.Side side = 6;
-   double quantity = 8;
-   double price = 9;
-   double cut_off_price = 10;
-   double trade_im = 11;
+   string quantity = 8;
+   string price = 9;
+   string cut_off_price = 10;
+   string trade_im = 11;
    bool   is_rollover = 12;
 }
 
@@ -444,12 +444,12 @@ message Response
         message Item
         {
             string quantity = 1;
-            double bid = 2;
-            double ask = 3;
+            string bid = 2;
+            string ask = 3;
         }
 
         string product_type   = 1;
-        double live_cutoff    = 2;
+        string live_cutoff    = 2;
         repeated Item items   = 3;
     }
 
