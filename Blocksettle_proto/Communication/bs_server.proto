@@ -89,16 +89,16 @@ message WalletMessage
 
    message DepositAddressTX
    {
-      string address = 1;
-      int64  value = 2;
-      bytes  tx_hash = 3;
-      uint32 nb_conf = 4;
+      string                  address  = 1;
+      bs.types.XBTAmountValue amount   = 2;
+      bytes                   tx_hash  = 3;
+      uint32                  nb_conf  = 4;
    }
 
    message OutInstaTxRequest
    {
-      string out_address = 1;
-      uint64 amount = 2;
+      string                  out_address = 1;
+      bs.types.XBTAmountValue amount      = 2;
    }
 
    message OutInstaTxResponse
@@ -913,11 +913,11 @@ message GenoaWithdrawToExternalAccountResponse
 
 message GenoaRegisterXBTDepositRequest
 {
-   string entity_name   = 1;
-   double price         = 2;
-   double xbt_amount    = 3;
-   double eur_amount    = 4;
-   string deposit_id    = 5;
+   string                  entity_name   = 1;
+   bs.types.XBTPrice       price         = 2;
+   bs.types.XBTAmountValue xbt_amount    = 3;
+   bs.types.FXAmountValue  eur_amount    = 4;
+   string                  deposit_id    = 5;
 }
 
 message GenoaRegisterXBTDepositResponse
@@ -938,12 +938,12 @@ message GenoaConfirmXBTDepositResponse
 }
 message GenoaRegiserXBTWithdrawRequest
 {
-   string entity_name   = 1;
-   double price         = 2;
-   double xbt_amount    = 3;
-   double eur_amount    = 4;
-   string deposit_id    = 5;
-   double fee           = 6;
+   string                  entity_name   = 1;
+   bs.types.XBTPrice       price         = 2;
+   bs.types.XBTAmountValue xbt_amount    = 3;
+   bs.types.FXAmountValue  eur_amount    = 4;
+   string                  deposit_id    = 5;
+   bs.types.XBTAmountValue fee           = 6;
 }
 
 message GenoaRegiserXBTWithdrawResponse
@@ -2056,20 +2056,20 @@ message ObligationsManaging
 
    message XBTWithdrawRequest
    {
-      string   entity_name = 1;
-      string   address     = 2;
-      double   eur_amount  = 3;
-      double   price       = 4;
-      double   xbt_receive_amount = 5;
-      double   fee_amount  = 6;
+      string                  entity_name          = 1;
+      string                  address              = 2;
+      bs.types.FXAmountValue  eur_amount           = 3;
+      bs.types.XBTPrice       price                = 4;
+      bs.types.XBTAmountValue xbt_receive_amount   = 5;
+      bs.types.XBTAmountValue fee_amount           = 6;
    }
 
    message XBTWithdrawResponse
    {
-      string   entity_name = 1;
-      string   address     = 2;
-      double   eur_amount  = 3;
-      int32    status_code = 4;
+      string                  entity_name = 1;
+      string                  address     = 2;
+      bs.types.FXAmountValue  eur_amount  = 3;
+      int32                   status_code = 4;
    }
 
    ObligationsManagingMessageType   type = 1;
@@ -2382,20 +2382,20 @@ message DealerConnMessage
 {
    message OrderRequest
    {
-      string product = 1;
-      double qty = 2;
-      bs.types.Side side = 3;
+      string                  product = 1;
+      bs.types.XBTAmountValue qty = 2;
+      bs.types.Side           side = 3;
    }
 
    message OrderResponse
    {
-      bool   success = 1;
-      string product = 2;
-      double qty = 3;
-      bs.types.Side side = 4;
-      string exchange_order_id = 5;
-      double price = 6;
-      string reject_reason = 7;
+      bool                    success           = 1;
+      string                  product           = 2;
+      bs.types.XBTAmountValue qty               = 3;
+      bs.types.Side           side              = 4;
+      string                  exchange_order_id = 5;
+      bs.types.XBTPrice       price             = 6;
+      string                  reject_reason     = 7;
    }
 
    message PriceUpdate

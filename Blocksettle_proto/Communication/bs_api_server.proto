@@ -201,10 +201,10 @@ message Request
     message WithdrawBitcoin
     {
         string address = 1;
-        double eur_amount = 2;
-        double xbt_receive_amount = 3;
-        double fee_amount = 4;
-        double price = 5;
+        string eur_amount = 2;
+        string xbt_receive_amount = 3;
+        string fee_amount = 4;
+        string price = 5;
     }
 
     message HistoricalPL
