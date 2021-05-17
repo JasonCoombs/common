@@ -901,7 +901,7 @@ message GenoaWithdrawToExternalAccountRequest
 {
    string entity_name = 1;
    string account_name = 2;
-   double amount = 3;
+   bs.types.FXAmountValue amount = 3;
    string ccy = 4;
 }
 
@@ -2020,13 +2020,6 @@ message ObligationsManaging
       string   product_name   = 1;
    }
 
-   message LiveCutOffPriceUpdate
-   {
-      bs.types.PriceBookType  price_book  = 1;
-      int64                   ask         = 2;
-      int64                   bid         = 3;
-   }
-
    message SubmitWhitelistedAddress
    {
       string entity_name = 1;
@@ -2175,7 +2168,15 @@ message ApiServerMsg
 
    message UpdateBook
    {
-      Communication.TradeHistory.PriceBookUpdate data = 1;
+      message Entry
+      {
+         string            volume  = 1;
+         bs.types.XBTPrice bid     = 2;
+         bs.types.XBTPrice ask     = 3;
+      }
+
+      bs.types.PriceBookType  book_type      = 1;
+      repeated Entry          prices         = 2;
    }
 
    message TradeClose
@@ -2210,7 +2211,7 @@ message ApiServerMsg
       UserNotify     user_notify       = 10;
       UpdateWithdrawPrices update_withdraw_prices = 11;
       Empty          subscribe_price_offers = 12;
-      Communication.TradeHistory.PriceBookUpdate price_offer = 13;
+      UpdateBook     price_offer = 13;
    }
 }
 
