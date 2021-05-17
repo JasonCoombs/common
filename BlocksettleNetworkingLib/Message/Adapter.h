@@ -44,6 +44,18 @@ namespace bs {
          virtual bool push(const Envelope &);
          virtual bool pushFill(Envelope &);
 
+         SeqId pushRequest(const std::shared_ptr<User>& sender
+            , const std::shared_ptr<User>& receiver
+            , const std::string& msg, const TimeStamp& execAt = {});
+         SeqId pushResponse(const std::shared_ptr<User>& sender
+            , const std::shared_ptr<User>& receiver
+            , const std::string& msg, SeqId respId =
+            (bs::message::SeqId)bs::message::EnvelopeFlags::Response);
+         virtual SeqId pushResponse(const std::shared_ptr<User>& sender
+            , const bs::message::Envelope& envReq, const std::string& msg);
+         SeqId pushBroadcast(const std::shared_ptr<User>& sender
+            , const std::string& msg, bool global = false);
+
       protected:
          std::shared_ptr<QueueInterface>  queue_;
       };

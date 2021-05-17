@@ -72,7 +72,7 @@ bool WalletsAdapter::processEnvelope(const Envelope &env)
 
 bool WalletsAdapter::processBlockchain(const Envelope &env)
 {
-   if (!env.receiver && !env.responseId) {
+   if (!env.receiver && env.isRequest()) {
       return true;
    }
    ArmoryMessage msg;
@@ -108,10 +108,10 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
       processWalletBal(msg.wallet_balance_response());
       break;
    case ArmoryMessage::kTransactions:
-      processTransactions(env.responseId, msg.transactions());
+      processTransactions(env.responseId(), msg.transactions());
       break;
    case ArmoryMessage::kUtxos:
-      return processUTXOs(env.responseId, msg.utxos());
+      return processUTXOs(env.responseId(), msg.utxos());
    default: break;
    }
    return true;
@@ -121,8 +121,7 @@ void WalletsAdapter::sendLoadingBC()
 {
    WalletsMessage msg;
    msg.mutable_loading();
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::startWalletsSync()
@@ -180,16 +179,14 @@ void WalletsAdapter::loadWallet(const bs::sync::WalletInfo &info)
                WalletsMessage msg;
                auto msgWallet = msg.mutable_wallet_loaded();
                wi.toCommonMsg(*msgWallet);
-               Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-               pushFill(env);
+               pushBroadcast(ownUser_, msg.SerializeAsString());
 
                loadingWallets_.erase(hdWallet->walletId());
                if (loadingWallets_.empty()) {
                   ArmoryMessage msg;
                   auto msgReq = msg.mutable_register_wallet();
                   msgReq->set_wallet_id("");
-                  Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-                  pushFill(env);
+                  pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
                }
             };
             hdWallet->synchronize(cbHDWalletDone);
@@ -299,13 +296,12 @@ void WalletsAdapter::eraseWallet(const std::shared_ptr<hd::Wallet>& hdWallet)
       }
       eraseWallet(leaf, false);
    }
-   Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-   pushFill(env);
+   pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
    const auto& wi = bs::sync::WalletInfo::fromWallet(hdWallet);
    WalletsMessage msgWlt;
    wi.toCommonMsg(*msgWlt.mutable_wallet_deleted());
-   env = Envelope{ ownUser_, nullptr, msgWlt.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msgWlt.SerializeAsString());
+
    std::remove_if(hdWallets_.begin(), hdWallets_.end()
       , [hdWallet](const std::shared_ptr<hd::Wallet>& w) {
          return (hdWallet->walletId() == w->walletId());
@@ -323,8 +319,7 @@ void WalletsAdapter::eraseWallet(const std::shared_ptr<Wallet> &wallet, bool unr
       for (const auto& walletId : wallet->internalIds()) {
          msgReq->add_wallet_ids(walletId);
       }
-      Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-      pushFill(env);
+      pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
    }
    wallets_.erase(wallet->walletId());
 }
@@ -397,8 +392,7 @@ void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
       logger_->debug("[WalletsAdapter::addWallet] auth leaf {} created", wallet->walletId());
       WalletsMessage msg;
       msg.set_auth_leaf_created(authAddressWallet_->walletId());
-      Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-      pushFill(env);
+      pushBroadcast(ownUser_, msg.SerializeAsString());
    }
    registerWallet(wallet);
 }
@@ -416,8 +410,7 @@ void WalletsAdapter::registerWallet(const std::shared_ptr<Wallet> &wallet)
       for (const auto &addr : reg.second) {
          msgReq->add_addresses(addr.toBinStr());
       }
-      Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-      pushFill(env);
+      pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
    }
 }
 
@@ -447,8 +440,7 @@ void WalletsAdapter::scanWallet(const std::shared_ptr<Wallet>& wallet, bool isEx
          curScanBatch.insert(addr);
          indices.insert(addrPair.second);
       }
-      Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-      pushFill(env);
+      pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
       logger_->debug("[WalletsAdapter::scanWallet] {}: {} addresses from {} to {}"
          , walletId, curScanBatch.size(), *indices.cbegin(), *indices.rbegin());
    };
@@ -480,8 +472,7 @@ void WalletsAdapter::processScanRegistered(const std::shared_ptr<bs::sync::Walle
    ArmoryMessage msg;
    auto msgReq = msg.mutable_addr_tx_count_request();
    msgReq->add_wallet_ids(scanId);
-   Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-   pushFill(env);
+   pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
@@ -511,8 +502,7 @@ void WalletsAdapter::resumeScan(const std::shared_ptr<bs::sync::Wallet>& wallet
       ArmoryMessage msg;
       auto msgReq = msg.mutable_unregister_wallets();
       msgReq->add_wallet_ids(scanId);
-      Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-      pushFill(env);
+      pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
    };
    if (!countMap.wallet_tx_counts(0).txns_size()) {
       stopScan();
@@ -573,16 +563,14 @@ void WalletsAdapter::balanceUpdated(const std::string &walletId)
 {
    WalletsMessage msg;
    msg.set_balance_updated(walletId);
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::sendWalletChanged(const std::string &walletId)
 {
    WalletsMessage msg;
    msg.set_wallet_changed(walletId);
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::sendWalletReady(const std::string &walletId)
@@ -599,8 +587,7 @@ void WalletsAdapter::sendWalletReady(const std::string &walletId)
    }
    WalletsMessage msg;
    msg.set_wallet_ready(walletId);
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::sendWalletError(const std::string &walletId
@@ -610,8 +597,7 @@ void WalletsAdapter::sendWalletError(const std::string &walletId
    auto msgError = msg.mutable_error();
    msgError->set_wallet_id(walletId);
    msgError->set_error_message(errMsg);
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::authLeafAdded(const std::string& walletId)
@@ -642,8 +628,7 @@ void WalletsAdapter::authLeafAdded(const std::string& walletId)
          msgAddr->set_index(authAddressWallet_->getAddressIndex(addr));
          msgAddr->set_comment(authAddressWallet_->getAddressComment(addr));
       }
-      Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-      pushFill(env);
+      pushBroadcast(ownUser_, msg.SerializeAsString());
    });
 }
 
@@ -656,8 +641,7 @@ void WalletsAdapter::metadataChanged(const std::string &walletId)
 {
    WalletsMessage msg;
    msg.set_wallet_meta_changed(walletId);
-   Envelope env{ ownUser_, nullptr, msg.SerializeAsString() };
-   pushFill(env);
+   pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::processWalletRegistered(const std::string &walletId)
@@ -689,8 +673,7 @@ void WalletsAdapter::processWalletRegistered(const std::string &walletId)
          auto msgUnconfTgt = msg.mutable_set_unconf_target();
          msgUnconfTgt->set_wallet_id(wallet.second->walletId());
          msgUnconfTgt->set_conf_count(itUnconfTgt->second);
-         Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-         pushFill(env);
+         pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
       }
       break;
    }
@@ -863,8 +846,7 @@ void WalletsAdapter::sendTxCountRequest(const std::string &walletId)
    ArmoryMessage msg;
    auto msgReq = msg.mutable_addr_tx_count_request();
    msgReq->add_wallet_ids(walletId);
-   Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-   pushFill(env);
+   pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::sendBalanceRequest(const std::string &walletId)
@@ -873,8 +855,7 @@ void WalletsAdapter::sendBalanceRequest(const std::string &walletId)
    ArmoryMessage msg;
    auto msgReq = msg.mutable_wallet_balance_request();
    msgReq->add_wallet_ids(walletId);
-   Envelope env{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-   pushFill(env);
+   pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
 }
 
 void WalletsAdapter::scanComplete(const std::string &walletId)
@@ -1026,8 +1007,7 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
          msgLeaf->set_ext_only(leaf->extOnly());
       }
    }
-   Envelope envResp{ ownUser_, nullptr, msg.SerializeAsString(), env.id() };  // broadcast
-   return pushFill(envResp);
+   return pushResponse(ownUser_, nullptr, msg.SerializeAsString(), env.id());  // broadcast
 }
 
 bool WalletsAdapter::processWalletGet(const Envelope &env
@@ -1068,8 +1048,7 @@ bool WalletsAdapter::processWalletGet(const Envelope &env
          msgAddr->set_comment(comment);
       }
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
@@ -1173,8 +1152,7 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
       auto walletData = msgResp->add_wallets();
       *walletData = hdWallet.toCommonMessage();
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processGetTxComment(const Envelope &env
@@ -1188,8 +1166,7 @@ bool WalletsAdapter::processGetTxComment(const Envelope &env
          auto msgResp = msg.mutable_tx_comment();
          msgResp->set_tx_hash(txBinHash);
          msgResp->set_comment(comment);
-         Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-         return pushFill(envResp);
+         return pushResponse(ownUser_, env, msg.SerializeAsString());
       }
    }
    return true;
@@ -1239,8 +1216,7 @@ bool WalletsAdapter::processGetWalletBalances(const bs::message::Envelope &env
    msgResp->set_spendable_balance(spendableBalance);
    msgResp->set_unconfirmed_balance(unconfirmedBalance);
    msgResp->set_nb_addresses(addrCount);
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processGetExtAddresses(const bs::message::Envelope &env, const std::string &walletId)
@@ -1300,8 +1276,7 @@ bool WalletsAdapter::sendAddresses(const bs::message::Envelope &env
       addrResp->set_index(addr.index);
       addrResp->set_wallet_id(addr.walletId);
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processCreateExtAddress(const bs::message::Envelope& env
@@ -1359,8 +1334,7 @@ bool WalletsAdapter::processGetAddrComments(const bs::message::Envelope &env
       }
       catch (const std::exception &) {}
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processSetAddrComments(const bs::message::Envelope &env
@@ -1385,8 +1359,7 @@ bool WalletsAdapter::processSetAddrComments(const bs::message::Envelope &env
       }
       catch (const std::exception &) {}
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processSetTxComment(const WalletsMessage_TXComment& request)
@@ -1411,8 +1384,7 @@ bool WalletsAdapter::processSetTxComment(const WalletsMessage_TXComment& request
    WalletsMessage msg;
    auto msgResp = msg.mutable_tx_comment();
    *msgResp = request;
-   Envelope envResp{ ownUser_, nullptr, msg.SerializeAsString() };
-   return pushFill(envResp);
+   return pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processTXDetails(const bs::message::Envelope &env
@@ -1441,9 +1413,9 @@ bool WalletsAdapter::processTXDetails(const bs::message::Envelope &env
       msgReq->add_tx_hashes(txHash.toBinStr());
    }
    msgReq->set_disable_cache(!request.use_cache());
-   Envelope envReq{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-   if (pushFill(envReq)) {
-      initialHashes_[envReq.id()] = { env, std::map<BinaryData, Tx>{}, requests };
+   const auto msgId = pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
+   if (msgId) {
+      initialHashes_[msgId] = { env, std::map<BinaryData, Tx>{}, requests };
       return true;
    }
    return false;
@@ -1488,9 +1460,9 @@ bool WalletsAdapter::processGetUTXOs(const bs::message::Envelope& env, const Wal
          for (const auto& wltId : walletIds) {
             msgReq->add_wallet_ids(wltId);
          }
-         Envelope envReq{ ownUser_, blockchainUser_, msgZC.SerializeAsString() };
-         if (pushFill(envReq)) {
-            utxoZcReqs_[envReq.id()] = utxoReq;
+         const auto msgId = pushRequest(ownUser_, blockchainUser_, msgZC.SerializeAsString());
+         if (msgId) {
+            utxoZcReqs_[msgId] = utxoReq;
          }
       }
       ArmoryMessage msgSpendable;
@@ -1498,9 +1470,9 @@ bool WalletsAdapter::processGetUTXOs(const bs::message::Envelope& env, const Wal
       for (const auto& walletId : walletIds) {
          msgReq->add_wallet_ids(walletId);
       }
-      Envelope envReq{ ownUser_, blockchainUser_, msgSpendable.SerializeAsString() };
-      if (pushFill(envReq)) {
-         utxoSpendableReqs_[envReq.id()] = utxoReq;
+      const auto msgId = pushRequest(ownUser_, blockchainUser_, msgSpendable.SerializeAsString());
+      if (msgId) {
+         utxoSpendableReqs_[msgId] = utxoReq;
       }
    }
    return true;
@@ -1550,9 +1522,9 @@ void WalletsAdapter::processTransactions(uint64_t msgId
       for (const auto &txHash : prevHashes) {
          msgReq->add_tx_hashes(txHash.toBinStr());
       }
-      Envelope envReq{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-      if (pushFill(envReq)) {
-         prevHashes_[envReq.id()] = data;
+      const auto msgId = pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
+      if (msgId) {
+         prevHashes_[msgId] = data;
       }
       return;
    }
@@ -1773,9 +1745,8 @@ void WalletsAdapter::processTransactions(uint64_t msgId
             outAddr->set_out_index(addrDet.outIndex);
          }
       }
-      Envelope envResp{ ownUser_, itId->second.env.sender
-         , msg.SerializeAsString(), itId->second.env.id() };
-      pushFill(envResp);   //TODO: send TX details in portions to allow faster UI response
+      pushResponse(ownUser_, itId->second.env, msg.SerializeAsString());
+      //TODO: send TX details in portions to allow faster UI response
       prevHashes_.erase(itId);
    }
 }
@@ -1908,9 +1879,7 @@ bool WalletsAdapter::processUTXOs(uint64_t msgId, const ArmoryMessage_UTXOs& res
             msgResp->add_utxos(utxo.serialize().toBinStr());
          }
       }
-      Envelope envResp{ ownUser_, utxoReq->env.sender, msg.SerializeAsString()
-         , utxoReq->env.id() };
-      pushFill(envResp);
+      pushResponse(ownUser_, utxoReq->env, msg.SerializeAsString());
    };
    const auto& filterUTXOs = [this]
       (const std::string &walletId, std::vector<UTXO> utxos)->std::vector<UTXO>
@@ -1989,8 +1958,7 @@ bool WalletsAdapter::processAuthKey(const bs::message::Envelope& env
       auto msgResp = msg.mutable_auth_key();
       msgResp->set_auth_address(authAddr.display());
       msgResp->set_auth_key(pubKey.toBinStr());
-      Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-      pushFill(envResp);
+      pushResponse(ownUser_, env, msg.SerializeAsString());
    };
    const auto &priWallet = getPrimaryWallet();
    if (!priWallet) {
@@ -2032,8 +2000,7 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
       for (const auto& utxo : utxos) {
          msgResp->add_utxos(utxo.serialize().toBinStr());
       }
-      Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-      pushFill(envResp);
+      pushResponse(ownUser_, env, msg.SerializeAsString());
    };
    if (request.utxos_size()) {
       std::vector<UTXO> utxos;
@@ -2118,9 +2085,9 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
       for (const auto& walletId : wallet->internalIds()) {
          msgReq->add_wallet_ids(walletId);
       }
-      Envelope envReq{ ownUser_, blockchainUser_, msgSpendable.SerializeAsString() };
-      if (pushFill(envReq)) {
-         utxoReserveReqs_[envReq.id()] = cbFilter;
+      const auto msgId = pushRequest(ownUser_, blockchainUser_, msgSpendable.SerializeAsString());
+      if (msgId) {
+         utxoReserveReqs_[msgId] = cbFilter;
       }
       if (request.use_zc()) {
          ArmoryMessage msgZC;
@@ -2128,9 +2095,9 @@ bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
          for (const auto& walletId : wallet->internalIds()) {
             msgReq->add_wallet_ids(walletId);
          }
-         Envelope envReqZC{ ownUser_, blockchainUser_, msgZC.SerializeAsString() };
-         if (pushFill(envReqZC)) {
-            utxoReserveReqs_[envReqZC.id()] = cbFilter;
+         const auto msgId = pushRequest(ownUser_, blockchainUser_, msgZC.SerializeAsString());
+         if (msgId) {
+            utxoReserveReqs_[msgId] = cbFilter;
          }
       }
    }
@@ -2147,8 +2114,7 @@ bool WalletsAdapter::processGetReservedUTXOs(const bs::message::Envelope& env
    for (const auto& utxo : utxoResMgr_->get(request.id(), request.sub_id())) {
       msgResp->add_utxos(utxo.serialize().toBinStr());
    }
-   Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-   return pushFill(envResp);
+   return pushResponse(ownUser_, env, msg.SerializeAsString());
 }
 
 bool WalletsAdapter::processUnreserveUTXOs(const WalletsMessage_ReservationKey& request)
@@ -2176,8 +2142,7 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
       if (!errorMsg.empty()) {
          msgResp->set_error_text(errorMsg);
       }
-      Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-      pushFill(envResp);
+      pushResponse(ownUser_, env, msg.SerializeAsString());
    };
    if (!settlementFee_) {
       logger_->warn("[{}] no settlement fee", __func__);
@@ -2348,9 +2313,9 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
                      auto spender = txReq->armorySigner_.getSpender(i);
                      msgReq->add_tx_hashes(spender->getOutputHash().toBinStr());
                   }
-                  Envelope envReq{ ownUser_, blockchainUser_, msg.SerializeAsString() };
-                  if (pushFill(envReq)) {
-                     payinTXsCbMap_[envReq.id()] = cbTXs;
+                  auto msgId = pushRequest(ownUser_, blockchainUser_, msg.SerializeAsString());
+                  if (msgId) {
+                     payinTXsCbMap_[msgId] = cbTXs;
                   }
                };
                //resolve in all circumstances
@@ -2392,8 +2357,7 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
       if (!errorMsg.empty()) {
          msgResp->set_error_text(errorMsg);
       }
-      Envelope envResp{ ownUser_, env.sender, msg.SerializeAsString(), env.id() };
-      pushFill(envResp);
+      pushResponse(ownUser_, env, msg.SerializeAsString());
    };
 
    const auto& priWallet = getPrimaryWallet();

@@ -103,7 +103,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
-      if (((static_cast<EnvelopeFlags>(env.responseId) == EnvelopeFlags::GlobalBroadcast)
+      if (((env.flags() == EnvelopeFlags::GlobalBroadcast)
          || env.sender->isSystem()) && defaultRoute_ && !env.sender->isFallback()) {
          result.insert(defaultRoute_);
       }
@@ -185,8 +185,8 @@ void Queue_Locking::terminate()
 
 void Queue_Locking::stop()
 {
-   Envelope envQuit{ std::make_shared<UserSystem>(), std::make_shared<UserSystem>()
-      , kQuitMessage };
+   auto envQuit = Envelope::makeRequest(std::make_shared<UserSystem>(), std::make_shared<UserSystem>()
+      , kQuitMessage);
    pushFill(envQuit);
 }
 
