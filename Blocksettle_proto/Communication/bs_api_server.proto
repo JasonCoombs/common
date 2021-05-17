@@ -40,10 +40,10 @@ message Order
    double timestamp = 4;
    string product_type = 5;
    bs.types.Side side = 6;
-   double quantity = 8;
-   double price = 9;
-   double cut_off_price = 10;
-   double trade_im = 11;
+   string quantity = 8;
+   string price = 9;
+   string cut_off_price = 10;
+   string trade_im = 11;
    bool   is_rollover = 12;
 }
 
@@ -194,17 +194,17 @@ message Request
     message WithdrawToExternalAccount
     {
         string account_name = 1;
-        double amount = 2;
+        string amount = 2;
         string ccy = 3;
     }
 
     message WithdrawBitcoin
     {
         string address = 1;
-        double eur_amount = 2;
-        double xbt_receive_amount = 3;
-        double fee_amount = 4;
-        double price = 5;
+        string eur_amount = 2;
+        string xbt_receive_amount = 3;
+        string fee_amount = 4;
+        string price = 5;
     }
 
     message HistoricalPL
@@ -444,12 +444,12 @@ message Response
         message Item
         {
             string quantity = 1;
-            double bid = 2;
-            double ask = 3;
+            string bid = 2;
+            string ask = 3;
         }
 
         string product_type   = 1;
-        double live_cutoff    = 2;
+        string live_cutoff    = 2;
         repeated Item items   = 3;
     }
 
@@ -582,10 +582,10 @@ message Response
 
     message UpdateWithdrawPrices
     {
-        double sell_price = 1;
-        double buy_price = 2;
-        double network_fee = 3;
-        double min_xbt_amount = 4;
+        string sell_price     = 1;
+        string buy_price      = 2;
+        string network_fee    = 3;
+        string min_xbt_amount = 4;
    }
 
     message HistoricalPL

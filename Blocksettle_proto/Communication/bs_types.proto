@@ -54,8 +54,8 @@ enum PriceRangeId
 message StreamPriceData
 {
    PriceRangeId   range_id = 1;
-   double         ask      = 2;
-   double         bid      = 3;
+   string         ask      = 2;
+   string         bid      = 3;
 }
 
 message SubmitPricesData
@@ -109,6 +109,24 @@ message TradeSettings
     uint32 auth_required_settled_trades      = 3;
     uint32 auth_submit_address_limit         = 4;
     uint32 dealer_auth_submit_address_limit  = 5;
+}
+
+// XBTPrice from DecimalPriceAmount.h
+// XBTPrice.SerializeToProto(msg.mutable_xbt_price());
+// auto xbtPrice = XBTPrice::DeserializeFromProto(msg.xbt_price());
+message XBTPrice
+{
+    int64 price_value = 1;
+}
+
+message XBTAmountValue
+{
+    int64 amount_value = 1;
+}
+
+message FXAmountValue
+{
+    int64 amount_value = 1;
 }
 
 enum ApiKeyError

@@ -12,6 +12,8 @@ syntax = "proto3";
 
 package Blocksettle.Communication.TradeHistory;
 
+import "bs_types.proto";
+
 enum TradeHistoryTradeType
 {
    FXTradeType                = 0;

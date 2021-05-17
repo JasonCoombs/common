@@ -89,16 +89,16 @@ message WalletMessage
 
    message DepositAddressTX
    {
-      string address = 1;
-      int64  value = 2;
-      bytes  tx_hash = 3;
-      uint32 nb_conf = 4;
+      string                  address  = 1;
+      bs.types.XBTAmountValue amount   = 2;
+      bytes                   tx_hash  = 3;
+      uint32                  nb_conf  = 4;
    }
 
    message OutInstaTxRequest
    {
-      string out_address = 1;
-      uint64 amount = 2;
+      string                  out_address = 1;
+      bs.types.XBTAmountValue amount      = 2;
    }
 
    message OutInstaTxResponse
@@ -901,7 +901,7 @@ message GenoaWithdrawToExternalAccountRequest
 {
    string entity_name = 1;
    string account_name = 2;
-   double amount = 3;
+   bs.types.FXAmountValue amount = 3;
    string ccy = 4;
 }
 
@@ -913,11 +913,11 @@ message GenoaWithdrawToExternalAccountResponse
 
 message GenoaRegisterXBTDepositRequest
 {
-   string entity_name   = 1;
-   double price         = 2;
-   double xbt_amount    = 3;
-   double eur_amount    = 4;
-   string deposit_id    = 5;
+   string                  entity_name   = 1;
+   bs.types.XBTPrice       price         = 2;
+   bs.types.XBTAmountValue xbt_amount    = 3;
+   bs.types.FXAmountValue  eur_amount    = 4;
+   string                  deposit_id    = 5;
 }
 
 message GenoaRegisterXBTDepositResponse
@@ -938,12 +938,12 @@ message GenoaConfirmXBTDepositResponse
 }
 message GenoaRegiserXBTWithdrawRequest
 {
-   string entity_name   = 1;
-   double price         = 2;
-   double xbt_amount    = 3;
-   double eur_amount    = 4;
-   string deposit_id    = 5;
-   double fee           = 6;
+   string                  entity_name   = 1;
+   bs.types.XBTPrice       price         = 2;
+   bs.types.XBTAmountValue xbt_amount    = 3;
+   bs.types.FXAmountValue  eur_amount    = 4;
+   string                  deposit_id    = 5;
+   bs.types.XBTAmountValue fee           = 6;
 }
 
 message GenoaRegiserXBTWithdrawResponse
@@ -1113,7 +1113,7 @@ message GenoaMessage
 
       FutureReserveRequest             future_reserve_request     = 38;
       FutureReserveResponse            future_reserve_response    = 39;
-      
+
       GenoaSendCutoffPriceReq          cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
 
@@ -2020,13 +2020,6 @@ message ObligationsManaging
       string   product_name   = 1;
    }
 
-   message LiveCutOffPriceUpdate
-   {
-      bs.types.PriceBookType  price_book  = 1;
-      int64                   ask         = 2;
-      int64                   bid         = 3;
-   }
-
    message SubmitWhitelistedAddress
    {
       string entity_name = 1;
@@ -2056,20 +2049,20 @@ message ObligationsManaging
 
    message XBTWithdrawRequest
    {
-      string   entity_name = 1;
-      string   address     = 2;
-      double   eur_amount  = 3;
-      double   price       = 4;
-      double   xbt_receive_amount = 5;
-      double   fee_amount  = 6;
+      string                  entity_name          = 1;
+      string                  address              = 2;
+      bs.types.FXAmountValue  eur_amount           = 3;
+      bs.types.XBTPrice       price                = 4;
+      bs.types.XBTAmountValue xbt_receive_amount   = 5;
+      bs.types.XBTAmountValue fee_amount           = 6;
    }
 
    message XBTWithdrawResponse
    {
-      string   entity_name = 1;
-      string   address     = 2;
-      double   eur_amount  = 3;
-      int32    status_code = 4;
+      string                  entity_name = 1;
+      string                  address     = 2;
+      bs.types.FXAmountValue  eur_amount  = 3;
+      int32                   status_code = 4;
    }
 
    ObligationsManagingMessageType   type = 1;
@@ -2175,7 +2168,15 @@ message ApiServerMsg
 
    message UpdateBook
    {
-      Communication.TradeHistory.PriceBookUpdate data = 1;
+      message Entry
+      {
+         string            volume  = 1;
+         bs.types.XBTPrice bid     = 2;
+         bs.types.XBTPrice ask     = 3;
+      }
+
+      bs.types.PriceBookType  book_type      = 1;
+      repeated Entry          prices         = 2;
    }
 
    message TradeClose
@@ -2193,10 +2194,10 @@ message ApiServerMsg
 
    message UpdateWithdrawPrices
    {
-      double   sell_price     = 1;
-      double   buy_price      = 2;
-      double   network_fee    = 3;
-      double   min_xbt_amount = 4;
+      bs.types.XBTPrice       sell_price     = 1;
+      bs.types.XBTPrice       buy_price      = 2;
+      bs.types.XBTAmountValue network_fee    = 3;
+      bs.types.XBTAmountValue min_xbt_amount = 4;
    }
 
    oneof data
@@ -2210,7 +2211,7 @@ message ApiServerMsg
       UserNotify     user_notify       = 10;
       UpdateWithdrawPrices update_withdraw_prices = 11;
       Empty          subscribe_price_offers = 12;
-      Communication.TradeHistory.PriceBookUpdate price_offer = 13;
+      UpdateBook     price_offer = 13;
    }
 }
 
@@ -2327,7 +2328,7 @@ message CashResMessage
       bool   success = 2;
       string error_text = 3;
    }
-   
+
    message OrdersRequest
    {
       string entity_name = 1;
@@ -2341,7 +2342,7 @@ message CashResMessage
       string entity_name = 3;
       repeated Order orders = 4;
    }
-   
+
    message FeeRequest
    {
       string product_name = 1;
@@ -2356,7 +2357,7 @@ message CashResMessage
       string fee_ccy = 5;
       double im = 6;
    }
-   
+
    oneof data {
       IMnettingRequest           im_net_request = 1;
       IMnettingResponse          im_net_response = 2;
@@ -2382,26 +2383,26 @@ message DealerConnMessage
 {
    message OrderRequest
    {
-      string product = 1;
-      double qty = 2;
-      bs.types.Side side = 3;
+      string                  product = 1;
+      bs.types.XBTAmountValue qty = 2;
+      bs.types.Side           side = 3;
    }
 
    message OrderResponse
    {
-      bool   success = 1;
-      string product = 2;
-      double qty = 3;
-      bs.types.Side side = 4;
-      string exchange_order_id = 5;
-      double price = 6;
-      string reject_reason = 7;
+      bool                    success           = 1;
+      string                  product           = 2;
+      bs.types.XBTAmountValue qty               = 3;
+      bs.types.Side           side              = 4;
+      string                  exchange_order_id = 5;
+      bs.types.XBTPrice       price             = 6;
+      string                  reject_reason     = 7;
    }
 
    message PriceUpdate
    {
-      double ask = 1;
-      double bid = 2;
+      bs.types.XBTPrice ask = 1;
+      bs.types.XBTPrice bid = 2;
    }
 
    oneof data
