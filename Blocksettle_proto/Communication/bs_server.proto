@@ -1098,7 +1098,8 @@ message GenoaMessage
 
       string product_name = 1;
       string currency = 2;
-      repeated Payout user_payout = 3;
+      string payout_account_name = 3;
+      repeated Payout user_payout = 4;
    }
 
    message FuturePayoutResponse
