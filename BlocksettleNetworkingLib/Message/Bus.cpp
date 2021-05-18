@@ -92,7 +92,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
 {
    std::set<std::shared_ptr<bs::message::Adapter>> result;
    if (supervisor_ && !supervisor_->process(env)) {
-      logger_->info("[Router::process] msg #{} skipped by supervisor", env.id());
+      logger_->info("[Router::process] msg #{} seized by supervisor", env.id());
       return {};
    }
    if (!env.receiver || env.receiver->isBroadcast()) {
