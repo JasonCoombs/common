@@ -15,7 +15,7 @@ using namespace bs::message;
 
 bool Adapter::push(const Envelope &env)
 {
-   if (!queue_) {
+   if (!queue_ || !env.id()) {
       return false;
    }
    return queue_->push(env);
@@ -27,6 +27,40 @@ bool Adapter::pushFill(Envelope &env)
       return false;
    }
    return queue_->pushFill(env);
+}
+
+SeqId Adapter::pushRequest(const std::shared_ptr<User>& sender
+   , const std::shared_ptr<User>& receiver
+   , const std::string& msg, const TimeStamp& execAt)
+{
+   auto env = Envelope::makeRequest(sender, receiver, msg, execAt);
+   pushFill(env);
+   return env.id();
+}
+
+SeqId Adapter::pushResponse(const std::shared_ptr<User>& sender
+   , const std::shared_ptr<User>& receiver
+   , const std::string& msg, SeqId respId)
+{
+   auto env = Envelope::makeResponse(sender, receiver, msg, respId);
+   pushFill(env);
+   return env.id();
+}
+
+SeqId Adapter::pushResponse(const std::shared_ptr<User>& sender
+   , const bs::message::Envelope& envReq, const std::string& msg)
+{
+   auto env = Envelope::makeResponse(sender, envReq.sender, msg, envReq.foreignId());
+   pushFill(env);
+   return env.id();
+}
+
+SeqId Adapter::pushBroadcast(const std::shared_ptr<User>& sender
+   , const std::string& msg, bool global)
+{
+   auto env = Envelope::makeBroadcast(sender, msg, global);
+   pushFill(env);
+   return env.id();
 }
 
 

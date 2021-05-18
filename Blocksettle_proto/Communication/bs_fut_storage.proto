@@ -1,0 +1,109 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Server.FutStorage;
+
+import "bs_server.proto";
+
+
+message Position
+{
+   int64  id = 1;
+   bool   is_taker = 2;
+   int64  xbt_amount = 3;
+   double open_price = 4;
+   bool   is_rollover = 5;
+   uint64 timestamp = 6;
+   int64  entity_id = 7;
+   int32  prod_type = 8;
+   bool   opened = 9;
+   string reserve_id = 10;
+   int32  reserve_state = 11;
+}
+
+
+message Message
+{
+   message SessionInfo
+   {
+      int32  load_status = 1;
+      int32  session_id = 2;
+      int32  state = 3;
+      uint64 timestamp_started = 4;
+      uint64 timestamp_closed = 5;
+      int32  product_type = 6;
+      double open_price = 7;
+      double close_price = 8;
+      float taker_fee = 9;
+      float maker_fee = 10;
+      float im_rate = 11;
+      float dm_rate = 12;
+   }
+
+   message SessionRequest
+   {
+      int32  session_id = 1;
+      int32  product_type = 2;
+      uint64 timestamp_start = 3;
+      uint64 timestamp_close = 4;
+      double open_price = 5;
+      double close_price = 6;
+      float  fee_taker = 7;
+      float  fee_maker = 8;
+      float  im_rate = 9;
+      float  dm_rate = 10;
+   }
+
+   message SessionOrders
+   {
+      int32 session_id = 1;
+      int32 load_status = 2;
+      repeated Position orders = 3;
+   }
+
+   message RegisterTrade
+   {
+      int64  taker_entity_id = 1;
+      int64  maker_entity_id = 2;
+      uint64 timestamp = 3;
+      int32  product_type = 4;
+      int64  xbt_amount = 5;
+      double price = 6;
+      string taker_res_id = 7;
+      string maker_res_id = 8;
+   }
+
+   message RolloverTrade
+   {
+      int64  entity_id = 1;
+      int32  product_type = 2;
+      int64  xbt_amount = 3;
+      string reservation_id = 4;
+   }
+
+   oneof data {
+      int32          get_session = 1;		 // prodType
+      SessionInfo    session_info = 2;
+      SessionRequest get_session_orders = 3;
+      SessionOrders  session_orders = 4;
+      SessionRequest session_open = 5;
+      SessionInfo    session_open_response = 6;
+      SessionRequest session_close = 7;
+      SessionRequest session_damaged = 8;
+      SessionRequest session_recovered = 9;
+      int32          session_result = 10;	// StatusCode
+      RegisterTrade  register_trade = 11;
+      int32          trade_result = 12;		// StatusCode
+      RolloverTrade  rollover_trade = 13;
+      int32          rollover_result = 14;	// StatusCode
+   }
+}

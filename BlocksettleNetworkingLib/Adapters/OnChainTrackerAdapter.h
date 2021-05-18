@@ -84,11 +84,11 @@ private:
 
    bool processArmoryState(const BlockSettle::Common::ArmoryMessage_State&);
    bool processNewBlock(uint32_t);
-   bool processWalletRegistered(uint64_t msgId
+   bool processWalletRegistered(bs::message::SeqId
       , const BlockSettle::Common::ArmoryMessage_WalletRegistered&);
-   bool processOutpoints(uint64_t msgId
+   bool processOutpoints(bs::message::SeqId
       , const BlockSettle::Common::ArmoryMessage_OutpointsForAddrList&);
-   bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
+   bool processUTXOs(bs::message::SeqId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
    bool processAuthWallet(const BlockSettle::Common::WalletsMessage_WalletData&);
    bool processAuthAddresses(const BlockSettle::Common::OnChainTrackMessage_AuthAddresses&);
@@ -108,9 +108,8 @@ private:
    bool     blockchainReady_{ false };
    std::atomic_bool authOnline_{ false };
    uint32_t topBlock_{ 0 };
-   std::map<uint64_t, AuthValidatorCallbacks::OutpointsCb>  outpointCallbacks_;
-   std::map<uint64_t, AuthValidatorCallbacks::UTXOsCb>      utxoCallbacks_;
-
+   std::map<bs::message::SeqId, AuthValidatorCallbacks::OutpointsCb>  outpointCallbacks_;
+   std::map<bs::message::SeqId, AuthValidatorCallbacks::UTXOsCb>      utxoCallbacks_;
 };
 
 

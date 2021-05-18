@@ -30,6 +30,9 @@ namespace bs {
          // if false is returned, the message is automatically pushed back
          virtual bool process(const Envelope &) = 0;
 
+         // if false is returned, it's not counted in processing stats (broadcast will never return back anyway)
+         virtual bool processBroadcast(const Envelope&) = 0;
+
          virtual Users supportedReceivers() const = 0;
          virtual std::string name() const = 0;
 
@@ -40,6 +43,18 @@ namespace bs {
       protected:
          virtual bool push(const Envelope &);
          virtual bool pushFill(Envelope &);
+
+         SeqId pushRequest(const std::shared_ptr<User>& sender
+            , const std::shared_ptr<User>& receiver
+            , const std::string& msg, const TimeStamp& execAt = {});
+         SeqId pushResponse(const std::shared_ptr<User>& sender
+            , const std::shared_ptr<User>& receiver
+            , const std::string& msg, SeqId respId =
+            (bs::message::SeqId)bs::message::EnvelopeFlags::Response);
+         virtual SeqId pushResponse(const std::shared_ptr<User>& sender
+            , const bs::message::Envelope& envReq, const std::string& msg);
+         SeqId pushBroadcast(const std::shared_ptr<User>& sender
+            , const std::string& msg, bool global = false);
 
       protected:
          std::shared_ptr<QueueInterface>  queue_;

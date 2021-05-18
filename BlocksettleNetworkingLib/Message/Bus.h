@@ -77,13 +77,18 @@ namespace bs {
 
          virtual bool pushFill(Envelope &) = 0;
          virtual bool push(const Envelope &) = 0;
-         uint64_t nextId() { return seqNo_++; }
-         uint64_t resetId(uint64_t);
+         SeqId nextId() { return seqNo_++; }
+         SeqId resetId(SeqId);
+
+      protected:
+         virtual bool isValid(const bs::message::Envelope&);
 
       protected:
          std::shared_ptr<RouterInterface> router_;
          const std::string       name_;
-         std::atomic<uint64_t>   seqNo_{ 1 };
+         std::atomic<SeqId>      seqNo_{ 1 };
+         SeqId             lastProcessedSeqNo_{ 0 };
+         std::set<SeqId>   deferredIds_;
       };
 
       class Queue_Locking : public QueueInterface
