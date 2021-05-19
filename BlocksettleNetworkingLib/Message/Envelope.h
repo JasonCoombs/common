@@ -73,15 +73,87 @@ namespace bs {
       };
 
 
+      using SeqId = uint64_t;
+
+      enum class EnvelopeFlags : SeqId
+      {
+         GlobalBroadcast = UINT64_MAX,
+         Publish = UINT64_MAX - 1,           // response to subscription request
+         Response = UINT64_MAX - 2,          // response without specific request id - just to signify a non-request
+         MinValue = UINT64_MAX - 15          // all values above should be treated as flags only
+      };
+
       struct Envelope
       {
-         uint64_t id;
+         Envelope() {}
+
+         static Envelope makeRequest(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const std::string& msg, const TimeStamp& execAt = {})
+         {
+            return Envelope{ s, r, execAt, msg };
+         }
+
+         static Envelope makeResponse(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const std::string& msg, SeqId respId)
+         {
+            return Envelope{ s, r, msg, respId };
+         }
+
+         static Envelope makeBroadcast(const std::shared_ptr<User>& s, const std::string& msg, bool global = false)
+         {
+            return Envelope{ s, nullptr, msg, global ? (SeqId)EnvelopeFlags::GlobalBroadcast : 0 };
+         }
+
+         SeqId id() const { return id_; }
+         void setId(SeqId id)
+         {
+            id_ = id;
+            if (!foreignId_) {
+               foreignId_ = id;
+            }
+         }
+
+         SeqId foreignId() const { return foreignId_; }
+         void setForeignId(SeqId id) { foreignId_ = id; }
+
+         SeqId responseId() const
+         {
+            if (responseId_ >= (SeqId)EnvelopeFlags::MinValue) {
+               return 0;
+            }
+            return responseId_;
+         }
+
+         EnvelopeFlags flags() const
+         {
+            if (responseId_ < (SeqId)EnvelopeFlags::MinValue) {
+               return EnvelopeFlags::MinValue;
+            }
+            return static_cast<EnvelopeFlags>(responseId_);
+         }
+
+         bool isRequest() const { return (responseId_ == 0); }
+
          std::shared_ptr<User>   sender;
          std::shared_ptr<User>   receiver;
          TimeStamp   posted;
          TimeStamp   executeAt;
          std::string message;
-         bool  request{ false };
+
+      private:
+         Envelope(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const std::string& msg, SeqId respId = 0)
+            : sender(s), receiver(r), message(msg), responseId_(respId)
+         {}
+         Envelope(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
+            , const TimeStamp& execAt, const std::string& msg, SeqId respId = 0)
+            : sender(s), receiver(r), executeAt(execAt), message(msg)
+            , responseId_(respId)
+         {}
+
+         SeqId id_{ 0 };         // always unique and growing (no 2 envelopes can have the same id)
+         SeqId foreignId_{ 0 };  // used at gatewaying from external bus
+         SeqId responseId_{ 0 }; // should be set in reply and for special flags
       };
 
    } // namespace message

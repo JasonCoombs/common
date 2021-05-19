@@ -30,6 +30,12 @@ bool ThreadedAdapter::process(const Envelope &envelope)
    return true;
 }
 
+bool bs::message::ThreadedAdapter::processBroadcast(const Envelope& env)
+{
+   SendEnvelopeToThread(env);
+   return true;
+}
+
 void ThreadedAdapter::stop()
 {
    continueExecution_ = false;

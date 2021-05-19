@@ -67,6 +67,7 @@ public:
    ~BlockchainAdapter() override;
 
    bool process(const bs::message::Envelope &) override;
+   bool processBroadcast(const bs::message::Envelope&) override { return false; }
 
    std::set<std::shared_ptr<bs::message::User>> supportedReceivers() const override {
       return { user_ };
@@ -153,7 +154,7 @@ protected:
    std::atomic_bool  suspended_{ true };
    std::shared_ptr<std::atomic_bool>   stopped_;
    std::unordered_map<std::string, std::set<BinaryData>> txHashByPushReqId_;
-   std::map<uint64_t, bs::message::Envelope> requestsPool_;
+   std::map<bs::message::SeqId, bs::message::Envelope>   requestsPool_;
    std::mutex                                mtxReqPool_;
 
    std::shared_ptr< std::promise<bool>>   connKeyProm_;
@@ -179,7 +180,7 @@ protected:
    std::unordered_set<std::string>  receivedZCs_;
 
    struct AddressSubscription {
-      uint64_t msgId;
+      bs::message::SeqId                  msgId;
       std::shared_ptr<bs::message::User>  subscriber;
    };
    std::map<bs::Address, AddressSubscription>   addrTxSubscriptions_;

@@ -230,8 +230,8 @@ private:
       std::map<BinaryData, Tx>   allTXs;
       std::vector<bs::sync::TXWallet>  requests;
    };
-   std::map<uint64_t, TXDetailData> initialHashes_;
-   std::map<uint64_t, TXDetailData> prevHashes_;
+   std::map<bs::message::SeqId, TXDetailData> initialHashes_;
+   std::map<bs::message::SeqId, TXDetailData> prevHashes_;
 
    struct UTXORequest {
       bs::message::Envelope            env;
@@ -242,10 +242,10 @@ private:
       std::unordered_map<std::string, std::vector<UTXO>> zcUTXOs;
       bool requireZC{ false };
    };
-   std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoSpendableReqs_;
-   std::map<uint64_t, std::shared_ptr<UTXORequest>>   utxoZcReqs_;
-   std::map<uint64_t, std::function<void(const std::vector<UTXO>&)>>    utxoReserveReqs_;
-   std::map<uint64_t, std::function<void(const std::vector<Tx>& txs)>>  payinTXsCbMap_;
+   std::map<bs::message::SeqId, std::shared_ptr<UTXORequest>>   utxoSpendableReqs_;
+   std::map<bs::message::SeqId, std::shared_ptr<UTXORequest>>   utxoZcReqs_;
+   std::map<bs::message::SeqId, std::function<void(const std::vector<UTXO>&)>>    utxoReserveReqs_;
+   std::map<bs::message::SeqId, std::function<void(const std::vector<Tx>& txs)>>  payinTXsCbMap_;
 };
 
 
