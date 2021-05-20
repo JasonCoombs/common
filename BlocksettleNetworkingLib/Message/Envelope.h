@@ -104,6 +104,19 @@ namespace bs {
             return Envelope{ s, nullptr, msg, global ? (SeqId)EnvelopeFlags::GlobalBroadcast : 0 };
          }
 
+         Envelope& operator=(Envelope other)
+         {
+            sender = other.sender;
+            receiver = other.receiver;
+            posted = other.posted;
+            executeAt = other.executeAt;
+            message = other.message;
+            id_ = 0;
+            foreignId_ = other.foreignId_;
+            responseId_ = other.responseId_;
+            return *this;
+         }
+
          SeqId id() const { return id_; }
          void setId(SeqId id)
          {
