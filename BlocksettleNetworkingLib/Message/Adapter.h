@@ -36,7 +36,8 @@ namespace bs {
          virtual Users supportedReceivers() const = 0;
          virtual std::string name() const = 0;
 
-         virtual void setQueue(const std::shared_ptr<QueueInterface> &queue) {
+         virtual void setQueue(const std::shared_ptr<QueueInterface> &queue)
+         {
             queue_ = queue;
          }
 
@@ -60,19 +61,44 @@ namespace bs {
          std::shared_ptr<QueueInterface>  queue_;
       };
 
+      class RelayAdapter : public Adapter
+      {
+      public:
+         RelayAdapter() {}
+         RelayAdapter(const std::shared_ptr<User> &user)
+            : fallbackUser_(user) {}
+
+         Users supportedReceivers() const override;
+
+         void setQueue(const std::shared_ptr<QueueInterface>&) override;
+
+      protected:
+         bool process(const Envelope &) override;
+         bool processBroadcast(const Envelope&) override;
+         bool relay(const Envelope&);
+
+      protected:
+         std::shared_ptr<User>   fallbackUser_;
+
+      private:
+         std::map<UserValue, std::shared_ptr<QueueInterface>>  queueByUser_;
+         std::set<std::shared_ptr<QueueInterface>>             queues_;
+      };
+
       class PipeAdapter : public Adapter
       {
       public:
          PipeAdapter() {}
-         PipeAdapter(const std::shared_ptr<PipeAdapter> &endpoint)
+         PipeAdapter(const std::shared_ptr<PipeAdapter>& endpoint)
             : endpoint_(endpoint) {}
 
-         void setEndpoint(const std::shared_ptr<PipeAdapter> &endpoint) {
+         void setEndpoint(const std::shared_ptr<PipeAdapter>& endpoint) {
             endpoint_ = endpoint;
          }
 
       protected:
-         bool process(const Envelope &) override;
+         bool process(const Envelope&) override;
+         bool processBroadcast(const Envelope&) override;
 
       private:
          std::shared_ptr<PipeAdapter>  endpoint_;

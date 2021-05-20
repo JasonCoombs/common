@@ -80,6 +80,11 @@ namespace bs {
          SeqId nextId() { return seqNo_++; }
          SeqId resetId(SeqId);
 
+         bool isCurrentlyProcessing(const Envelope& env) const
+         {
+            return (env.id() == currentEnvId_);
+         }
+
       protected:
          virtual bool isValid(const bs::message::Envelope&);
 
@@ -89,6 +94,7 @@ namespace bs {
          std::atomic<SeqId>      seqNo_{ 1 };
          SeqId             lastProcessedSeqNo_{ 0 };
          std::set<SeqId>   deferredIds_;
+         SeqId currentEnvId_{ 0 };
       };
 
       class Queue_Locking : public QueueInterface

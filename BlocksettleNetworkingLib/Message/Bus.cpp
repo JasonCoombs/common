@@ -103,8 +103,7 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
          }
          result.insert(adapter.second);
       }
-      if (((env.flags() == EnvelopeFlags::GlobalBroadcast)
-         || env.sender->isSystem()) && defaultRoute_ && !env.sender->isFallback()) {
+      if (defaultRoute_ && !env.sender->isFallback()) {
          result.insert(defaultRoute_);
       }
    } else {
@@ -224,7 +223,7 @@ bool Queue_Locking::push(const Envelope &env)
       , name_, env.id(), env.foreignId()
       , env.sender->name(), env.sender->value()
       , env.receiver ? env.receiver->name() : "null"
-      , env.receiver ? env.receiver->value() : 0, env.responseId, env.message.size()
+      , env.receiver ? env.receiver->value() : 0, env.responseId(), env.message.size()
       , msgBody.empty() ? msgBody : "'" + msgBody + "'");
 #endif   //MSG_DEBUGGING
 
@@ -259,7 +258,7 @@ void Queue_Locking::process()
 
          if (!isValid(env)) {
             logger_->info("[Queue::process] {}: envelope #{} failed to pass "
-               "validity checks - skipping", name_, env.id());
+               "validity checks (<= {}) - skipping", name_, env.id(), lastProcessedSeqNo_);
             continue;
          }
 
@@ -281,6 +280,7 @@ void Queue_Locking::process()
             const auto& process = [this, env, isBroadcast, timeNow, &procStart, &acc, &deferredQueue]
                (const std::shared_ptr<bs::message::Adapter>&adapter)
             {
+               currentEnvId_ = env.id();
                if (isBroadcast) {
                   const bool processed = adapter->processBroadcast(env);
                   if (accounting_ && processed) {
@@ -302,6 +302,7 @@ void Queue_Locking::process()
                         , std::chrono::duration_cast<std::chrono::microseconds>(bus_clock::now() - procStart));
                   }
                }
+               currentEnvId_ = 0;
             };
 
             if (accounting_) {

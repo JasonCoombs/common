@@ -71,3 +71,69 @@ bool PipeAdapter::process(const Envelope &env)
    }
    return endpoint_->push(env);
 }
+
+bool PipeAdapter::processBroadcast(const Envelope& env)
+{
+   return process(env);
+}
+
+
+Adapter::Users RelayAdapter::supportedReceivers() const
+{
+   if (!fallbackUser_) {
+      throw std::runtime_error("invalid initialization");
+   }
+   return { fallbackUser_ };
+}
+
+void RelayAdapter::setQueue(const std::shared_ptr<QueueInterface>& queue)
+{
+   if (!queue_) {
+      Adapter::setQueue(queue_);
+   }
+   queues_.insert(queue);
+   for (const auto& user : queue->supportedReceivers()) {
+      queueByUser_[user] = queue;
+   }
+}
+
+bool RelayAdapter::process(const Envelope& env)
+{
+   if (!fallbackUser_) {
+      throw std::runtime_error("invalid initialization");
+   }
+   return relay(env);
+}
+
+bool RelayAdapter::processBroadcast(const Envelope& env)
+{
+   if (!fallbackUser_) {
+      throw std::runtime_error("invalid initialization");
+   }
+   if ((env.id() != env.foreignId()) && (env.flags() != EnvelopeFlags::GlobalBroadcast)) {
+      return false;
+   }
+   for (const auto& queue : queues_) {
+      if (!queue->isCurrentlyProcessing(env)) {
+         auto envCopy = env;
+         envCopy.setId(0);
+         envCopy.resetFlags();
+         queue->pushFill(envCopy);
+      }
+   }
+   return false;  // don't account processing time
+}
+
+bool RelayAdapter::relay(const Envelope& env)
+{
+   if (!env.receiver || env.receiver->isBroadcast()) {
+      return true;   // ignore broadcasts
+   }
+   const auto& itQueue = queueByUser_.find(env.receiver->value());
+   if (itQueue == queueByUser_.end()) {
+      return false;
+   }
+   auto envCopy = env;
+   envCopy.setId(0);
+   return itQueue->second->pushFill(envCopy);
+}

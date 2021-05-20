@@ -124,6 +124,8 @@ namespace bs {
             return responseId_;
          }
 
+         void resetFlags() { responseId_ = 0; }
+
          EnvelopeFlags flags() const
          {
             if (responseId_ < (SeqId)EnvelopeFlags::MinValue) {
