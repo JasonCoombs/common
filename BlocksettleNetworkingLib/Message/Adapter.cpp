@@ -13,14 +13,6 @@
 
 using namespace bs::message;
 
-bool Adapter::push(const Envelope &env)
-{
-   if (!queue_ || !env.id()) {
-      return false;
-   }
-   return queue_->push(env);
-}
-
 bool Adapter::pushFill(Envelope &env)
 {
    if (!queue_) {
@@ -69,7 +61,8 @@ bool PipeAdapter::process(const Envelope &env)
    if (!endpoint_) {
       return false;
    }
-   return endpoint_->push(env);
+   auto envCopy = env;
+   return endpoint_->pushFill(envCopy);
 }
 
 bool PipeAdapter::processBroadcast(const Envelope& env)

@@ -42,7 +42,6 @@ namespace bs {
          }
 
       protected:
-         virtual bool push(const Envelope &);
          virtual bool pushFill(Envelope &);
 
          SeqId pushRequest(const std::shared_ptr<User>& sender

@@ -76,7 +76,6 @@ namespace bs {
          virtual std::set<UserValue> supportedReceivers() const = 0;
 
          virtual bool pushFill(Envelope &) = 0;
-         virtual bool push(const Envelope &) = 0;
          SeqId nextId() { return seqNo_++; }
          SeqId resetId(SeqId);
 
@@ -110,7 +109,6 @@ namespace bs {
          std::set<UserValue> supportedReceivers() const override;
 
          bool pushFill(Envelope &) override;
-         bool push(const Envelope &) override;
 
       private:
          void stop();

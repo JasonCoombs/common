@@ -191,17 +191,14 @@ void Queue_Locking::stop()
 
 bool Queue_Locking::pushFill(Envelope &env)
 {
-   if (env.id() == 0) {
-      env.setId(nextId());
-   }
    if (env.posted.time_since_epoch().count() == 0) {
       env.posted = bus_clock::now();
    }
-   return push(env);
-}
+   std::unique_lock<std::mutex> lock(cvMutex_);
+   if (env.id() == 0) {
+      env.setId(nextId());
+   }
 
-bool Queue_Locking::push(const Envelope &env)
-{
 #ifdef MSG_DEBUGGING
    std::string msgBody;
    for (const char c : env.message) {
@@ -227,7 +224,6 @@ bool Queue_Locking::push(const Envelope &env)
       , msgBody.empty() ? msgBody : "'" + msgBody + "'");
 #endif   //MSG_DEBUGGING
 
-   std::unique_lock<std::mutex> lock(cvMutex_);
    queue_.push_back(env);
    cvQueue_.notify_one();
    return true;
