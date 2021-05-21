@@ -71,6 +71,7 @@ namespace bs {
             : router_(router), name_(name) {}
          virtual ~QueueInterface() = default;
 
+         virtual std::string name() const { return name_; }
          virtual void terminate() = 0;
          virtual void bindAdapter(const std::shared_ptr<Adapter> &) = 0;
          virtual std::set<UserValue> supportedReceivers() const = 0;

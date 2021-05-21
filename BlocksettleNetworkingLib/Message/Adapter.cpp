@@ -114,6 +114,7 @@ bool RelayAdapter::processBroadcast(const Envelope& env)
    for (const auto& queue : queues_) {
       if (!queue->isCurrentlyProcessing(env)) {
          auto envCopy = env;
+         envCopy.setId(0);
          envCopy.resetFlags();
          queue->pushFill(envCopy);
       }
@@ -131,5 +132,6 @@ bool RelayAdapter::relay(const Envelope& env)
       return false;
    }
    auto envCopy = env;
+   envCopy.setId(0);
    return itQueue->second->pushFill(envCopy);
 }
