@@ -78,9 +78,14 @@ bool PipeAdapter::processBroadcast(const Envelope& env)
 }
 
 
+bool RelayAdapter::isInitialized() const
+{
+   return (fallbackUser_ != nullptr);
+}
+
 Adapter::Users RelayAdapter::supportedReceivers() const
 {
-   if (!fallbackUser_) {
+   if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
    return { fallbackUser_ };
@@ -99,7 +104,7 @@ void RelayAdapter::setQueue(const std::shared_ptr<QueueInterface>& queue)
 
 bool RelayAdapter::process(const Envelope& env)
 {
-   if (!fallbackUser_) {
+   if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
    return relay(env);
@@ -107,7 +112,7 @@ bool RelayAdapter::process(const Envelope& env)
 
 bool RelayAdapter::processBroadcast(const Envelope& env)
 {
-   if (!fallbackUser_) {
+   if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
    if ((env.id() != env.foreignId()) && (env.flags() != EnvelopeFlags::GlobalBroadcast)) {

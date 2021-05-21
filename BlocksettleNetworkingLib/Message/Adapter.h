@@ -76,6 +76,7 @@ namespace bs {
          bool process(const Envelope &) override;
          bool processBroadcast(const Envelope&) override;
          bool relay(const Envelope&);
+         bool isInitialized() const;
 
       protected:
          std::shared_ptr<User>   fallbackUser_;
