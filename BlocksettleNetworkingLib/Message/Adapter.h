@@ -68,6 +68,7 @@ namespace bs {
             : fallbackUser_(user) {}
 
          Users supportedReceivers() const override;
+         std::string name() const override { return "Relay"; }
 
          void setQueue(const std::shared_ptr<QueueInterface>&) override;
 
