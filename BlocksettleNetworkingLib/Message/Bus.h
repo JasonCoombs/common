@@ -85,7 +85,7 @@ namespace bs {
          }
 
       protected:
-         virtual bool isValid(const bs::message::Envelope&);
+         virtual bool accept(const bs::message::Envelope&);
 
       protected:
          std::shared_ptr<RouterInterface> router_;

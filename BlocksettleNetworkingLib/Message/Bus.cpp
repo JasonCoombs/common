@@ -145,7 +145,7 @@ SeqId QueueInterface::resetId(SeqId newId)
    return seqNo_;
 }
 
-bool bs::message::QueueInterface::isValid(const Envelope& env)
+bool bs::message::QueueInterface::accept(const Envelope& env)
 {
    if (!env.sender) {
       return false;
@@ -252,7 +252,7 @@ void Queue_Locking::process()
             acc.addQueueTime(std::chrono::duration_cast<std::chrono::microseconds>(timeNow - env.posted));
          }
 
-         if (!isValid(env)) {
+         if (!accept(env)) {
             logger_->info("[Queue::process] {}: envelope #{} failed to pass "
                "validity checks (<= {}) - skipping", name_, env.id(), lastProcessedSeqNo_);
             continue;
