@@ -273,7 +273,6 @@ enum GenoaType
    GenoaUnknownType                       = 0;
    GenoaReconnect                         = 1;
    GenoaHeartbeat                         = 2;
-   GenoaClientConnected                   = 3;
    GenoaAccounts                          = 5;
    GenoaNewAccount                        = 6;
    GenoaGetXBTReservations                = 7;
@@ -337,15 +336,6 @@ enum GenoaType
    GenoaPoolMargins                       = 66;
    GenoaProfitLossPayout                  = 67;
    GenoaFutureCreateReservations          = 68;
-}
-
-message GenoaConnectedBroadcast
-{
-   bool success = 1;
-   string genoa_version = 2;
-   string blocksettle_version = 3;
-   string unify_version = 4;
-   string landfall_version = 5;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1127,7 +1117,6 @@ message GenoaMessage
 
    GenoaType type = 1;
    oneof data {
-      GenoaConnectedBroadcast          connected                  = 2;
       GenoaDisconnectedBroadcast       disconnected               = 3;
       GenoaXBTReservationsResponse     xbt_reservations           = 4;
       GenoaCCReservationResponse       cc_reservations            = 5;

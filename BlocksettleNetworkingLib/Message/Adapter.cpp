@@ -34,8 +34,11 @@ SeqId Adapter::pushRequest(const std::shared_ptr<User>& sender
    , const std::string& msg, const TimeStamp& execAt)
 {
    auto env = Envelope::makeRequest(sender, receiver, msg, execAt);
-   pushFill(env);
-   return env.id();
+   if (pushFill(env)) {
+      return env.id();
+   }
+
+   return 0;
 }
 
 SeqId Adapter::pushResponse(const std::shared_ptr<User>& sender
@@ -43,24 +46,30 @@ SeqId Adapter::pushResponse(const std::shared_ptr<User>& sender
    , const std::string& msg, SeqId respId)
 {
    auto env = Envelope::makeResponse(sender, receiver, msg, respId);
-   pushFill(env);
-   return env.id();
+   if (pushFill(env)) {
+      return env.id();
+   }
+   return 0;
 }
 
 SeqId Adapter::pushResponse(const std::shared_ptr<User>& sender
    , const bs::message::Envelope& envReq, const std::string& msg)
 {
    auto env = Envelope::makeResponse(sender, envReq.sender, msg, envReq.foreignId());
-   pushFill(env);
-   return env.id();
+   if (pushFill(env)) {
+      return env.id();
+   }
+   return 0;
 }
 
 SeqId Adapter::pushBroadcast(const std::shared_ptr<User>& sender
    , const std::string& msg, bool global)
 {
    auto env = Envelope::makeBroadcast(sender, msg, global);
-   pushFill(env);
-   return env.id();
+   if (pushFill(env)) {
+      return env.id();
+   }
+   return 0;
 }
 
 
