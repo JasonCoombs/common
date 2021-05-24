@@ -307,7 +307,6 @@ enum GenoaType
    GenoaWithdrawToExternalAccountType     = 36;
    GenoaGetCustomerBalance                = 37;
    GenoaLoadCustomerImBalance             = 38;
-   GenoaReserveFutureTrade                = 39;
    GenoaSendCutoffPrice                   = 41;
    GenoaLoadDeliveryObligations           = 42;
    GenoaSetDeliveryAddress                = 43;
@@ -1036,37 +1035,6 @@ message GenoaGetStatementsResponse
 
 message GenoaMessage
 {
-   message FutureReserveRequest
-   {
-      message Quantity {
-         double acq = 1;
-         double cp = 2;
-      }
-      int64  acq_account_id = 1;
-      int64  cp_account_id = 2;
-      int64  dealer_account_id = 3;
-      double fx_num_qty = 4;
-      double fx_ass_qty = 5;
-      Quantity fx_im_qty = 6;
-      Quantity fx_dm_qty = 7;
-      Quantity net_exposure = 8;
-      string product_name = 9;
-   }
-
-   message FutureReserveResponse
-   {
-      message AccountBalance {
-         int64  entity_id = 1;
-         int64  account_id = 2;
-         double amount = 3;
-      }
-      bool   success    = 1;
-      string error_text = 2;
-      string acq_ref    = 3;
-      string cp_ref     = 4;
-      repeated AccountBalance account_balances = 5;
-   }
-
    message FuturePoolMarginsRequest
    {
       string pooling_account_id = 1;
@@ -1106,13 +1074,49 @@ message GenoaMessage
    message FutureCreateReservations
    {
       message AccountMargin {
-         string entity_name = 1;
-         double amount = 2;
+         string   entity_name       = 1;
+         double   amount            = 2;
+         int64    position_id       = 3;
+         // reservation_ref - genoa reservation reference ID. always empty for
+         // rollover reservations. Could be non-empty for trades only in case
+         // user already have a reservation in current session/product
+         string   reservation_ref   = 4;
       }
 
-      string product_name = 1;
-      string currency = 2;
-      repeated AccountMargin margins = 3;
+      string product_name              = 1;
+      string currency                  = 2;
+      repeated AccountMargin margins   = 3;
+   }
+
+   message FutureCreateReservationsResponse
+   {
+      message ReservationInfo
+      {
+         string   entity_name       = 1;
+         int64    position_id       = 2;
+         string   reservation_ref   = 3;
+      }
+
+      message EntityBalance
+      {
+         string   entity_name = 1;
+         string   currency    = 2;
+         double   balance     = 3;
+      }
+
+      message RecordsCausedFailure
+      {
+         string   entity_name       = 1;
+         string   currency          = 2;
+         double   expected_balance  = 3;
+      }
+
+      bool     reservation_succeed  = 1;
+      string   error_message        = 2;
+
+      repeated ReservationInfo      reservations_info = 3;
+      repeated EntityBalance        current_balances  = 4;
+      repeated RecordsCausedFailure rejected_entities = 5;
    }
 
    GenoaType type = 1;
@@ -1149,9 +1153,6 @@ message GenoaMessage
       UserEntityInfo                   entity_info                = 35;
       GeanoReserveCCResponse           cc_reserve_response        = 36;
       string                           entity_name                = 37;
-
-      FutureReserveRequest             future_reserve_request     = 38;
-      FutureReserveResponse            future_reserve_response    = 39;
 
       GenoaSendCutoffPriceReq          cutoff_price               = 42;
       CutoffPriceProcessingResult      cutoff_processing_result   = 43;
@@ -1220,9 +1221,12 @@ message GenoaMessage
 
       FuturePoolMarginsRequest                  future_pool_margins_request      = 99;
       FuturePoolMarginsResponse                 future_pool_margins_response     = 100;
+
       FuturePayoutRequest                       future_payout_request            = 101;
       FuturePayoutResponse                      future_payout_response           = 102;
-      FutureCreateReservations                  future_create_reservations       = 103;
+
+      FutureCreateReservations                  future_create_reservations          = 103;
+      FutureCreateReservationsResponse          future_create_reservations_response = 104;
    }
 }
 
