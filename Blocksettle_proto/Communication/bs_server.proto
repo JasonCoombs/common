@@ -1075,12 +1075,13 @@ message GenoaMessage
    {
       message AccountMargin {
          string   entity_name       = 1;
-         double   amount            = 2;
-         int64    position_id       = 3;
+         int64    entity_id         = 2;
+         double   amount            = 3;
+         int64    position_id       = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
          // rollover reservations. Could be non-empty for trades only in case
          // user already have a reservation in current session/product
-         string   reservation_ref   = 4;
+         string   reservation_ref   = 5;
       }
 
       string product_name              = 1;
@@ -1093,8 +1094,9 @@ message GenoaMessage
       message ReservationInfo
       {
          string   entity_name       = 1;
-         int64    position_id       = 2;
-         string   reservation_ref   = 3;
+         int64    entity_id         = 2;
+         int64    position_id       = 3;
+         string   reservation_ref   = 4;
       }
 
       message EntityBalance
@@ -1111,12 +1113,12 @@ message GenoaMessage
          double   expected_balance  = 3;
       }
 
-      bool     reservation_succeed  = 1;
-      string   error_message        = 2;
+      bool                          reservation_succeed  = 1;
+      string                        error_message        = 2;
 
-      repeated ReservationInfo      reservations_info = 3;
-      repeated EntityBalance        current_balances  = 4;
-      repeated RecordsCausedFailure rejected_entities = 5;
+      repeated ReservationInfo      reservations_info    = 3;
+      repeated EntityBalance        current_balances     = 4;
+      repeated RecordsCausedFailure rejected_entities    = 5;
    }
 
    GenoaType type = 1;
