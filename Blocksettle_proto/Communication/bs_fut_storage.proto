@@ -35,7 +35,7 @@ message Message
 {
    message SessionInfo
    {
-      int32  load_status = 1;
+      int32  load_status = 1;       // FuturesTradesStorage::StatusCode
       int32  session_id = 2;
       int32  state = 3;
       uint64 timestamp_started = 4;
@@ -91,20 +91,20 @@ message Message
    }
 
    oneof data {
-      int32          get_session             = 1;		 // prodType
+      int32          get_session             = 1;  // bs::network::Asset::Type
       SessionInfo    session_info            = 2;
       SessionRequest get_session_orders      = 3;
       SessionOrders  session_orders          = 4;
       SessionRequest session_open            = 5;
       SessionInfo    session_open_response   = 6;
       SessionRequest session_close           = 7;
-      int32          session_close_result    = 8;
+      int32          session_close_result    = 8;  // FuturesTradesStorage::StatusCode
       SessionRequest session_damaged         = 9;
       SessionRequest session_recovered       = 10;
-      int32          session_result          = 11;	// StatusCode
+      int32          session_result          = 11; // FuturesTradesStorage::StatusCode
       RegisterTrade  register_trade          = 12;
-      int32          trade_result            = 13;		// StatusCode
+      int32          trade_result            = 13; // FuturesTradesStorage::StatusCode
       RolloverTrade  rollover_trade          = 14;
-      int32          rollover_result         = 15;	// StatusCode
+      int32          rollover_result         = 15; // FuturesTradesStorage::StatusCode
    }
 }
