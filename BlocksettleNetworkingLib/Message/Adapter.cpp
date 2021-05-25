@@ -13,14 +13,6 @@
 
 using namespace bs::message;
 
-bool Adapter::push(const Envelope &env)
-{
-   if (!queue_ || !env.id()) {
-      return false;
-   }
-   return queue_->push(env);
-}
-
 bool Adapter::pushFill(Envelope &env)
 {
    if (!queue_) {
@@ -69,5 +61,77 @@ bool PipeAdapter::process(const Envelope &env)
    if (!endpoint_) {
       return false;
    }
-   return endpoint_->push(env);
+   auto envCopy = env;
+   return endpoint_->pushFill(envCopy);
+}
+
+bool PipeAdapter::processBroadcast(const Envelope& env)
+{
+   return process(env);
+}
+
+
+bool RelayAdapter::isInitialized() const
+{
+   return (fallbackUser_ != nullptr);
+}
+
+Adapter::Users RelayAdapter::supportedReceivers() const
+{
+   if (!isInitialized()) {
+      throw std::runtime_error("invalid initialization");
+   }
+   return { fallbackUser_ };
+}
+
+void RelayAdapter::setQueue(const std::shared_ptr<QueueInterface>& queue)
+{
+   if (!queue_) {
+      Adapter::setQueue(queue_);
+   }
+   queues_.insert(queue);
+   for (const auto& user : queue->supportedReceivers()) {
+      queueByUser_[user] = queue;
+   }
+}
+
+bool RelayAdapter::process(const Envelope& env)
+{
+   if (!isInitialized()) {
+      throw std::runtime_error("invalid initialization");
+   }
+   return relay(env);
+}
+
+bool RelayAdapter::processBroadcast(const Envelope& env)
+{
+   if (!isInitialized()) {
+      throw std::runtime_error("invalid initialization");
+   }
+   if ((env.id() != env.foreignId()) && (env.flags() != EnvelopeFlags::GlobalBroadcast)) {
+      return false;
+   }
+   for (const auto& queue : queues_) {
+      if (!queue->isCurrentlyProcessing(env)) {
+         auto envCopy = env;
+         envCopy.setId(0);
+         envCopy.resetFlags();
+         queue->pushFill(envCopy);
+      }
+   }
+   return false;  // don't account processing time
+}
+
+bool RelayAdapter::relay(const Envelope& env)
+{
+   if (!env.receiver || env.receiver->isBroadcast()) {
+      return true;   // ignore broadcasts
+   }
+   const auto& itQueue = queueByUser_.find(env.receiver->value());
+   if (itQueue == queueByUser_.end()) {
+      return false;
+   }
+   auto envCopy = env;
+   envCopy.setId(0);
+   return itQueue->second->pushFill(envCopy);
 }
