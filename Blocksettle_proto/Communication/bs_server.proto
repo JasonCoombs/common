@@ -318,7 +318,6 @@ enum GenoaType
    GenoaCreateIbanAgreementUrlType        = 49;
    GenoaGetIbanAccountsType               = 50;
    GenoaGetIbanAccountDetailsType         = 51;
-   GenoaOpenInterestType                  = 52;
    GenoaUserNotify                        = 53;
    GenoaRegisterXBTDepositType            = 54;
    GenoaConfirmXBTDepositType             = 55;
