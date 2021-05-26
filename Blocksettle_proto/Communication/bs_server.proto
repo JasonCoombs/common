@@ -330,6 +330,8 @@ enum GenoaType
    GenoaPoolMargins                       = 57;
    GenoaProfitLossPayout                  = 58;
    GenoaFutureCreateReservations          = 59;
+   GenoaCreateNovationAccount             = 60;
+   GenoaDisposeNovationAccount            = 61;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1071,6 +1073,30 @@ message GenoaMessage
       repeated RecordsCausedFailure rejected_entities    = 5;
    }
 
+   message NewNovationAccountRequest
+   {
+      string product_name = 1;
+   }
+
+   message NewNovationAccountResponse
+   {
+      bool     account_created   = 1;
+      string   error_message     = 2;
+      int64    account_id        = 3;
+      int64    entity_id         = 4;
+   }
+
+   message DisposeNovationAccountRequest
+   {
+      int64 account_id = 1;
+   }
+
+   message DisposeNovationAccountResponse
+   {
+      bool     account_disposed  = 1;
+      string   error_message     = 2;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaDisconnectedBroadcast       disconnected               = 2;
@@ -1173,6 +1199,13 @@ message GenoaMessage
 
       FutureCreateReservations                  future_create_reservations          = 87;
       FutureCreateReservationsResponse          future_create_reservations_response = 88;
+
+      NewNovationAccountRequest                 new_novation_account_request        = 89;
+      NewNovationAccountResponse                new_novation_account_response       = 90;
+
+      DisposeNovationAccountRequest             dispose_novation_account            = 91;
+      DisposeNovationAccountResponse            dispose_novation_account_response   = 92;
+
    }
 }
 
