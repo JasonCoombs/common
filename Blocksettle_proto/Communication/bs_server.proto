@@ -2395,6 +2395,7 @@ message CashResMessage
       OrdersResponse             orders_response = 14;
       FeeRequest                 fee_request = 15;
       FeeResponse                fee_response = 16;
+      string                     process_next_order = 17;
    }
 }
 
