@@ -1024,9 +1024,10 @@ message GenoaMessage
          double   amount      = 2;
       }
 
-      bool     success  = 1;
-      string   currency = 2;
-      repeated AccountBalance account_balances = 3;
+      bool     success        = 1;
+      string   currency       = 2;
+      string   error_message  = 3;
+      repeated AccountBalance account_balances = 4;
    }
 
    message FutureCreateReservations
