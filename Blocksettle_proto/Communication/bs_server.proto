@@ -989,14 +989,16 @@ message GenoaMessage
 {
    message FuturePoolMarginsRequest
    {
-      string pooling_account_id = 1;
-      repeated string reservation_ids = 2;
+      int64    novation_account_id     = 1;
+      int64    novation_entity_id      = 2;
+      string   product_name            = 3;
+      repeated string reservation_ids  = 4;
    }
 
    message FuturePoolMarginsResponse
    {
-      bool     success = 1;
-      string   operation_id = 2;
+      bool     success        = 1;
+      string   error_message  = 2;
    }
 
    message FuturePayoutRequest
