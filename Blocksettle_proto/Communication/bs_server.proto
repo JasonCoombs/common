@@ -1518,7 +1518,7 @@ message TradeDataMessage
    string buy_currency = 11;
    string asset_currency = 12;
    string num_currency = 13;
-   uint32 trade_timestamp = 14;
+   int64  trade_timestamp = 14;
 }
 
 message BalanceData
@@ -1536,8 +1536,9 @@ message CustomerAccountData
    string settlement_account = 5;
    int64  settlement_acc_id = 6;
    string trading_account = 7;
-   int64  tradding_acc_id = 8;
+   int64  trading_acc_id = 8;
    repeated BalanceData balances = 9;
+   repeated BalanceData im_balances = 10;
 }
 
 message TradeDataXbtMessage
@@ -1573,6 +1574,7 @@ message TradeDataXbtMessage
    bool payout_broadcasted_by_user = 30;
    bool cash_reserved = 31;
    uint64 next_timeout_timestamp = 32;
+   repeated bytes rejected_inputs = 33;
 }
 
 message TradeInfoCcData

@@ -71,17 +71,22 @@ namespace bs {
             : router_(router), name_(name) {}
          virtual ~QueueInterface() = default;
 
+         virtual std::string name() const { return name_; }
          virtual void terminate() = 0;
          virtual void bindAdapter(const std::shared_ptr<Adapter> &) = 0;
          virtual std::set<UserValue> supportedReceivers() const = 0;
 
          virtual bool pushFill(Envelope &) = 0;
-         virtual bool push(const Envelope &) = 0;
          SeqId nextId() { return seqNo_++; }
          SeqId resetId(SeqId);
 
+         bool isCurrentlyProcessing(const Envelope& env) const
+         {
+            return (env.id() == currentEnvId_);
+         }
+
       protected:
-         virtual bool isValid(const bs::message::Envelope&);
+         virtual bool accept(const bs::message::Envelope&);
 
       protected:
          std::shared_ptr<RouterInterface> router_;
@@ -89,6 +94,7 @@ namespace bs {
          std::atomic<SeqId>      seqNo_{ 1 };
          SeqId             lastProcessedSeqNo_{ 0 };
          std::set<SeqId>   deferredIds_;
+         SeqId currentEnvId_{ 0 };
       };
 
       class Queue_Locking : public QueueInterface
@@ -104,7 +110,6 @@ namespace bs {
          std::set<UserValue> supportedReceivers() const override;
 
          bool pushFill(Envelope &) override;
-         bool push(const Envelope &) override;
 
       private:
          void stop();
