@@ -35,18 +35,19 @@ message Message
 {
    message SessionInfo
    {
-      int32  load_status = 1;       // FuturesTradesStorage::StatusCode
-      int32  session_id = 2;
-      int32  state = 3;
-      uint64 timestamp_started = 4;
-      uint64 timestamp_closed = 5;
-      int32  product_type = 6;
-      double open_price = 7;
-      double close_price = 8;
-      float taker_fee = 9;
-      float maker_fee = 10;
-      float im_rate = 11;
-      float dm_rate = 12;
+      int32    load_status       = 1;  // FuturesTradesStorage::StatusCode
+
+      int32    session_id        = 2;
+      int32    session_state     = 3;  // FuturesTradesStorage::FuturesSessionState
+      uint64   timestamp_started = 4;
+      uint64   timestamp_closed  = 5;
+      int32    product_type      = 6;
+      double   open_price        = 7;
+      double   close_price       = 8;
+      float    taker_fee         = 9;
+      float    maker_fee         = 10;
+      float    im_rate           = 11;
+      float    dm_rate           = 12;
    }
 
    message SessionRequest
@@ -93,17 +94,23 @@ message Message
    oneof data {
       int32          get_session             = 1;  // bs::network::Asset::Type
       SessionInfo    session_info            = 2;
+
       SessionRequest get_session_orders      = 3;
       SessionOrders  session_orders          = 4;
+
       SessionRequest session_open            = 5;
       SessionInfo    session_open_response   = 6;
+
       SessionRequest session_close           = 7;
       int32          session_close_result    = 8;  // FuturesTradesStorage::StatusCode
+
       SessionRequest session_damaged         = 9;
       SessionRequest session_recovered       = 10;
       int32          session_result          = 11; // FuturesTradesStorage::StatusCode
+
       RegisterTrade  register_trade          = 12;
       int32          trade_result            = 13; // FuturesTradesStorage::StatusCode
+
       RolloverTrade  rollover_trade          = 14;
       int32          rollover_result         = 15; // FuturesTradesStorage::StatusCode
    }
