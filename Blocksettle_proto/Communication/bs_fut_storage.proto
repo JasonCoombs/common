@@ -35,7 +35,7 @@ message Message
    {
       int32             load_status       = 1;  // FuturesTradesStorage::StatusCode
 
-      int32             session_id        = 2;
+      int64             session_id        = 2;
       int32             session_state     = 3;  // FuturesTradesStorage::FuturesSessionState
       uint64            timestamp_started = 4;
       uint64            timestamp_closed  = 5;
@@ -50,7 +50,7 @@ message Message
 
    message SessionRequest
    {
-      int32             session_id        = 1;
+      int64             session_id        = 1;
       int32             product_type      = 2;  // bs::network::Asset::Type
       uint64            timestamp_start   = 3;
       uint64            timestamp_close   = 4;
@@ -62,9 +62,14 @@ message Message
       float             dm_rate           = 10;
    }
 
+   message ActivateSessionRequest
+   {
+      int64             session_id        = 1;
+   }
+
    message SessionPositions
    {
-      int32             session_id  = 1;
+      int64             session_id  = 1;
       int32             load_status = 2;
       repeated Position positions   = 3;
    }
@@ -135,21 +140,24 @@ message Message
    }
 
    oneof data {
-      int32          get_session             = 1;  // bs::network::Asset::Type
-      SessionInfo    session_info            = 2;
+      int32          get_session                = 1;  // bs::network::Asset::Type
+      SessionInfo    session_info               = 2;
 
       SessionRequest    get_session_positions   = 3;
       SessionPositions  session_positions       = 4;
 
-      SessionRequest session_open            = 5;
-      SessionInfo    session_open_response   = 6;
+      SessionRequest session_open               = 5;
+      SessionInfo    session_open_response      = 6;
 
-      SessionRequest session_close           = 7;
-      int32          session_close_result    = 8;  // FuturesTradesStorage::StatusCode
+      ActivateSessionRequest  activate_session           = 7;
+      SessionInfo             activate_session_response  = 8;
 
-      SessionRequest session_damaged         = 9;
-      SessionRequest session_recovered       = 10;
-      int32          session_result          = 11; // FuturesTradesStorage::StatusCode
+      SessionRequest session_close              = 9;
+      int32          session_close_result       = 10;  // FuturesTradesStorage::StatusCode
+
+      SessionRequest session_damaged            = 11;
+      SessionRequest session_recovered          = 12;
+      int32          session_result             = 13; // FuturesTradesStorage::StatusCode
 
       OpenRolloverPositionsRequest  open_rollover_positions_request  = 14;
       OpenRolloverPositionsResponse open_rollover_positions_response = 15;
