@@ -103,13 +103,6 @@ message Message
       PositionReservationInfo maker_reservation_info = 2;
    }
 
-   message ConfirmTradePositionsResponse
-   {
-      int32    confirm_result       = 1; // FuturesTradesStorage::StatusCode
-      Position taker_position_info  = 2;
-      Position maker_position_info  = 3;
-   }
-
    message NewRolloverPositionInfo
    {
       int64                   entity_id      = 1;
@@ -174,7 +167,7 @@ message Message
       RegisterTradePositionsResponse   open_positions_for_trade_response   = 15;
 
       ConfirmTradePositions            confirm_trade_positions             = 16;
-      ConfirmTradePositionsResponse    confirm_trade_positions_response    = 17;
+      int32                            confirm_trade_positions_response    = 17; // FuturesTradesStorage::StatusCode
 
       OpenRolloverPositionsRequest     open_rollover_positions_request     = 18;
       OpenRolloverPositionsResponse    open_rollover_positions_response    = 19;
