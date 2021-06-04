@@ -987,7 +987,7 @@ message GenoaGetStatementsResponse
 
 message GenoaMessage
 {
-   message FuturePoolMarginsRequest
+   message FutureMoveReservationsRequest
    {
       int64    novation_account_id     = 1;
       int64    novation_entity_id      = 2;
@@ -995,10 +995,17 @@ message GenoaMessage
       repeated string reservation_ids  = 4;
    }
 
-   message FuturePoolMarginsResponse
+   message FutureMoveReservationsResponse
    {
-      bool     success        = 1;
-      string   error_message  = 2;
+      message AccountData {
+         int64 account_id  = 1;
+         int64 entity_id   = 2;
+         double amount     = 3;
+      }
+
+      bool                 success        = 1;
+      string               error_message  = 2;
+      repeated AccountData accounts       = 3;
    }
 
    message FuturePayoutRequest
@@ -1201,11 +1208,11 @@ message GenoaMessage
       GenoaGetStatementsRequest                 get_statements                   = 81;
       GenoaGetStatementsResponse                get_statements_response          = 82;
 
-      FuturePoolMarginsRequest                  future_pool_margins_request      = 83;
-      FuturePoolMarginsResponse                 future_pool_margins_response     = 84;
+      FutureMoveReservationsRequest             future_move_reservations_request    = 83;
+      FutureMoveReservationsResponse            future_move_reservations_response   = 84;
 
-      FuturePayoutRequest                       future_payout_request            = 85;
-      FuturePayoutResponse                      future_payout_response           = 86;
+      FuturePayoutRequest                       future_payout_request               = 85;
+      FuturePayoutResponse                      future_payout_response              = 86;
 
       FutureCreateReservations                  future_create_reservations          = 87;
       FutureCreateReservationsResponse          future_create_reservations_response = 88;
