@@ -2292,17 +2292,20 @@ message CashResMessage
 {
    message Order
    {
-      string entity_name = 1;
-      double qty = 2;
-      bs.types.Side side = 3;
-      double price = 4;
-      int32  trade_type = 5;
-      string cl_ord_id = 6;
-      double timestamp = 7;
-      bool   is_rollover = 8;
-      double cut_off_price = 9;
-      double im = 10;
-      bool   is_LP = 11;
+      string         entity_name    = 1;
+      double         qty            = 2;
+      bs.types.Side  side           = 3;
+      double         price          = 4;
+      int32          trade_type     = 5;
+      string         cl_ord_id      = 6;
+      int64          timestamp      = 7;
+      bool           is_rollover    = 8;
+      double         im             = 9;
+      bool           is_LP          = 10;
+      // cut_off_price going to be deprectaed
+      // used by genoa adapter when creating response on loading orders
+      // positions history for futures should come from FS
+      double         cut_off_price  = 11;
    }
 
    message EstimateImRequest
