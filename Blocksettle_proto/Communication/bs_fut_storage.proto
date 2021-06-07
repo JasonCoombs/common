@@ -99,8 +99,9 @@ message Message
 
    message ConfirmTradePositions
    {
-      PositionReservationInfo taker_reservation_info = 1;
-      PositionReservationInfo maker_reservation_info = 2;
+      bool success = 1;
+      PositionReservationInfo taker_reservation_info = 2;
+      PositionReservationInfo maker_reservation_info = 3;
    }
 
    message NewRolloverPositionInfo
