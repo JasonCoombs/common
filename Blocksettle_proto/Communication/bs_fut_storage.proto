@@ -73,6 +73,11 @@ message Message
       int64             session_id        = 1;
    }
 
+   message StartPayoutOnSessionRequest
+   {
+      int64             session_id        = 1;
+   }
+
    message SessionPositions
    {
       int64             session_id  = 1;
@@ -170,32 +175,35 @@ message Message
       ActivateSessionRequest           activate_session                    = 7;
       SessionInfo                      activate_session_response           = 8;
 
-      SessionRequest                   session_close                       = 9;
-      int32                            session_close_result                = 10;  // FuturesTradesStorage::StatusCode
+      StartPayoutOnSessionRequest      start_payout_request                = 9;
+      int32                            start_payout_response               = 10; // FuturesTradesStorage::StatusCode
 
-      SessionRequest                   session_damaged                     = 11;
-      SessionRequest                   session_recovered                   = 12;
-      int32                            session_result                      = 13; // FuturesTradesStorage::StatusCode
+      SessionRequest                   session_close                       = 11;
+      int32                            session_close_result                = 12;  // FuturesTradesStorage::StatusCode
 
-      RegisterTradePositions           open_positions_for_trade            = 14;
-      RegisterTradePositionsResponse   open_positions_for_trade_response   = 15;
+      SessionRequest                   session_damaged                     = 13;
+      SessionRequest                   session_recovered                   = 14;
+      int32                            session_result                      = 15; // FuturesTradesStorage::StatusCode
 
-      ConfirmTradePositions            confirm_trade_positions             = 16;
-      int32                            confirm_trade_positions_response    = 17; // FuturesTradesStorage::StatusCode
+      RegisterTradePositions           open_positions_for_trade            = 16;
+      RegisterTradePositionsResponse   open_positions_for_trade_response   = 17;
 
-      OpenRolloverPositionsRequest     open_rollover_positions_request     = 18;
-      OpenRolloverPositionsResponse    open_rollover_positions_response    = 19;
+      ConfirmTradePositions            confirm_trade_positions             = 18;
+      int32                            confirm_trade_positions_response    = 19; // FuturesTradesStorage::StatusCode
 
-      UpdatedRolloverPositionRequest   update_rollover_positions_request   = 20;
-      UpdatedRolloverPositionResponse  update_rollover_positions_response  = 21;
+      OpenRolloverPositionsRequest     open_rollover_positions_request     = 20;
+      OpenRolloverPositionsResponse    open_rollover_positions_response    = 21;
 
-      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 22;
-      int32                            confirm_rollover_positions_result   = 23;  // FuturesTradesStorage::StatusCode
+      UpdatedRolloverPositionRequest   update_rollover_positions_request   = 22;
+      UpdatedRolloverPositionResponse  update_rollover_positions_response  = 23;
 
-      AddNovationAccountRequest        add_novation_account_request        = 24;
-      int32                            add_novation_account_response       = 25;  // FuturesTradesStorage::StatusCode
+      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 24;
+      int32                            confirm_rollover_positions_result   = 25;  // FuturesTradesStorage::StatusCode
 
-      int64                            mark_novation_account_disposed_request    = 26; // account id
-      int32                            mark_novation_account_disposed_response   = 27; // FuturesTradesStorage::StatusCode
+      AddNovationAccountRequest        add_novation_account_request        = 26;
+      int32                            add_novation_account_response       = 27;  // FuturesTradesStorage::StatusCode
+
+      int64                            mark_novation_account_disposed_request    = 28; // account id
+      int32                            mark_novation_account_disposed_response   = 29; // FuturesTradesStorage::StatusCode
    }
 }
