@@ -151,15 +151,26 @@ message Message
 
    message NovationAccountInfo
    {
-      int64 account_id = 1;
-      int64 entity_id  = 2;
-      bool  disposed   = 3;
+      int64 account_id  = 1;
+      int64 entity_id   = 2;
+      int32 state       = 3; // FuturesTradesStorage::NovationAccountState
    }
 
    message AddNovationAccountRequest
    {
       int64                session_id        = 1;
       NovationAccountInfo  account_info      = 2;
+   }
+
+   message LoadNovationAccountRequest
+   {
+      int64             session_id        = 1;
+   }
+
+   message LoadNovationAccountResponse
+   {
+      int32                load_status    = 1;
+      NovationAccountInfo  account_info   = 2;
    }
 
    oneof data {
@@ -205,5 +216,8 @@ message Message
 
       int64                            mark_novation_account_disposed_request    = 28; // account id
       int32                            mark_novation_account_disposed_response   = 29; // FuturesTradesStorage::StatusCode
+
+      LoadNovationAccountRequest       load_novation_account_request             = 30;
+      LoadNovationAccountResponse      load_novation_account_response            = 31;
    }
 }
