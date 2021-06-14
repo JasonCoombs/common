@@ -167,7 +167,7 @@ message Message
       int64             session_id        = 1;
    }
 
-   message LoadNovationAccountResponse
+   message NovationAccountResponse
    {
       int32                load_status    = 1;
       NovationAccountInfo  account_info   = 2;
@@ -212,12 +212,12 @@ message Message
       int32                            confirm_rollover_positions_result   = 25;  // FuturesTradesStorage::StatusCode
 
       AddNovationAccountRequest        add_novation_account_request        = 26;
-      int32                            add_novation_account_response       = 27;  // FuturesTradesStorage::StatusCode
+      NovationAccountResponse          add_novation_account_response       = 27;  // FuturesTradesStorage::StatusCode
 
       int64                            mark_novation_account_disposed_request    = 28; // account id
       int32                            mark_novation_account_disposed_response   = 29; // FuturesTradesStorage::StatusCode
 
       LoadNovationAccountRequest       load_novation_account_request             = 30;
-      LoadNovationAccountResponse      load_novation_account_response            = 31;
+      NovationAccountResponse          load_novation_account_response            = 31;
    }
 }
