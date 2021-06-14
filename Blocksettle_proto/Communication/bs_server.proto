@@ -2209,9 +2209,9 @@ message ApiServerMsg
       repeated Entry          prices         = 2;
    }
 
-   message TradeClose
+   message TradingSessionClosed
    {
-      string product_name = 1;
+      int32 product_type = 1; // bs::network::Asset::Type
    }
 
    message UserNotify
@@ -2232,16 +2232,16 @@ message ApiServerMsg
 
    oneof data
    {
-      UpdateOrder    update_order   = 2;
-      UpdateBook     update_book    = 3;
-      TradeClose     trade_close    = 4;
-      Empty          send_prices    = 5;
-      string         user_connected    = 8;
-      string         user_disconnected = 9;
-      UserNotify     user_notify       = 10;
-      UpdateWithdrawPrices update_withdraw_prices = 11;
-      Empty          subscribe_price_offers = 12;
-      UpdateBook     price_offer = 13;
+      UpdateOrder             update_order            = 1;
+      UpdateBook              update_book             = 2;
+      TradingSessionClosed    trading_closed          = 3;
+      Empty                   send_prices             = 4;
+      string                  user_connected          = 5;
+      string                  user_disconnected       = 6;
+      UserNotify              user_notify             = 7;
+      UpdateWithdrawPrices    update_withdraw_prices  = 8;
+      Empty                   subscribe_price_offers  = 9;
+      UpdateBook              price_offer             = 10;
    }
 }
 
