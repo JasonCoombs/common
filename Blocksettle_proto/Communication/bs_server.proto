@@ -533,9 +533,9 @@ message GenoaAccountsData
 
 message GenoaAccountsBalanceUpdate
 {
-   string entity_name = 1;
-   string currency = 2;
-   double balance = 3;
+   string                  entity_name = 1;
+   string                  currency    = 2;
+   bs.types.FXAmountValue  balance     = 3;
 }
 
 enum GenoaAccountRequestType
@@ -589,8 +589,8 @@ message GenoaAccountBalanceResponse
    string error_text = 3;
 
    message Balance {
-      string currency = 1;
-      double balance = 2;
+      string                 currency = 1;
+      bs.types.FXAmountValue balance  = 2;
    }
 }
 
@@ -998,9 +998,9 @@ message GenoaMessage
    message FutureMoveReservationsResponse
    {
       message AccountData {
-         int64 account_id  = 1;
-         int64 entity_id   = 2;
-         double amount     = 3;
+         int64                   account_id  = 1;
+         int64                   entity_id   = 2;
+         bs.types.FXAmountValue  amount      = 3;
       }
 
       bool                 success        = 1;
@@ -1011,11 +1011,11 @@ message GenoaMessage
    message FuturePayoutRequest
    {
       message Payout {
-         string   entity_name = 1;
+         string                  entity_name = 1;
          // entity_id is what used by genoa. current code mostly use entity_name
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64    entity_id   = 2;
-         double   amount      = 3;
+         int64                   entity_id   = 2;
+         bs.types.FXAmountValue  amount      = 3;
       }
 
       string   product_name         = 1;
@@ -1027,8 +1027,8 @@ message GenoaMessage
    message FuturePayoutResponse
    {
       message AccountBalance {
-         string   entity_name = 1;
-         double   amount      = 2;
+         string                  entity_name = 1;
+         bs.types.FXAmountValue  amount      = 2;
       }
 
       bool     success        = 1;
@@ -1040,16 +1040,16 @@ message GenoaMessage
    message FutureCreateReservations
    {
       message AccountMargin {
-         string   entity_name       = 1;
+         string   entity_name          = 1;
          // entity_id is what used by genoa. current code mostly use entity_name
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64    entity_id         = 2;
-         double   amount            = 3;
-         int64    position_id       = 4;
+         int64    entity_id            = 2;
+         bs.types.FXAmountValue amount = 3;
+         int64    position_id          = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
          // rollover reservations. Could be non-empty for trades only in case
          // user already have a reservation in current session/product
-         string   reservation_ref   = 5;
+         string   reservation_ref      = 5;
       }
 
       string product_name              = 1;
@@ -1069,16 +1069,16 @@ message GenoaMessage
 
       message EntityBalance
       {
-         string   entity_name = 1;
-         string   currency    = 2;
-         double   balance     = 3;
+         string                  entity_name = 1;
+         string                  currency    = 2;
+         bs.types.FXAmountValue  balance     = 3;
       }
 
       message RecordsCausedFailure
       {
-         string   entity_name       = 1;
-         string   currency          = 2;
-         double   expected_balance  = 3;
+         string                  entity_name       = 1;
+         string                  currency          = 2;
+         bs.types.FXAmountValue  expected_balance  = 3;
       }
 
       bool                          reservation_succeed  = 1;
@@ -1245,9 +1245,9 @@ message GenoaServerClientRequest
 
 message GenoaServerBalanceUpdate
 {
-   string entity_name = 1;
-   string currency = 2;
-   double balance = 3;
+   string                  entity_name = 1;
+   string                  currency    = 2;
+   bs.types.FXAmountValue  balance     = 3;
 }
 
 message GenoaServerTradingStatusUpdate
@@ -1532,7 +1532,7 @@ message TradeDataMessage
 message BalanceData
 {
    string currency = 1;
-   double balance = 2;
+   bs.types.FXAmountValue balance = 2;
 }
 
 message CustomerAccountData
@@ -2292,20 +2292,20 @@ message CashResMessage
 {
    message Order
    {
-      string         entity_name    = 1;
-      double         qty            = 2;
-      bs.types.Side  side           = 3;
-      double         price          = 4;
-      int32          trade_type     = 5;
-      string         cl_ord_id      = 6;
-      int64          timestamp      = 7;
-      bool           is_rollover    = 8;
-      double         im             = 9;
-      bool           is_LP          = 10;
+      string                  entity_name    = 1;
+      bs.types.XBTAmountValue qty            = 2;
+      bs.types.Side           side           = 3;
+      bs.types.XBTPrice       price          = 4;
+      int32                   trade_type     = 5;
+      string                  cl_ord_id      = 6;
+      int64                   timestamp      = 7;
+      bool                    is_rollover    = 8;
+      double                  im             = 9;
+      bool                    is_LP          = 10;
       // cut_off_price going to be deprectaed
       // used by genoa adapter when creating response on loading orders
       // positions history for futures should come from FS
-      double         cut_off_price  = 11;
+      double                  cut_off_price  = 11;
    }
 
    message EstimateImRequest
@@ -2319,10 +2319,10 @@ message CashResMessage
 
    message EstimateImResponse
    {
-      EstimateImRequest request = 1;
-      bool   success = 2;
-      double im_balance = 3;
-      string error_text = 4;
+      EstimateImRequest       request = 1;
+      bool                    success = 2;
+      bs.types.FXAmountValue  im_balance = 3;
+      string                  error_text = 4;
    }
 
    message IMnettingRequest
@@ -2334,9 +2334,10 @@ message CashResMessage
 
    message IMnettingResponse
    {
-      string entity_name = 1;
-      double balance = 2;
-      double net_exposure = 3;
+      string                  entity_name = 1;
+      bs.types.FXAmountValue  balance = 2;
+      bs.types.XBTAmountValue net_exposure = 3;
+      bool                    success = 4;
    }
 
    message MaxAmountRequest

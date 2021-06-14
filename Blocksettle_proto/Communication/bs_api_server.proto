@@ -377,7 +377,7 @@ message Response
         bool success = 1;
         string error_msg = 2;
 
-        double expected_im_reservation = 10;
+        bs.types.FXAmountValue expected_im_reservation = 10;
         double fee_amount = 12;
         string product_type = 14;
     }
