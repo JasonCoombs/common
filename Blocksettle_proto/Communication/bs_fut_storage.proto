@@ -73,7 +73,7 @@ message Message
       int64             session_id        = 1;
    }
 
-   message StartPayoutOnSessionRequest
+   message MarkSessionCompleted
    {
       int64             session_id        = 1;
    }
@@ -186,11 +186,11 @@ message Message
       ActivateSessionRequest           activate_session                    = 7;
       SessionInfo                      activate_session_response           = 8;
 
-      StartPayoutOnSessionRequest      start_payout_request                = 9;
-      int32                            start_payout_response               = 10; // FuturesTradesStorage::StatusCode
+      SessionRequest                   session_close                       = 9;
+      int32                            session_close_result                = 10;  // FuturesTradesStorage::StatusCode
 
-      SessionRequest                   session_close                       = 11;
-      int32                            session_close_result                = 12;  // FuturesTradesStorage::StatusCode
+      MarkSessionCompleted             mark_session_completed_request      = 11;
+      int32                            mark_session_completed_response     = 12; // FuturesTradesStorage::StatusCode
 
       SessionRequest                   session_damaged                     = 13;
       SessionRequest                   session_recovered                   = 14;
