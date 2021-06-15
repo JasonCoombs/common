@@ -2349,11 +2349,11 @@ message CashResMessage
 
    message MaxAmountResponse
    {
-      string entity_name = 1;
-      int32  prod_type = 2;
-      bs.types.Side side = 3;
-      double max_amount = 4;
-      double fee = 5;
+      string                  entity_name = 1;
+      int32                   prod_type   = 2;
+      bs.types.Side           side        = 3;
+      bs.types.XBTAmountValue max_amount  = 4;
+      bs.types.FXAmountValue  fee         = 5;
    }
 
    message OrderResponse
