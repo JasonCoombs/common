@@ -127,23 +127,6 @@ message Message
       repeated Position opened_positions = 2;
    }
 
-   message UpdatedRolloverPositionInfo
-   {
-      int64                   position_id = 1;
-      bs.types.XBTAmountValue xbt_amount  = 2;
-   }
-
-   message UpdatedRolloverPositionRequest
-   {
-      repeated UpdatedRolloverPositionInfo position_updates = 1;
-   }
-
-   message UpdatedRolloverPositionResponse
-   {
-      int32             update_result     = 1; // FuturesTradesStorage::StatusCode
-      repeated Position updated_positions = 2;
-   }
-
    message ConfirmRolloverPositionsRequest
    {
       repeated PositionReservationInfo positions_info = 1;
@@ -216,22 +199,19 @@ message Message
       OpenRolloverPositionsRequest     open_rollover_positions_request     = 20;
       OpenRolloverPositionsResponse    open_rollover_positions_response    = 21;
 
-      UpdatedRolloverPositionRequest   update_rollover_positions_request   = 22;
-      UpdatedRolloverPositionResponse  update_rollover_positions_response  = 23;
+      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 22;
+      int32                            confirm_rollover_positions_result   = 23;  // FuturesTradesStorage::StatusCode
 
-      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 24;
-      int32                            confirm_rollover_positions_result   = 25;  // FuturesTradesStorage::StatusCode
+      AddNovationAccountRequest        add_novation_account_request        = 24;
+      NovationAccountResponse          add_novation_account_response       = 25;  // FuturesTradesStorage::StatusCode
 
-      AddNovationAccountRequest        add_novation_account_request        = 26;
-      NovationAccountResponse          add_novation_account_response       = 27;  // FuturesTradesStorage::StatusCode
+      int64                            mark_novation_account_disposed_request    = 26; // account id
+      int32                            mark_novation_account_disposed_response   = 27; // FuturesTradesStorage::StatusCode
 
-      int64                            mark_novation_account_disposed_request    = 28; // account id
-      int32                            mark_novation_account_disposed_response   = 29; // FuturesTradesStorage::StatusCode
+      LoadNovationAccountRequest       load_novation_account_request             = 28;
+      NovationAccountResponse          load_novation_account_response            = 29;
 
-      LoadNovationAccountRequest       load_novation_account_request             = 30;
-      NovationAccountResponse          load_novation_account_response            = 31;
-
-      LoadReservationIdsRequest        load_reservation_id_request               = 32;
-      LoadReservationIdsResponse       load_reservation_id_response              = 33;
+      LoadReservationIdsRequest        load_reservation_id_request               = 30;
+      LoadReservationIdsResponse       load_reservation_id_response              = 31;
    }
 }
