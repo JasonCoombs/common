@@ -1123,6 +1123,8 @@ bool BlockchainAdapter::processLedgerUnsubscribe(const bs::message::Envelope &en
          ledgerSubscriptions_.erase(itSub);
       }
    }
+
+   return true;
 }
 
 bool BlockchainAdapter::processAddressHist(const bs::message::Envelope& env
