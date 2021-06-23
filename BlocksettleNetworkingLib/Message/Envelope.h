@@ -134,21 +134,21 @@ namespace bs {
 
          SeqId responseId() const
          {
-            if (haveResponseId()) {
+            if (hasResponseId()) {
                return responseId_;
             }
 
             return 0;
          }
 
-         bool haveResponseId() const
+         bool hasResponseId() const
          {
             return responseId_ < static_cast<decltype(responseId_)>(EnvelopeFlags::MinValue);
          }
 
          void resetFlags()
          {
-            if (!haveResponseId()) {
+            if (!hasResponseId()) {
                responseId_ = 0;
             }
          }
@@ -163,12 +163,12 @@ namespace bs {
 
          bool isRequest() const
          {
-            if (haveResponseId()) {
+            if (hasResponseId()) {
                return (responseId_ == 0);
             }
 
             const auto flagsValue = flags();
-            // ATM all flags mean that this envelope is not a request
+            // ATM any flag value mean that this envelope is not a request
             return !(flagsValue == EnvelopeFlags::Publish || flagsValue == EnvelopeFlags::Response || flagsValue == EnvelopeFlags::GlobalBroadcast);
          }
 
