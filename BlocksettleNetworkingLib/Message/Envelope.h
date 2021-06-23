@@ -75,6 +75,9 @@ namespace bs {
 
       using SeqId = uint64_t;
 
+      // please pay attention, those are inverted flags
+      // be extra carefull if you try to use combination of a flags
+      // also it does not look like we ever do a flag combinations, only one value at a time
       enum class EnvelopeFlags : SeqId
       {
          GlobalBroadcast = UINT64_MAX,
@@ -131,13 +134,24 @@ namespace bs {
 
          SeqId responseId() const
          {
-            if (responseId_ >= (SeqId)EnvelopeFlags::MinValue) {
-               return 0;
+            if (haveResponseId()) {
+               return responseId_;
             }
-            return responseId_;
+
+            return 0;
          }
 
-         void resetFlags() { responseId_ = 0; }
+         bool haveResponseId() const
+         {
+            return responseId_ < static_cast<decltype(responseId_)>(EnvelopeFlags::MinValue);
+         }
+
+         void resetFlags()
+         {
+            if (!haveResponseId()) {
+               responseId_ = 0;
+            }
+         }
 
          EnvelopeFlags flags() const
          {
@@ -147,13 +161,22 @@ namespace bs {
             return static_cast<EnvelopeFlags>(responseId_);
          }
 
-         bool isRequest() const { return (responseId_ == 0); }
+         bool isRequest() const
+         {
+            if (haveResponseId()) {
+               return (responseId_ == 0);
+            }
+
+            const auto flagsValue = flags();
+            // ATM all flags mean that this envelope is not a request
+            return !(flagsValue == EnvelopeFlags::Publish || flagsValue == EnvelopeFlags::Response || flagsValue == EnvelopeFlags::GlobalBroadcast);
+         }
 
          std::shared_ptr<User>   sender;
          std::shared_ptr<User>   receiver;
-         TimeStamp   posted;
-         TimeStamp   executeAt;
-         std::string message;
+         TimeStamp               posted;
+         TimeStamp               executeAt;
+         std::string             message;
 
       private:
          Envelope(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
