@@ -2363,7 +2363,7 @@ message CashResMessage
       string product_name = 1;
       bool   success = 2;
       string error_msg = 3;
-      float  fee = 4;
+      bs.types.XBTPrice fee = 4;
       string fee_ccy = 5;
       bs.types.XBTPrice im = 6;
    }
