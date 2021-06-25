@@ -99,7 +99,7 @@ message ChatToken
 message Balance
 {
     string currency = 1;
-    double balance = 2;
+    string balance = 2;
 }
 
 message TradeSettings

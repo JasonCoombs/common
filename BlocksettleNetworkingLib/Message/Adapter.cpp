@@ -96,7 +96,7 @@ Adapter::Users RelayAdapter::supportedReceivers() const
 void RelayAdapter::setQueue(const std::shared_ptr<QueueInterface>& queue)
 {
    if (!queue_) {
-      Adapter::setQueue(queue_);
+      Adapter::setQueue(queue);
    }
    queues_.insert(queue);
    for (const auto& user : queue->supportedReceivers()) {

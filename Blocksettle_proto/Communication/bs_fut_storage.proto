@@ -73,6 +73,11 @@ message Message
       int64             session_id        = 1;
    }
 
+   message MarkSessionCompleted
+   {
+      int64             session_id        = 1;
+   }
+
    message SessionPositions
    {
       int64             session_id  = 1;
@@ -122,26 +127,44 @@ message Message
       repeated Position opened_positions = 2;
    }
 
-   message UpdatedRolloverPositionInfo
-   {
-      int64                   position_id = 1;
-      bs.types.XBTAmountValue xbt_amount  = 2;
-   }
-
-   message UpdatedRolloverPositionRequest
-   {
-      repeated UpdatedRolloverPositionInfo position_updates = 1;
-   }
-
-   message UpdatedRolloverPositionResponse
-   {
-      int32             update_result     = 1; // FuturesTradesStorage::StatusCode
-      repeated Position updated_positions = 2;
-   }
-
    message ConfirmRolloverPositionsRequest
    {
       repeated PositionReservationInfo positions_info = 1;
+   }
+
+   message NovationAccountInfo
+   {
+      int64 account_id  = 1;
+      int64 entity_id   = 2;
+      int32 state       = 3; // FuturesTradesStorage::NovationAccountState
+   }
+
+   message AddNovationAccountRequest
+   {
+      int64                session_id        = 1;
+      NovationAccountInfo  account_info      = 2;
+   }
+
+   message LoadNovationAccountRequest
+   {
+      int64             session_id        = 1;
+   }
+
+   message NovationAccountResponse
+   {
+      int32                load_status    = 1;
+      NovationAccountInfo  account_info   = 2;
+   }
+
+   message LoadReservationIdsRequest
+   {
+      int64             session_id        = 1;
+   }
+
+   message LoadReservationIdsResponse
+   {
+      int32                load_status    = 1; // FuturesTradesStorage::StatusCode
+      repeated string      reserve_id     = 2; // genoa ref ID
    }
 
    oneof data {
@@ -160,23 +183,35 @@ message Message
       SessionRequest                   session_close                       = 9;
       int32                            session_close_result                = 10;  // FuturesTradesStorage::StatusCode
 
-      SessionRequest                   session_damaged                     = 11;
-      SessionRequest                   session_recovered                   = 12;
-      int32                            session_result                      = 13; // FuturesTradesStorage::StatusCode
+      MarkSessionCompleted             mark_session_completed_request      = 11;
+      int32                            mark_session_completed_response     = 12; // FuturesTradesStorage::StatusCode
 
-      RegisterTradePositions           open_positions_for_trade            = 14;
-      RegisterTradePositionsResponse   open_positions_for_trade_response   = 15;
+      SessionRequest                   session_damaged                     = 13;
+      SessionRequest                   session_recovered                   = 14;
+      int32                            session_result                      = 15; // FuturesTradesStorage::StatusCode
 
-      ConfirmTradePositions            confirm_trade_positions             = 16;
-      int32                            confirm_trade_positions_response    = 17; // FuturesTradesStorage::StatusCode
+      RegisterTradePositions           open_positions_for_trade            = 16;
+      RegisterTradePositionsResponse   open_positions_for_trade_response   = 17;
 
-      OpenRolloverPositionsRequest     open_rollover_positions_request     = 18;
-      OpenRolloverPositionsResponse    open_rollover_positions_response    = 19;
+      ConfirmTradePositions            confirm_trade_positions             = 18;
+      int32                            confirm_trade_positions_response    = 19; // FuturesTradesStorage::StatusCode
 
-      UpdatedRolloverPositionRequest   update_rollover_positions_request   = 20;
-      UpdatedRolloverPositionResponse  update_rollover_positions_response  = 21;
+      OpenRolloverPositionsRequest     open_rollover_positions_request     = 20;
+      OpenRolloverPositionsResponse    open_rollover_positions_response    = 21;
 
       ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 22;
       int32                            confirm_rollover_positions_result   = 23;  // FuturesTradesStorage::StatusCode
+
+      AddNovationAccountRequest        add_novation_account_request        = 24;
+      NovationAccountResponse          add_novation_account_response       = 25;  // FuturesTradesStorage::StatusCode
+
+      int64                            mark_novation_account_disposed_request    = 26; // account id
+      int32                            mark_novation_account_disposed_response   = 27; // FuturesTradesStorage::StatusCode
+
+      LoadNovationAccountRequest       load_novation_account_request             = 28;
+      NovationAccountResponse          load_novation_account_response            = 29;
+
+      LoadReservationIdsRequest        load_reservation_id_request               = 30;
+      LoadReservationIdsResponse       load_reservation_id_response              = 31;
    }
 }

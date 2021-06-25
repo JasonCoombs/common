@@ -475,7 +475,7 @@ message GenoaXbtCompleteTransferResponse
    string error_text = 3;
    CustomerAccountData changed_account = 4;
    string currency = 5;
-   double new_balance = 6;
+   bs.types.FXAmountValue new_balance = 6;
 }
 
 message GenoaFxTradeResponse
@@ -489,12 +489,7 @@ message GenoaFxTradeResponse
 
    message AccountBalances {
       string entity_name = 1;
-      repeated Balance balances = 2;
-
-      message Balance {
-         string currency = 1;
-         double balance = 2;
-      }
+      repeated BalanceData balances = 2;
    }
 }
 
@@ -535,7 +530,7 @@ message GenoaAccountsBalanceUpdate
 {
    string entity_name = 1;
    string currency = 2;
-   double balance = 3;
+   bs.types.FXAmountValue balance = 3;
 }
 
 enum GenoaAccountRequestType
@@ -585,13 +580,8 @@ message GenoaAccountBalanceRequest
 message GenoaAccountBalanceResponse
 {
    string entity_name = 1;
-   repeated Balance balances = 2;
+   repeated BalanceData balances = 2;
    string error_text = 3;
-
-   message Balance {
-      string currency = 1;
-      double balance = 2;
-   }
 }
 
 message GenoaEODUpdateMessage
@@ -599,7 +589,7 @@ message GenoaEODUpdateMessage
    message GenoaPrice
    {
       string product = 1;
-      double price   = 2;
+      bs.types.XBTPrice price = 2;
    }
 
    string               date     = 1;
@@ -998,9 +988,9 @@ message GenoaMessage
    message FutureMoveReservationsResponse
    {
       message AccountData {
-         int64 account_id  = 1;
-         int64 entity_id   = 2;
-         double amount     = 3;
+         int64                  account_id = 1;
+         int64                  entity_id  = 2;
+         bs.types.FXAmountValue amount     = 3;
       }
 
       bool                 success        = 1;
@@ -1011,11 +1001,11 @@ message GenoaMessage
    message FuturePayoutRequest
    {
       message Payout {
-         string   entity_name = 1;
+         string                 entity_name = 1;
          // entity_id is what used by genoa. current code mostly use entity_name
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64    entity_id   = 2;
-         double   amount      = 3;
+         int64                  entity_id   = 2;
+         bs.types.FXAmountValue amount      = 3;
       }
 
       string   product_name         = 1;
@@ -1027,8 +1017,8 @@ message GenoaMessage
    message FuturePayoutResponse
    {
       message AccountBalance {
-         string   entity_name = 1;
-         double   amount      = 2;
+         string                 entity_name = 1;
+         bs.types.FXAmountValue amount      = 2;
       }
 
       bool     success        = 1;
@@ -1040,16 +1030,16 @@ message GenoaMessage
    message FutureCreateReservations
    {
       message AccountMargin {
-         string   entity_name       = 1;
+         string                 entity_name     = 1;
          // entity_id is what used by genoa. current code mostly use entity_name
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64    entity_id         = 2;
-         double   amount            = 3;
-         int64    position_id       = 4;
+         int64                  entity_id       = 2;
+         bs.types.FXAmountValue amount          = 3;
+         int64                  position_id     = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
          // rollover reservations. Could be non-empty for trades only in case
          // user already have a reservation in current session/product
-         string   reservation_ref   = 5;
+         string                 reservation_ref = 5;
       }
 
       string product_name              = 1;
@@ -1069,16 +1059,16 @@ message GenoaMessage
 
       message EntityBalance
       {
-         string   entity_name = 1;
-         string   currency    = 2;
-         double   balance     = 3;
+         string                 entity_name = 1;
+         string                 currency    = 2;
+         bs.types.FXAmountValue balance     = 3;
       }
 
       message RecordsCausedFailure
       {
-         string   entity_name       = 1;
-         string   currency          = 2;
-         double   expected_balance  = 3;
+         string                 entity_name       = 1;
+         string                 currency          = 2;
+         bs.types.FXAmountValue expected_balance  = 3;
       }
 
       bool                          reservation_succeed  = 1;
@@ -1247,7 +1237,7 @@ message GenoaServerBalanceUpdate
 {
    string entity_name = 1;
    string currency = 2;
-   double balance = 3;
+   bs.types.FXAmountValue balance = 3;
 }
 
 message GenoaServerTradingStatusUpdate
@@ -1532,7 +1522,7 @@ message TradeDataMessage
 message BalanceData
 {
    string currency = 1;
-   double balance = 2;
+   bs.types.FXAmountValue balance = 2;
 }
 
 message CustomerAccountData
@@ -1559,9 +1549,9 @@ message TradeDataXbtMessage
    string dealer_pub_key = 6;
    CustomerAccountData requestor = 7;
    CustomerAccountData dealer = 8;
-   double xbt_amount = 9;
-   double ccy_amount = 10;
-   double price = 11;
+   bs.types.XBTAmountValue xbt_amount = 9;
+   bs.types.FXAmountValue ccy_amount = 10;
+   bs.types.XBTPrice price = 11;
    string product = 12;
    string currency = 13;
    bytes  unsigned_payin = 14;
@@ -2209,9 +2199,9 @@ message ApiServerMsg
       repeated Entry          prices         = 2;
    }
 
-   message TradeClose
+   message TradingSessionClosed
    {
-      string product_name = 1;
+      int32 product_type = 1; // bs::network::Asset::Type
    }
 
    message UserNotify
@@ -2232,16 +2222,16 @@ message ApiServerMsg
 
    oneof data
    {
-      UpdateOrder    update_order   = 2;
-      UpdateBook     update_book    = 3;
-      TradeClose     trade_close    = 4;
-      Empty          send_prices    = 5;
-      string         user_connected    = 8;
-      string         user_disconnected = 9;
-      UserNotify     user_notify       = 10;
-      UpdateWithdrawPrices update_withdraw_prices = 11;
-      Empty          subscribe_price_offers = 12;
-      UpdateBook     price_offer = 13;
+      UpdateOrder             update_order            = 1;
+      UpdateBook              update_book             = 2;
+      TradingSessionClosed    trading_closed          = 3;
+      Empty                   send_prices             = 4;
+      string                  user_connected          = 5;
+      string                  user_disconnected       = 6;
+      UserNotify              user_notify             = 7;
+      UpdateWithdrawPrices    update_withdraw_prices  = 8;
+      Empty                   subscribe_price_offers  = 9;
+      UpdateBook              price_offer             = 10;
    }
 }
 
@@ -2251,17 +2241,17 @@ message UsersImInfo
    message InfoIM {
       message PerProduct {
          int32  product_type = 1;
-         double net_exposure = 2;
+         bs.types.XBTAmountValue net_exposure = 2;
          double leverage_ratio = 3;
-         double balance = 4;
-         double im_balance = 5;
-         double profit_loss = 6;
+         bs.types.FXAmountValue balance = 4;
+         bs.types.FXAmountValue im_balance = 5;
+         bs.types.FXAmountValue profit_loss = 6;
       }
       string account_name = 1;
       repeated PerProduct per_product = 2;
-      double im_balance = 3;
-      double balance = 4;
-      double profit_loss = 5;
+      bs.types.FXAmountValue im_balance = 3;
+      bs.types.FXAmountValue balance = 4;
+      bs.types.FXAmountValue profit_loss = 5;
    }
    repeated InfoIM im_info = 1;
    repeated string connected_users = 2;
@@ -2269,8 +2259,8 @@ message UsersImInfo
 
    message OpenInterest {
       int32  product_type = 1;
-      double buy = 2;
-      double sell = 3;
+      bs.types.FXAmountValue buy = 2;
+      bs.types.FXAmountValue sell = 3;
    }
    repeated OpenInterest open_interest = 4;
 }
@@ -2281,10 +2271,10 @@ message TradingSessionOpen
    string            product_name         = 1;
    int64             cut_off_at           = 2;
    double            seconds_to_cut_off   = 3;
-   double            last_cut_off_price   = 4;
+   bs.types.XBTPrice last_cut_off_price   = 4;
    float             fee_taker            = 5;
    float             fee_maker            = 6;
-   double            open_price           = 7;
+   bs.types.XBTPrice open_price           = 7;
 }
 
 
@@ -2292,51 +2282,38 @@ message CashResMessage
 {
    message Order
    {
-      string         entity_name    = 1;
-      double         qty            = 2;
-      bs.types.Side  side           = 3;
-      double         price          = 4;
-      int32          trade_type     = 5;
-      string         cl_ord_id      = 6;
-      int64          timestamp      = 7;
-      bool           is_rollover    = 8;
-      double         im             = 9;
-      bool           is_LP          = 10;
+      string                  entity_name             = 1;
+      bs.types.XBTAmountValue qty                     = 2;
+      bs.types.Side           side                    = 3;
+      bs.types.XBTPrice       price                   = 4;
+      int32                   trade_type              = 5;
+      string                  cl_ord_id               = 6;
+      int64                   timestamp               = 7;
+      bool                    is_rollover             = 8;
+      bs.types.FXAmountValue  im                      = 9;
+      bool                    is_LP                   = 10;
       // cut_off_price going to be deprectaed
       // used by genoa adapter when creating response on loading orders
       // positions history for futures should come from FS
-      double         cut_off_price  = 11;
+      bs.types.XBTPrice       cut_off_price           = 11;
+      bool                    reservation_confirmed   = 12;
    }
 
    message EstimateImRequest
    {
-      string entity_name = 1;
-      string product = 2;
-      double qty = 3;
-      bs.types.Side side = 4;
-      double price = 5;
+      string                  entity_name = 1;
+      string                  product     = 2;
+      bs.types.XBTAmountValue qty         = 3;
+      bs.types.Side           side        = 4;
+      bs.types.XBTPrice       price       = 5;
    }
 
    message EstimateImResponse
    {
-      EstimateImRequest request = 1;
-      bool   success = 2;
-      double im_balance = 3;
-      string error_text = 4;
-   }
-
-   message IMnettingRequest
-   {
-      string entity_name = 1;
-      int32  prod_type = 2;
-      repeated Order orders = 3;
-   }
-
-   message IMnettingResponse
-   {
-      string entity_name = 1;
-      double balance = 2;
-      double net_exposure = 3;
+      EstimateImRequest      request    = 1;
+      bool                   success    = 2;
+      bs.types.FXAmountValue im_balance = 3;
+      string                 error_text = 4;
    }
 
    message MaxAmountRequest
@@ -2351,8 +2328,8 @@ message CashResMessage
       string entity_name = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
-      double max_amount = 4;
-      double fee = 5;
+      bs.types.XBTAmountValue max_amount = 4;
+      bs.types.FXAmountValue fee = 5;
    }
 
    message OrderResponse
@@ -2386,14 +2363,12 @@ message CashResMessage
       string product_name = 1;
       bool   success = 2;
       string error_msg = 3;
-      float  fee = 4;
+      bs.types.XBTPrice fee = 4;
       string fee_ccy = 5;
-      double im = 6;
+      bs.types.XBTPrice im = 6;
    }
 
    oneof data {
-      IMnettingRequest           im_net_request = 1;
-      IMnettingResponse          im_net_response = 2;
       EstimateImRequest          estimate_im_request = 3;
       EstimateImResponse         estimate_im_response = 4;
       MaxAmountRequest           max_amount_request = 5;
