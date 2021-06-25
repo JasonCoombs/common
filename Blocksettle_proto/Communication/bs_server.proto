@@ -475,7 +475,7 @@ message GenoaXbtCompleteTransferResponse
    string error_text = 3;
    CustomerAccountData changed_account = 4;
    string currency = 5;
-   double new_balance = 6;
+   bs.types.FXAmountValue new_balance = 6;
 }
 
 message GenoaFxTradeResponse
@@ -489,12 +489,7 @@ message GenoaFxTradeResponse
 
    message AccountBalances {
       string entity_name = 1;
-      repeated Balance balances = 2;
-
-      message Balance {
-         string currency = 1;
-         double balance = 2;
-      }
+      repeated BalanceData balances = 2;
    }
 }
 
@@ -535,7 +530,7 @@ message GenoaAccountsBalanceUpdate
 {
    string entity_name = 1;
    string currency = 2;
-   double balance = 3;
+   bs.types.FXAmountValue balance = 3;
 }
 
 enum GenoaAccountRequestType
@@ -585,13 +580,8 @@ message GenoaAccountBalanceRequest
 message GenoaAccountBalanceResponse
 {
    string entity_name = 1;
-   repeated Balance balances = 2;
+   repeated BalanceData balances = 2;
    string error_text = 3;
-
-   message Balance {
-      string currency = 1;
-      double balance = 2;
-   }
 }
 
 message GenoaEODUpdateMessage
@@ -599,7 +589,7 @@ message GenoaEODUpdateMessage
    message GenoaPrice
    {
       string product = 1;
-      double price   = 2;
+      bs.types.XBTPrice price = 2;
    }
 
    string               date     = 1;
@@ -1247,7 +1237,7 @@ message GenoaServerBalanceUpdate
 {
    string entity_name = 1;
    string currency = 2;
-   double balance = 3;
+   bs.types.FXAmountValue balance = 3;
 }
 
 message GenoaServerTradingStatusUpdate
@@ -1532,7 +1522,7 @@ message TradeDataMessage
 message BalanceData
 {
    string currency = 1;
-   double balance = 2;
+   bs.types.FXAmountValue balance = 2;
 }
 
 message CustomerAccountData
@@ -1559,9 +1549,9 @@ message TradeDataXbtMessage
    string dealer_pub_key = 6;
    CustomerAccountData requestor = 7;
    CustomerAccountData dealer = 8;
-   double xbt_amount = 9;
-   double ccy_amount = 10;
-   double price = 11;
+   bs.types.XBTAmountValue xbt_amount = 9;
+   bs.types.FXAmountValue ccy_amount = 10;
+   bs.types.XBTPrice price = 11;
    string product = 12;
    string currency = 13;
    bytes  unsigned_payin = 14;
@@ -2251,17 +2241,17 @@ message UsersImInfo
    message InfoIM {
       message PerProduct {
          int32  product_type = 1;
-         double net_exposure = 2;
+         bs.types.XBTAmountValue net_exposure = 2;
          double leverage_ratio = 3;
-         double balance = 4;
-         double im_balance = 5;
-         double profit_loss = 6;
+         bs.types.FXAmountValue balance = 4;
+         bs.types.FXAmountValue im_balance = 5;
+         bs.types.FXAmountValue profit_loss = 6;
       }
       string account_name = 1;
       repeated PerProduct per_product = 2;
-      double im_balance = 3;
-      double balance = 4;
-      double profit_loss = 5;
+      bs.types.FXAmountValue im_balance = 3;
+      bs.types.FXAmountValue balance = 4;
+      bs.types.FXAmountValue profit_loss = 5;
    }
    repeated InfoIM im_info = 1;
    repeated string connected_users = 2;
@@ -2269,8 +2259,8 @@ message UsersImInfo
 
    message OpenInterest {
       int32  product_type = 1;
-      double buy = 2;
-      double sell = 3;
+      bs.types.FXAmountValue buy = 2;
+      bs.types.FXAmountValue sell = 3;
    }
    repeated OpenInterest open_interest = 4;
 }
@@ -2281,10 +2271,10 @@ message TradingSessionOpen
    string            product_name         = 1;
    int64             cut_off_at           = 2;
    double            seconds_to_cut_off   = 3;
-   double            last_cut_off_price   = 4;
+   bs.types.XBTPrice last_cut_off_price   = 4;
    float             fee_taker            = 5;
    float             fee_maker            = 6;
-   double            open_price           = 7;
+   bs.types.XBTPrice open_price           = 7;
 }
 
 
@@ -2338,8 +2328,8 @@ message CashResMessage
       string entity_name = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
-      double max_amount = 4;
-      double fee = 5;
+      bs.types.XBTAmountValue max_amount = 4;
+      bs.types.FXAmountValue fee = 5;
    }
 
    message OrderResponse
@@ -2373,9 +2363,9 @@ message CashResMessage
       string product_name = 1;
       bool   success = 2;
       string error_msg = 3;
-      float  fee = 4;
+      bs.types.XBTPrice fee = 4;
       string fee_ccy = 5;
-      double im = 6;
+      bs.types.XBTPrice im = 6;
    }
 
    oneof data {
