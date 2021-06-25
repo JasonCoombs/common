@@ -35,7 +35,7 @@ enum ErrorCode {
 message Order
 {
    // order_id is set from FS position ID
-   string               order_id       = 1;
+   string               id             = 1;
    bs.types.OrderStatus status         = 2;
    string               status_text    = 3;
    double               timestamp      = 4;
@@ -336,8 +336,8 @@ message Response
     message MarketOrder
     {
         bool   success     = 1;
-        // order_id is FS position ID
-        string order_id    = 2;
+        // id is FS position ID
+        string id          = 2;
         string error_msg   = 3;
         string price       = 4;
     }

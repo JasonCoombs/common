@@ -2117,7 +2117,7 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      uint64                  xbt_amount        = 1;
+      bs.types.XBTAmountValue xbt_amount        = 1;
       string                  requesting_entity = 2;
       bool                    get_ask_price     = 3;
       bs.types.PriceBookType  price_book        = 4;
@@ -2125,17 +2125,16 @@ message PriceStreamManaging
 
    message GetBestOfferResponse
    {
-
       message PriceOffer
       {
-         string   owner_entity_name = 1;
-         double   price             = 2;
-         uint64   timestamp         = 3;
+         string            owner_entity_name = 1;
+         bs.types.XBTPrice price             = 2;
+         uint64            timestamp         = 3;
       }
 
-      int64       xbt_amount  = 1;
-      PriceOffer  best_offer  = 2;
-      bool        matched     = 3;
+      bs.types.XBTAmountValue xbt_amount  = 1;
+      PriceOffer              best_offer  = 2;
+      bool                    matched     = 3;
    }
 
    message ClientData
