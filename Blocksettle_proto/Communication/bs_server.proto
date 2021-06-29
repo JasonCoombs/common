@@ -1225,7 +1225,6 @@ enum GenoaServerType
    GenoaServerXbtTrdStatus       = 4;
    GenoaServerNewCcSeed          = 5;
    GenoaServerNewCCDeposit       = 6;
-   GenoaTradeUpdateEvent         = 7;
 }
 
 message GenoaServerClientRequest
@@ -1285,7 +1284,6 @@ message GenoaServerMessage
       GenoaServerXbtTradingStatus      xbt_trd_status       = 5;
       GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
-      GenoaServerTradeUpdateEvent      trade_update         = 8;
 
       bool                             response             = 50;
    }
@@ -2334,9 +2332,10 @@ message CashResMessage
 
    message OrderResponse
    {
-      string cl_ord_id = 1;
-      bool   success = 2;
-      string error_text = 3;
+      string   cl_ord_id   = 1;
+      bool     success     = 2;
+      string   error_text  = 3;
+      int64    position_id = 4;
    }
 
    message OrdersRequest
