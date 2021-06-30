@@ -114,6 +114,9 @@ bool RelayAdapter::process(const Envelope& env)
 
 bool RelayAdapter::processBroadcast(const Envelope& env)
 {
+   if (env.flags() == EnvelopeFlags::Processed) {
+      return false;
+   }
    if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
@@ -124,7 +127,7 @@ bool RelayAdapter::processBroadcast(const Envelope& env)
       if (!queue->isCurrentlyProcessing(env)) {
          auto envCopy = env;
          envCopy.setId(0);
-         envCopy.resetFlags();
+         envCopy.setFlag(EnvelopeFlags::Processed);
          queue->pushFill(envCopy);
       }
    }

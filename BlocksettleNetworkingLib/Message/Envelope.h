@@ -80,6 +80,7 @@ namespace bs {
          GlobalBroadcast = UINT64_MAX,
          Publish = UINT64_MAX - 1,           // response to subscription request
          Response = UINT64_MAX - 2,          // response without specific request id - just to signify a non-request
+         Processed = UINT64_MAX - 3,         // mark message as processed to prevent infinite broadcast loop
          MinValue = UINT64_MAX - 15          // all values above should be treated as flags only
       };
 
@@ -138,6 +139,7 @@ namespace bs {
          }
 
          void resetFlags() { responseId_ = 0; }
+         void setFlag(const EnvelopeFlags f) { responseId_ = (SeqId)f; }
 
          EnvelopeFlags flags() const
          {
