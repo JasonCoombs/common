@@ -80,6 +80,7 @@ namespace bs {
          GlobalBroadcast = UINT64_MAX,
          Publish = UINT64_MAX - 1,           // response to subscription request
          Response = UINT64_MAX - 2,          // response without specific request id - just to signify a non-request
+         Update = UINT64_MAX - 4,            // message from one adapter to another that does not require subscriptions and is not a request
          MinValue = UINT64_MAX - 15          // all values above should be treated as flags only
       };
 
