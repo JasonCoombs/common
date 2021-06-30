@@ -117,8 +117,8 @@ bool RelayAdapter::processBroadcast(const Envelope& env)
    if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
-   if ((env.id() != env.foreignId()) && (env.flags() != EnvelopeFlags::GlobalBroadcast)) {
-      return false;
+   if ((env.id() != env.foreignId()) && (env.flags() == EnvelopeFlags::GlobalBroadcast)) {
+      return false;  // global broadcasts are processed elsewhere (external relayer like AMQP)
    }
    for (const auto& queue : queues_) {
       if (!queue->isCurrentlyProcessing(env)) {
