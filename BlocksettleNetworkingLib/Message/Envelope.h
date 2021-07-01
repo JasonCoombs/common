@@ -75,18 +75,18 @@ namespace bs {
 
       using SeqId = uint64_t;
 
-      enum class EnvelopeFlags : SeqId
+      enum class EnvelopeType : SeqId
       {
          GlobalBroadcast = UINT64_MAX,
          Publish = UINT64_MAX - 1,           // response to subscription request
-         Response = UINT64_MAX - 2,          // response without specific request id - just to signify a non-request
-         Update = UINT64_MAX - 4,            // message from one adapter to another that does not require subscriptions and is not a request
-         MinValue = UINT64_MAX - 15          // all values above should be treated as flags only
+         Update = UINT64_MAX - 2,            // message from one adapter to another that does not require subscriptions and is not a request
+         MinValue = UINT64_MAX - 15          // all values above should be treated as type values only
       };
 
       struct Envelope
       {
-         Envelope() {}
+         Envelope() = default;
+         ~Envelope() noexcept = default;
 
          static Envelope makeRequest(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
             , const std::string& msg, const TimeStamp& execAt = {})
@@ -102,7 +102,7 @@ namespace bs {
 
          static Envelope makeBroadcast(const std::shared_ptr<User>& s, const std::string& msg, bool global = false)
          {
-            return Envelope{ s, nullptr, msg, global ? (SeqId)EnvelopeFlags::GlobalBroadcast : 0 };
+            return Envelope{ s, nullptr, msg, global ? (SeqId)EnvelopeType::GlobalBroadcast : 0 };
          }
 
          Envelope& operator=(Envelope other)
@@ -132,20 +132,20 @@ namespace bs {
 
          SeqId responseId() const
          {
-            if (responseId_ >= (SeqId)EnvelopeFlags::MinValue) {
+            if (responseId_ >= static_cast<SeqId>(EnvelopeType::MinValue)) {
                return 0;
             }
             return responseId_;
          }
 
-         void resetFlags() { responseId_ = 0; }
+         void resetEnvelopeType() { responseId_ = 0; }
 
-         EnvelopeFlags flags() const
+         EnvelopeType envelopeType() const
          {
-            if (responseId_ < (SeqId)EnvelopeFlags::MinValue) {
-               return EnvelopeFlags::MinValue;
+            if (responseId_ < static_cast<SeqId>(EnvelopeType::MinValue)) {
+               return EnvelopeType::MinValue;
             }
-            return static_cast<EnvelopeFlags>(responseId_);
+            return static_cast<EnvelopeType>(responseId_);
          }
 
          bool isRequest() const { return (responseId_ == 0); }
@@ -169,7 +169,7 @@ namespace bs {
 
          SeqId id_{ 0 };         // always unique and growing (no 2 envelopes can have the same id)
          SeqId foreignId_{ 0 };  // used at gatewaying from external bus
-         SeqId responseId_{ 0 }; // should be set in reply and for special flags
+         SeqId responseId_{ 0 }; // should be set in reply and for special values of EnvelopeType
       };
 
    } // namespace message

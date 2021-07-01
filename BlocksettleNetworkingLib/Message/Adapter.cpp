@@ -117,14 +117,14 @@ bool RelayAdapter::processBroadcast(const Envelope& env)
    if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
-   if ((env.id() != env.foreignId()) && (env.flags() != EnvelopeFlags::GlobalBroadcast)) {
+   if ((env.id() != env.foreignId()) && (env.envelopeType() != EnvelopeType::GlobalBroadcast)) {
       return false;
    }
    for (const auto& queue : queues_) {
       if (!queue->isCurrentlyProcessing(env)) {
          auto envCopy = env;
          envCopy.setId(0);
-         envCopy.resetFlags();
+         envCopy.resetEnvelopeType();
          queue->pushFill(envCopy);
       }
    }
