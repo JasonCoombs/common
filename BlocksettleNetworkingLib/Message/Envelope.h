@@ -80,7 +80,8 @@ namespace bs {
          GlobalBroadcast = UINT64_MAX,
          Publish = UINT64_MAX - 1,           // response to subscription request
          Update = UINT64_MAX - 2,            // message from one adapter to another that does not require subscriptions and is not a request
-         MinValue = UINT64_MAX - 15          // all values above should be treated as type values only
+         Processed = UINT64_MAX - 3,         // mark message as processed to prevent infinite broadcast loop
+         MinValue = UINT64_MAX - 15          // all values above should be treated as envelope type values only
       };
 
       struct Envelope
@@ -139,6 +140,9 @@ namespace bs {
          }
 
          void resetEnvelopeType() { responseId_ = 0; }
+
+         void setEnvelopeType(const EnvelopeType f) { responseId_ = (SeqId)f; }
+
 
          EnvelopeType envelopeType() const
          {

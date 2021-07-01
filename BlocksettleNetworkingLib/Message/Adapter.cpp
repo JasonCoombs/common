@@ -114,17 +114,20 @@ bool RelayAdapter::process(const Envelope& env)
 
 bool RelayAdapter::processBroadcast(const Envelope& env)
 {
+   if (env.envelopeType() == EnvelopeType::Processed) {
+      return false;
+   }
    if (!isInitialized()) {
       throw std::runtime_error("invalid initialization");
    }
-   if ((env.id() != env.foreignId()) && (env.envelopeType() != EnvelopeType::GlobalBroadcast)) {
-      return false;
+   if ((env.id() != env.foreignId()) && (env.envelopeType() == EnvelopeType::GlobalBroadcast)) {
+      return false;  // global broadcasts are processed elsewhere (external relayer like AMQP)
    }
    for (const auto& queue : queues_) {
       if (!queue->isCurrentlyProcessing(env)) {
          auto envCopy = env;
          envCopy.setId(0);
-         envCopy.resetEnvelopeType();
+         envCopy.setEnvelopeType(EnvelopeType::Processed);
          queue->pushFill(envCopy);
       }
    }
