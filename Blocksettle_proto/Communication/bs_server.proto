@@ -306,7 +306,6 @@ enum GenoaType
    GenoaGetDepositInfoType                = 33;
    GenoaWithdrawToExternalAccountType     = 34;
    GenoaGetCustomerBalance                = 35;
-   GenoaLoadCustomerImBalance             = 36;
    GenoaLoadDeliveryObligations           = 37;
    GenoaSetDeliveryAddress                = 38;
    GenoaSettleDelivery                    = 39;
