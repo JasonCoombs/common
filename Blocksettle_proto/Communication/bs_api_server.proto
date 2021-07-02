@@ -34,17 +34,18 @@ enum ErrorCode {
 
 message Order
 {
-   string id = 1;
-   bs.types.OrderStatus status = 2;
-   string status_text = 3;
-   double timestamp = 4;
-   string product_type = 5;
-   bs.types.Side side = 6;
-   string quantity = 8;
-   string price = 9;
-   string cut_off_price = 10;
-   string trade_im = 11;
-   bool   is_rollover = 12;
+   // order_id is set from FS position ID
+   string               id             = 1;
+   bs.types.OrderStatus status         = 2;
+   string               status_text    = 3;
+   double               timestamp      = 4;
+   string               product_type   = 5;
+   bs.types.Side        side           = 6;
+   string               quantity       = 7;
+   string               price          = 8;
+   string               cut_off_price  = 9;
+   string               trade_im       = 10;
+   bool                 is_rollover    = 11;
 }
 
 message ApiKey
@@ -96,11 +97,11 @@ message Request
 
     message MarketOrder
     {
-        double amount = 1;
-        bs.types.Side side = 2;
-        string product_type = 3;
-        double user_expected_price = 4;
-        bool max_amount = 5;
+        string          amount               = 1;
+        bs.types.Side   side                 = 2;
+        string          product_type         = 3;
+        string          user_expected_price  = 4;
+        bool            max_amount           = 5;
     }
 
     message LoadOrders
@@ -334,10 +335,11 @@ message Response
 
     message MarketOrder
     {
-        bool success = 1;
-        string order_id = 2;
-        string error_msg = 3;
-        double price = 4;
+        bool   success     = 1;
+        // id is FS position ID
+        string id          = 2;
+        string error_msg   = 3;
+        string price       = 4;
     }
 
     message LoadOrders

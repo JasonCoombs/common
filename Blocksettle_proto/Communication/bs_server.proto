@@ -1225,7 +1225,6 @@ enum GenoaServerType
    GenoaServerXbtTrdStatus       = 4;
    GenoaServerNewCcSeed          = 5;
    GenoaServerNewCCDeposit       = 6;
-   GenoaTradeUpdateEvent         = 7;
 }
 
 message GenoaServerClientRequest
@@ -1285,7 +1284,6 @@ message GenoaServerMessage
       GenoaServerXbtTradingStatus      xbt_trd_status       = 5;
       GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
-      GenoaServerTradeUpdateEvent      trade_update         = 8;
 
       bool                             response             = 50;
    }
@@ -2117,7 +2115,7 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      uint64                  xbt_amount        = 1;
+      bs.types.XBTAmountValue xbt_amount        = 1;
       string                  requesting_entity = 2;
       bool                    get_ask_price     = 3;
       bs.types.PriceBookType  price_book        = 4;
@@ -2125,17 +2123,16 @@ message PriceStreamManaging
 
    message GetBestOfferResponse
    {
-
       message PriceOffer
       {
-         string   owner_entity_name = 1;
-         double   price             = 2;
-         uint64   timestamp         = 3;
+         string            owner_entity_name = 1;
+         bs.types.XBTPrice price             = 2;
+         uint64            timestamp         = 3;
       }
 
-      int64       xbt_amount  = 1;
-      PriceOffer  best_offer  = 2;
-      bool        matched     = 3;
+      bs.types.XBTAmountValue xbt_amount  = 1;
+      PriceOffer              best_offer  = 2;
+      bool                    matched     = 3;
    }
 
    message ClientData
@@ -2297,6 +2294,7 @@ message CashResMessage
       // positions history for futures should come from FS
       bs.types.XBTPrice       cut_off_price           = 11;
       bool                    reservation_confirmed   = 12;
+      int64                   position_id             = 13;
    }
 
    message EstimateImRequest
@@ -2334,9 +2332,10 @@ message CashResMessage
 
    message OrderResponse
    {
-      string cl_ord_id = 1;
-      bool   success = 2;
-      string error_text = 3;
+      string   cl_ord_id   = 1;
+      bool     success     = 2;
+      string   error_text  = 3;
+      int64    position_id = 4;
    }
 
    message OrdersRequest
