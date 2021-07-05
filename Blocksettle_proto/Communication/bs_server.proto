@@ -2216,6 +2216,12 @@ message ApiServerMsg
       bs.types.XBTAmountValue min_xbt_amount = 4;
    }
 
+   message UpdateBalances
+   {
+      string entity_name = 1;
+      repeated bs.types.Balance balances = 2;
+   }
+
    oneof data
    {
       UpdateOrder             update_order            = 1;
@@ -2228,6 +2234,7 @@ message ApiServerMsg
       UpdateWithdrawPrices    update_withdraw_prices  = 8;
       Empty                   subscribe_price_offers  = 9;
       UpdateBook              price_offer             = 10;
+      UpdateBalances          update_balances         = 11;
    }
 }
 
