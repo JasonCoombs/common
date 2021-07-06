@@ -2274,10 +2274,9 @@ message TradingSessionOpen
    string            product_name         = 1;
    int64             cut_off_at           = 2;
    double            seconds_to_cut_off   = 3;
-   bs.types.XBTPrice last_cut_off_price   = 4;
-   float             fee_taker            = 5;
-   float             fee_maker            = 6;
-   bs.types.XBTPrice open_price           = 7;
+   bs.types.XBTPrice fee_taker            = 4;
+   bs.types.XBTPrice fee_maker            = 5;
+   bs.types.XBTPrice open_price           = 6;
 }
 
 
@@ -2373,22 +2372,39 @@ message CashResMessage
       bs.types.XBTPrice im = 6;
    }
 
+   message LoadBalancesResponse
+   {
+      string               entity_name = 1;
+      repeated BalanceData balances    = 2;
+   }
+
    oneof data {
-      EstimateImRequest          estimate_im_request = 3;
-      EstimateImResponse         estimate_im_response = 4;
-      MaxAmountRequest           max_amount_request = 5;
-      MaxAmountResponse          max_amount_response = 6;
-      UsersImInfo                users_im_info = 7;
-      string                     get_session_info = 8;	// product type for now
-      TradingSessionOpen         session_info = 9;
-      Order                      append_order = 10;
-      OrderResponse              order_response = 11;
-      Empty                      session_event = 12;
-      OrdersRequest              orders_request = 13;
-      OrdersResponse             orders_response = 14;
-      FeeRequest                 fee_request = 15;
-      FeeResponse                fee_response = 16;
-      string                     process_next_order = 17;
+      EstimateImRequest          estimate_im_request     = 1;
+      EstimateImResponse         estimate_im_response    = 2;
+
+      MaxAmountRequest           max_amount_request      = 3;
+      MaxAmountResponse          max_amount_response     = 4;
+      // users_im_info - deprecated
+      UsersImInfo                users_im_info           = 5;
+
+      string                     get_session_info        = 6;	// product type for now
+      TradingSessionOpen         session_info            = 7;
+
+      Order                      append_order            = 8;
+      OrderResponse              order_response          = 9;
+
+      Empty                      session_event           = 10;
+
+      OrdersRequest              orders_request          = 11;
+      OrdersResponse             orders_response         = 12;
+
+      FeeRequest                 fee_request             = 13;
+      FeeResponse                fee_response            = 14;
+
+      string                     process_next_order      = 15;
+
+      string                     load_balances           = 16; // entity name
+      LoadBalancesResponse       load_balances_response  = 17;
    }
 }
 
