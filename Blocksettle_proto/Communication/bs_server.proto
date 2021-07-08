@@ -2222,6 +2222,12 @@ message ApiServerMsg
       repeated bs.types.Balance balances = 2;
    }
 
+   message OpenInterestUpdate
+   {
+      int32                   product_type   = 1; // bs::network::Asset::Type
+      bs.types.XBTAmountValue open_interest  = 2;
+   }
+
    oneof data
    {
       UpdateOrder             update_order            = 1;
@@ -2236,6 +2242,7 @@ message ApiServerMsg
       Empty                   subscribe_price_offers  = 10;
       UpdateBook              price_offer             = 11;
       UpdateBalances          update_balances         = 12;
+      OpenInterestUpdate      update_open_interest    = 13;
    }
 }
 
