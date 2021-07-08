@@ -2226,15 +2226,16 @@ message ApiServerMsg
    {
       UpdateOrder             update_order            = 1;
       UpdateBook              update_book             = 2;
-      TradingSessionClosed    trading_closed          = 3;
-      Empty                   send_prices             = 4;
-      string                  user_connected          = 5;
-      string                  user_disconnected       = 6;
-      UserNotify              user_notify             = 7;
-      UpdateWithdrawPrices    update_withdraw_prices  = 8;
-      Empty                   subscribe_price_offers  = 9;
-      UpdateBook              price_offer             = 10;
-      UpdateBalances          update_balances         = 11;
+      TradingSessionOpen      trading_opened          = 3;
+      TradingSessionClosed    trading_closed          = 4;
+      Empty                   send_prices             = 5;
+      string                  user_connected          = 6;
+      string                  user_disconnected       = 7;
+      UserNotify              user_notify             = 8;
+      UpdateWithdrawPrices    update_withdraw_prices  = 9;
+      Empty                   subscribe_price_offers  = 10;
+      UpdateBook              price_offer             = 11;
+      UpdateBalances          update_balances         = 12;
    }
 }
 
@@ -2268,7 +2269,6 @@ message UsersImInfo
    repeated OpenInterest open_interest = 4;
 }
 
-
 message TradingSessionOpen
 {
    string            product_name         = 1;
@@ -2278,7 +2278,6 @@ message TradingSessionOpen
    bs.types.XBTPrice fee_maker            = 5;
    bs.types.XBTPrice open_price           = 6;
 }
-
 
 message CashResMessage
 {
@@ -2388,7 +2387,7 @@ message CashResMessage
       UsersImInfo                users_im_info           = 5;
 
       string                     get_session_info        = 6;	// product type for now
-      TradingSessionOpen         session_info            = 7;
+      TradingSessionOpen         session_info_response   = 7;
 
       Order                      append_order            = 8;
       OrderResponse              order_response          = 9;
