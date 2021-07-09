@@ -404,9 +404,9 @@ message Response
 
     message TradingStats
     {
-        string product_type = 2;
-        double daily_volume = 4;
-        double open_interest = 5;
+        string product_type   = 1;
+        string daily_volume   = 2;
+        string open_interest  = 3;
     }
 
     message CreateIbanAgreementUrl
