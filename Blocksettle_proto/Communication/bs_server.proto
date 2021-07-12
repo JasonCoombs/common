@@ -1224,6 +1224,7 @@ enum GenoaServerType
    GenoaServerXbtTrdStatus       = 4;
    GenoaServerNewCcSeed          = 5;
    GenoaServerNewCCDeposit       = 6;
+   GenoaServerCashResBalance     = 7;
 }
 
 message GenoaServerClientRequest
@@ -1236,6 +1237,18 @@ message GenoaServerBalanceUpdate
    string entity_name = 1;
    string currency = 2;
    bs.types.FXAmountValue balance = 3;
+}
+
+message GenoaServerCashResBalanceUpdate
+{
+   message BalanceUpdate
+   {
+      int64                   entity_id   = 1;
+      int64                   currency_id = 2;
+      bs.types.FXAmountValue  balance     = 3;
+   }
+
+   repeated BalanceUpdate update = 1;
 }
 
 message GenoaServerTradingStatusUpdate
@@ -1283,6 +1296,7 @@ message GenoaServerMessage
       GenoaServerXbtTradingStatus      xbt_trd_status       = 5;
       GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
+      GenoaServerCashResBalanceUpdate  cash_res_balance_upd = 8;
 
       bool                             response             = 50;
    }
