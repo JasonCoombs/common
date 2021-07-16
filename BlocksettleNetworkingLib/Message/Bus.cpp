@@ -221,7 +221,7 @@ bool Queue_Locking::pushFill(Envelope &env)
       , env.sender->name(), env.sender->value()
       , env.receiver ? env.receiver->name() : "null"
       , env.receiver ? env.receiver->value() : 0, env.responseId()
-      , (bs::message::SeqId)env.flags(), env.message.size()
+      , (bs::message::SeqId)env.envelopeType(), env.message.size()
       , msgBody.empty() ? msgBody : "'" + msgBody + "'");
 #endif   //MSG_DEBUGGING
 
@@ -314,7 +314,7 @@ void Queue_Locking::process()
 #ifdef MSG_DEBUGGING
                   logger_->debug("[Queue::process] {}: #{}/{} r#{} f:{} by {}"
                      , name_, env.id(), env.foreignId(), env.responseId()
-                     , (bs::message::SeqId)env.flags(), adapter->name());
+                     , (bs::message::SeqId)env.envelopeType(), adapter->name());
 #endif
                   process(adapter);
                }
