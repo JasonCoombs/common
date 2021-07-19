@@ -22,6 +22,7 @@ message Message
       bool                    is_taker       = 2;
       bs.types.XBTAmountValue xbt_amount     = 3;
       bs.types.XBTPrice       open_price     = 4;
+      bs.types.XBTPrice       close_price    = 12; // Only set in LoadTradeHistoryResponse
       bool                    is_rollover    = 5;
       uint64                  timestamp      = 6;
       int64                   entity_id      = 7;
