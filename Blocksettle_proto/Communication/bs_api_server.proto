@@ -601,7 +601,6 @@ message Response
     {
         bool loaded = 1;
         repeated Order orders = 2;
-        uint32 count = 3;
     }
 
     message TransactionsForEntity

@@ -178,7 +178,6 @@ message Message
    {
       bool                  loaded         = 1;
       repeated Position     positions      = 2;
-      uint32                count          = 3;
       int64                 entity_id      = 4;
    }
 
