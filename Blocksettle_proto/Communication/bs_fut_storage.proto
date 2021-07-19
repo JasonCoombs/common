@@ -78,6 +78,11 @@ message Message
       int64             session_id        = 1;
    }
 
+   message MarkSessionDamaged
+   {
+      int32             product_type      = 1;  // bs::network::Asset::Type
+   }
+
    message SessionPositions
    {
       int64             session_id  = 1;
@@ -186,32 +191,33 @@ message Message
       MarkSessionCompleted             mark_session_completed_request      = 11;
       int32                            mark_session_completed_response     = 12; // FuturesTradesStorage::StatusCode
 
-      SessionRequest                   session_damaged                     = 13;
-      SessionRequest                   session_recovered                   = 14;
-      int32                            session_result                      = 15; // FuturesTradesStorage::StatusCode
+      MarkSessionDamaged               mark_session_damaged_request        = 13;
+      int32                            mark_session_damaged_response       = 14; // FuturesTradesStorage::StatusCode
+      SessionRequest                   session_recovered                   = 15;
+      int32                            session_result                      = 16; // FuturesTradesStorage::StatusCode
 
-      RegisterTradePositions           open_positions_for_trade            = 16;
-      RegisterTradePositionsResponse   open_positions_for_trade_response   = 17;
+      RegisterTradePositions           open_positions_for_trade            = 17;
+      RegisterTradePositionsResponse   open_positions_for_trade_response   = 18;
 
-      ConfirmTradePositions            confirm_trade_positions             = 18;
-      int32                            confirm_trade_positions_response    = 19; // FuturesTradesStorage::StatusCode
+      ConfirmTradePositions            confirm_trade_positions             = 19;
+      int32                            confirm_trade_positions_response    = 20; // FuturesTradesStorage::StatusCode
 
-      OpenRolloverPositionsRequest     open_rollover_positions_request     = 20;
-      OpenRolloverPositionsResponse    open_rollover_positions_response    = 21;
+      OpenRolloverPositionsRequest     open_rollover_positions_request     = 21;
+      OpenRolloverPositionsResponse    open_rollover_positions_response    = 22;
 
-      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 22;
-      int32                            confirm_rollover_positions_result   = 23;  // FuturesTradesStorage::StatusCode
+      ConfirmRolloverPositionsRequest  confirm_rollover_positions_request  = 23;
+      int32                            confirm_rollover_positions_result   = 24;  // FuturesTradesStorage::StatusCode
 
-      AddNovationAccountRequest        add_novation_account_request        = 24;
-      NovationAccountResponse          add_novation_account_response       = 25;  // FuturesTradesStorage::StatusCode
+      AddNovationAccountRequest        add_novation_account_request        = 25;
+      NovationAccountResponse          add_novation_account_response       = 26;  // FuturesTradesStorage::StatusCode
 
-      int64                            mark_novation_account_disposed_request    = 26; // account id
-      int32                            mark_novation_account_disposed_response   = 27; // FuturesTradesStorage::StatusCode
+      int64                            mark_novation_account_disposed_request    = 27; // account id
+      int32                            mark_novation_account_disposed_response   = 28; // FuturesTradesStorage::StatusCode
 
-      LoadNovationAccountRequest       load_novation_account_request             = 28;
-      NovationAccountResponse          load_novation_account_response            = 29;
+      LoadNovationAccountRequest       load_novation_account_request             = 29;
+      NovationAccountResponse          load_novation_account_response            = 30;
 
-      LoadReservationIdsRequest        load_reservation_id_request               = 30;
-      LoadReservationIdsResponse       load_reservation_id_response              = 31;
+      LoadReservationIdsRequest        load_reservation_id_request               = 31;
+      LoadReservationIdsResponse       load_reservation_id_response              = 32;
    }
 }
