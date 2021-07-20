@@ -1,0 +1,47 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2020 - 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package Blocksettle.Communication.GenoaAdmin;
+
+import "bs_fut_storage.proto";
+
+message Request
+{
+    message Trades
+    {
+        uint32 limit = 1;
+        uint32 offset = 2;
+        int32 timestamp_start_seconds = 3;
+        int32 timestamp_end_seconds = 4;
+        uint32 entity = 5;
+        int32 session_id = 6;
+    }
+
+    oneof data
+    {
+        Trades trades = 1;
+    }
+}
+
+message Response
+{
+    message Trades
+    {
+        repeated Blocksettle.Server.FutStorage.Message.Position positions = 1;
+    }
+
+
+    oneof data
+    {
+        Trades trades = 1;
+    }
+}
