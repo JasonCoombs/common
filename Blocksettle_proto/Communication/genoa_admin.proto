@@ -1,7 +1,7 @@
 /*
 
 ***********************************************************************************
-* Copyright (C) 2020 - 2021, BlockSettle AB
+* Copyright (C) 2021 - 2021, BlockSettle AB
 * Distributed under the GNU Affero General Public License (AGPL v3)
 * See LICENSE or http://www.gnu.org/licenses/agpl.html
 *
@@ -20,10 +20,10 @@ message Request
     {
         uint32 limit = 1;
         uint32 offset = 2;
-        int32 timestamp_start_seconds = 3;
-        int32 timestamp_end_seconds = 4;
-        uint32 entity = 5;
-        int32 session_id = 6;
+        uint64 timestamp_start = 3;
+        uint64 timestamp_end = 4;
+        int64 entity_id = 5;
+        int64 session_id = 6;
     }
 
     oneof data
@@ -38,7 +38,6 @@ message Response
     {
         repeated Blocksettle.Server.FutStorage.Message.Position positions = 1;
     }
-
 
     oneof data
     {
