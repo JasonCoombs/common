@@ -86,6 +86,10 @@ namespace bs {
 
       struct Envelope
       {
+         friend class QueueInterface;
+         friend class Router;
+         friend class RelayAdapter;
+
          Envelope() = default;
          ~Envelope() noexcept = default;
 
@@ -119,7 +123,13 @@ namespace bs {
             return *this;
          }
 
-         SeqId id() const { return id_; }
+         void setIdIfUnset(SeqId id)
+         {
+            if (id_ == 0) {
+               setId(id);
+            }
+         }
+
          void setId(SeqId id)
          {
             id_ = id;
@@ -170,6 +180,7 @@ namespace bs {
             : sender(s), receiver(r), executeAt(execAt), message(msg)
             , responseId_(respId)
          {}
+         SeqId id() const { return id_; } // no need to know the internal id for all regular users
 
          SeqId id_{ 0 };         // always unique and growing (no 2 envelopes can have the same id)
          SeqId foreignId_{ 0 };  // used at gatewaying from external bus
