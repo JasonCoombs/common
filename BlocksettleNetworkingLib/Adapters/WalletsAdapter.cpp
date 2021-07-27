@@ -77,7 +77,7 @@ bool WalletsAdapter::processBlockchain(const Envelope &env)
    }
    ArmoryMessage msg;
    if (!msg.ParseFromString(env.message)) {
-      logger_->error("[{}] failed to parse msg #{}", __func__, env.id());
+      logger_->error("[{}] failed to parse msg #{}", __func__, env.foreignId());
       return true;
    }
    switch (msg.data_case()) {
@@ -915,7 +915,7 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
 {
    WalletsMessage msg;
    if (!msg.ParseFromString(env.message)) {
-      logger_->error("[{}] failed to parse msg #{}", __func__, env.id());
+      logger_->error("[{}] failed to parse msg #{}", __func__, env.foreignId());
       return true;
    }
    switch (msg.data_case()) {
@@ -1007,7 +1007,7 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
          msgLeaf->set_ext_only(leaf->extOnly());
       }
    }
-   return pushResponse(ownUser_, nullptr, msg.SerializeAsString(), env.id());  // broadcast
+   return pushResponse(ownUser_, nullptr, msg.SerializeAsString(), env.foreignId());  // broadcast
 }
 
 bool WalletsAdapter::processWalletGet(const Envelope &env
