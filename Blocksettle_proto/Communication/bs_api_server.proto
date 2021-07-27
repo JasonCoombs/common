@@ -390,7 +390,7 @@ message Response
         string error_msg         = 2;
         string product_type      = 3;
         string fee               = 4;
-        string dealer_comission  = 5;
+        string dealer_commission = 5;
         string fee_ccy           = 6;
         string im                = 7;
     }

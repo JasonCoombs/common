@@ -2390,7 +2390,7 @@ message CashResMessage
       bool              success           = 2;
       string            error_msg         = 3;
       bs.types.XBTPrice fee               = 4;
-      bs.types.XBTPrice dealer_comission  = 5;
+      bs.types.XBTPrice dealer_commission = 5;
       string            fee_ccy           = 6;
       bs.types.XBTPrice im                = 7;
    }
