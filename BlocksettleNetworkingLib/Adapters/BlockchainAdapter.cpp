@@ -58,7 +58,7 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
    if (env.receiver->value() == user_->value()) {
       ArmoryMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse own request #{}", __func__, env.id());
+         logger_->error("[{}] failed to parse own request #{}", __func__, env.foreignId());
          return true;
       }
       switch (msg.data_case()) {
@@ -116,7 +116,7 @@ bool BlockchainAdapter::process(const bs::message::Envelope &env)
          return processSubscribeAddressTX(env, msg.subscribe_tx_for_address());
       default:
          logger_->warn("[{}] unknown message to blockchain #{}: {}", __func__
-            , env.id(), msg.data_case());
+            , env.foreignId(), msg.data_case());
          break;
       }
    }

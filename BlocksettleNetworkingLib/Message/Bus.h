@@ -87,6 +87,8 @@ namespace bs {
 
       protected:
          virtual bool accept(const bs::message::Envelope&);
+         auto defer(const Envelope& env) { return deferredIds_.insert(env.id()); }
+         SeqId idOf(const Envelope& env) const { return env.id(); }
 
       protected:
          std::shared_ptr<RouterInterface> router_;

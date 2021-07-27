@@ -53,7 +53,7 @@ public:
       auto env = Envelope::makeRequest(parent_->user_, parent_->userBlockchain_
          , msg.SerializeAsString());
       parent_->pushFill(env);
-      return std::to_string(env.id());
+      return std::to_string(env.foreignId());
    }
 
    void getOutpointsForAddresses(const std::vector<bs::Address>& addrs
@@ -70,7 +70,7 @@ public:
       auto env = Envelope::makeRequest(parent_->user_, parent_->userBlockchain_
          , msg.SerializeAsString());
       parent_->pushFill(env);
-      parent_->outpointCallbacks_[env.id()] = cb;
+      parent_->outpointCallbacks_[env.foreignId()] = cb;
    }
    
    void getSpendableTxOuts(const UTXOsCb& cb) override
@@ -81,7 +81,7 @@ public:
       auto env = Envelope::makeRequest(parent_->user_, parent_->userBlockchain_
          , msg.SerializeAsString());
       parent_->pushFill(env);
-      parent_->utxoCallbacks_[env.id()] = cb;
+      parent_->utxoCallbacks_[env.foreignId()] = cb;
    }
 
    void getUTXOsForAddress(const bs::Address& addr, const UTXOsCb& cb
@@ -94,7 +94,7 @@ public:
       auto env = Envelope::makeRequest(parent_->user_, parent_->userBlockchain_
          , msg.SerializeAsString());
       parent_->pushFill(env);
-      parent_->utxoCallbacks_[env.id()] = cb;
+      parent_->utxoCallbacks_[env.foreignId()] = cb;
    }
 
 private:
@@ -127,7 +127,7 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
    else if (env.sender->value() == userBlockchain_->value()) {
       ArmoryMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse armory msg #{}", __func__, env.id());
+         logger_->error("[{}] failed to parse armory msg #{}", __func__, env.foreignId());
          return true;
       }
       switch (msg.data_case()) {
@@ -147,7 +147,7 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
    else if (env.sender->value() == userWallet_->value()) {
       WalletsMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse wallets msg #{}", __func__, env.id());
+         logger_->error("[{}] failed to parse wallets msg #{}", __func__, env.foreignId());
          return true;
       }
       switch (msg.data_case()) {
@@ -159,7 +159,7 @@ bool OnChainTrackerAdapter::processEnvelope(const bs::message::Envelope &env)
    else if (env.isRequest() && (env.receiver->value() == user_->value())) {
       OnChainTrackMessage msg;
       if (!msg.ParseFromString(env.message)) {
-         logger_->error("[{}] failed to parse own msg #{}", __func__, env.id());
+         logger_->error("[{}] failed to parse own msg #{}", __func__, env.foreignId());
          return true;
       }
       switch (msg.data_case()) {
