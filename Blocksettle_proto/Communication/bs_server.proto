@@ -323,7 +323,6 @@ enum GenoaType
    GenoaReportRejectedDeposit             = 51;
    GenoaTradeHistory                      = 52;
    GenoaTransactionsForEntity             = 53;
-   GenoaTradeFeeForEntity                 = 54;
    GenoaGetStatementDates                 = 55;
    GenoaGetStatements                     = 56;
    GenoaPoolMargins                       = 57;
@@ -938,19 +937,6 @@ message GenoaTransactionsForEntityResponse
    Blocksettle.Communication.ApiServer.Response.TransactionsForEntity result = 2;
 }
 
-message GenoaTradeFeeForEntityRequest
-{
-   string entity_name = 1;
-   uint32 limit = 2;
-   uint32 offset = 3;
-}
-
-message GenoaTradeFeeForEntityResponse
-{
-   string entity_name = 1;
-   Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
-}
-
 message GenoaGetStatementDatesRequest
 {
    string entity_name = 1;
@@ -1191,8 +1177,6 @@ message GenoaMessage
       GenoaTradeHistoryResponse                 trade_history_response           = 74;
       GenoaTransactionsForEntityRequest         transactions_for_entity          = 75;
       GenoaTransactionsForEntityResponse        transactions_for_entity_response = 76;
-      GenoaTradeFeeForEntityRequest             trade_fee_for_entity             = 77;
-      GenoaTradeFeeForEntityResponse            trade_fee_for_entity_response    = 78;
       GenoaGetStatementDatesRequest             get_statement_dates              = 79;
       GenoaGetStatementDatesResponse            get_statement_dates_response     = 80;
       GenoaGetStatementsRequest                 get_statements                   = 81;
@@ -2401,6 +2385,20 @@ message CashResMessage
       repeated BalanceData balances    = 2;
    }
 
+   message TradeFeeForEntityRequest
+   {
+      string entity_name = 1;
+      uint32 limit = 2;
+      uint32 offset = 3;
+   }
+
+   message TradeFeeForEntityResponse
+   {
+      string entity_name = 1;
+      Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
+   }
+
+
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
       EstimateImResponse         estimate_im_response    = 2;
@@ -2428,6 +2426,9 @@ message CashResMessage
 
       string                     load_balances           = 16; // entity name
       LoadBalancesResponse       load_balances_response  = 17;
+
+      TradeFeeForEntityRequest   trade_fee_request       = 18;
+      TradeFeeForEntityResponse  trade_fee_response      = 19;
    }
 }
 
