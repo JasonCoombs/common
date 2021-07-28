@@ -181,6 +181,7 @@ message Message
       uint64               timestamp_start            = 4;
       uint64               timestamp_end              = 5;
       int64                session_id                 = 6;
+      int64                position_id                = 7;
    }
 
    message LoadTradeHistoryResponse
