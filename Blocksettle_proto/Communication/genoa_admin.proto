@@ -24,6 +24,7 @@ message Request
         uint64 timestamp_end = 4;
         int64 entity_id = 5;
         int64 session_id = 6;
+        int64 position_id = 7;
     }
 
     oneof data
