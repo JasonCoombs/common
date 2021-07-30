@@ -84,12 +84,13 @@ namespace bs {
          MinValue = UINT64_MAX - 15          // all values above should be treated as envelope type values only
       };
 
-      struct Envelope
+      class Envelope
       {
          friend class QueueInterface;
          friend class Router;
          friend class RelayAdapter;
 
+      public:
          Envelope() = default;
          ~Envelope() noexcept = default;
 
@@ -137,9 +138,7 @@ namespace bs {
          }
 
          void resetEnvelopeType() { responseId_ = 0; }
-
          void setEnvelopeType(const EnvelopeType f) { responseId_ = (SeqId)f; }
-
 
          EnvelopeType envelopeType() const
          {
