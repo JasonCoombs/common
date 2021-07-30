@@ -625,18 +625,17 @@ message Response
     {
         message Item
         {
-            double fee = 1;
+            string fee = 1;
             string ccy = 2;
-            double price = 3;
+            string price = 3;
             string trade_ref = 4;
-            double position_size = 5;
+            string position_size = 5;
             double timestamp = 6;
             string side = 7;
         }
 
         bool loaded = 1;
         repeated Item items = 2;
-        uint32 count = 3;
     }
 
     message GetStatementDates
