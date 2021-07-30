@@ -199,6 +199,33 @@ message Message
       uint32 offset = 3;
    }
 
+   message TradePLRequest
+   {
+      string entity_name = 1;
+      string symbol = 2;
+      uint64 unix_time_from = 3;
+      uint64 unix_time_to = 4;
+   }
+
+   message TradePLResponse
+   {
+      string entity_name = 1;
+      string symbol = 2;
+      string PL = 3;
+   }
+
+   message TradesPL
+   {
+      message PL {
+         string trade_id = 1;
+         string entity_name = 2;
+         bs.types.FXAmountValue PL = 3;
+         int32  product_type = 4;
+         uint64 timestamp = 6;
+         int64  session_id = 7;
+      }
+      repeated PL trades = 1;
+   }
 
    oneof data {
       int32                            get_session                         = 1;  // bs::network::Asset::Type
@@ -253,5 +280,9 @@ message Message
 
       TradeFeeForEntityRequest         trade_fee_request                   = 35;
       Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity trade_fee_response = 36;
+
+      TradePLRequest                   trade_pl_request                    = 37;
+      TradePLResponse                  trade_pl_response                   = 38;
+      TradesPL                         trades_pl_update                     = 39;
    }
 }
