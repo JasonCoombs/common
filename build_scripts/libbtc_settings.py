@@ -69,13 +69,13 @@ class LibBTC(Configurator):
             result = subprocess.call(cmdStr)
         else:
             result = subprocess.call(command)
-        
+
         return result == 0
 
     def make_windows(self):
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:' + self._package_name,
+                   '/t:Build',
                    '/p:Configuration=' + self.get_win_build_configuration(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 

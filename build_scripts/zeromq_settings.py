@@ -109,7 +109,7 @@ class ZeroMQSettings(Configurator):
     def make_windows(self):
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:libzmq',
+                   '/t:Build',
                    '/p:Configuration=' + self.get_win_configuration(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 

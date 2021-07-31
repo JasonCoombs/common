@@ -47,6 +47,15 @@ class LibUVSettings(Configurator):
             '-DBUILD_TESTING=OFF',
         ]
 
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('-DCMAKE_BUILD_TYPE=Debug')
+            if self._project_settings._is_windows:
+                command.append('-DCMAKE_CONFIGURATION_TYPES=Debug')
+        else:
+            command.append('-DCMAKE_BUILD_TYPE=Release')
+            if self._project_settings._is_windows:
+                command.append('-DCMAKE_CONFIGURATION_TYPES=Release')
+
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
             if self._project_settings.get_build_mode() == 'debug':
@@ -87,7 +96,18 @@ class LibUVSettings(Configurator):
         return result == 0
 
     def make(self):
-        command = ['cmake', '--build', '.']
+        command = ['cmake', '--build']
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('-DCMAKE_BUILD_TYPE=Debug')
+            if self._project_settings._is_windows:
+                command.append('-DCMAKE_CONFIGURATION_TYPES=Debug')
+        else:
+            command.append('-DCMAKE_BUILD_TYPE=Release')
+            if self._project_settings._is_windows:
+                command.append('-DCMAKE_CONFIGURATION_TYPES=Release')
+
+        command.append('.')
+
         result = subprocess.call(command)
         return result == 0
 

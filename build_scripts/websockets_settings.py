@@ -131,7 +131,7 @@ class WebsocketsSettings(Configurator):
 
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:' + project_name,
+                   '/t:Build',
                    '/p:Configuration=' + self.get_win_build_configuration(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 

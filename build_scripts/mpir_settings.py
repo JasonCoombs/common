@@ -19,11 +19,11 @@ from component_configurator import Configurator
 class MPIRSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '3.0.0'
-        self._package_name = 'mpir-' + self._version
-        self._script_revision = '2'
+        self._script_revision = '3'
 
-        self._package_url = 'http://mpir.org/' + self._package_name + '.zip'
+        self._version = '800bbce9f1dc17f4cffa046dbc5c230291bc974b'
+        self._package_name = 'mpir-' + self._version
+        self._package_url = 'https://github.com/BrianGladman/mpir/archive/' + self._version + '.zip'
 
     def get_package_name(self):
         return self._package_name
@@ -45,15 +45,13 @@ class MPIRSettings(Configurator):
         return True
 
     def get_solution_file(self):
-        local_vc_version = self._project_settings.get_vs_version_number()
-        if local_vc_version == "16":
-            local_vc_version = "15"	# MPIR doesn't have VS2019 build dir
+        local_vc_version = 'vs'+self._project_settings.get_vs_year()[2:]
         if self._project_settings.get_link_mode() == 'shared':
-            return os.path.join(self.get_build_dir(), 'build.vc'
-               + local_vc_version, 'dll_mpir_gc\\dll_mpir_gc.vcxproj')
+            return os.path.join(self.get_build_dir(), 'msvc'
+               , local_vc_version, 'dll_mpir_gc\\dll_mpir_gc.vcxproj')
         else:
-            return os.path.join(self.get_build_dir(), 'build.vc'
-               + local_vc_version, 'lib_mpir_gc\\lib_mpir_gc.vcxproj')
+            return os.path.join(self.get_build_dir(), 'msvc'
+               , local_vc_version, 'lib_mpir_gc\\lib_mpir_gc.vcxproj')
 
     def config_x(self):
         os.chmod(os.path.join(self.get_unpacked_sources_dir(), 'configure'),

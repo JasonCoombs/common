@@ -95,7 +95,7 @@ class ProtobufSettings(Configurator):
 
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:protoc',
+                   '/t:Build',
                    '/p:Configuration=' + self.get_win_build_mode(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 

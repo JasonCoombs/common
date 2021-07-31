@@ -73,7 +73,7 @@ class LibChaCha20Poly1305Settings(Configurator):
     def make_windows(self):
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:lib' + self._package_name,
+                   '/t:Build',
                    '/p:Configuration=' + self.get_win_build_configuration(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 
