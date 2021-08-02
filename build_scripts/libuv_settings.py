@@ -96,22 +96,22 @@ class LibUVSettings(Configurator):
         return result == 0
 
     def make(self):
-        command = ['cmake', '--build']
-        if self._project_settings.get_build_mode() == 'debug':
-            command.append('-DCMAKE_BUILD_TYPE=Debug')
-            if self._project_settings._is_windows:
-                command.append('-DCMAKE_CONFIGURATION_TYPES=Debug')
-        else:
-            command.append('-DCMAKE_BUILD_TYPE=Release')
-            if self._project_settings._is_windows:
-                command.append('-DCMAKE_CONFIGURATION_TYPES=Release')
+        command = ['cmake', '--build', '.', '--config']
 
-        command.append('.')
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('Debug')
+        else:
+            command.append('Release')
 
         result = subprocess.call(command)
         return result == 0
 
     def install(self):
-        command = ['cmake', '--build', '.', '--target', 'install']
+        command = ['cmake', '--build', '.', '--target', 'install', '--config']
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('Debug')
+        else:
+            command.append('Release')
+
         result = subprocess.call(command)
         return result == 0

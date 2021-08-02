@@ -19,7 +19,7 @@ class AMQPCPPSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self._version = '4.3.11'
-        self._script_revision = '1'
+        self._script_revision = '2'
         self._package_name = 'amqpcpp-' + self._version
         self._package_url = 'https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/v' + self._version + '.tar.gz'
 
@@ -83,11 +83,22 @@ class AMQPCPPSettings(Configurator):
         return result == 0
 
     def make(self):
-        command = ['cmake', '--build', '.']
+        command = ['cmake', '--build', '.', '--config']
+
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('Debug')
+        else:
+            command.append('Release')
+
         result = subprocess.call(command)
         return result == 0
 
     def install(self):
-        command = ['cmake', '--build', '.', '--target', 'install']
+        command = ['cmake', '--build', '.', '--target', 'install', '--config']
+        if self._project_settings.get_build_mode() == 'debug':
+            command.append('Debug')
+        else:
+            command.append('Release')
+
         result = subprocess.call(command)
         return result == 0
