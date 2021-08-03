@@ -596,6 +596,7 @@ message Response
         string product_type = 1;
         string profit_loss = 2;
         string reference = 3;
+        bool   loaded = 4;
     }
 
     message TradeHistory

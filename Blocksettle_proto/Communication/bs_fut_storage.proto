@@ -212,17 +212,17 @@ message Message
       string entity_name = 1;
       int32  product_type = 2;
       string PL = 3;
+      bool   loaded = 4;
    }
 
    message TradesPL
    {
       message PL {
-         string trade_id = 1;
+         int64  session_id = 1;
          string entity_name = 2;
          bs.types.FXAmountValue PL = 3;
          int32  product_type = 4;
          uint64 timestamp = 6;
-         int64  session_id = 7;
       }
       repeated PL trades = 1;
    }
