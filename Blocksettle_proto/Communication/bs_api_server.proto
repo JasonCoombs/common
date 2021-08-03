@@ -604,6 +604,8 @@ message Response
     {
         bool loaded = 1;
         repeated Order orders = 2;
+        double start_time = 3;
+        double end_time = 4;
     }
 
     message TransactionsForEntity
