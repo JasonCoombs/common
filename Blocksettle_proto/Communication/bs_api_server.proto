@@ -220,6 +220,8 @@ message Request
     {
         uint32 limit = 1;
         uint32 offset = 2;
+        double start_time = 3;
+        double end_time = 4;
     }
 
     message TransactionsForEntity
