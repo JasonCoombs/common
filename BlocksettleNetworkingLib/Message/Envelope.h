@@ -91,9 +91,6 @@ namespace bs {
          friend class RelayAdapter;
 
       public:
-         Envelope() = default;
-         ~Envelope() noexcept = default;
-
          static Envelope makeRequest(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
             , const std::string& msg, const TimeStamp& execAt = {})
          {
