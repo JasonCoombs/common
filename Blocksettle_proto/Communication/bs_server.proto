@@ -2292,7 +2292,6 @@ message CashResMessage
    {
       string                  entity_name             = 1;
       bs.types.XBTAmountValue qty                     = 2;
-      bs.types.Side           side                    = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
       string                  cl_ord_id               = 6;
