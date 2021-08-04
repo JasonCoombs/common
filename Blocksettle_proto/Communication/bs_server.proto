@@ -18,6 +18,7 @@ import "bs_types.proto";
 import "common.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
+import "genoa_admin.proto";
 
 message Empty
 {
@@ -2529,5 +2530,6 @@ message GenoaAdminMsg
    {
       TradingClosed trading_closed = 1;
       TradingOpened trading_opened = 2;
+      Blocksettle.Communication.GenoaAdmin.Response.DefaultsInfo defaults_info = 3;
    }
 }
