@@ -2496,3 +2496,32 @@ message PriceAggregation
       AggregatedPriceUpdate            aggregated_price           = 3;
    }
 }
+
+message GenoaAdminMsg
+{
+   message TradingOpened
+   {
+      int64 session_id = 1;
+      uint64 timestamp_open = 2;
+      int32 product_type = 3;
+      bs.types.XBTPrice open_price = 4;
+      bs.types.XBTAmountValue open_interest = 5;
+   }
+
+   message TradingClosed
+   {
+      int64 session_id = 1;
+      uint64 timestamp_close = 2;
+      int32 product_type = 3;
+      bs.types.XBTPrice cutoff_price = 4;
+      bs.types.XBTAmountValue open_interest = 5;
+      int64 novation_account_id = 6;
+      repeated int64 participants = 7;
+   }
+
+   oneof data
+   {
+      TradingClosed trading_closed = 1;
+      TradingOpened trading_opened = 2;
+   }
+}
