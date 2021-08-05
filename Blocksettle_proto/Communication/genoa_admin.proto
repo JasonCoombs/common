@@ -40,8 +40,30 @@ message Response
         repeated Blocksettle.Server.FutStorage.Message.Position positions = 1;
     }
 
+    message TradingOpened
+    {
+        int64 session_id = 1;
+        uint64 timestamp_open = 2;
+        string product_name = 3;
+        string open_price = 4;
+        string open_interest = 5;
+    }
+
+    message TradingClosed
+    {
+        int64 session_id = 1;
+        uint64 timestamp_close = 2;
+        string product_name = 3;
+        string cutoff_price = 4;
+        string open_interest = 5;
+        int64 novation_account_id = 6;
+        repeated int64 participants = 7;
+    }
+
     oneof data
     {
         Trades trades = 1;
+        TradingClosed trading_closed = 2;
+        TradingOpened trading_opened = 3;
     }
 }
