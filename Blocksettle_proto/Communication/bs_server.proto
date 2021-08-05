@@ -2107,8 +2107,9 @@ message PriceStreamManaging
       PriceConsumed                 = 2;
       SubmitPrices                  = 3;
       PullPrices                    = 4;
-      DealerConnected               = 10;
-      DealerDisconnected            = 11;
+      DealerConnected               = 5;
+      DealerDisconnected            = 6;
+      NetExposureUpdate             = 7;
    };
 
    message GetBestOfferRequest
@@ -2157,18 +2158,25 @@ message PriceStreamManaging
       bs.types.PullPricesData    pull_price_data   = 2;
    }
 
+   message NetExposureChangedUpdate
+   {
+      string                  entity_name    = 1;
+      int32                   product_type   = 2; // bs::network::asset::type
+      bs.types.XBTAmountValue net_exposure   = 3;
+   }
 
    MessageType   message_type = 1;
 
    oneof data
    {
-      GetBestOfferRequest  get_best_price_offer = 2;
-      GetBestOfferResponse best_price_offer     = 3;
-      ClientData           client_data          = 4;
-      PriceConsumedData    consumed_price       = 5;
-      string               entity_name          = 6;
-      SubmitPricesRequest  submit_prices        = 7;
-      PullPricesRequest    pull_prices          = 8;
+      GetBestOfferRequest        get_best_price_offer = 2;
+      GetBestOfferResponse       best_price_offer     = 3;
+      ClientData                 client_data          = 4;
+      PriceConsumedData          consumed_price       = 5;
+      string                     entity_name          = 6;
+      SubmitPricesRequest        submit_prices        = 7;
+      PullPricesRequest          pull_prices          = 8;
+      NetExposureChangedUpdate   net_exposure_update  = 9;
    }
 }
 
