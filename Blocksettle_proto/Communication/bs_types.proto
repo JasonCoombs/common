@@ -51,6 +51,24 @@ enum PriceRangeId
    Range_25_100    = 5;
 }
 
+enum SubmitPriceProcessingResult
+{
+   SubmittedPricesAccepted          = 0;
+   SubmittedPricesPartiallyAccepted = 1;
+   SubmittedPricesRejected          = 2;
+}
+
+enum SubmitPriceRejectReason
+{
+   //PriceRejected_ReasonUndefined - just a placeholder
+   PriceRejected_ReasonUndefined       = 0;
+   PriceRejected_SystemStarting        = 1;
+   PriceRejected_TradingClosed         = 2;
+   PriceRejected_InvalidRangeValue     = 3;
+   PriceRejected_InvalidPriceString    = 4;
+   PriceRejected_InsufficientBalance   = 5;
+}
+
 message StreamPriceData
 {
    PriceRangeId   range_id = 1;
