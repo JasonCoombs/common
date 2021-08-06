@@ -596,8 +596,9 @@ message Response
     message HistoricalPL
     {
         string product_type = 1;
-        double profit_loss = 2;
+        string profit_loss = 2;
         string reference = 3;
+        bool   loaded = 4;
     }
 
     message TradeHistory
