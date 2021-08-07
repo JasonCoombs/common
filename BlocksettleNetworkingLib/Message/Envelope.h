@@ -80,18 +80,18 @@ namespace bs {
          GlobalBroadcast = UINT64_MAX,
          Publish = UINT64_MAX - 1,           // response to subscription request
          Update = UINT64_MAX - 2,            // message from one adapter to another that does not require subscriptions and is not a request
-         Processed = UINT64_MAX - 3,         // mark message as processed to prevent infinite broadcast loop
+         Processed = UINT64_MAX - 3,         // mark message as processed to prevent infinite broadcast loop across multiple queues
          MinValue = UINT64_MAX - 15          // all values above should be treated as envelope type values only
       };
 
-      struct Envelope
+      class Envelope
       {
          friend class QueueInterface;
          friend class Router;
          friend class RelayAdapter;
 
+      public:
          Envelope() = default;
-         ~Envelope() noexcept = default;
 
          static Envelope makeRequest(const std::shared_ptr<User>& s, const std::shared_ptr<User>& r
             , const std::string& msg, const TimeStamp& execAt = {})
@@ -108,19 +108,6 @@ namespace bs {
          static Envelope makeBroadcast(const std::shared_ptr<User>& s, const std::string& msg, bool global = false)
          {
             return Envelope{ s, nullptr, msg, global ? (SeqId)EnvelopeType::GlobalBroadcast : 0 };
-         }
-
-         Envelope& operator=(Envelope other)
-         {
-            sender = other.sender;
-            receiver = other.receiver;
-            posted = other.posted;
-            executeAt = other.executeAt;
-            message = other.message;
-            id_ = 0;
-            foreignId_ = other.foreignId_;
-            responseId_ = other.responseId_;
-            return *this;
          }
 
          void setIdIfUnset(SeqId id)
@@ -150,9 +137,7 @@ namespace bs {
          }
 
          void resetEnvelopeType() { responseId_ = 0; }
-
          void setEnvelopeType(const EnvelopeType f) { responseId_ = (SeqId)f; }
-
 
          EnvelopeType envelopeType() const
          {
