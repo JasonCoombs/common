@@ -279,8 +279,8 @@ message Request
         MaxTradeAmount              max_trade_amount            = 24;
         TradingStats                trading_stats               = 25;
 
-        bs.types.SubmitPricesData           submit_prices       = 26;
-        bs.types.PullPricesData             pull_prices         = 27;
+        bs.types.SubmitPricesData   submit_prices               = 26;
+        bs.types.PullPricesData     pull_prices                 = 27;
 
         WhitelistedAddressRequest   submit_address              = 28;
         Empty                       load_addresses              = 29;
@@ -673,6 +673,13 @@ message Response
         double timestamp = 4;
     }
 
+    message SubmitPrices
+    {
+        bs.types.SubmitPriceProcessingResult    result              = 1;
+        bs.types.SubmitPriceRejectReason        reject_reason       = 2;
+        bs.types.SubmitPricesData               rejected_price_data = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -725,5 +732,6 @@ message Response
         Ohlc                    ohlc                        = 57;
         Empty                   subscribe_trade_created     = 58;
         TradeCreated            trade_created               = 59;
+        SubmitPrices            submit_prices               = 60;
     }
 }
