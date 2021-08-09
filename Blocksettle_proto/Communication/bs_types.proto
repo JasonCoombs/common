@@ -53,9 +53,10 @@ enum PriceRangeId
 
 enum SubmitPriceProcessingResult
 {
-   SubmittedPricesAccepted          = 0;
-   SubmittedPricesPartiallyAccepted = 1;
-   SubmittedPricesRejected          = 2;
+   SubmitPriceProcessingResult_UNDEFINED  = 0;
+   SubmittedPricesAccepted                = 1;
+   SubmittedPricesPartiallyAccepted       = 2;
+   SubmittedPricesRejected                = 3;
 }
 
 enum SubmitPriceRejectReason
