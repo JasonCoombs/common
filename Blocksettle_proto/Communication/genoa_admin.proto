@@ -12,6 +12,7 @@ syntax = "proto3";
 
 package Blocksettle.Communication.GenoaAdmin;
 
+import "bs_types.proto";
 import "bs_fut_storage.proto";
 
 message Request
@@ -60,10 +61,27 @@ message Response
         repeated int64 participants = 7;
     }
 
+    message DefaultsInfo
+    {
+        message Item
+        {
+            int64 entity_id = 1;
+            bool defaulted = 2;
+            bool liquidated = 3;
+            bs.types.XBTAmountValue net_exposure_before = 4;
+            bs.types.XBTAmountValue net_exposure_after = 5;
+        }
+
+        int64 session_id = 1;
+        int32 product_type = 2;
+        repeated Item items = 3;
+    }
+
     oneof data
     {
         Trades trades = 1;
         TradingClosed trading_closed = 2;
         TradingOpened trading_opened = 3;
+        DefaultsInfo defaults_info = 4;
     }
 }
