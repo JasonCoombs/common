@@ -1481,8 +1481,7 @@ enum TradeHistType
    TradeHistSaveFxTrade             = 1;
    TradeHistSaveXbtTrade            = 2;
    TradeHistSaveCcTrade             = 3;
-   TradeHistSaveCashSettledTrade    = 4;
-   TradeHistSaveDeliverableTrade    = 5;
+   TradeHistSaveFutureTrade         = 4;
    TradeHistSaveTradeResult         = 6;
    TradeHistRequestLastTrade        = 7;
    TradeHistRequestLastBuySellTrade = 8;
@@ -2111,7 +2110,7 @@ message PriceStreamManaging
       bs.types.XBTAmountValue xbt_amount        = 1;
       string                  requesting_entity = 2;
       bool                    get_ask_price     = 3;
-      bs.types.PriceBookType  price_book        = 4;
+      int32                   price_book        = 4;
    }
 
    message GetBestOfferResponse
@@ -2185,7 +2184,7 @@ message ApiServerMsg
          bs.types.XBTPrice ask     = 3;
       }
 
-      bs.types.PriceBookType  book_type      = 1;
+      int32 		      book_type      = 1;
       repeated Entry          prices         = 2;
    }
 

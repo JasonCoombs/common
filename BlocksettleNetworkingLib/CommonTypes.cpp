@@ -121,14 +121,70 @@ Side::Type Side::invert(Side::Type side)
    }
 }
 
+
+bool bs::fut::isDeliverable(bs::fut::Product p)
+{
+   switch (p) {
+      case bs::fut::Product::DelvXbtEur:
+      case bs::fut::Product::DelvXbtUsd:
+         return true;
+      default: break;
+   }
+   return false;
+}
+
+const char* bs::fut::toString(bs::fut::Product p)
+{
+   switch (p) {
+   case bs::fut::Product::DelvXbtEur:  return QT_TR_NOOP("XBT/EUR 1-day deliverable");
+   case bs::fut::Product::RollXbtEur:  return QT_TR_NOOP("XBT/EUR 1-day rolling");
+   case bs::fut::Product::DelvXbtUsd:  return QT_TR_NOOP("XBT/USD 1-day deliverable");
+   case bs::fut::Product::RollXbtUsd:  return QT_TR_NOOP("XBT/USD 1-day rolling");
+   }
+   std::invalid_argument("unknown product " + std::to_string((int)p));
+}
+
+std::string bs::fut::toProdType(bs::fut::Product p)
+{
+   switch (p) {
+   case bs::fut::Product::DelvXbtEur:  return "xbteur_df";
+   case bs::fut::Product::RollXbtEur:  return "xbteur_rf";
+   case bs::fut::Product::DelvXbtUsd:  return "xbtusd_df";
+   case bs::fut::Product::RollXbtUsd:  return "xbtusd_rf";
+   }
+   throw std::invalid_argument("unknown product " + std::to_string((int)p));
+}
+
+bs::fut::Product bs::fut::fromProdType(const std::string& pt)
+{  //only one mapping (above) to rule them all
+   for (int i = (int)bs::fut::Product::first; i < (int)bs::fut::Product::last; ++i) {
+      const auto p = static_cast<bs::fut::Product>(i);
+      if (bs::fut::toProdType(p) == pt) {
+         return p;
+      }
+   }
+   throw std::invalid_argument("unknown product " + pt);
+   return bs::fut::Product::Undefined;
+}
+
+bs::fut::Product bs::fut::fromProdName(const std::string& product)
+{
+   if (product == "XBT/EURD") { return bs::fut::Product::DelvXbtEur; }
+   if (product == "XBT/EURP") { return bs::fut::Product::RollXbtEur; }
+   if (product == "XBT/USDD") { return bs::fut::Product::DelvXbtUsd; }
+   if (product == "XBT/USDP") { return bs::fut::Product::RollXbtUsd; }
+   throw std::invalid_argument("invalid product " + product);
+   return bs::fut::Product::Undefined;
+}
+
+
 const char *bs::network::Asset::toString(bs::network::Asset::Type at)
 {
    switch (at) {
    case SpotFX:               return QT_TR_NOOP("Spot FX");
-   case DeliverableFutures:   return QT_TR_NOOP("XBT 1-day deliverable");
-   case CashSettledFutures:   return QT_TR_NOOP("XBT 1-day rolling");
    case SpotXBT:              return QT_TR_NOOP("Spot XBT");
    case PrivateMarket:        return QT_TR_NOOP("Private Market");
+   case Future:               return QT_TR_NOOP("Future");
    default:                   return "";
    }
 }
@@ -140,8 +196,7 @@ bool bs::network::Asset::isSpotType(const Type type)
    case SpotXBT:
    case PrivateMarket:
       return true;
-   case CashSettledFutures:
-   case DeliverableFutures:
+   case Future:
    default:
       return false;
    }

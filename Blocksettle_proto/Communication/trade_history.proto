@@ -19,8 +19,7 @@ enum TradeHistoryTradeType
    FXTradeType                = 0;
    XBTTradeType               = 1;
    PMTradeType                = 2;
-   OneDayDeliverableTradeType = 3;
-   OneDayCashSettledTradeType = 4;
+   FutureTradeType            = 3;
 }
 
 enum TradeHistoryRequestType
@@ -234,12 +233,6 @@ message EODSnapshotResponse
    string                  debug_message  = 3;
 }
 
-enum PriceBookType
-{
-   CashSettlePriceBook  = 0;
-   DeliverablePriceBook = 1;
-}
-
 message PriceBookUpdate
 {
    message Entry
@@ -250,7 +243,7 @@ message PriceBookUpdate
    }
 
    string         product_name   = 1;
-   PriceBookType  book_type      = 2;
+   int32          book_type      = 2;
    repeated Entry prices         = 3;
 }
 

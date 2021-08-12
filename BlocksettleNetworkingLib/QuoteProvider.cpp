@@ -391,7 +391,7 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
-   assert(quote.assetType != bs::network::Asset::DeliverableFutures);
+   assert(quote.assetType != bs::network::Asset::Future);
 
    auto sequence = std::make_shared<bs::celer::CreateOrderSequence>(assetManager_->GetAssignedAccount()
       , reqId, quote, payoutTx, logger_);

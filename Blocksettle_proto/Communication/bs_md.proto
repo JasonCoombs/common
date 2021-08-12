@@ -45,8 +45,7 @@ message MDSnapshot
    repeated ProductPriceInfo  cc_products    = 3;
    int64                      timestamp      = 4;
 
-   PriceBook                  cash_settled   = 5;
-   PriceBook                  deliverable    = 6;
+   repeated PriceBook         fut_products   = 5;
 }
 
 enum UpdateType

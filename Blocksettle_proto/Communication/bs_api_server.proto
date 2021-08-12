@@ -28,8 +28,9 @@ enum EidStatus {
 }
 
 enum ErrorCode {
-    ERROR_CODE_SERVER_ERROR = 0;
-    ERROR_CODE_INVALID_REQUEST = 1;
+    NO_ERROR_CODE = 0;
+    ERROR_CODE_SERVER_ERROR = 1;
+    ERROR_CODE_INVALID_REQUEST = 2;
 }
 
 message Order
