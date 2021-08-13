@@ -582,7 +582,7 @@ message Response
     {
         string   delivery_id    = 1;
         string   currency       = 2;
-        double   amount         = 3;
+        string   amount         = 3;
         string   bs_address     = 4;
     }
 

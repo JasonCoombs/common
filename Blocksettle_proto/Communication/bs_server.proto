@@ -13,7 +13,6 @@ syntax = "proto3";
 package Blocksettle.Server;
 
 import "bs_api_server.proto";
-import "bs_server_storage.proto";
 import "bs_types.proto";
 import "common.proto";
 import "pb_cli.proto";
@@ -2027,9 +2026,10 @@ message ObligationsManaging
    {
       string   entity_name    = 1;
       string   delivery_id    = 2;
-      int64    value          = 3;
+      bs.types.XBTAmountValue value = 3;
       string   bs_address     = 4;
-      double   price          = 5;
+      bs.types.XBTPrice price = 5;
+      string   currency       = 6;
    }
 
    message SubmitWhitelistedAddress
