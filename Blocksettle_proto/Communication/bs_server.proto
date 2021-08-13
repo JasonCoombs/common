@@ -18,6 +18,7 @@ import "bs_types.proto";
 import "common.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
+import "genoa_admin.proto";
 
 message Empty
 {
@@ -2467,23 +2468,26 @@ message PriceAggregation
 // Internal messages to self
    message ExternalConnectionStatusChanged
    {
-      string   exchange_name  = 1;
-      bool     connected      = 2;
+      string   puller_name    = 1;
+      string   product_name   = 2;
+      bool     connected      = 3;
    }
 
    message ExternalConnectionPriceUpdated
    {
-      string exchange_name = 1;
-      double bid           = 2;
-      double ask           = 3;
+      string puller_name   = 1;
+      string product_name  = 2;
+      double bid           = 3;
+      double ask           = 4;
    }
 
 // broadcast message
    message AggregatedPriceUpdate
    {
       // aggregated price for XBT/EUR
-      double   ask      = 1;
-      double   bid      = 2;
+      string   product_name   = 1;
+      double   ask            = 2;
+      double   bid            = 3;
    }
 
    oneof data
@@ -2522,5 +2526,6 @@ message GenoaAdminMsg
    {
       TradingClosed trading_closed = 1;
       TradingOpened trading_opened = 2;
+      Blocksettle.Communication.GenoaAdmin.Response.DefaultsInfo defaults_info = 3;
    }
 }
