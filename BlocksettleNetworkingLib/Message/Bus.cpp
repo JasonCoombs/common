@@ -195,9 +195,7 @@ bool Queue_Locking::pushFill(Envelope &env)
       env.posted = bus_clock::now();
    }
    std::unique_lock<std::mutex> lock(cvMutex_);
-   if (env.id() == 0) {
-      env.setId(nextId());
-   }
+   env.setIdIfUnset(nextId());
 
 #ifdef MSG_DEBUGGING
    std::string msgBody;
@@ -216,11 +214,12 @@ bool Queue_Locking::pushFill(Envelope &env)
          msgBody += "...";
       }
    }
-   logger_->debug("[Queue::push] {}: #{}/{} {}({}) -> {}({}) #{} [{}] {}"
-      , name_, env.id(), env.foreignId()
+   logger_->debug("[Queue::push] {}: #{}/{} {}({}) -> {}({}) r#{} f:{} [{}] {}"
+      , name_, idOf(env), env.foreignId()
       , env.sender->name(), env.sender->value()
       , env.receiver ? env.receiver->name() : "null"
-      , env.receiver ? env.receiver->value() : 0, env.responseId(), env.message.size()
+      , env.receiver ? env.receiver->value() : 0, env.responseId()
+      , (bs::message::SeqId)env.envelopeType(), env.message.size()
       , msgBody.empty() ? msgBody : "'" + msgBody + "'");
 #endif   //MSG_DEBUGGING
 
@@ -244,7 +243,7 @@ void Queue_Locking::process()
       for (const auto &env : tempQueue) {
          if (env.executeAt.time_since_epoch().count() != 0) {
             if (env.executeAt > timeNow) {
-               deferredIds_.insert(env.id());
+               defer(env);
                deferredQueue.emplace_back(env);
                continue;
             }
@@ -254,7 +253,7 @@ void Queue_Locking::process()
 
          if (!accept(env)) {
             logger_->info("[Queue::process] {}: envelope #{} failed to pass "
-               "validity checks (<= {}) - skipping", name_, env.id(), lastProcessedSeqNo_);
+               "validity checks (<= {}) - skipping", name_, idOf(env), lastProcessedSeqNo_);
             continue;
          }
 
@@ -276,7 +275,7 @@ void Queue_Locking::process()
             const auto& process = [this, env, isBroadcast, timeNow, &procStart, &acc, &deferredQueue]
                (const std::shared_ptr<bs::message::Adapter>&adapter)
             {
-               currentEnvId_ = env.id();
+               currentEnvId_ = idOf(env);
                if (isBroadcast) {
                   const bool processed = adapter->processBroadcast(env);
                   if (accounting_ && processed) {
@@ -288,7 +287,7 @@ void Queue_Locking::process()
                }
                else {
                   if (!adapter->process(env)) {
-                     const auto& result = deferredIds_.insert(env.id());
+                     const auto& result = defer(env);
                      if (result.second) { // avoid duplicates
                         deferredQueue.emplace_back(env);
                      }
@@ -311,23 +310,24 @@ void Queue_Locking::process()
                }
                for (const auto& adapter : adapters) {
 #ifdef MSG_DEBUGGING
-                  logger_->debug("[Queue::process] {}: #{} by {}", name_, env.id()
-                     , adapter->name());
+                  logger_->debug("[Queue::process] {}: #{}/{} r#{} f:{} by {}"
+                     , name_, idOf(env), env.foreignId(), env.responseId()
+                     , (bs::message::SeqId)env.envelopeType(), adapter->name());
 #endif
                   process(adapter);
                }
             }
             catch (const std::exception& e) {
                logger_->error("[Queue::process] {}: {} for #{} "
-                  "from {} ({}) to {} ({}) - skipping", name_, e.what(), env.id()
+                  "from {} ({}) to {} ({}) - skipping", name_, e.what(), idOf(env)
                   , env.sender->value(), env.sender->name()
                   , env.receiver ? env.receiver->value() : 0
                   , env.receiver ? env.receiver->name() : "null");
                continue;
             }
          }
-         if (env.id() > lastProcessedSeqNo_) {
-            lastProcessedSeqNo_ = env.id();
+         if (idOf(env) > lastProcessedSeqNo_) {
+            lastProcessedSeqNo_ = idOf(env);
          }
       }
    };
