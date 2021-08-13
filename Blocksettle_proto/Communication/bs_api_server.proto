@@ -71,6 +71,11 @@ message OhlcCandle
 message Empty
 {}
 
+message Answer
+{
+    string question = 1;
+    string answer = 2;
+}
 
 message Request
 {
@@ -81,12 +86,6 @@ message Request
 
     message EidRegister
     {
-        message Answer
-        {
-            string question = 1;
-            string answer = 2;
-        }
-
         repeated Answer answers = 1;
     }
 
@@ -260,6 +259,16 @@ message Request
         string product_type = 1;
     }
 
+    message RegisterBasicAccount
+    {
+        string phone = 1;
+    }
+
+    message VerifyBasicAccount
+    {
+        string code = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -307,6 +316,8 @@ message Request
         GetStatements               get_statements              = 50;
         Ohlc                        ohlc                        = 51;
         SubscribeTradeCreated       subscribe_trade_created     = 52;
+        RegisterBasicAccount        register_basic_account      = 53;
+        VerifyBasicAccount          verify_basic_account        = 54;
     }
 }
 
@@ -673,6 +684,20 @@ message Response
         double timestamp = 4;
     }
 
+    message RegisterBasicAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message VerifyBasicAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string account_name = 3;
+        string session_id = 4;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -725,5 +750,7 @@ message Response
         Ohlc                    ohlc                        = 57;
         Empty                   subscribe_trade_created     = 58;
         TradeCreated            trade_created               = 59;
+        RegisterBasicAccount    register_basic_account      = 60;
+        VerifyBasicAccount      verify_basic_account        = 61;
     }
 }

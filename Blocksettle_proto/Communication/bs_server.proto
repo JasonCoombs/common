@@ -331,6 +331,8 @@ enum GenoaType
    GenoaFutureCreateReservations          = 59;
    GenoaCreateNovationAccount             = 60;
    GenoaDisposeNovationAccount            = 61;
+   GenoaInitBasicSignup                   = 62;
+   GenoaApproveBasicSignup                = 63;
 }
 
 message GenoaDisconnectedBroadcast
@@ -962,6 +964,34 @@ message GenoaGetStatementsResponse
    Blocksettle.Communication.ApiServer.Response.GetStatements result = 2;
 }
 
+message GenoaInitBasicSignupRequest
+{
+   string phone = 1;
+}
+
+message GenoaInitBasicSignupResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   string phone = 3;
+   string otp_code = 4;
+   string token = 5;
+}
+
+message GenoaApproveBasicSignupRequest
+{
+   string otp_code = 1;
+   string token = 2;
+}
+
+message GenoaApproveBasicSignupResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   int64 entity_id = 3;
+   string entity_name = 4;
+}
+
 message GenoaMessage
 {
    message FutureMoveReservationsRequest
@@ -1198,6 +1228,10 @@ message GenoaMessage
       DisposeNovationAccountRequest             dispose_novation_account            = 91;
       DisposeNovationAccountResponse            dispose_novation_account_response   = 92;
 
+      GenoaInitBasicSignupRequest               init_basic_signup_request           = 93;
+      GenoaInitBasicSignupResponse              init_basic_signup_response          = 94;
+      GenoaApproveBasicSignupRequest            approve_basic_signup_request        = 95;
+      GenoaApproveBasicSignupResponse           approve_basic_signup_response       = 96;
    }
 }
 
