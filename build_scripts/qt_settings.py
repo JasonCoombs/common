@@ -90,7 +90,7 @@ class QtSettings(Configurator):
         command.append('-qt-pcre')
         command.append('-qt-harfbuzz')
         command.append('-sql-sqlite')
-        if self._project_settings.is_server_build() and not self._project_settings.on_windows():
+        if self._project_settings.is_server_build():
            command.append('-sql-mysql')
         else:
             sql_drivers_to_skip.append('mysql')
@@ -118,7 +118,8 @@ class QtSettings(Configurator):
             command.append('-no-freetype')
 
         if self._project_settings.on_windows() and self._project_settings.is_server_build():
-            print("Won't build MySQL plugin on Windows")
+            command.append('-IC:\\Program Files\\MySQL\\MySQL Connector C 6.1\\include')
+            command.append('-LC:\\Program Files\\MySQL\\MySQL Connector C 6.1\\lib')
 
         command.append('-nomake')
         command.append('tests')
