@@ -269,6 +269,16 @@ message Request
         string code = 1;
     }
 
+    message LoginBasicAccount
+    {
+        string token = 1;
+    }
+
+    message UpgradeBasicAccount
+    {
+        repeated Answer answers = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -318,6 +328,8 @@ message Request
         SubscribeTradeCreated       subscribe_trade_created     = 52;
         RegisterBasicAccount        register_basic_account      = 53;
         VerifyBasicAccount          verify_basic_account        = 54;
+        LoginBasicAccount           login_basic_account         = 55;
+        UpgradeBasicAccount         upgrade_basic_account       = 56;
     }
 }
 
@@ -698,6 +710,23 @@ message Response
         string session_id = 4;
     }
 
+    message LoginBasicAccount
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message UpgradeBasicAccount
+    {
+        string qr_code = 1;
+    }
+
+    message UpgradeBasicAccountUpd
+    {
+        EidStatus status = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -752,5 +781,8 @@ message Response
         TradeCreated            trade_created               = 59;
         RegisterBasicAccount    register_basic_account      = 60;
         VerifyBasicAccount      verify_basic_account        = 61;
+        LoginBasicAccount       login_basic_account         = 62;
+        UpgradeBasicAccount     upgrade_basic_account       = 63;
+        UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 64;
     }
 }

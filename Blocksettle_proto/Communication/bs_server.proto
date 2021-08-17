@@ -333,6 +333,7 @@ enum GenoaType
    GenoaDisposeNovationAccount            = 61;
    GenoaInitBasicSignup                   = 62;
    GenoaApproveBasicSignup                = 63;
+   GenoaUpgradeBasicAccount               = 64;
 }
 
 message GenoaDisconnectedBroadcast
@@ -992,6 +993,19 @@ message GenoaApproveBasicSignupResponse
    string entity_name = 4;
 }
 
+message GenoaUpgradeBasicAccountRequest
+{
+   string entity_name = 1;
+   string answers = 2;
+   string kyc = 3;
+}
+
+message GenoaUpgradeBasicAccountResponse
+{
+   bool success = 1;
+   string error_code = 2;
+}
+
 message GenoaMessage
 {
    message FutureMoveReservationsRequest
@@ -1232,6 +1246,8 @@ message GenoaMessage
       GenoaInitBasicSignupResponse              init_basic_signup_response          = 94;
       GenoaApproveBasicSignupRequest            approve_basic_signup_request        = 95;
       GenoaApproveBasicSignupResponse           approve_basic_signup_response       = 96;
+      GenoaUpgradeBasicAccountRequest           upgrade_basic_account_request       = 97;
+      GenoaUpgradeBasicAccountResponse          upgrade_basic_account_response      = 98;
    }
 }
 
