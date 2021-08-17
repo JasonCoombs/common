@@ -708,12 +708,15 @@ message Response
         string error_msg = 2;
         string account_name = 3;
         string session_id = 4;
+        string token = 5;
     }
 
     message LoginBasicAccount
     {
         bool success = 1;
         string error_msg = 2;
+        string session_id = 3;
+        string account_name = 4;
     }
 
     message UpgradeBasicAccount
