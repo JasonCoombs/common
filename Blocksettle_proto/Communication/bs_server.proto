@@ -18,6 +18,7 @@ import "bs_types.proto";
 import "common.proto";
 import "pb_cli.proto";
 import "trade_history.proto";
+import "genoa_admin.proto";
 
 message Empty
 {
@@ -29,7 +30,6 @@ enum PrivBridgeType
    PrivBridgeSuspendTrading      = 3;
    PrivBridgeResumeTrading       = 4;
    PrivBridgeCreateUser          = 5;
-   PrivBridgeArmoryDbReset       = 6;
    PrivateBridgeGetHashedEmail   = 7;
 }
 
@@ -1493,8 +1493,6 @@ enum TradeHistType
    TradeHistorySetInitialPrice      = 13;
    TradeHistEODEvent                = 14;
    TradeHistPriceBookUpdate         = 15;
-   TradeHistUpdatePL                = 16;
-   TradeHistQueryPL                 = 17;
 }
 
 message TradeDataMessage
@@ -1685,9 +1683,6 @@ message TradeHistMessage
       SetInitialPriceRequest                       set_initial_price = 14;
       TradeHistEODUpdate                           eod_update        = 15;
       Communication.TradeHistory.PriceBookUpdate   price_book_update = 16;
-      Storage.TradePL                              trade_pl_update   = 17;
-      Storage.TradePLQuery                         trade_pl_query    = 18;
-      Storage.TradePLResult                        trade_pl_result   = 19;
    }
 }
 
@@ -2292,7 +2287,6 @@ message CashResMessage
    {
       string                  entity_name             = 1;
       bs.types.XBTAmountValue qty                     = 2;
-      bs.types.Side           side                    = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
       string                  cl_ord_id               = 6;
@@ -2474,23 +2468,26 @@ message PriceAggregation
 // Internal messages to self
    message ExternalConnectionStatusChanged
    {
-      string   exchange_name  = 1;
-      bool     connected      = 2;
+      string   puller_name    = 1;
+      string   product_name   = 2;
+      bool     connected      = 3;
    }
 
    message ExternalConnectionPriceUpdated
    {
-      string exchange_name = 1;
-      double bid           = 2;
-      double ask           = 3;
+      string puller_name   = 1;
+      string product_name  = 2;
+      double bid           = 3;
+      double ask           = 4;
    }
 
 // broadcast message
    message AggregatedPriceUpdate
    {
       // aggregated price for XBT/EUR
-      double   ask      = 1;
-      double   bid      = 2;
+      string   product_name   = 1;
+      double   ask            = 2;
+      double   bid            = 3;
    }
 
    oneof data
@@ -2500,5 +2497,35 @@ message PriceAggregation
       ExternalConnectionPriceUpdated   exchange_price_update      = 2;
       // broadcasted messages
       AggregatedPriceUpdate            aggregated_price           = 3;
+   }
+}
+
+message GenoaAdminMsg
+{
+   message TradingOpened
+   {
+      int64 session_id = 1;
+      uint64 timestamp_open = 2;
+      int32 product_type = 3;
+      bs.types.XBTPrice open_price = 4;
+      bs.types.XBTAmountValue open_interest = 5;
+   }
+
+   message TradingClosed
+   {
+      int64 session_id = 1;
+      uint64 timestamp_close = 2;
+      int32 product_type = 3;
+      bs.types.XBTPrice cutoff_price = 4;
+      bs.types.XBTAmountValue open_interest = 5;
+      int64 novation_account_id = 6;
+      repeated int64 participants = 7;
+   }
+
+   oneof data
+   {
+      TradingClosed trading_closed = 1;
+      TradingOpened trading_opened = 2;
+      Blocksettle.Communication.GenoaAdmin.Response.DefaultsInfo defaults_info = 3;
    }
 }
