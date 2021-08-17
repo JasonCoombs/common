@@ -46,6 +46,7 @@ message Order
    string               cut_off_price  = 9;
    string               trade_im       = 10;
    bool                 is_rollover    = 11;
+   string               trade_pnl      = 12;
 }
 
 message ApiKey
