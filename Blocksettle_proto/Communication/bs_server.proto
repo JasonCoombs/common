@@ -29,7 +29,6 @@ enum PrivBridgeType
    PrivBridgeSuspendTrading      = 3;
    PrivBridgeResumeTrading       = 4;
    PrivBridgeCreateUser          = 5;
-   PrivBridgeArmoryDbReset       = 6;
    PrivateBridgeGetHashedEmail   = 7;
 }
 

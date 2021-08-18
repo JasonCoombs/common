@@ -23,14 +23,15 @@ message Message
       bool                    is_taker       = 2;
       bs.types.XBTAmountValue xbt_amount     = 3;
       bs.types.XBTPrice       open_price     = 4;
-      bs.types.XBTPrice       close_price    = 12; // Only set in LoadTradeHistoryResponse
-      bool                    is_rollover    = 5;
-      uint64                  timestamp      = 6;
-      int64                   entity_id      = 7;
-      int32                   prod_type      = 8;  // bs::network::Asset::Type
-      bool                    opened         = 9;
-      string                  reserve_id     = 10; // genoa ref ID
-      int32                   reserve_state  = 11; // FuturesTradesStorage::PositionReservationState
+      bs.types.XBTPrice       close_price    = 5; // Only set in LoadTradeHistoryResponse
+      bool                    is_rollover    = 6;
+      uint64                  timestamp      = 7;
+      int64                   entity_id      = 8;
+      int32                   prod_type      = 9;  // bs::network::Asset::Type
+      bool                    opened         = 10;
+      string                  reserve_id     = 11; // genoa ref ID
+      int32                   reserve_state  = 12; // FuturesTradesStorage::PositionReservationState
+      bs.types.FXAmountValue  trade_pnl      = 13;
    }
 
    message PositionReservationInfo
