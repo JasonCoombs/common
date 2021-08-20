@@ -1080,10 +1080,7 @@ message GenoaRequestAddCardRequest
 
 message GenoaRequestAddCardResponse
 {
-   string source = 1;
-   string logo_url = 2;
-   string display_name = 3;
-   string payment_link = 4;
+   Blocksettle.Communication.ApiServer.Response.RequestAddCard result = 1;
 }
 
 message GenoaConfirmCardRequest
