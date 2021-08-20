@@ -280,6 +280,38 @@ message Request
         repeated Answer answers = 2;
     }
 
+    message ListClientBanks
+    {
+        string country_code = 1;
+    }
+
+    message BankOnboardingLink
+    {
+        string bank_id = 1;
+        string redirect_url = 2;
+        bool sandbox = 3;
+    }
+
+    message ListRemoteAccounts
+    {
+        string req_id = 1;
+    }
+
+    message SaveAccount
+    {
+        string account_ref = 1;
+    }
+
+    message RequestAddCard
+    {
+        bool mobile = 1;
+    }
+
+    message ConfirmCard
+    {
+        string payment_ref = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -331,6 +363,12 @@ message Request
         VerifyBasicAccount          verify_basic_account        = 54;
         LoginBasicAccount           login_basic_account         = 55;
         UpgradeBasicAccount         upgrade_basic_account       = 56;
+        ListClientBanks             list_client_banks           = 57;
+        BankOnboardingLink          bank_onboarding_link        = 58;
+        ListRemoteAccounts          list_remote_accounts        = 59;
+        SaveAccount                 save_account                = 60;
+        RequestAddCard              request_add_card            = 61;
+        ConfirmCard                 confirm_card                = 62;
     }
 }
 
@@ -731,6 +769,58 @@ message Response
         string error_msg = 2;
     }
 
+    message ListClientBanks
+    {
+        message Bank
+        {
+            int32 transaction_total_days = 1;
+            repeated string countries = 2;
+            string id = 3;
+            string bic = 4;
+            string name = 5;
+        }
+
+        repeated Bank banks = 1;
+    }
+
+    message BankOnboardingLink
+    {
+        string initiate = 1;
+        string req_id = 2;
+    }
+
+    message ListRemoteAccounts
+    {
+        string redirect = 1;
+        string status = 2;
+        string enduser_id = 3;
+        string reference = 4;
+        repeated string accounts = 5;
+        repeated string agreements = 6;
+        string id = 7;
+    }
+
+    message SaveAccount
+    {
+        string bank_name = 1;
+        string created_at = 2;
+        string name = 3;
+    }
+
+    message RequestAddCard
+    {
+        string source = 1;
+        string logo_url = 2;
+        string display_name = 3;
+        string payment_link = 4;
+    }
+
+    message ConfirmCard
+    {
+        string digits = 1;
+        string display_name = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 10;
@@ -788,5 +878,11 @@ message Response
         LoginBasicAccount       login_basic_account         = 62;
         UpgradeBasicAccount     upgrade_basic_account       = 63;
         UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 64;
+        ListClientBanks         list_client_banks           = 65;
+        BankOnboardingLink      bank_onboarding_link        = 66;
+        ListRemoteAccounts      list_remote_accounts        = 67;
+        SaveAccount             save_account                = 68;
+        RequestAddCard          request_add_card            = 69;
+        ConfirmCard             confirm_card                = 70;
     }
 }
