@@ -333,6 +333,12 @@ enum GenoaType
    GenoaApproveBasicSignup                = 63;
    GenoaResolveLoginToken                 = 64;
    GenoaUpgradeBasicAccount               = 65;
+   GenoaListClientBanks                   = 66;
+   GenoaBankOnboardingLink                = 67;
+   GenoaListRemoteAccounts                = 68;
+   GenoaSaveAccount                       = 69;
+   GenoaRequestAddCard                    = 70;
+   GenoaConfirmCard                       = 71;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1020,6 +1026,77 @@ message GenoaUpgradeBasicAccountResponse
    string error_msg = 3;
 }
 
+message GenoaListClientBanksRequest
+{
+   string country_code = 1;
+}
+
+message GenoaListClientBanksResponse
+{
+   Blocksettle.Communication.ApiServer.Response.ListClientBanks result = 1;
+}
+
+message GenoaBankOnboardingLinkRequest
+{
+   string bank_id = 1;
+   string redirect_url = 2;
+   bool sandbox = 3;
+}
+
+message GenoaBankOnboardingLinkResponse
+{
+   string initiate = 1;
+   string req_id = 2;
+}
+
+message GenoaListRemoteAccountsRequest
+{
+   string req_id = 1;
+}
+
+message GenoaListRemoteAccountsResponse
+{
+   Blocksettle.Communication.ApiServer.Response.ListRemoteAccounts result = 1;
+}
+
+message GenoaSaveAccountRequest
+{
+   string account_ref = 1;
+   string entity_name = 2;
+}
+
+message GenoaSaveAccountResponse
+{
+   string bank_name = 1;
+   string created_at = 2;
+   string name = 3;
+}
+
+message GenoaRequestAddCardRequest
+{
+   bool mobile = 1;
+}
+
+message GenoaRequestAddCardResponse
+{
+   string source = 1;
+   string logo_url = 2;
+   string display_name = 3;
+   string payment_link = 4;
+}
+
+message GenoaConfirmCardRequest
+{
+   string entity_name = 1;
+   string payment_ref = 2;
+}
+
+message GenoaConfirmCardResponse
+{
+   string digits = 1;
+   string display_name = 2;
+}
+
 message GenoaMessage
 {
    message FutureMoveReservationsRequest
@@ -1264,6 +1341,20 @@ message GenoaMessage
       GenoaResolveLoginTokenResponse            resolve_login_token_response        = 98;
       GenoaUpgradeBasicAccountRequest           upgrade_basic_account_request       = 99;
       GenoaUpgradeBasicAccountResponse          upgrade_basic_account_response      = 100;
+
+      GenoaListClientBanksRequest               list_client_banks_request           = 101;
+      GenoaListClientBanksResponse              list_client_banks_response          = 102;
+      GenoaBankOnboardingLinkRequest            bank_onboarding_link_request        = 103;
+      GenoaBankOnboardingLinkResponse           bank_onboarding_link_response       = 104;
+      GenoaListRemoteAccountsRequest            list_remote_accounts_request        = 105;
+      GenoaListRemoteAccountsResponse           list_remote_accounts_response       = 106;
+      GenoaSaveAccountRequest                   save_account_request                = 107;
+      GenoaSaveAccountResponse                  save_account_response               = 108;
+      GenoaRequestAddCardRequest                request_add_card_request            = 109;
+      GenoaRequestAddCardResponse               request_add_card_response           = 110;
+      GenoaConfirmCardRequest                   confirm_card_request                = 111;
+      GenoaConfirmCardResponse                  confirm_card_response               = 112;
+
    }
 }
 
@@ -2589,10 +2680,17 @@ message GenoaAdminMsg
       repeated int64 participants = 7;
    }
 
+   message UpdateOpenInterest
+   {
+      int32 product_type = 1;
+      bs.types.XBTAmountValue open_interest = 2;
+   }
+
    oneof data
    {
       TradingClosed trading_closed = 1;
       TradingOpened trading_opened = 2;
       Blocksettle.Communication.GenoaAdmin.Response.DefaultsInfo defaults_info = 3;
+      UpdateOpenInterest update_open_interest = 4;
    }
 }

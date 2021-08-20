@@ -77,11 +77,18 @@ message Response
         repeated Item items = 3;
     }
 
+    message UpdateOpenInterest
+    {
+        string product_name = 1;
+        string open_interest = 2;
+    }
+
     oneof data
     {
         Trades trades = 1;
         TradingClosed trading_closed = 2;
         TradingOpened trading_opened = 3;
         DefaultsInfo defaults_info = 4;
+        UpdateOpenInterest update_open_interest = 5;
     }
 }
