@@ -47,6 +47,7 @@ void Router::bindAdapter(const std::shared_ptr<Adapter> &adapter)
          logger_->error("[Router::bindAdapter] {} has null receiver", adapter->name());
          continue;
       }
+      std::lock_guard<std::mutex> lock(mutex_);
       if (receiver->isFallback()) {
          defaultRoute_ = adapter;
          continue;
@@ -56,7 +57,6 @@ void Router::bindAdapter(const std::shared_ptr<Adapter> &adapter)
          logger_->critical("[Router::bindAdapter] adapter {} for {} already exists "
             "- overriding with {}", itReceiver->second->name(), receiver->name(), adapter->name());
       }
-      std::lock_guard<std::mutex> lock(mutex_);
       adapters_[receiver->value()] = adapter;
    }
 }
