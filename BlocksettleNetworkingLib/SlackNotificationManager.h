@@ -35,6 +35,7 @@ namespace bs {
 
       struct SlackSettings
       {
+         bool        notificationsEnabled = true;
          std::string host;
          std::string path;
       };
@@ -58,8 +59,11 @@ namespace bs {
 
       private:
          bool sendRawNotification(const std::string& message) override final
-         {  //define in header due to templated class
-            SchedulePacketProcessing(message);
+         {
+            //define in header due to templated class
+            if (settings_.notificationsEnabled) {
+               SchedulePacketProcessing(message);
+            }
             return true;
          }
 
