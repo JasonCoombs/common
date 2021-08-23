@@ -167,7 +167,7 @@ bs::fut::Product bs::fut::fromProdType(const std::string& pt)
    return bs::fut::Product::Undefined;
 }
 
-bs::fut::Product bs::fut::fromProdName(const std::string& product)
+bs::fut::Product bs::fut::fromGenoaProductType(const std::string& product)
 {
    if (product == "XBT/EURD") { return bs::fut::Product::DelvXbtEur; }
    if (product == "XBT/EURP") { return bs::fut::Product::RollXbtEur; }
