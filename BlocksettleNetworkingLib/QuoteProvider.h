@@ -8,8 +8,8 @@
 **********************************************************************************
 
 */
-#ifndef __CELER_QUOTE_PROVIDER_H__
-#define __CELER_QUOTE_PROVIDER_H__
+#ifndef __QUOTE_PROVIDER_H__
+#define __QUOTE_PROVIDER_H__
 
 #include <QObject>
 #include <unordered_map>
@@ -30,7 +30,6 @@ namespace bs {
 }
 
 class AssetManager;
-class CelerClientQt;
 
 class QuoteProvider : public QObject
 {
@@ -50,8 +49,6 @@ public:
 
    QuoteProvider(QuoteProvider&&) = delete;
    QuoteProvider& operator = (QuoteProvider&&) = delete;
-
-   void ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient);
 
    bs::network::QuoteNotification getSubmittedXBTQuoteNotification(const std::string& settlementId);
 
@@ -83,9 +80,6 @@ signals:
    void quoteNotifCancelled(const QString &reqId);
    void allQuoteNotifCancelled(const QString &reqId);
 
-private slots:
-   void onConnectedToCeler();
-
 private:
    bool onBitcoinOrderSnapshot(const std::string& data);
    bool onFxOrderSnapshot(const std::string& data);
@@ -115,7 +109,6 @@ private:
 private:
    std::shared_ptr<spdlog::logger>  logger_;
    std::shared_ptr<AssetManager>    assetManager_;
-   std::shared_ptr<CelerClientQt>   celerClient_;
    std::unordered_map<std::string, bs::network::RFQ>   submittedRFQs_;
 
    std::unordered_map<std::string, std::string>                      quoteIdMap_;
@@ -130,9 +123,9 @@ private:
    std::unordered_map<std::string, std::string> quoteCcys_;
    mutable std::atomic_flag      quoteCcysLock_ = ATOMIC_FLAG_INIT;
 
-   int64_t celerLoggedInTimestampUtcInMillis_;
+   int64_t loggedInTimestampUtcInMillis_;
 
    bool debugTraffic_;
 };
 
-#endif // __CELER_QUOTE_PROVIDER_H__
+#endif // __QUOTE_PROVIDER_H__

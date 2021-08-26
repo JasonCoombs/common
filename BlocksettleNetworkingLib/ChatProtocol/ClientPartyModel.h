@@ -76,8 +76,6 @@ namespace Chat
       void setOwnUserName(const std::string& val) { ownUserName_ = val; }
       PrivatePartyState deducePrivatePartyStateForUser(const std::string& userName);
 
-      CelerClient::CelerUserType ownCelerUserType() const { return ownCelerUserType_; }
-      void setOwnCelerUserType(CelerClient::CelerUserType val) { ownCelerUserType_ = val; }
    signals:
       void error(const Chat::ClientPartyModelError& errorCode, const std::string& what = "", bool displayAsWarning = false);
       void clientPartyStatusChanged(const Chat::ClientPartyPtr& clientPartyPtr);
@@ -101,7 +99,6 @@ namespace Chat
       static ClientPartyPtr getFirstClientPartyForPartySubType(const ClientPartyPtrList& clientPartyPtrList, 
          const std::string& firstUserHash, const std::string& secondUserHash, const PartySubType& partySubType = STANDARD);
       std::string ownUserName_;
-      CelerClient::CelerUserType ownCelerUserType_ = bs::network::UserType::Undefined;
    };
 
    using ClientPartyModelPtr = std::shared_ptr<ClientPartyModel>;

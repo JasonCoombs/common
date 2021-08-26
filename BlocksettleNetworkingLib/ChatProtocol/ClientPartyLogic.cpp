@@ -98,26 +98,22 @@ void ClientPartyLogic::onUserStatusChanged(const ChatUserPtr&, const StatusChang
    auto clientPartyPtrList = 
       clientPartyModelPtr_->getClientPartyListForRecipient(clientPartyModelPtr_->getIdPrivatePartyList(), statusChanged.user_hash());
 
-   for (const auto& clientPartyPtr : clientPartyPtrList)
-   {
+   for (const auto& clientPartyPtr : clientPartyPtrList) {
       auto recipientPtr = clientPartyPtr->getRecipient(statusChanged.user_hash());
-      if (recipientPtr)
-      {
-         recipientPtr->setCelerType(static_cast<CelerClient::CelerUserType>(statusChanged.celer_type()));
+      if (recipientPtr) {
+         //TODO: replace recipientPtr->setCelerType(static_cast<CelerClient::CelerUserType>(statusChanged.celer_type()));
       }
 
       const auto oldClientStatus = clientPartyPtr->clientStatus();
 
       clientPartyPtr->setClientStatus(statusChanged.client_status());
 
-      if (ONLINE != clientPartyPtr->clientStatus())
-      {
+      if (ONLINE != clientPartyPtr->clientStatus()){
          return;
       }
 
       // check if public key changed
-      if (statusChanged.has_public_key())
-      {
+      if (statusChanged.has_public_key()) {
          if (recipientPtr)
          {
             auto public_key = BinaryData::fromString(statusChanged.public_key().value());
@@ -140,8 +136,7 @@ void ClientPartyLogic::onUserStatusChanged(const ChatUserPtr&, const StatusChang
 
       // if client status is online and different than previous status
       // check if we have any unsent messages for this user
-      if (oldClientStatus == statusChanged.client_status())
-      {
+      if (oldClientStatus == statusChanged.client_status()) {
          continue;
       }
 

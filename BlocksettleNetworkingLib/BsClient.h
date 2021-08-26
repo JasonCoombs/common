@@ -26,7 +26,6 @@
 #include "autheid_utils.h"
 #include "AutheIDClient.h"
 #include "BSErrorCode.h"
-#include "Celer/MessageMapper.h"
 #include "CommonTypes.h"
 #include "DataConnection.h"
 #include "DataConnectionListener.h"
@@ -104,7 +103,6 @@ struct BsClientCallbackTarget
    virtual void onStartLoginDone(bool success, const std::string& errorMsg) {}
    virtual void onGetLoginResultDone(const BsClientLoginResult&) {}
 
-   virtual void onCelerRecv(CelerAPI::CelerMessageType messageType, const std::string& data) {}
    virtual void onProcessPbMessage(const Blocksettle::Communication::ProxyTerminalPb::Response& message) {}
 
    virtual void Connected() {}
@@ -165,7 +163,6 @@ public:
    void cancelLogin();
    void getLoginResult();
    void logout();
-   void celerSend(CelerAPI::CelerMessageType messageType, const std::string& data);
 
    void signAuthAddress(const bs::Address address, const SignCb& cb);
    void confirmAuthAddress(const bs::Address address, const AuthConfirmCb& cb);
@@ -224,7 +221,6 @@ protected:
    void processStartLogin(const Blocksettle::Communication::ProxyTerminal::Response_StartLogin& response);
    void processAuthorize(const Blocksettle::Communication::ProxyTerminal::Response_Authorize& response);
    void processGetLoginResult(const Blocksettle::Communication::ProxyTerminal::Response_GetLoginResult& response);
-   void processCeler(const Blocksettle::Communication::ProxyTerminal::Response_Celer& response);
    void processProxyPb(const Blocksettle::Communication::ProxyTerminal::Response_ProxyPb& response);
    void processGenAddrUpdated(const Blocksettle::Communication::ProxyTerminal::Response_GenAddrUpdated& response);
    void processUserStatusUpdated(const Blocksettle::Communication::ProxyTerminal::Response_UserStatusUpdated& response);
@@ -274,7 +270,6 @@ signals:
    void authorizeDone(AuthorizeError error, const std::string &email);
    void getLoginResultDone(const BsClientLoginResult &result);
 
-   void celerRecv(CelerAPI::CelerMessageType messageType, const std::string &data);
    // Register Blocksettle::Communication::ProxyTerminalPb::Response with qRegisterMetaType() if queued connection is needed
    void processPbMessage(const Blocksettle::Communication::ProxyTerminalPb::Response &message);
 
@@ -295,7 +290,6 @@ private:    // BCT callbacks override
    void onStartLoginDone(bool success, const std::string& errorMsg) override { emit startLoginDone(success, errorMsg); }
    void onAuthorizeDone(AuthorizeError authErr, const std::string& email) override { emit authorizeDone(authErr, email); }
    void onGetLoginResultDone(const BsClientLoginResult& result) override { emit getLoginResultDone(result); }
-   void onCelerRecv(CelerAPI::CelerMessageType messageType, const std::string& data) override { emit celerRecv(messageType, data); }
    void onProcessPbMessage(const Blocksettle::Communication::ProxyTerminalPb::Response& message) override { emit processPbMessage(message); }
    void Connected() override { emit connected(); }
    void Disconnected() override { emit disconnected(); }

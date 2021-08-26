@@ -40,12 +40,6 @@ message Request
         string api_key = 1;
     }
 
-    message Celer
-    {
-        int32 message_type = 1;
-        bytes data = 2;
-    }
-
     // Serialized Blocksettle.Communication.ProxyPb.Request
     message ProxyPb
     {
@@ -88,7 +82,6 @@ message Request
         // Messages
         Empty cancel_login = 30;
         Empty logout = 31;
-        Celer celer = 32;
         ProxyPb proxy_pb = 34;
         Empty cancel_sign = 35;
     }

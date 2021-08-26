@@ -23,7 +23,6 @@
 #include "Wallets/SyncWallet.h"
 
 class ApplicationSettings;
-class BaseCelerClient;
 
 struct CCCallbackTarget
 {
@@ -87,8 +86,6 @@ public:
 
    std::shared_ptr<bs::sync::CCDataResolver> getResolver() const { return resolver_; }
 
-   [[deprecated]] void ConnectToCelerClient(const std::shared_ptr<BaseCelerClient> &);
-
    bool submitAddress(const bs::Address &, uint32_t seed, const std::string &ccProduct);
    bool wasAddressSubmitted(const bs::Address &);
    void cancelActiveSign();
@@ -124,7 +121,6 @@ private: // Callbacks override
 
 private:
    std::shared_ptr<spdlog::logger>        logger_;
-   std::shared_ptr<BaseCelerClient>       celerClient_;
    CCCallbackTarget* cct_{ nullptr };
 
    std::shared_ptr<CCPubResolver>         resolver_;

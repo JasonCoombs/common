@@ -11,7 +11,6 @@
 #include "CCFileManager.h"
 
 #include "ApplicationSettings.h"
-#include "Celer/CelerClient.h"
 #include "ConnectionManager.h"
 #include "EncryptionUtils.h"
 #include "HDPath.h"
@@ -65,14 +64,9 @@ void CCFileManager::setBsClient(const std::weak_ptr<BsClient> &bsClient)
    bsClient_ = bsClient;
 }
 
-void CCFileManager::ConnectToCelerClient(const std::shared_ptr<BaseCelerClient> &celerClient)
-{
-   celerClient_ = celerClient;
-}
-
 bool CCFileManager::wasAddressSubmitted(const bs::Address &addr)
 {
-   return celerClient_->IsCCAddressSubmitted(addr.display());
+   return false;  //TODO: replace celerClient_->IsCCAddressSubmitted(addr.display());
 }
 
 void CCFileManager::cancelActiveSign()
@@ -91,11 +85,6 @@ void CCFileManager::SetLoadedDefinitions(const std::vector<bs::network::CCSecuri
 bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, const std::string &ccProduct)
 {
    auto bsClient = bsClient_.lock();
-
-   if (!celerClient_) {
-      logger_->error("[CCFileManager::SubmitAddressToPuB] not connected");
-      return false;
-   }
 
    if (!bsClient) {
       SPDLOG_LOGGER_ERROR(logger_, "not connected to BsProxy");
@@ -149,10 +138,10 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
                return;
             }
 
-            if (!celerClient_->SetCCAddressSubmitted(address.display())) {
+            /*if (!celerClient_->SetCCAddressSubmitted(address.display())) {
                SPDLOG_LOGGER_WARN(logger_, "failed to save address {} request event to Celer's user storage"
                   , address.display());
-            }
+            }*/   //TODO: replace with proxy connection
 
             cct_->onCCAddressSubmitted(address);
          });

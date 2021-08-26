@@ -16,7 +16,6 @@
 #include "ApplicationSettings.h"
 #include "ArmoryConnection.h"
 #include "BsClient.h"
-#include "Celer/CelerClient.h"
 #include "CheckRecipSigner.h"
 #include "ClientClasses.h"
 #include "FastLock.h"
@@ -37,39 +36,6 @@ AuthAddressManager::AuthAddressManager(const std::shared_ptr<spdlog::logger>& lo
    , AuthCallbackTarget *act)
    : logger_(logger), authCT_(act)
 {}
-
-void AuthAddressManager::init(const std::shared_ptr<ApplicationSettings>& appSettings
-   , const std::shared_ptr<bs::sync::WalletsManager> &walletsManager
-   , const std::shared_ptr<HeadlessContainer> &container)
-{
-   settings_ = appSettings;
-   walletsManager_ = walletsManager;
-   signingContainer_ = container;
-
-   connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AuthAddressManager::tryVerifyWalletAddresses);
-   connect(walletsManager_.get(), &bs::sync::WalletsManager::authWalletChanged, this, &AuthAddressManager::onAuthWalletChanged);
-   connect(walletsManager_.get(), &bs::sync::WalletsManager::walletChanged, this, &AuthAddressManager::onWalletChanged);
-   connect(walletsManager_.get(), &bs::sync::WalletsManager::AuthLeafCreated, this, &AuthAddressManager::onWalletCreated);
-
-   // signingContainer_ might be null if user rejects remote signer key
-   if (signingContainer_) {
-      const auto hct = dynamic_cast<QtHCT*>(signingContainer_->cbTarget());
-      if (hct) {
-         connect(hct, &QtHCT::TXSigned, this, &AuthAddressManager::onTXSigned);
-      }
-   }
-
-   SetAuthWallet();
-
-   ArmoryCallbackTarget::init(armory_.get());
-}
-
-void AuthAddressManager::initLogin(const std::shared_ptr<BaseCelerClient> &celerClient
-   , const std::shared_ptr<bs::TradeSettings> &tradeSettings)
-{
-   celerClient_ = celerClient;
-   tradeSettings_ = tradeSettings;
-}
 
 std::shared_ptr<bs::TradeSettings> AuthAddressManager::tradeSettings() const
 {
@@ -296,19 +262,9 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
    });
 }
 
-void AuthAddressManager::SubmitToCeler(const bs::Address &address)
+void AuthAddressManager::submitToProxy(const bs::Address &address)
 {
-   if (celerClient_->IsConnected()) {
-      const std::string addressString = address.display();
-      std::unordered_set<std::string> submittedAddresses = celerClient_->GetSubmittedAuthAddressSet();
-      if (submittedAddresses.find(addressString) == submittedAddresses.end()) {
-         submittedAddresses.emplace(addressString);
-         celerClient_->SetSubmittedAuthAddressSet(submittedAddresses);
-      }
-   }
-   else {
-      logger_->debug("[AuthAddressManager::SubmitToCeler] Celer is not connected");
-   }
+   //TODO: implement via proxy connection
 }
 
 void AuthAddressManager::tryVerifyWalletAddresses()
@@ -362,11 +318,6 @@ void AuthAddressManager::VerifyWalletAddressesFunction()
       authCT_->verifiedAddressListUpdated();
       authCT_->addressListUpdated();
    }
-}
-
-void AuthAddressManager::OnDisconnectedFromCeler()
-{
-   ClearAddressList();
 }
 
 void AuthAddressManager::ClearAddressList()
@@ -506,10 +457,10 @@ void AuthAddressManager::SetValidationState(const bs::Address &addr, AddressVeri
          return;
       }
 
-      const auto &submittedAddresses = celerClient_->GetSubmittedAuthAddressSet();
+      /*const auto& submittedAddresses = celerClient_->GetSubmittedAuthAddressSet();
       if (submittedAddresses.find(addr.display()) != submittedAddresses.end()) {
          mappedState = AuthAddressState::Submitted;
-      }
+      }*/   //TODO: replace with proxy connection
    }
 
    SetExplicitState(addr, mappedState);
@@ -692,7 +643,7 @@ void AuthAddressManager::onStateChanged(ArmoryState)
 
 void AuthAddressManager::markAsSubmitted(const bs::Address &address)
 {
-   SubmitToCeler(address);
+   submitToProxy(address);
 
    SetExplicitState(address, AuthAddressState::Submitted);
 

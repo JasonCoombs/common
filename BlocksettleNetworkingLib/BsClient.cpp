@@ -201,15 +201,6 @@ void BsClient::logout()
    sendMessage(&request);
 }
 
-void BsClient::celerSend(CelerAPI::CelerMessageType messageType, const std::string &data)
-{
-   Request request;
-   auto d = request.mutable_celer();
-   d->set_message_type(int(messageType));
-   d->set_data(data);
-   sendMessage(&request);
-}
-
 void BsClient::signAuthAddress(const bs::Address address, const SignCb &cb)
 {
    cancelActiveSign();
@@ -449,9 +440,6 @@ void BsClient::OnDataReceived(const std::string &data)
       case Response::kGetLoginResult:
          processGetLoginResult(response->get_login_result());
          return;
-      case Response::kCeler:
-         processCeler(response->celer());
-         return;
       case Response::kProxyPb:
          processProxyPb(response->proxy_pb());
          return;
@@ -584,16 +572,6 @@ void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
    result.feeRatePb = response.fee_rate();
    result.tradeSettings = bs::TradeSettings::fromPb(response.trade_settings());
    bct_->onGetLoginResultDone(result);
-}
-
-void BsClient::processCeler(const Response_Celer &response)
-{
-   auto messageType = CelerAPI::CelerMessageType(response.message_type());
-   if (!CelerAPI::isValidMessageType(messageType)) {
-      SPDLOG_LOGGER_ERROR(logger_, "invalid celer msg type received: {}", int(messageType));
-      return;
-   }
-   bct_->onCelerRecv(messageType, response.data());
 }
 
 void BsClient::processProxyPb(const Response_ProxyPb &response)
