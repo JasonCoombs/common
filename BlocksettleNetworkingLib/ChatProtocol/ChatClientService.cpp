@@ -15,7 +15,6 @@ using namespace Chat;
 ChatClientService::ChatClientService(QObject* parent /*= nullptr*/)
    : ServiceThread<ChatClientLogic>(new ChatClientLogic, parent)
 {
-   qRegisterMetaType<CelerClient::CelerUserType>();
    qRegisterMetaType<Chat::ChatSettings>();
    qRegisterMetaType<Chat::LoggerPtr>();
 

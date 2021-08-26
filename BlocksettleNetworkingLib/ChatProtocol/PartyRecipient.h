@@ -14,8 +14,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-
-#include "Celer/CelerClient.h"
+#include <QDateTime>
 #include <disable_warnings.h>
 #include "BinaryData.h"
 #include <enable_warnings.h>
@@ -37,14 +36,10 @@ namespace Chat
       QDateTime publicKeyTime() const { return publicKeyTime_; }
       void setPublicKeyTime(const QDateTime& val) { publicKeyTime_ = val; }
 
-      CelerClient::CelerUserType celerType() const { return celerType_; }
-      void setCelerType(const CelerClient::CelerUserType& celerType) { celerType_ = celerType; }
-
    private:
       std::string userHash_;
       BinaryData publicKey_;
       QDateTime publicKeyTime_;
-      CelerClient::CelerUserType celerType_ = bs::network::UserType::Undefined;
    };
 
    using PartyRecipientPtr = std::shared_ptr<PartyRecipient>;
