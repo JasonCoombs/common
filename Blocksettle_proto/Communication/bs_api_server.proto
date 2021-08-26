@@ -778,6 +778,7 @@ message Response
             string id = 3;
             string bic = 4;
             string name = 5;
+            string logo = 6;
         }
 
         repeated Bank banks = 1;
