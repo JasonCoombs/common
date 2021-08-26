@@ -143,13 +143,13 @@ void ChatClientLogic::LoginToServer(const BinaryData &token, const BinaryData &t
    currentUserPtr_->setUserHash(chatToken.chat_login());
    currentUserPtr_->setCelerUserType(static_cast<bs::network::UserType>(chatToken.user_type()));
    clientPartyModelPtr()->setOwnUserName(currentUserPtr_->userHash());
-   clientPartyModelPtr()->setOwnCelerUserType(currentUserPtr_->celerUserType());
+   //TODO: replace clientPartyModelPtr()->setOwnCelerUserType(currentUserPtr_->celerUserType());
 
    if (!connectionPtr_->openConnection(this->getChatServerHost(), this->getChatServerPort(), this)) {
       loggerPtr_->error("[ChatClientLogic::LoginToServer] failed to open ZMQ data connection");
       connectionPtr_.reset();
       clientPartyModelPtr()->setOwnUserName({});
-      clientPartyModelPtr()->setOwnCelerUserType(bs::network::UserType::Undefined);
+      //TODO: replace clientPartyModelPtr()->setOwnCelerUserType(bs::network::UserType::Undefined);
 
       emit chatClientError(ChatClientLogicError::ZmqDataConnectionFailed);
       emit clientLoggedOutFromServer();

@@ -15,7 +15,6 @@
 
 #include <QObject>
 
-#include "Celer/CelerClient.h"
 #include "ChatProtocol/ServiceThread.h"
 #include "ChatProtocol/ChatClientLogic.h"
 #include "BIP15xHelpers.h"
@@ -67,7 +66,6 @@ namespace Chat
 
 }
 
-Q_DECLARE_METATYPE(CelerClient::CelerUserType)
 Q_DECLARE_METATYPE(Chat::LoggerPtr)
 
 #endif // CHATCLIENTSERVICE_H

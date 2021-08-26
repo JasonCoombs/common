@@ -11,23 +11,9 @@
 #include "QuoteProvider.h"
 
 #include "AssetManager.h"
-#include "Celer/CommonUtils.h"
-#include "Celer/CancelOrderSequence.h"
-#include "Celer/CancelQuoteNotifSequence.h"
-#include "Celer/CancelRFQSequence.h"
-#include "Celer/CelerClient.h"
-#include "Celer/CreateFxOrderSequence.h"
-#include "Celer/CreateOrderSequence.h"
-#include "Celer/SignTxSequence.h"
-#include "Celer/SubmitQuoteNotifSequence.h"
-#include "Celer/SubmitRFQSequence.h"
 #include "CurrencyPair.h"
 #include "FastLock.h"
 #include "ProtobufUtils.h"
-
-#include "DownstreamQuoteProto.pb.h"
-#include "DownstreamOrderProto.pb.h"
-#include "bitcoin/DownstreamBitcoinTransactionSigningProto.pb.h"
 
 #include <spdlog/spdlog.h>
 #include <chrono>
@@ -35,11 +21,6 @@
 #include <QDateTime>
 
 using namespace bs::network;
-using namespace com::celertech::marketmerchant::api::enums::orderstatus;
-using namespace com::celertech::marketmerchant::api::enums::producttype::quotenotificationtype;
-using namespace com::celertech::marketmerchant::api::enums::side;
-using namespace com::celertech::marketmerchant::api::order;
-using namespace com::celertech::marketmerchant::api::quote;
 
 bool QuoteProvider::isRepliableStatus(const bs::network::QuoteReqNotification::Status status)
 {
@@ -52,13 +33,14 @@ QuoteProvider::QuoteProvider(const std::shared_ptr<AssetManager>& assetManager
       , bool debugTraffic)
  : logger_(logger)
  , assetManager_(assetManager)
- , celerLoggedInTimestampUtcInMillis_(0)
+ , loggedInTimestampUtcInMillis_(0)
  , debugTraffic_(debugTraffic)
 {
 }
 
 QuoteProvider::~QuoteProvider() noexcept = default;
 
+#if 0 //TODO: replace with proxy connection
 void QuoteProvider::ConnectToCelerClient(const std::shared_ptr<CelerClientQt>& celerClient)
 {
    celerClient_ = celerClient;
@@ -103,9 +85,11 @@ void QuoteProvider::onConnectedToCeler()
    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
    celerLoggedInTimestampUtcInMillis_ =  timestamp.count();
 }
+#endif   //0
 
 bool QuoteProvider::onQuoteResponse(const std::string& data)
 {
+#if 0
    QuoteDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -219,9 +203,11 @@ bool QuoteProvider::onQuoteResponse(const std::string& data)
 
    saveQuoteReqId(quote.requestId, quote.quoteId);
    emit quoteReceived(quote);
+#endif   //0
    return true;
 }
 
+#if 0
 static QString getQuoteRejReason(const com::celertech::marketmerchant::api::enums::quoterequestrejectreason::QuoteRequestRejectReason &reason)
 {
    switch (reason)
@@ -256,9 +242,11 @@ static QString getQuoteRejReason(const com::celertech::marketmerchant::api::enum
       return  QObject::tr("Unknown reason");
    }
 }
+#endif   //0
 
 bool QuoteProvider::onQuoteReject(const std::string& data)
 {
+#if 0
    QuoteRequestRejectDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -279,10 +267,11 @@ bool QuoteProvider::onQuoteReject(const std::string& data)
       text = getQuoteRejReason(response.quoterequestrejectreason());
    }
    emit quoteRejected(QString::fromStdString(response.quoterequestid()), text);
-
+#endif   //0
    return true;
 }
 
+#if 0
 static QString getQuoteRejReason(const com::celertech::marketmerchant::api::enums::quoterejectreason::QuoteRejectReason &reason)
 {
    switch (reason)
@@ -317,9 +306,11 @@ static QString getQuoteRejReason(const com::celertech::marketmerchant::api::enum
       return  QObject::tr("Unknown reason");
    }
 }
+#endif   //0
 
 bool QuoteProvider::onQuoteAck(const std::string& data)
 {
+#if 0
    QuoteAcknowledgementDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -350,12 +341,13 @@ bool QuoteProvider::onQuoteAck(const std::string& data)
 
    default: break;
    }
-
+#endif   //0
    return true;
 }
 
 bool QuoteProvider::onOrderReject(const std::string& data)
 {
+#if 0
    CreateOrderRequestRejectDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -367,7 +359,7 @@ bool QuoteProvider::onOrderReject(const std::string& data)
       logger_->debug("[QuoteProvider::onOrderReject] {} ", response.DebugString());
    }
    emit orderRejected(QString::fromStdString(response.externalclorderid()), QString::fromStdString(response.rejectreason()));
-
+#endif   //0
    return true;
 }
 
@@ -376,9 +368,7 @@ void QuoteProvider::SubmitRFQ(const bs::network::RFQ& rfq)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::SubmitRFQ] submitting RFQ with empty account name");
    }
-   const auto &sequence = std::make_shared<bs::celer::SubmitRFQSequence>(
-      assetManager_->GetAssignedAccount(), rfq, logger_, debugTraffic_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*TODO: submit via proxy !connection celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::SubmitRFQ] failed to execute CelerSubmitRFQSequence");
    } else {
       logger_->debug("[QuoteProvider::SubmitRFQ] RFQ submitted {}", rfq.requestId);
@@ -393,9 +383,7 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    }
    assert(quote.assetType != bs::network::Asset::Future);
 
-   auto sequence = std::make_shared<bs::celer::CreateOrderSequence>(assetManager_->GetAssignedAccount()
-      , reqId, quote, payoutTx, logger_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::AcceptQuote] failed to execute CelerCreateOrderSequence");
    } else {
       logger_->debug("[QuoteProvider::AcceptQuote] Order submitted");
@@ -407,9 +395,7 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] accepting FX quote with empty account name");
    }
-   auto sequence = std::make_shared<bs::celer::CreateFxOrderSequence>(assetManager_->GetAssignedAccount()
-      , reqId, quote, logger_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*!celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::AcceptQuoteFX] failed to execute CelerCreateFxOrderSequence");
    }
    else {
@@ -419,8 +405,7 @@ void QuoteProvider::AcceptQuoteFX(const QString &reqId, const Quote& quote)
 
 void QuoteProvider::CancelQuote(const QString &reqId)
 {
-   auto sequence = std::make_shared<bs::celer::CancelRFQSequence>(reqId, logger_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false /*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::CancelQuote] failed to execute CelerCancelRFQSequence sequence");
    }
    else {
@@ -430,8 +415,7 @@ void QuoteProvider::CancelQuote(const QString &reqId)
 
 void QuoteProvider::SignTxRequest(const QString &orderId, const std::string &txData)
 {
-   auto sequence = std::make_shared<bs::celer::SignTxSequence>(orderId, txData, logger_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::SignTxRequest] failed to execute CelerSignTxSequence sequence");
    }
    else {
@@ -439,6 +423,7 @@ void QuoteProvider::SignTxRequest(const QString &orderId, const std::string &txD
    }
 }
 
+#if 0
 static bs::network::Order::Status mapBtcOrderStatus(OrderStatus status)
 {
    switch (status) {
@@ -460,9 +445,11 @@ static bs::network::Order::Status mapFxOrderStatus(OrderStatus status)
       default:       return Order::Pending;
    }
 }
+#endif   //0
 
 bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
 {
+#if 0
    BitcoinOrderSnapshotDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -511,12 +498,13 @@ bool QuoteProvider::onBitcoinOrderSnapshot(const std::string& data)
    }
 
    emit orderUpdated(order);
-
+#endif   //0
    return true;
 }
 
 bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
 {
+#if 0
    FxOrderSnapshotDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -556,11 +544,13 @@ bool QuoteProvider::onFxOrderSnapshot(const std::string& data)
    }
 
    emit orderUpdated(order);
+#endif   //0
    return true;
 }
 
 bool QuoteProvider::onQuoteCancelled(const std::string& data)
 {
+#if 0
    QuoteCancelDownstreamEvent response;
 
    if (!response.ParseFromString(data)) {
@@ -575,11 +565,13 @@ bool QuoteProvider::onQuoteCancelled(const std::string& data)
    emit quoteCancelled(QString::fromStdString(response.quoterequestid())
       , response.quotecanceltype() == com::celertech::marketmerchant::api::enums::quotecanceltype::CANCEL_ALL_QUOTES
       /*&& (response.quotecancelreason() == "QUOTE_CANCEL_BY_USER")*/);
+#endif   //0
    return true;
 }
 
 bool QuoteProvider::onSignTxNotif(const std::string& data)
 {
+#if 0
    bitcoin::SignTransactionNotification response;
 
    if (!response.ParseFromString(data)) {
@@ -592,6 +584,7 @@ bool QuoteProvider::onSignTxNotif(const std::string& data)
 
    auto timestamp = QDateTime::fromMSecsSinceEpoch(response.timestampinutcinmillis());
    emit signTxRequested(QString::fromStdString(response.orderid()), QString::fromStdString(response.quoterequestid()), timestamp);
+#endif   //0
    return true;
 }
 
@@ -602,9 +595,7 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
       logger_->error("[QuoteProvider::SubmitQuoteNotif] account name not set");
    }
 
-   auto sequence = std::make_shared<bs::celer::SubmitQuoteNotifSequence>(assetManager_->GetAssignedAccount()
-      , qn, logger_);
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::SubmitQuoteNotif] failed to execute CelerSubmitQuoteNotifSequence");
    } else {
       logger_->debug("[QuoteProvider::SubmitQuoteNotif] QuoteNotification on {} submitted", qn.quoteRequestId);
@@ -617,9 +608,7 @@ void QuoteProvider::SubmitQuoteNotif(const bs::network::QuoteNotification &qn)
 
 void QuoteProvider::CancelQuoteNotif(const QString &reqId, const QString &reqSessToken)
 {
-   auto sequence = std::make_shared<bs::celer::CancelQuoteNotifSequence>(reqId, reqSessToken, logger_);
-
-   if (!celerClient_->ExecuteSequence(sequence)) {
+   if (false/*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::CancelQuoteNotif] failed to execute CelerCancelQuoteNotifSequence");
    } else {
       logger_->debug("[QuoteProvider::CancelQuoteNotif] CancelQuoteNotification on {} submitted", reqId.toStdString());
@@ -628,6 +617,7 @@ void QuoteProvider::CancelQuoteNotif(const QString &reqId, const QString &reqSes
 
 bool QuoteProvider::onQuoteReqNotification(const std::string& data)
 {
+#if 0
    QuoteRequestNotification response;
 
    if (!response.ParseFromString(data)) {
@@ -697,12 +687,13 @@ bool QuoteProvider::onQuoteReqNotification(const std::string& data)
       logger_->debug("[QuoteProvider::onQuoteReqNotif] {}", ProtobufUtils::toJsonCompact(response));
    }
    emit quoteReqNotifReceived(qrn);
-
+#endif   //0
    return true;
 }
 
 bool QuoteProvider::onQuoteNotifCancelled(const std::string& data)
 {
+#if 0
    QuoteCancelDownstreamEvent response;
    if (!response.ParseFromString(data)) {
       logger_->error("[QuoteProvider::onQuoteNotifCancelled] Failed to parse QuoteCancelDownstreamEvent");
@@ -718,6 +709,7 @@ bool QuoteProvider::onQuoteNotifCancelled(const std::string& data)
    if (debugTraffic_) {
       logger_->debug("[QuoteProvider::onQuoteNotifCancelled] {}", ProtobufUtils::toJsonCompact(response));
    }
+#endif   //0
    return true;
 }
 

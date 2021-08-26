@@ -28,13 +28,7 @@ enum PrivBridgeType
    PrivBridgeUnknownType         = 0;
    PrivBridgeSuspendTrading      = 3;
    PrivBridgeResumeTrading       = 4;
-   PrivBridgeCreateUser          = 5;
    PrivateBridgeGetHashedEmail   = 7;
-}
-
-message PrivBridgeCreateUserRequest
-{
-   string email = 1;
 }
 
 message PrivBridgeResponse
@@ -63,7 +57,6 @@ message PrivateBridgeMessage
 {
    PrivBridgeType type = 1;
    oneof data {
-      PrivBridgeCreateUserRequest   create_user                = 2;
       string                        message                    = 3;
       PrivBridgeResponse            response                   = 4;
       GetHashedEmailRequest         get_hashed_email_request   = 5;
@@ -550,12 +543,27 @@ enum GenoaAccountRequestType
 
 message GenoaAccountMessage
 {
+   message Balances
+   {
+      message Account
+      {
+         string   accountName = 1;
+         int64    accountId = 2;
+         string   entityName = 3;
+         int64    entityId = 4;
+         string   currency = 5;
+         int64    currencyId = 6;
+         double   balance = 7;
+      }
+      repeated Account accounts = 1;
+   }
+
    GenoaAccountRequestType type = 1;
    oneof data {
       GenoaAccountUserRequest    user_request      = 2;
       CustomerAccountData        account_data      = 3;
       GenoaAccountsData          accounts          = 4;
-      bytes                      balance_snapshot  = 5;
+      Balances                   balance_snapshot  = 5;
       GenoaAccountsBalanceUpdate balance_update    = 6;
    }
 }
@@ -2100,7 +2108,6 @@ enum RelayUser
    UserPrivateBridge    = 1;
    UserStorage          = 2;
    UserCCTracker        = 3;
-   UserCeler            = 4;
    UserGenoa            = 5;
    UserTradeHist        = 6;
    StreamPriceOffering  = 7;
