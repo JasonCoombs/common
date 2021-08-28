@@ -560,27 +560,23 @@ message StorageTradeHistMessage
       bytes                                     fx_trade                = 1;
       bytes                                     xbt_trade               = 2;
       bytes                                     cc_trade                = 3;
-      bytes                                     cash_settled_trade      = 4;
-      bytes                                     deliverable_trade       = 5;
+      bytes                                     future_trade            = 4;
 
       bytes                                     trade_info                 = 6;	// used as a put response
       string                                    fx_trade_request           = 7;
       string                                    xbt_trade_request          = 8;
       string                                    cc_trade_request           = 9;
-      string                                    cash_settled_trade_request = 10;
-      string                                    deliverable_trade_request  = 11;
+      string                                    future_trade_request       = 10;
 
       StorageTradeHistBuySellTrades             fx_buysell_trade           = 12;
       StorageTradeHistBuySellTrades             xbt_buysell_trade          = 13;
       StorageTradeHistBuySellTrades             cc_buysell_trade           = 14;
-      StorageTradeHistBuySellTrades             cash_settled_buysell_trade = 15;
-      StorageTradeHistBuySellTrades             deliverable_buysell_trade  = 16;
+      StorageTradeHistBuySellTrades             future_buysell_trade       = 15;
 
       StorageTradeHistTrades                    fx_trades               = 17;
       StorageTradeHistTrades                    xbt_trades              = 18;
       StorageTradeHistTrades                    cc_trades               = 19;
-      StorageTradeHistTrades                    cash_settled_trades     = 20;
-      StorageTradeHistTrades                    deliverable_trades      = 21;
+      StorageTradeHistTrades                    future_trades           = 20;
 
       string                                    cc_prices_request       = 22;
       StorageTradeHistCCPrices                  cc_prices_response      = 23;

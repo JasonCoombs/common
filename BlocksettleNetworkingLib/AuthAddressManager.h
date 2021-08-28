@@ -47,7 +47,6 @@ class AddressVerificator;
 class ApplicationSettings;
 class ArmoryConnection;
 class BsClient;
-class BaseCelerClient;
 class HeadlessContainer;
 class RequestReplyCommand;
 class ResolverFeed_AuthAddress;
@@ -109,12 +108,6 @@ public:
    AuthAddressManager(AuthAddressManager&&) = delete;
    AuthAddressManager& operator = (AuthAddressManager&&) = delete;
 
-   [[deprecated]] void init(const std::shared_ptr<ApplicationSettings> &
-      , const std::shared_ptr<bs::sync::WalletsManager> &
-      , const std::shared_ptr<HeadlessContainer> &);
-   [[deprecated]] void initLogin(const std::shared_ptr<BaseCelerClient> &,
-      const std::shared_ptr<bs::TradeSettings> &);
-
    std::shared_ptr<bs::TradeSettings> tradeSettings() const;
 
    size_t GetAddressCount();
@@ -140,8 +133,6 @@ public:
    bool RevokeAddress(const bs::Address &address);
 
    ReadyError readyError() const;
-
-   void OnDisconnectedFromCeler();
 
    std::vector<bs::Address> GetSubmittedAddressList(bool includeVerified = true) const;
 
@@ -215,7 +206,7 @@ private: // Auth callbacks override
 
    template <typename TVal> TVal lookup(const bs::Address &key, const std::map<bs::Address, TVal> &container) const;
 
-   void SubmitToCeler(const bs::Address &);
+   void submitToProxy(const bs::Address &);
    bool BroadcastTransaction(const BinaryData& transactionData);
    void SetBSAddressList(const std::unordered_set<std::string>& bsAddressList);
 
@@ -235,7 +226,6 @@ protected:
    std::shared_ptr<ArmoryConnection>      armory_;
    std::shared_ptr<ApplicationSettings>   settings_;
    std::shared_ptr<bs::sync::WalletsManager> walletsManager_;
-   std::shared_ptr<BaseCelerClient>       celerClient_;
    std::shared_ptr<AddressVerificator>    addressVerificator_;
    AuthCallbackTarget* authCT_{ nullptr };
 

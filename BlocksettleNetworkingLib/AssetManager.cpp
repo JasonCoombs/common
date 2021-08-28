@@ -12,9 +12,6 @@
 #include <QMutexLocker>
 #include <spdlog/spdlog.h>
 #include "AssetManager.h"
-#include "Celer/CelerClient.h"
-#include "Celer/FindSubledgersForAccountSequence.h"
-#include "Celer/GetAssignedAccountsListSequence.h"
 #include "CommonTypes.h"
 #include "CurrencyPair.h"
 #include "MDCallbacksQt.h"
@@ -22,21 +19,9 @@
 #include "Wallets/SyncWalletsManager.h"
 
 #include "bs_proxy_terminal_pb.pb.h"
-#include "com/celertech/piggybank/api/subledger/DownstreamSubLedgerProto.pb.h"
 
 using namespace Blocksettle::Communication;
 
-
-AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
-      , const std::shared_ptr<bs::sync::WalletsManager>& walletsManager
-      , const std::shared_ptr<MDCallbacksQt> &mdCallbacks
-      , const std::shared_ptr<CelerClientQt>& celerClient)
-   : logger_(logger)
-   , walletsManager_(walletsManager)
-   , mdCallbacks_(mdCallbacks)
-   , celerClient_(celerClient)
-   , act_(this)
-{}
 
 AssetManager::AssetManager(const std::shared_ptr<spdlog::logger>& logger
    , AssetCallbackTarget *act)
@@ -53,9 +38,6 @@ void AssetManager::init()
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletChanged, this, &AssetManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::walletsReady, this, &AssetManager::onWalletChanged);
    connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AssetManager::onWalletChanged);
-
-   connect(celerClient_.get(), &CelerClientQt::OnConnectedToServer, this, &AssetManager::onCelerConnected);
-   connect(celerClient_.get(), &CelerClientQt::OnConnectionClosed, this, &AssetManager::onCelerDisconnected);
 }
 
 double AssetManager::getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const
@@ -324,45 +306,6 @@ bs::Address AssetManager::getCCGenesisAddr(const std::string &cc) const
       return {};
    }
    return ccIt->second.genesisAddr;
-}
-
-void AssetManager::onCelerConnected()
-{
-   auto cb = [this](const std::vector<std::string>& accountsList) {
-      // Remove duplicated entries if possible
-      std::set<std::string> accounts(accountsList.begin(), accountsList.end());
-      if (accounts.size() == 1) {
-         assignedAccount_ = *accounts.begin();
-         logger_->debug("[AssetManager] assigned account: {}", assignedAccount_);
-      } else {
-         this->logger_->error("[AssetManager::onCelerConnected] too many accounts ({})", accounts.size());
-         for (const auto &account : accounts) {
-            this->logger_->error("[AssetManager::onCelerConnected] acc: {}", account);
-         }
-      }
-   };
-
-   auto seq = std::make_shared<bs::celer::GetAssignedAccountsListSequence>(logger_, cb);
-   celerClient_->ExecuteSequence(seq);
-}
-
-void AssetManager::onCelerDisconnected()
-{
-   std::vector<std::string> securitiesToClear;
-   for (const auto &security : securities_) {
-      if (security.second.assetType != bs::network::Asset::PrivateMarket) {
-         securitiesToClear.push_back(security.first);
-      }
-   }
-   for (const auto &security : securitiesToClear) {
-      securities_.erase(security);
-   }
-
-   balances_.clear();
-   currencies_.clear();
-   act_->onSecuritiesChanged();
-   act_->onFxBalanceCleared();
-   act_->onTotalChanged();
 }
 
 void AssetManager::onAccountBalanceLoaded(const std::string& currency, double value)

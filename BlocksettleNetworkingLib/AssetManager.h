@@ -43,7 +43,6 @@ namespace bs {
    }
 }
 class MDCallbacksQt;
-class CelerClientQt;
 
 struct AssetCallbackTarget
 {
@@ -63,10 +62,6 @@ class AssetManager : public QObject, public AssetCallbackTarget
     Q_OBJECT
 
 public:
-   [[deprecated]] AssetManager(const std::shared_ptr<spdlog::logger> &
-      , const std::shared_ptr<bs::sync::WalletsManager> &
-      , const std::shared_ptr<MDCallbacksQt> &
-      , const std::shared_ptr<CelerClientQt> &);
    AssetManager(const std::shared_ptr<spdlog::logger>&, AssetCallbackTarget *);
    ~AssetManager() override;
 
@@ -122,8 +117,6 @@ signals:
     void onAccountBalanceLoaded(const std::string& currency, double value);
     void onMessageFromPB(const Blocksettle::Communication::ProxyTerminalPb::Response &response);
 
-   void onCelerConnected();
-   void onCelerDisconnected();
    void onWalletChanged();
 
 protected:
@@ -147,7 +140,6 @@ protected:
    std::shared_ptr<spdlog::logger>        logger_;
    std::shared_ptr<bs::sync::WalletsManager> walletsManager_;
    std::shared_ptr<MDCallbacksQt>         mdCallbacks_;
-   std::shared_ptr<CelerClientQt>         celerClient_;
    AssetCallbackTarget* act_{ nullptr };
 
    bool     securitiesReceived_ = false;

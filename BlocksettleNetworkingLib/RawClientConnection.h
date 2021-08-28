@@ -8,16 +8,18 @@
 **********************************************************************************
 
 */
-#ifndef __CELER_CLIENT_CONNECTION_H__
-#define __CELER_CLIENT_CONNECTION_H__
+#ifndef __RAW_CLIENT_CONNECTION_H__
+#define __RAW_CLIENT_CONNECTION_H__
 
 #include <spdlog/spdlog.h>
-
 #include <string>
 #include <memory>
 
+#include "ActiveStreamClient.h"
+#include "ZmqStreamServerConnection.h"
+
 namespace bs {
-   namespace celer {
+   namespace network {
       template<class _S>
       class ClientConnection : public _S
       {
@@ -73,14 +75,14 @@ namespace bs {
 
                   while (true) {
                      if (offset >= pendingData_.size()) {
-                        _S::logger_->error("[CelerClientConnection] not all size bytes received");
+                        _S::logger_->error("[ClientConnection] not all size bytes received");
                         return;
                      }
 
                      if (sizeBuffer[offset] & 0x80) {
                         if (offset == 3) {
                            // we do not expect more than 4 bytes for size
-                           _S::logger_->error("[CelerClientConnection] could not decode size");
+                           _S::logger_->error("[ClientConnection] could not decode size");
                            return;
                         }
 
@@ -116,7 +118,31 @@ namespace bs {
          std::string pendingData_;
       };
 
-   }  //namespace celer
+
+      class StreamServerConnection : public ZmqStreamServerConnection
+      {
+      public:
+         StreamServerConnection(const std::shared_ptr<spdlog::logger>& logger
+            , const std::shared_ptr<ZmqContext>& context)
+            : ZmqStreamServerConnection(logger, context)
+         {}
+
+        ~StreamServerConnection() noexcept = default;
+
+        StreamServerConnection(const StreamServerConnection&) = delete;
+        StreamServerConnection& operator = (const StreamServerConnection&) = delete;
+        StreamServerConnection(StreamServerConnection&&) = delete;
+        StreamServerConnection& operator = (StreamServerConnection&&) = delete;
+
+      protected:
+         server_connection_ptr CreateActiveConnection() override;
+      };
+
+
+      std::shared_ptr<ServerConnection> createServerConnection(const std::shared_ptr<spdlog::logger>& logger
+         , const std::shared_ptr<ZmqContext>& zmqContext);
+
+   }  //namespace network
 }  //namespace bs
 
-#endif // __CELER_CLIENT_CONNECTION_H__
+#endif // __RAW_CLIENT_CONNECTION_H__

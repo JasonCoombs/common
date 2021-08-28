@@ -160,38 +160,33 @@ void BSMarketDataProvider::OnFullSnapshot(const std::string& data)
 
    double timestamp = static_cast<double>(snapshot.timestamp());
 
-   for (int i=0; i < snapshot.fx_products_size(); ++i) {
-      const auto& productInfo = snapshot.fx_products(i);
-
+   for (const auto& productInfo : snapshot.fx_products()) {
       if (!acceptUsdPairs_) {
          CurrencyPair cp{productInfo.product_name()};
          if (cp.NumCurrency() == kUsdCcyName || cp.DenomCurrency() == kUsdCcyName) {
             continue;
          }
       }
-
       OnProductSnapshot(bs::network::Asset::Type::SpotFX, productInfo, timestamp);
    }
 
-   for (int i=0; i < snapshot.xbt_products_size(); ++i) {
-      const auto& productInfo = snapshot.xbt_products(i);
-
+   for (const auto& productInfo : snapshot.xbt_products()) {
       if (!acceptUsdPairs_) {
          CurrencyPair cp{productInfo.product_name()};
          if (cp.DenomCurrency() == kUsdCcyName) {
             continue;
          }
       }
-
       OnProductSnapshot(bs::network::Asset::Type::SpotXBT, productInfo, timestamp);
    }
 
-   for (int i=0; i < snapshot.cc_products_size(); ++i) {
-      OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, snapshot.cc_products(i), timestamp);
+   for (const auto& ccProduct : snapshot.cc_products()) {
+      OnProductSnapshot(bs::network::Asset::Type::PrivateMarket, ccProduct, timestamp);
    }
 
-   OnPriceBookSnapshot(bs::network::Asset::Type::DeliverableFutures, snapshot.deliverable(), timestamp);
-   OnPriceBookSnapshot(bs::network::Asset::Type::CashSettledFutures, snapshot.cash_settled(), timestamp);
+   for (const auto& futProduct : snapshot.fut_products()) {
+      OnPriceBookSnapshot(bs::network::Asset::Type::Future, futProduct, timestamp);
+   }
 
    callbacks_->allSecuritiesReceived();
 }
@@ -258,38 +253,33 @@ void BSMarketDataProvider::OnIncrementalUpdate(const std::string& data)
 
    double timestamp = static_cast<double>(update.timestamp());
 
-   for (int i=0; i < update.fx_products_size(); ++i) {
-      const auto& productInfo = update.fx_products(i);
-
+   for (const auto& productInfo : update.fx_products()) {
       if (!acceptUsdPairs_) {
          CurrencyPair cp{productInfo.product_name()};
          if (cp.NumCurrency() == kUsdCcyName || cp.DenomCurrency() == kUsdCcyName) {
             continue;
          }
       }
-
       OnProductUpdate(bs::network::Asset::Type::SpotFX, productInfo, timestamp);
    }
 
-   for (int i=0; i < update.xbt_products_size(); ++i) {
-      const auto& productInfo = update.xbt_products(i);
-
+   for (const auto& productInfo : update.xbt_products()) {
       if (!acceptUsdPairs_) {
          CurrencyPair cp{productInfo.product_name()};
          if (cp.DenomCurrency() == kUsdCcyName) {
             continue;
          }
       }
-
       OnProductUpdate(bs::network::Asset::Type::SpotXBT, productInfo, timestamp);
    }
 
-   for (int i=0; i < update.cc_products_size(); ++i) {
-      OnProductUpdate(bs::network::Asset::Type::PrivateMarket, update.cc_products(i), timestamp);
+   for (const auto& ccProduct : update.cc_products()) {
+      OnProductUpdate(bs::network::Asset::Type::PrivateMarket, ccProduct, timestamp);
    }
 
-   OnPriceBookUpdate(bs::network::Asset::Type::DeliverableFutures, update.deliverable(), timestamp);
-   OnPriceBookUpdate(bs::network::Asset::Type::CashSettledFutures, update.cash_settled(), timestamp);
+   for (const auto& futProduct : update.fut_products()) {
+      OnPriceBookUpdate(bs::network::Asset::Type::Future, futProduct, timestamp);
+   }
 }
 
 void BSMarketDataProvider::OnNewTradeUpdate(const std::string& data)
