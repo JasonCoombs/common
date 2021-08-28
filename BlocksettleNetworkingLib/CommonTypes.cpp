@@ -163,20 +163,8 @@ bs::fut::Product bs::fut::fromProdType(const std::string& pt)
          return p;
       }
    }
-   throw std::invalid_argument("unknown product " + pt);
    return bs::fut::Product::Undefined;
 }
-
-bs::fut::Product bs::fut::fromGenoaProductType(const std::string& product)
-{
-   if (product == "XBT/EURD") { return bs::fut::Product::DelvXbtEur; }
-   if (product == "XBT/EURP") { return bs::fut::Product::RollXbtEur; }
-   if (product == "XBT/USDD") { return bs::fut::Product::DelvXbtUsd; }
-   if (product == "XBT/USDP") { return bs::fut::Product::RollXbtUsd; }
-   throw std::invalid_argument("invalid product " + product);
-   return bs::fut::Product::Undefined;
-}
-
 
 const char *bs::network::Asset::toString(bs::network::Asset::Type at)
 {

@@ -38,7 +38,6 @@ namespace bs {
       const char* toString(Product);
       std::string toProdType(Product);
       Product fromProdType(const std::string&);
-      Product fromGenoaProductType(const std::string&);
    }  //namespace fut
 
 
