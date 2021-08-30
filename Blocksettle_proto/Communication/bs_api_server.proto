@@ -264,6 +264,7 @@ message Request
     message RegisterBasicAccount
     {
         string phone = 1;
+        bool include_app_hash = 2;
     }
 
     message VerifyBasicAccount
