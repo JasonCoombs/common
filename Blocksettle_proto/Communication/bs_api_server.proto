@@ -32,6 +32,12 @@ enum ErrorCode {
     ERROR_CODE_INVALID_REQUEST = 1;
 }
 
+enum AccountType {
+    ALL = 0;
+    BANK = 1;
+    CARD = 2;
+}
+
 message Order
 {
    // order_id is set from FS position ID
@@ -192,6 +198,11 @@ message Request
         string account_ref = 1;
     }
 
+    message GetAllExternalAccounts
+    {
+        AccountType account_type = 1;
+    }
+
     message WithdrawToExternalAccount
     {
         string account_name = 1;
@@ -347,7 +358,7 @@ message Request
         DeleteApiKey                delete_api_key              = 37;
         Empty                       get_deposit_info                = 38;
         CreateExternalAccount       create_external_account         = 39;
-        Empty                       get_all_external_accounts       = 40;
+        GetAllExternalAccounts      get_all_external_accounts       = 40;
         WithdrawToExternalAccount   withdraw_to_external_account    = 41;
         WithdrawBitcoin             withdraw_bitcoin                = 42;
         Empty                       subscribe_withdraw_prices       = 43;
@@ -638,6 +649,7 @@ message Response
 
         bool success = 1;
         repeated ExternalAccountInfo accounts = 2;
+        AccountType account_type = 3;
     }
 
     message ObligationRequest

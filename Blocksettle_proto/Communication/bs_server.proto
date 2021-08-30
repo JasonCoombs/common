@@ -821,6 +821,7 @@ message GenoaCreateExternalAccountResponse
 message GenoaGetAllExternalAccountsRequest
 {
    string entity_name = 1;
+   Blocksettle.Communication.ApiServer.AccountType account_type = 2;
 }
 
 message GenoaGetAllExternalAccountsResponse
@@ -834,6 +835,7 @@ message GenoaGetAllExternalAccountsResponse
 
    bool loaded = 1;
 
+   Blocksettle.Communication.ApiServer.AccountType account_type = 3;
    repeated ExternalAccountInfo accounts = 2;
 }
 
