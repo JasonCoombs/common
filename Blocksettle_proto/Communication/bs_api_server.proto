@@ -28,8 +28,9 @@ enum EidStatus {
 }
 
 enum ErrorCode {
-    ERROR_CODE_SERVER_ERROR = 0;
-    ERROR_CODE_INVALID_REQUEST = 1;
+    NO_ERROR_CODE = 0;
+    ERROR_CODE_SERVER_ERROR = 1;
+    ERROR_CODE_INVALID_REQUEST = 2;
 }
 
 enum AccountType {
@@ -343,8 +344,8 @@ message Request
         MaxTradeAmount              max_trade_amount            = 24;
         TradingStats                trading_stats               = 25;
 
-        bs.types.SubmitPricesData           submit_prices       = 26;
-        bs.types.PullPricesData             pull_prices         = 27;
+        bs.types.SubmitPricesData   submit_prices               = 26;
+        bs.types.PullPricesData     pull_prices                 = 27;
 
         WhitelistedAddressRequest   submit_address              = 28;
         Empty                       load_addresses              = 29;
@@ -656,7 +657,7 @@ message Response
     {
         string   delivery_id    = 1;
         string   currency       = 2;
-        double   amount         = 3;
+        string   amount         = 3;
         string   bs_address     = 4;
     }
 
@@ -746,6 +747,13 @@ message Response
         double price = 2;
         double amount = 3;
         double timestamp = 4;
+    }
+
+    message SubmitPrices
+    {
+        bs.types.SubmitPriceProcessingResult    result              = 1;
+        bs.types.SubmitPriceRejectReason        reject_reason       = 2;
+        bs.types.SubmitPricesData               rejected_price_data = 3;
     }
 
     message RegisterBasicAccount
@@ -841,66 +849,67 @@ message Response
 
     oneof data
     {
-        Authorize               authorize                   = 10;
-        EidLogin                eid_login                   = 11;
-        EidRegister             eid_register                = 12;
-        ResumeSession           resume_session              = 13;
-        Empty                   logout                      = 14;
-        MarketOrder             market_order                = 15;
-        LoadOrders              load_orders                 = 16;
-        LoadBalance             load_balance                = 17;
-        Subscribe               subscribe                   = 18;
-        Unsubscribe             unsubscribe                 = 19;
-        TradingDay              trading_day                 = 20;
-        EstimateIm              estimate_im                 = 21;
-        ProductFee              product_fee                 = 22;
-        MaxTradeAmount          max_trade_amount            = 23;
-        TradingStats            trading_stats               = 24;
-        SubmitAddress           submit_address              = 25;
-        LoadAddresses           load_addresses              = 26;
-        RevokeAddress           revoke_address              = 27;
-        LoadDepositAddress      load_deposit_address        = 28;
-        CreateIbanAgreementUrl  create_iban_agreement       = 29;
-        GetIbanAccounts         get_iban_accounts           = 30;
-        GetIbanAccountDetails   get_iban_account_details    = 31;
-        NewApiKey               new_api_key                 = 32;
-        ListApiKeys             list_api_keys               = 33;
-        DeleteApiKey            delete_api_key              = 34;
-        GetDepositInfo          get_deposit_info            = 35;
-        CreateExternalAccount   create_external_account     = 36;
-        GetAllExternalAccounts  get_all_external_accounts   = 37;
-        ResponseResult          withdraw_to_external_account= 38;
-        ResponseResult          withdraw_bitcoin            = 39;
-        ObligationRequest       obligation_request          = 40;
-        ResponseResult          subscribe_withdraw_prices   = 41;
-        ResponseResult          unsubscribe_withdraw_prices = 42;
-        MarketData              market_data                 = 43;
-        Error                   fatal_error                 = 44;
-        EidLoginUpdate          eid_login_update            = 45;
-        OrderUpdate             order_update                = 46;
-        TradingClosed           trading_closed              = 47;
-        Empty                   session_replaced            = 48;
-        UserNotify              user_notify                 = 49;
-        UpdateWithdrawPrices    update_withdraw_prices      = 50;
-        HistoricalPL            historical_profit_loss      = 51;
-        TradeHistory            trade_history               = 52;
-        TransactionsForEntity   transactions_for_entity     = 53;
-        TradeFeeForEntity       trade_fee_for_entity        = 54;
-        GetStatementDates       get_statement_dates         = 55;
-        GetStatements           get_statements              = 56;
-        Ohlc                    ohlc                        = 57;
-        Empty                   subscribe_trade_created     = 58;
-        TradeCreated            trade_created               = 59;
-        RegisterBasicAccount    register_basic_account      = 60;
-        VerifyBasicAccount      verify_basic_account        = 61;
-        LoginBasicAccount       login_basic_account         = 62;
-        UpgradeBasicAccount     upgrade_basic_account       = 63;
-        UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 64;
-        ListClientBanks         list_client_banks           = 65;
-        BankOnboardingLink      bank_onboarding_link        = 66;
-        ListRemoteAccounts      list_remote_accounts        = 67;
-        SaveAccount             save_account                = 68;
-        RequestAddCard          request_add_card            = 69;
-        ConfirmCard             confirm_card                = 70;
+        Authorize               authorize                   = 1;
+        EidLogin                eid_login                   = 2;
+        EidRegister             eid_register                = 3;
+        ResumeSession           resume_session              = 4;
+        Empty                   logout                      = 5;
+        MarketOrder             market_order                = 6;
+        LoadOrders              load_orders                 = 7;
+        LoadBalance             load_balance                = 8;
+        Subscribe               subscribe                   = 9;
+        Unsubscribe             unsubscribe                 = 10;
+        TradingDay              trading_day                 = 11;
+        EstimateIm              estimate_im                 = 12;
+        ProductFee              product_fee                 = 13;
+        MaxTradeAmount          max_trade_amount            = 14;
+        TradingStats            trading_stats               = 15;
+        SubmitAddress           submit_address              = 16;
+        LoadAddresses           load_addresses              = 17;
+        RevokeAddress           revoke_address              = 18;
+        LoadDepositAddress      load_deposit_address        = 19;
+        CreateIbanAgreementUrl  create_iban_agreement       = 20;
+        GetIbanAccounts         get_iban_accounts           = 21;
+        GetIbanAccountDetails   get_iban_account_details    = 22;
+        NewApiKey               new_api_key                 = 23;
+        ListApiKeys             list_api_keys               = 24;
+        DeleteApiKey            delete_api_key              = 25;
+        GetDepositInfo          get_deposit_info            = 26;
+        CreateExternalAccount   create_external_account     = 27;
+        GetAllExternalAccounts  get_all_external_accounts   = 28;
+        ResponseResult          withdraw_to_external_account= 29;
+        ResponseResult          withdraw_bitcoin            = 30;
+        ObligationRequest       obligation_request          = 31;
+        ResponseResult          subscribe_withdraw_prices   = 32;
+        ResponseResult          unsubscribe_withdraw_prices = 33;
+        MarketData              market_data                 = 34;
+        Error                   fatal_error                 = 35;
+        EidLoginUpdate          eid_login_update            = 36;
+        OrderUpdate             order_update                = 37;
+        TradingClosed           trading_closed              = 38;
+        Empty                   session_replaced            = 39;
+        UserNotify              user_notify                 = 40;
+        UpdateWithdrawPrices    update_withdraw_prices      = 41;
+        HistoricalPL            historical_profit_loss      = 42;
+        TradeHistory            trade_history               = 43;
+        TransactionsForEntity   transactions_for_entity     = 44;
+        TradeFeeForEntity       trade_fee_for_entity        = 45;
+        GetStatementDates       get_statement_dates         = 46;
+        GetStatements           get_statements              = 47;
+        Ohlc                    ohlc                        = 48;
+        Empty                   subscribe_trade_created     = 49;
+        TradeCreated            trade_created               = 50;
+        SubmitPrices            submit_prices               = 51;
+        RegisterBasicAccount    register_basic_account      = 52;
+        VerifyBasicAccount      verify_basic_account        = 53;
+        LoginBasicAccount       login_basic_account         = 54;
+        UpgradeBasicAccount     upgrade_basic_account       = 55;
+        UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 56;
+        ListClientBanks         list_client_banks           = 57;
+        BankOnboardingLink      bank_onboarding_link        = 58;
+        ListRemoteAccounts      list_remote_accounts        = 59;
+        SaveAccount             save_account                = 60;
+        RequestAddCard          request_add_card            = 61;
+        ConfirmCard             confirm_card                = 62;
     }
 }

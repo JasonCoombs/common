@@ -381,7 +381,7 @@ void QuoteProvider::AcceptQuote(const QString &reqId, const Quote& quote, const 
    if (!assetManager_->HaveAssignedAccount()) {
       logger_->error("[QuoteProvider::AcceptQuote] accepting XBT quote with empty account name");
    }
-   assert(quote.assetType != bs::network::Asset::DeliverableFutures);
+   assert(quote.assetType != bs::network::Asset::Future);
 
    if (false/*TODO: submit via proxy !celerClient_->ExecuteSequence(sequence)*/) {
       logger_->error("[QuoteProvider::AcceptQuote] failed to execute CelerCreateOrderSequence");

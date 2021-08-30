@@ -13,7 +13,6 @@ syntax = "proto3";
 package Blocksettle.Server;
 
 import "bs_api_server.proto";
-import "bs_server_storage.proto";
 import "bs_types.proto";
 import "common.proto";
 import "pb_cli.proto";
@@ -1647,8 +1646,7 @@ enum TradeHistType
    TradeHistSaveFxTrade             = 1;
    TradeHistSaveXbtTrade            = 2;
    TradeHistSaveCcTrade             = 3;
-   TradeHistSaveCashSettledTrade    = 4;
-   TradeHistSaveDeliverableTrade    = 5;
+   TradeHistSaveFutureTrade         = 4;
    TradeHistSaveTradeResult         = 6;
    TradeHistRequestLastTrade        = 7;
    TradeHistRequestLastBuySellTrade = 8;
@@ -2192,9 +2190,10 @@ message ObligationsManaging
    {
       string   entity_name    = 1;
       string   delivery_id    = 2;
-      int64    value          = 3;
+      bs.types.XBTAmountValue value = 3;
       string   bs_address     = 4;
-      double   price          = 5;
+      bs.types.XBTPrice price = 5;
+      string   currency       = 6;
    }
 
    message SubmitWhitelistedAddress
@@ -2267,8 +2266,11 @@ message PriceStreamManaging
       PriceConsumed                 = 2;
       SubmitPrices                  = 3;
       PullPrices                    = 4;
-      DealerConnected               = 10;
-      DealerDisconnected            = 11;
+      DealerConnected               = 5;
+      DealerDisconnected            = 6;
+      NetExposureUpdate             = 7;
+      TradingStartedUpdate          = 8;
+      TradingClosedUpdate           = 9;
    };
 
    message GetBestOfferRequest
@@ -2276,7 +2278,7 @@ message PriceStreamManaging
       bs.types.XBTAmountValue xbt_amount        = 1;
       string                  requesting_entity = 2;
       bool                    get_ask_price     = 3;
-      bs.types.PriceBookType  price_book        = 4;
+      int32                   price_book        = 4;
    }
 
    message GetBestOfferResponse
@@ -2303,6 +2305,7 @@ message PriceStreamManaging
    {
       string   owner_entity_name = 1;
       uint64   timestamp         = 2;
+      int32    product_type      = 3; // bs::network::asset::type
    }
 
    message SubmitPricesRequest
@@ -2311,24 +2314,53 @@ message PriceStreamManaging
       bs.types.SubmitPricesData  submit_price_data = 2;
    }
 
+   message SubmitPricesResponse
+   {
+      string                                 owner_entity_name    = 1;
+      bs.types.SubmitPriceProcessingResult   result               = 2;
+      bs.types.SubmitPriceRejectReason       reject_reason        = 3;
+      bs.types.SubmitPricesData              rejected_price_data  = 4;
+   }
+
    message PullPricesRequest
    {
       string                     owner_entity_name = 1;
       bs.types.PullPricesData    pull_price_data   = 2;
    }
 
+   message NetExposureChangedUpdate
+   {
+      string                  entity_name    = 1;
+      int32                   product_type   = 2; // bs::network::asset::type
+      bs.types.XBTAmountValue net_exposure   = 3;
+   }
+
+   message TradingStartedNotification
+   {
+      int32                   product_type   = 1; // bs::network::Asset::Type
+      bs.types.XBTPrice       session_im     = 2;
+   }
+
+   message TradingClosedNotification
+   {
+      int32                   product_type   = 1; // bs::network::Asset::Type
+   }
 
    MessageType   message_type = 1;
 
    oneof data
    {
-      GetBestOfferRequest  get_best_price_offer = 2;
-      GetBestOfferResponse best_price_offer     = 3;
-      ClientData           client_data          = 4;
-      PriceConsumedData    consumed_price       = 5;
-      string               entity_name          = 6;
-      SubmitPricesRequest  submit_prices        = 7;
-      PullPricesRequest    pull_prices          = 8;
+      GetBestOfferRequest        get_best_price_offer    = 2;
+      GetBestOfferResponse       best_price_offer        = 3;
+      ClientData                 client_data             = 4;
+      PriceConsumedData          consumed_price          = 5;
+      string                     entity_name             = 6;
+      SubmitPricesRequest        submit_prices           = 7;
+      SubmitPricesResponse       submit_prices_response  = 8;
+      PullPricesRequest          pull_prices             = 9;
+      NetExposureChangedUpdate   net_exposure_update     = 10;
+      TradingStartedNotification trading_started         = 11;
+      TradingClosedNotification  trading_closed          = 12;
    }
 }
 
@@ -2350,7 +2382,7 @@ message ApiServerMsg
          bs.types.XBTPrice ask     = 3;
       }
 
-      bs.types.PriceBookType  book_type      = 1;
+      int32 		      book_type      = 1;
       repeated Entry          prices         = 2;
    }
 
@@ -2389,20 +2421,20 @@ message ApiServerMsg
 
    oneof data
    {
-      UpdateOrder             update_order            = 1;
-      UpdateBook              update_book             = 2;
-      TradingSessionOpen      trading_opened          = 3;
-      TradingSessionClosed    trading_closed          = 4;
-      Empty                   send_prices             = 5;
-      Empty                   send_trading_stats      = 6;
-      string                  user_connected          = 7;
-      string                  user_disconnected       = 8;
-      UserNotify              user_notify             = 9;
-      UpdateWithdrawPrices    update_withdraw_prices  = 10;
-      Empty                   subscribe_price_offers  = 11;
-      UpdateBook              price_offer             = 12;
-      UpdateBalances          update_balances         = 13;
-      OpenInterestUpdate      update_open_interest    = 14;
+      UpdateOrder                update_order            = 1;
+      UpdateBook                 update_book             = 2;
+      TradingSessionOpen         trading_opened          = 3;
+      TradingSessionClosed       trading_closed          = 4;
+      Empty                      send_prices             = 5;
+      Empty                      send_trading_stats      = 6;
+      string                     user_connected          = 7;
+      string                     user_disconnected       = 8;
+      UserNotify                 user_notify             = 9;
+      UpdateWithdrawPrices       update_withdraw_prices  = 10;
+      Empty                      subscribe_price_offers  = 11;
+      UpdateBook                 price_offer             = 12;
+      UpdateBalances             update_balances         = 13;
+      OpenInterestUpdate         update_open_interest    = 14;
    }
 }
 
