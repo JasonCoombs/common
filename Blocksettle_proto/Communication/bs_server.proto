@@ -332,6 +332,7 @@ enum GenoaType
    GenoaSaveAccount                       = 69;
    GenoaRequestAddCard                    = 70;
    GenoaConfirmCard                       = 71;
+   GenoaChargeCard                        = 72;
 }
 
 message GenoaDisconnectedBroadcast
@@ -830,6 +831,8 @@ message GenoaGetAllExternalAccountsResponse
       string   name        = 1;
       string   created_at  = 2;
       string   bank_name   = 3;
+      int32    account_id  = 4;
+      Blocksettle.Communication.ApiServer.AccountType account_type = 5;
    }
 
    bool loaded = 1;
@@ -1104,6 +1107,20 @@ message GenoaConfirmCardResponse
    string display_name = 2;
 }
 
+message GenoaChargeCardRequest
+{
+   string entity_name = 1;
+   int32 account_id = 2;
+   bs.types.FXAmountValue amount = 3;
+}
+
+message GenoaChargeCardResponse
+{
+   bool success = 1;
+   string error_code = 2;
+   string error_msg = 3;
+}
+
 message GenoaMessage
 {
    message FutureMoveReservationsRequest
@@ -1361,6 +1378,8 @@ message GenoaMessage
       GenoaRequestAddCardResponse               request_add_card_response           = 110;
       GenoaConfirmCardRequest                   confirm_card_request                = 111;
       GenoaConfirmCardResponse                  confirm_card_response               = 112;
+      GenoaChargeCardRequest                    charge_card_request                 = 113;
+      GenoaChargeCardResponse                   charge_card_response                = 114;
 
    }
 }

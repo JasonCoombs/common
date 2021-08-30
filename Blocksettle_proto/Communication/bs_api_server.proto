@@ -325,6 +325,12 @@ message Request
         string payment_ref = 1;
     }
 
+    message ChargeCard
+    {
+        int32 account_id = 1;
+        string amount = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -382,6 +388,7 @@ message Request
         SaveAccount                 save_account                = 60;
         RequestAddCard              request_add_card            = 61;
         ConfirmCard                 confirm_card                = 62;
+        ChargeCard                  charge_card                 = 63;
     }
 }
 
@@ -630,9 +637,9 @@ message Response
     {
         message ExternalAccountInfo
         {
-            string name         = 1;
-            string created_at   = 2;
-            string bank_name    = 3;
+            string name = 1;
+            string created_at = 2;
+            string bank_name = 3;
         }
 
         bool                success = 1;
@@ -646,6 +653,8 @@ message Response
             string name         = 1;
             string created_at   = 2;
             string bank_name    = 3;
+            int32 account_id = 4;
+            AccountType account_type = 5;
         }
 
         bool success = 1;
@@ -847,6 +856,12 @@ message Response
         string display_name = 2;
     }
 
+    message ChargeCard
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 1;
@@ -911,5 +926,6 @@ message Response
         SaveAccount             save_account                = 60;
         RequestAddCard          request_add_card            = 61;
         ConfirmCard             confirm_card                = 62;
+        ChargeCard              charge_card                 = 63;
     }
 }
