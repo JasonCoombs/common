@@ -33,6 +33,12 @@ enum ErrorCode {
     ERROR_CODE_INVALID_REQUEST = 2;
 }
 
+enum AccountType {
+    ALL = 0;
+    BANK = 1;
+    CARD = 2;
+}
+
 message Order
 {
    // order_id is set from FS position ID
@@ -193,6 +199,11 @@ message Request
         string account_ref = 1;
     }
 
+    message GetAllExternalAccounts
+    {
+        AccountType account_type = 1;
+    }
+
     message WithdrawToExternalAccount
     {
         string account_name = 1;
@@ -314,6 +325,12 @@ message Request
         string payment_ref = 1;
     }
 
+    message ChargeCard
+    {
+        int32 account_id = 1;
+        string amount = 2;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -348,7 +365,7 @@ message Request
         DeleteApiKey                delete_api_key              = 37;
         Empty                       get_deposit_info                = 38;
         CreateExternalAccount       create_external_account         = 39;
-        Empty                       get_all_external_accounts       = 40;
+        GetAllExternalAccounts      get_all_external_accounts       = 40;
         WithdrawToExternalAccount   withdraw_to_external_account    = 41;
         WithdrawBitcoin             withdraw_bitcoin                = 42;
         Empty                       subscribe_withdraw_prices       = 43;
@@ -371,6 +388,7 @@ message Request
         SaveAccount                 save_account                = 60;
         RequestAddCard              request_add_card            = 61;
         ConfirmCard                 confirm_card                = 62;
+        ChargeCard                  charge_card                 = 63;
     }
 }
 
@@ -619,9 +637,9 @@ message Response
     {
         message ExternalAccountInfo
         {
-            string name         = 1;
-            string created_at   = 2;
-            string bank_name    = 3;
+            string name = 1;
+            string created_at = 2;
+            string bank_name = 3;
         }
 
         bool                success = 1;
@@ -635,10 +653,13 @@ message Response
             string name         = 1;
             string created_at   = 2;
             string bank_name    = 3;
+            int32 account_id = 4;
+            AccountType account_type = 5;
         }
 
         bool success = 1;
         repeated ExternalAccountInfo accounts = 2;
+        AccountType account_type = 3;
     }
 
     message ObligationRequest
@@ -835,6 +856,12 @@ message Response
         string display_name = 2;
     }
 
+    message ChargeCard
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 1;
@@ -899,5 +926,6 @@ message Response
         SaveAccount             save_account                = 60;
         RequestAddCard          request_add_card            = 61;
         ConfirmCard             confirm_card                = 62;
+        ChargeCard              charge_card                 = 63;
     }
 }
