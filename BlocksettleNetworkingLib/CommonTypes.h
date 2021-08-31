@@ -21,6 +21,26 @@
 #endif
 
 namespace bs {
+
+   namespace fut {
+      enum class Product
+      {
+         Undefined = 0,
+         first = 4,           // this is only to sync with previous enum (Asset::Type)
+         DelvXbtEur = first,
+         RollXbtEur,
+         DelvXbtUsd,
+         RollXbtUsd,
+         last
+      };
+
+      bool isDeliverable(Product);
+      const char* toString(Product);
+      std::string toProdType(Product);
+      Product fromProdType(const std::string&);
+   }  //namespace fut
+
+
    namespace network {
 
       enum class UserType : int
@@ -68,8 +88,7 @@ namespace bs {
             SpotFX = first,
             SpotXBT,
             PrivateMarket,
-            DeliverableFutures,
-            CashSettledFutures,
+            Future,
             last
          };
 
