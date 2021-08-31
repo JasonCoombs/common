@@ -2346,10 +2346,9 @@ message ApiInternalCommand
 
    message AutheidSignRequest
    {
-      bytes  client_id = 1;
-      AutheidStartRequest start_request = 2;
-      bytes  request_id = 3;
-      uint64 started_ms = 4;
+      AutheidStartRequest start_request = 1;
+      bytes  request_id = 2;
+      uint64 started_ms = 3;
    }
 
    message AutheidCommonRequest
