@@ -2395,6 +2395,7 @@ message ApiInternalCommand
       uint64 timeout_ms = 5;
       bool   use_local_account = 6;
       string email = 7;
+      bytes  invisible_data = 8;
    }
 
    message AutheidSignRequest
