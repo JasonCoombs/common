@@ -1091,8 +1091,7 @@ message GenoaConfirmCardRequest
 
 message GenoaConfirmCardResponse
 {
-   string digits = 1;
-   string display_name = 2;
+   Blocksettle.Communication.ApiServer.Response.ConfirmCard result = 1;
 }
 
 message GenoaChargeCardRequest
