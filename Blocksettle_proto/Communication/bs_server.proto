@@ -2411,11 +2411,38 @@ message ApiInternalCommand
       bytes request_id = 2;
    }
 
+   message AutheidStartResponse
+   {
+      AutheidStartRequest request = 1;
+      bool   success = 2;
+      string error_msg = 3;
+      bytes  request_id = 4;
+   }
+
+   message AutheidSignResponse
+   {
+      bytes  client_id = 1;
+      bytes  request_id = 2;
+      int32  sign_error = 3;
+      string email = 4;
+   }
+
+   message AutheidResponse
+   {
+      bytes client_id = 1;
+      int32 sign_error = 2;
+      bytes request_id = 3;
+      bytes response = 4;	// can't include rp.proto for autheid.rp.GetResultResponse
+   }
+
    oneof data
    {
       AutheidStartRequest  autheid_start = 1;
       AutheidSignRequest   autheid_sign = 2;
       AutheidCommonRequest autheid_common = 3;
+      AutheidStartResponse start_response = 4;
+      AutheidSignResponse  sign_response = 5;
+      AutheidResponse      common_response = 6;
    }
 }
 
