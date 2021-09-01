@@ -841,9 +841,9 @@ message Response
 
     message SaveAccount
     {
-        string bank_name = 1;
-        string created_at = 2;
-        string name = 3;
+        bool success = 1;
+        string error_msg = 2;
+        ExternalAccountInfo account = 3;
     }
 
     message RequestAddCard
