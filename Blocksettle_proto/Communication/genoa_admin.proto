@@ -83,6 +83,21 @@ message Response
         string open_interest = 2;
     }
 
+    message OrderFailed
+    {
+        string entity_name = 1;
+        string product_name = 2;
+        bs.types.Side side = 3;
+        string amount = 4;
+        string price = 5;
+        string error_msg = 6;
+    }
+
+    message SessionFailed
+    {
+        int64 session_id = 1;
+    }
+
     oneof data
     {
         Trades trades = 1;
@@ -90,5 +105,7 @@ message Response
         TradingOpened trading_opened = 3;
         DefaultsInfo defaults_info = 4;
         UpdateOpenInterest update_open_interest = 5;
+        OrderFailed order_failed = 6;
+        SessionFailed session_failed = 7;
     }
 }
