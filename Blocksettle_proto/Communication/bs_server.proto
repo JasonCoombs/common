@@ -826,19 +826,7 @@ message GenoaGetAllExternalAccountsRequest
 
 message GenoaGetAllExternalAccountsResponse
 {
-   message ExternalAccountInfo
-   {
-      string   name        = 1;
-      string   created_at  = 2;
-      string   bank_name   = 3;
-      int32    account_id  = 4;
-      Blocksettle.Communication.ApiServer.AccountType account_type = 5;
-   }
-
-   bool loaded = 1;
-
-   Blocksettle.Communication.ApiServer.AccountType account_type = 3;
-   repeated ExternalAccountInfo accounts = 2;
+   Blocksettle.Communication.ApiServer.Response.GetAllExternalAccounts result = 1;
 }
 
 message GenoaGetDepositInfoRequest
@@ -1080,9 +1068,7 @@ message GenoaSaveAccountRequest
 
 message GenoaSaveAccountResponse
 {
-   string bank_name = 1;
-   string created_at = 2;
-   string name = 3;
+   Blocksettle.Communication.ApiServer.Response.SaveAccount result = 1;
 }
 
 message GenoaRequestAddCardRequest
@@ -1103,8 +1089,7 @@ message GenoaConfirmCardRequest
 
 message GenoaConfirmCardResponse
 {
-   string digits = 1;
-   string display_name = 2;
+   Blocksettle.Communication.ApiServer.Response.ConfirmCard result = 1;
 }
 
 message GenoaChargeCardRequest
