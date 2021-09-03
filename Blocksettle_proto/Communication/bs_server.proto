@@ -2752,3 +2752,36 @@ message GenoaAdminMsg
       UpdateOpenInterest update_open_interest = 4;
    }
 }
+
+message StatusExporterMessage
+{
+   message TradingStartedUpdate
+   {
+      string product_name = 1;
+   }
+
+   message TradingStoppedUpdate
+   {
+      string product_name = 1;
+   }
+
+   message InitialStatusQeuryTimeout
+   {}
+
+   message SessionStatusPollTimeout
+   {}
+
+   message SessionCloseGracePeriodTimeout
+   {
+      string product_name = 1;
+   }
+
+   oneof data
+   {
+      TradingStartedUpdate             trading_started               = 1;
+      TradingStoppedUpdate             trading_stopped               = 2;
+      InitialStatusQeuryTimeout        initial_status_query_timeout  = 3;
+      SessionStatusPollTimeout         poll_session_status_timeout   = 4;
+      SessionCloseGracePeriodTimeout   session_close_timeout         = 5;
+   }
+}
