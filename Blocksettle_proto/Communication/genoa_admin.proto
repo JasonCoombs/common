@@ -96,6 +96,7 @@ message Response
     message SessionFailed
     {
         int64 session_id = 1;
+        string product_name = 2;
     }
 
     oneof data

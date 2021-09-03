@@ -2757,6 +2757,7 @@ message GenoaAdminMsg
    message SessionFailed
    {
       int64 session_id = 1;
+      int32 product_type = 2;
    }
 
    oneof data
