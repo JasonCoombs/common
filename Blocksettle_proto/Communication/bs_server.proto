@@ -2744,12 +2744,30 @@ message GenoaAdminMsg
       bs.types.XBTAmountValue open_interest = 2;
    }
 
+   message OrderFailed
+   {
+      string entity_name = 1;
+      int32 product_type = 2;
+      bs.types.Side side = 3;
+      bs.types.XBTAmountValue amount = 4;
+      bs.types.XBTPrice price = 5;
+      string error_msg = 6;
+   }
+
+   message SessionFailed
+   {
+      int64 session_id = 1;
+      int32 product_type = 2;
+   }
+
    oneof data
    {
       TradingClosed trading_closed = 1;
       TradingOpened trading_opened = 2;
       Blocksettle.Communication.GenoaAdmin.Response.DefaultsInfo defaults_info = 3;
       UpdateOpenInterest update_open_interest = 4;
+      OrderFailed order_failed = 5;
+      SessionFailed session_failed = 6;
    }
 }
 
