@@ -2480,6 +2480,7 @@ message TradingSessionOpen
    bs.types.XBTPrice fee_taker            = 4;
    bs.types.XBTPrice fee_maker            = 5;
    bs.types.XBTPrice open_price           = 6;
+   bool              trading_enabled      = 7;
 }
 
 message CashResMessage
