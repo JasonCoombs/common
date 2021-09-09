@@ -333,6 +333,9 @@ enum GenoaType
    GenoaRequestAddCard                    = 70;
    GenoaConfirmCard                       = 71;
    GenoaChargeCard                        = 72;
+   GenoaRegisterFcm                       = 73;
+   GenoaUnregisterFcm                     = 74;
+   GenoaSendFcm                           = 75;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1106,6 +1109,44 @@ message GenoaChargeCardResponse
    string error_msg = 3;
 }
 
+message GenoaRegisterFcmRequest
+{
+   int64 entity_id = 1;
+   string token = 2;
+}
+
+message GenoaRegisterFcmResponse
+{
+   bool success = 1;
+   string error_msg = 2;
+}
+
+
+message GenoaUnregisterFcmRequest
+{
+   string token = 1;
+}
+
+message GenoaUnregisterFcmResponse
+{
+   bool success = 1;
+   string error_msg = 2;
+}
+
+
+message GenoaSendFcmRequest
+{
+   int64 entity_id = 1;
+   string title = 2;
+   string body = 3;
+}
+
+message GenoaSendFcmResponse
+{
+   bool success = 1;
+   string error_msg = 2;
+}
+
 message GenoaMessage
 {
    message FutureMoveReservationsRequest
@@ -1365,7 +1406,12 @@ message GenoaMessage
       GenoaConfirmCardResponse                  confirm_card_response               = 112;
       GenoaChargeCardRequest                    charge_card_request                 = 113;
       GenoaChargeCardResponse                   charge_card_response                = 114;
-
+      GenoaRegisterFcmRequest                   register_fcm_request                = 115;
+      GenoaRegisterFcmResponse                  register_fcm_response               = 116;
+      GenoaUnregisterFcmRequest                 unregister_fcm_request              = 117;
+      GenoaUnregisterFcmResponse                unregister_fcm_response             = 118;
+      GenoaSendFcmRequest                       send_fcm_request                    = 119;
+      GenoaSendFcmResponse                      send_fcm_response                   = 120;
    }
 }
 
