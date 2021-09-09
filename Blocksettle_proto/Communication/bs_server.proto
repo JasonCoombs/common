@@ -2368,6 +2368,69 @@ message PriceStreamManaging
    }
 }
 
+
+message ApiInternalCommand
+{
+   message AutheidStartRequest
+   {
+      bytes  client_id = 1;
+      int32  type = 2;
+      string title = 3;
+      string description = 4;
+      uint64 timeout_ms = 5;
+      bool   use_local_account = 6;
+      string email = 7;
+      bytes  invisible_data = 8;
+   }
+
+   message AutheidSignRequest
+   {
+      AutheidStartRequest start_request = 1;
+      bytes  request_id = 2;
+      uint64 started_ms = 3;
+   }
+
+   message AutheidCommonRequest
+   {
+      bytes client_id = 1;
+      bytes request_id = 2;
+   }
+
+   message AutheidStartResponse
+   {
+      AutheidStartRequest request = 1;
+      bool   success = 2;
+      string error_msg = 3;
+      bytes  request_id = 4;
+   }
+
+   message AutheidSignResponse
+   {
+      bytes  client_id = 1;
+      bytes  request_id = 2;
+      int32  sign_error = 3;
+      string email = 4;
+   }
+
+   message AutheidResponse
+   {
+      bytes client_id = 1;
+      int32 sign_error = 2;
+      bytes request_id = 3;
+      bytes response = 4;	// can't include rp.proto for autheid.rp.GetResultResponse
+   }
+
+   oneof data
+   {
+      AutheidStartRequest  autheid_start = 1;
+      AutheidSignRequest   autheid_sign = 2;
+      AutheidCommonRequest autheid_common = 3;
+      AutheidStartResponse start_response = 4;
+      AutheidSignResponse  sign_response = 5;
+      AutheidResponse      common_response = 6;
+   }
+}
+
 message ApiServerMsg
 {
    message UpdateOrder
@@ -2439,6 +2502,7 @@ message ApiServerMsg
       UpdateBook                 price_offer             = 12;
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
+      ApiInternalCommand         internal_command        = 15;
    }
 }
 
