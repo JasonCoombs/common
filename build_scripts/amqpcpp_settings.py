@@ -18,11 +18,11 @@ from component_configurator import Configurator
 class AMQPCPPSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '4.3.14'
+        self._version = '0499863da20d6b5f51a94f4cdcb16be692836b08'
         self._script_revision = '1'
         self._package_name = 'amqpcpp-' + self._version
-        self._package_url = 'https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/v' + self._version + '.tar.gz'
-
+        # self._package_url = 'https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/v' + self._version + '.tar.gz'
+        self._package_url = 'https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/' + self._version + '.zip'
     def get_package_name(self):
         return self._package_name
 
