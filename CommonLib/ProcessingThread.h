@@ -110,10 +110,12 @@ private:
       }
    }
 
+protected:
+   std::atomic_bool                       processingHalted_{ false };
+
 private:
    std::thread processingThread_;
    std::atomic_bool                       continueExecution_{ true };
-   std::atomic_bool                       processingHalted_{ false };
    mutable std::atomic_flag               pendingPacketsLock_ = ATOMIC_FLAG_INIT;
    ManualResetEvent                       pendingPacketsEvent_;
    std::queue<std::shared_ptr<T>>         pendingPackets_;
