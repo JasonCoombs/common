@@ -510,6 +510,8 @@ message Response
 
     message MaxTradeAmount
     {
+        bool success = 5;
+        string error_msg = 6;
         string product_type = 1;
         bs.types.Side side = 2;
         string qty = 3;
