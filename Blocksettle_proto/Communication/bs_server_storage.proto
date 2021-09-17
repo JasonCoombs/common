@@ -151,14 +151,14 @@ message LoadAddressListForFundResponse
 
 message LoadUserDeliveryAddressRequest
 {
-   repeated string entity_name = 1;
+   repeated int64 entity_id = 1;
 }
 
 message LoadUserDeliveryAddressResponse
 {
    message DeliveryAddressData
    {
-      string entity_name   = 1;
+      int64 entity_id   = 1;
       string user_address  = 2;
    }
 
@@ -167,32 +167,32 @@ message LoadUserDeliveryAddressResponse
 
 message SetUserDeliveryAddressRequest
 {
-   string   entity_name    = 1;
-   string   user_address   = 2;
+   int64    entity_id    = 1;
+   string   user_address = 2;
 }
 
 message SetUserDeliveryAddressResponse
 {
-   string   entity_name    = 1;
-   string   user_address   = 2;
-   bool     success        = 3;
-   string   error_msg      = 4;
+   int64    entity_id    = 1;
+   string   user_address = 2;
+   bool     success      = 3;
+   string   error_msg    = 4;
 }
 
 message LoadUserDepositAddressRequest
 {
-   string   entity_name    = 1;
+   int64   entity_id    = 1;
 }
 
 message LoadUserDepositAddressResponse
 {
-   string   entity_name       = 1;
-   string   deposit_address   = 2;
+   int64    entity_id       = 1;
+   string   deposit_address = 2;
 }
 
 message LoadWhitelistedAddressesRequest
 {
-   string   entity_name = 1;
+   int64   entity_id = 1;
 }
 
 message WhitelistedAddressInfo
@@ -204,29 +204,29 @@ message WhitelistedAddressInfo
 
 message LoadWhitelistedAddressesResponse
 {
-   string                           entity_name = 1;
-   repeated WhitelistedAddressInfo  addresses   = 2;
+   int64                            entity_id = 1;
+   repeated WhitelistedAddressInfo  addresses = 2;
 }
 
 message SubmitWhitelistedAddress
 {
-   string   entity_name = 1;
-   string   address     = 2;
-   string   description = 3;
+   int64  entity_id   = 1;
+   string address     = 2;
+   string description = 3;
 }
 
 message SubmitWhitelistedAddressResponse
 {
    // bs::network::SubmitWhitelistedAddressStatus
-   int32                   status_code    = 1;
-   string                  entity_name    = 2;
-   WhitelistedAddressInfo  address_info   = 3;
+   int32                   status_code  = 1;
+   int64                   entity_id    = 2;
+   WhitelistedAddressInfo  address_info = 3;
 }
 
 message SubmitDepositAddress
 {
-   string   entity_name = 1;
-   string   address     = 2;
+   int64   entity_id = 1;
+   string  address   = 2;
 }
 
 message SubmitDepositAddressResponse
@@ -236,15 +236,15 @@ message SubmitDepositAddressResponse
 
 message RevokeWhitelistedAddress
 {
-   string   entity_name = 1;
-   string   address     = 2;
+   int64  entity_id = 1;
+   string address   = 2;
 }
 
 message RevokeWhitelistedAddressResponse
 {
-   int32    status_code = 1;
-   string   entity_name = 2;
-   string   address     = 3;
+   int32  status_code = 1;
+   int64  entity_id   = 2;
+   string address     = 3;
 }
 
 message FindDepositAddressOwner
@@ -254,7 +254,7 @@ message FindDepositAddressOwner
 
 message FindDepositAddressOwnerResponse
 {
-   string   entity_name = 1;
+   int64 entity_id = 1;
 }
 
 message GetWhitelistedAddressSummary
@@ -264,8 +264,8 @@ message GetWhitelistedAddressSummary
 
 message GetWhitelistedAddressSummaryResponse
 {
-   string   entity_name = 1;
-   bool     revoked     = 2;
+   int64 entity_id = 1;
+   bool  revoked   = 2;
 }
 
 message StorageAddressMessage

@@ -19,8 +19,8 @@ message XbtMatchedRequest
 {
    string   settlement_id                    = 1;
    string   cl_order_id                      = 2;
-   string   requestor_entity_name            = 3;
-   string   dealer_entity_name               = 4;
+   int64    requestor_entity_id              = 3;
+   int64    dealer_entity_id                 = 4;
    bool     requestor_sell                   = 5;
    bs.types.XBTPrice   price                 = 6;
    string   security_id                      = 7;
@@ -83,7 +83,7 @@ message CCVerifyQuoteRequest
    string cc = 2;
    bool   requester_sells = 3;
    uint32 qty = 4;
-   string requester_entity = 5;
+   int64  requester_entity = 5;
    bytes  coin_input = 6;
    string receipt_address = 7;
    bool   otc = 8;
@@ -97,7 +97,7 @@ message CCVerifyQuoteReply
    bool   requester_sells = 4;
    uint32 qty = 5;
    double price = 6;
-   string dealer_entity = 7;
+   int64  dealer_entity = 7;
    bytes  coin_input = 8;
    string receipt_address = 9;
    bool   otc = 10;
@@ -118,8 +118,8 @@ message CCQuoteAccepted
    bool   requester_sells = 4;
    uint32 qty = 5;
    double price = 6;
-   string requester_entity = 7;
-   string dealer_entity = 8;
+   int64  requester_entity = 7;
+   int64  dealer_entity = 8;
    bytes  coin_input = 9;
    string requester_receipt_address = 10;
    string dealer_receipt_address = 11;
@@ -140,8 +140,8 @@ message CCTradeRequest
    bool   requester_sells = 3;
    uint32 qty = 4;
    double price = 5;
-   string requester_entity = 6;
-   string dealer_entity = 7;
+   int64  requester_entity = 6;
+   int64  dealer_entity = 7;
    bytes  requester_tx_data = 8;
    string requester_receipt_address = 9;
    bytes  dealer_tx_data = 10;
@@ -159,7 +159,7 @@ message CCCancelRequest
 {
    string cl_order_id = 1;
    string request_id = 2;
-   string requesting_user = 3;
+   int64  requesting_user = 3;
 }
 
 message UserProperty
@@ -177,7 +177,7 @@ message UserPropertiesSet
 
 message RFSMarketOrder
 {
-   string                  entity_name         = 1;
+   int64                   entity_id           = 1;
    // XBT/EUR
    bs.types.XBTAmountValue xbt_amount          = 2;
    bs.types.Side           side                = 3;
@@ -189,7 +189,7 @@ message RFSMarketOrder
 
 message RFSMarketOrderResponse
 {
-   string                  entity_name       = 1;
+   int64                   entity_id         = 1;
    bs.types.XBTAmountValue xbt_amount        = 2;
    bs.types.Side           side              = 3;
    bs.types.XBTPrice       order_price       = 4;
