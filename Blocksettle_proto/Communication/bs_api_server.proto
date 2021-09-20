@@ -300,11 +300,6 @@ message Request
         string code = 1;
     }
 
-    message LoginBasicAccount
-    {
-        string token = 1;
-    }
-
     message UpgradeBasicAccount
     {
         repeated Answer answers = 2;
@@ -407,7 +402,6 @@ message Request
         SubscribeTradeCreated       subscribe_trade_created     = 52;
         RegisterBasicAccount        register_basic_account      = 53;
         VerifyBasicAccount          verify_basic_account        = 54;
-        LoginBasicAccount           login_basic_account         = 55;
         UpgradeBasicAccount         upgrade_basic_account       = 56;
         ListClientBanks             list_client_banks           = 57;
         BankOnboardingLink          bank_onboarding_link        = 58;
@@ -800,14 +794,6 @@ message Response
         string token = 5;
     }
 
-    message LoginBasicAccount
-    {
-        bool success = 1;
-        string error_msg = 2;
-        string session_id = 3;
-        string account_name = 4;
-    }
-
     message UpgradeBasicAccount
     {
         string qr_code = 1;
@@ -950,7 +936,6 @@ message Response
         SubmitPrices            submit_prices               = 51;
         RegisterBasicAccount    register_basic_account      = 52;
         VerifyBasicAccount      verify_basic_account        = 53;
-        LoginBasicAccount       login_basic_account         = 54;
         UpgradeBasicAccount     upgrade_basic_account       = 55;
         UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 56;
         ListClientBanks         list_client_banks           = 57;
