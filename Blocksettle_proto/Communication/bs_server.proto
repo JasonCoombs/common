@@ -347,9 +347,9 @@ message GenoaXBTReservation
 {
    int32  subsystem = 1;
    string requester_trd_account = 2;
-   int64  requester_entity_id = 3;
+   uint32 requester_entity_id = 3;
    string dealer_trd_account = 4;
-   int64  dealer_entity_id = 5;
+   uint32 dealer_entity_id = 5;
    string settlement_id = 6;
    string cl_ord_id = 7;
    double xbt_amount = 8;
@@ -368,8 +368,8 @@ message GenoaXBTReservation
 message GenoaCCReservation
 {
    string trade_id = 1;
-   int64  requester_entity_id = 2;
-   int64  dealer_entity_id = 3;
+   uint32 requester_entity_id = 2;
+   uint32 dealer_entity_id = 3;
    string product = 4;
    double amount = 5;
    double price = 6;
@@ -408,7 +408,7 @@ message GenoaCancelCCReservationResponse
 
 message GenoaUserRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
 }
 
 message GenoaOrderData
@@ -433,7 +433,7 @@ message GenoaFindOrdersResponse
 {
    bool   loaded = 1;
    string error_text = 2;
-   int64  entity_id = 3;
+   uint32 entity_id = 3;
    repeated GenoaOrderData orders = 4;
 }
 
@@ -493,7 +493,7 @@ message GenoaFxTradeResponse
 
    message AccountBalances
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       repeated BalanceData balances = 2;
    }
 }
@@ -514,7 +514,7 @@ message GenoaSendCCTokenRequest
 
 message GenoaAccountUserRequest
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    string email = 3;
 }
 
@@ -532,7 +532,7 @@ message GenoaAccountsData
 
 message GenoaAccountsBalanceUpdate
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    string currency = 2;
    bs.types.FXAmountValue balance = 3;
 }
@@ -576,10 +576,10 @@ message GenoaAccountData
 {
    string   email          = 1;
    string   entity_name    = 2;
-   int64    entity_id      = 3;
+   uint32   entity_id      = 3;
    string   account_name   = 4;
    string   account_type   = 5;
-   int64    account_id     = 6;
+   uint32   account_id     = 6;
    string   email_hashed   = 7;
 }
 
@@ -592,13 +592,13 @@ message GenoaAccountInfoResponse
 
 message GenoaAccountBalanceRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    repeated string currency = 2;
 }
 
 message GenoaAccountBalanceResponse
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    repeated BalanceData balances = 2;
    string error_text = 3;
 }
@@ -624,7 +624,7 @@ message GenoaApiKeyCheckRequest
 message GenoaApiKeyCheckResponse
 {
    string api_key             = 1;
-   int64 entity_id            = 2;
+   uint32 entity_id           = 2;
    bs.types.ApiKeyError error = 3;
 }
 
@@ -632,12 +632,12 @@ message UserEntityInfo
 {
    string user_email    = 1;
    string entity_name   = 2;
-   int64 entity_id      = 3;
+   uint32 entity_id     = 3;
 }
 
 message AffectedEntities
 {
-   repeated int64 entity_id = 1;
+   repeated uint32 entity_id = 1;
 }
 
 message SetDeliveryAddress
@@ -660,7 +660,7 @@ message SettleDelivery
 
 message LoadedGenoaObligationData
 {
-   int64  entity_id           = 1;
+   uint32 entity_id           = 1;
    string product             = 2;
    string trade_id            = 3;
    string bs_delivery_address = 4;
@@ -690,7 +690,7 @@ message GenoaGetCurrentTradeCycleDetails
 
 message GenoaUserNotifyMsg
 {
-   int64             broadcast_to         = 1;	// entity_id
+   uint32            broadcast_to         = 1;	// entity_id
    string            message              = 2;
    string            code                 = 3;
    string            type                 = 4;
@@ -707,12 +707,12 @@ message GenoaRegisterAccountResponse
    bool success = 1;
    string error_code = 2;
    string error_msg = 3;
-   int64  entity_id = 4;
+   uint32 entity_id = 4;
 }
 
 message GenoaCreateIbanAgreementUrlRequest
 {
-   int64    entity_id            = 1;
+   uint32   entity_id            = 1;
    string   country_short_code   = 2;
    string   iban                 = 3;
    string   redirect             = 4;
@@ -730,7 +730,7 @@ message GenoaCreateIbanAgreementUrlResponse
 message GenoaGetIbanAccountsRequest
 {
    string requisitions_id = 1;
-   int64  entity_id       = 2;
+   uint32 entity_id       = 2;
 }
 
 message GenoaGetIbanAccountsResponse
@@ -758,7 +758,7 @@ message GenoaGetIbanAccountDetailsResponse
 
 message GenoaNewApiKeyRequest
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    string label = 2;
    string ip = 3;
 }
@@ -772,7 +772,7 @@ message GenoaNewApiKeyResponse
 
 message GenoaListApiKeysRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
 }
 
 message GenoaListApiKeysResponse
@@ -792,7 +792,7 @@ message GenoaListApiKeysResponse
 
 message GenoaDeleteApiKeyRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    int32 key_id = 2;
 }
 
@@ -804,7 +804,7 @@ message GenoaDeleteApiKeyResponse
 
 message GenoaCreateExternalAccountRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string account_ref = 2;
 }
 
@@ -823,7 +823,7 @@ message GenoaCreateExternalAccountResponse
 
 message GenoaGetAllExternalAccountsRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    Blocksettle.Communication.ApiServer.AccountType account_type = 2;
 }
 
@@ -834,7 +834,7 @@ message GenoaGetAllExternalAccountsResponse
 
 message GenoaGetDepositInfoRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
 }
 
 message GenoaGetDepositInfoResponse
@@ -845,7 +845,7 @@ message GenoaGetDepositInfoResponse
 
 message GenoaWithdrawToExternalAccountRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string account_name = 2;
    bs.types.FXAmountValue amount = 3;
    string ccy = 4;
@@ -859,7 +859,7 @@ message GenoaWithdrawToExternalAccountResponse
 
 message GenoaRegisterXBTDepositRequest
 {
-   int64                   entity_id     = 1;
+   uint32                  entity_id     = 1;
    bs.types.XBTPrice       price         = 2;
    bs.types.XBTAmountValue xbt_amount    = 3;
    bs.types.FXAmountValue  eur_amount    = 4;
@@ -884,7 +884,7 @@ message GenoaConfirmXBTDepositResponse
 }
 message GenoaRegiserXBTWithdrawRequest
 {
-   int64                   entity_id     = 1;
+   uint32                  entity_id     = 1;
    bs.types.XBTPrice       price         = 2;
    bs.types.XBTAmountValue xbt_amount    = 3;
    bs.types.FXAmountValue  eur_amount    = 4;
@@ -911,7 +911,7 @@ message GenoaConfirmXBTWithdrawResponse
 
 message GenoaReportRejectedDepositRequest
 {
-   int64  entity_id        = 1;
+   uint32 entity_id        = 1;
    string tx_id            = 2;
    string return_address   = 3;
    uint64 validation_score = 4;
@@ -925,7 +925,7 @@ message GenoaGeneralResponse
 
 message GenoaTradeHistoryRequest
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    uint32 limit = 2;
    uint32 offset = 3;
 }
@@ -939,33 +939,33 @@ message GenoaTradeHistoryResponse
 
 message GenoaTransactionsForEntityRequest
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    uint32 limit = 2;
    uint32 offset = 3;
 }
 
 message GenoaTransactionsForEntityResponse
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    Blocksettle.Communication.ApiServer.Response.TransactionsForEntity result = 2;
 }
 
 message GenoaGetStatementDatesRequest
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    string start_date = 2;
    string end_date = 3;
 }
 
 message GenoaGetStatementDatesResponse
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    Blocksettle.Communication.ApiServer.Response.GetStatementDates result = 2;
 }
 
 message GenoaGetStatementsRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string date = 2;
 }
 
@@ -998,7 +998,7 @@ message GenoaApproveBasicSignupResponse
 {
    bool success = 1;
    string error_code = 2;
-   int64 entity_id = 3;
+   uint32 entity_id = 3;
    string token = 5;
 }
 
@@ -1010,13 +1010,13 @@ message GenoaResolveLoginTokenRequest
 message GenoaResolveLoginTokenResponse
 {
    bool success = 1;
-   int64 entity_id = 2;
+   uint32 entity_id = 2;
    string phone = 4;
 }
 
 message GenoaUpgradeBasicAccountRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string answers = 2;
    string kyc = 3;
 }
@@ -1064,7 +1064,7 @@ message GenoaListRemoteAccountsResponse
 message GenoaSaveAccountRequest
 {
    string account_ref = 1;
-   int64  entity_id = 2;
+   uint32 entity_id = 2;
 }
 
 message GenoaSaveAccountResponse
@@ -1084,7 +1084,7 @@ message GenoaRequestAddCardResponse
 
 message GenoaConfirmCardRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string payment_ref = 2;
 }
 
@@ -1095,7 +1095,7 @@ message GenoaConfirmCardResponse
 
 message GenoaChargeCardRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    int32 account_id = 2;
    bs.types.FXAmountValue amount = 3;
 }
@@ -1109,7 +1109,7 @@ message GenoaChargeCardResponse
 
 message GenoaRegisterFcmRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string token = 2;
 }
 
@@ -1134,7 +1134,7 @@ message GenoaUnregisterFcmResponse
 
 message GenoaSendFcmRequest
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string title = 2;
    string body = 3;
 }
@@ -1149,8 +1149,8 @@ message GenoaMessage
 {
    message FutureMoveReservationsRequest
    {
-      int64    novation_account_id     = 1;
-      int64    novation_entity_id      = 2;
+      uint32   novation_account_id     = 1;
+      uint32   novation_entity_id      = 2;
       string   product_name            = 3;
       repeated string reservation_ids  = 4;
    }
@@ -1158,8 +1158,8 @@ message GenoaMessage
    message FutureMoveReservationsResponse
    {
       message AccountData {
-         int64                  account_id = 1;
-         int64                  entity_id  = 2;
+         uint32                 account_id = 1;
+         uint32                 entity_id  = 2;
          bs.types.FXAmountValue amount     = 3;
       }
 
@@ -1172,7 +1172,7 @@ message GenoaMessage
    {
       message Payout {
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64                  entity_id   = 2;
+         uint32                 entity_id   = 2;
          bs.types.FXAmountValue amount      = 3;
       }
 
@@ -1185,7 +1185,7 @@ message GenoaMessage
    message FuturePayoutResponse
    {
       message AccountBalance {
-         int64 entity_id = 1;
+         uint32 entity_id = 1;
          bs.types.FXAmountValue amount      = 2;
       }
 
@@ -1199,7 +1199,7 @@ message GenoaMessage
    {
       message AccountMargin {
          // GenoaAdapter will populate that field and pass down to genoa bus
-         int64                  entity_id       = 2;
+         uint32                 entity_id       = 2;
          bs.types.FXAmountValue amount          = 3;
          int64                  position_id     = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
@@ -1217,21 +1217,21 @@ message GenoaMessage
    {
       message ReservationInfo
       {
-         int64    entity_id         = 2;
+         uint32   entity_id         = 2;
          int64    position_id       = 3;
          string   reservation_ref   = 4;
       }
 
       message EntityBalance
       {
-         int64                  entity_id   = 1;
+         uint32                 entity_id   = 1;
          string                 currency    = 2;
          bs.types.FXAmountValue balance     = 3;
       }
 
       message RecordsCausedFailure
       {
-         int64                  entity_id         = 1;
+         uint32                 entity_id         = 1;
          string                 currency          = 2;
          bs.types.FXAmountValue expected_balance  = 3;
       }
@@ -1254,8 +1254,8 @@ message GenoaMessage
    {
       bool     account_created   = 1;
       string   error_message     = 2;
-      int64    account_id        = 3;
-      int64    entity_id         = 4;
+      uint32   account_id        = 3;
+      uint32   entity_id         = 4;
    }
 
    message DisposeNovationAccountRequest
@@ -1302,7 +1302,7 @@ message GenoaMessage
       GenoaApiKeyCheckResponse         api_key_response           = 30;
       UserEntityInfo                   entity_info                = 31;
       GeanoReserveCCResponse           cc_reserve_response        = 32;
-      int64                            entity_id                  = 33;
+      uint32                           entity_id                  = 33;
 
       SetDeliveryAddress               set_delivery_address          = 34;
       SetDeliveryAddressResponse       set_delivery_address_response = 35;
@@ -1427,7 +1427,7 @@ message GenoaServerClientRequest
 
 message GenoaServerBalanceUpdate
 {
-   int64 entity_id = 1;
+   uint32 entity_id = 1;
    string currency = 2;
    bs.types.FXAmountValue balance = 3;
 }
@@ -1436,7 +1436,7 @@ message GenoaServerCashResBalanceUpdate
 {
    message BalanceUpdate
    {
-      int64                   entity_id   = 1;
+      uint32                  entity_id   = 1;
       int64                   currency_id = 2;
       bs.types.FXAmountValue  balance     = 3;
    }
@@ -1446,13 +1446,13 @@ message GenoaServerCashResBalanceUpdate
 
 message GenoaServerTradingStatusUpdate
 {
-   int64 entity_id = 1;
-   bool  trading_enabled = 2;
+   uint32 entity_id = 1;
+   bool   trading_enabled = 2;
 }
 
 message GenoaServerXbtTradingStatus
 {
-   int64  entity_id = 1;
+   uint32 entity_id = 1;
    string status = 2;
 }
 
@@ -1466,7 +1466,7 @@ message GenoaServerNewCcSeedRequest
 
 message GenoaServerNewCCDepositRequest
 {
-   int64       entity_id = 1;
+   uint32      entity_id = 1;
    string      cc_name     = 2;
    uint32      amount      = 3;
    string      correlation_id = 4;
@@ -1474,7 +1474,7 @@ message GenoaServerNewCCDepositRequest
 
 message GenoaServerTradeUpdateEvent
 {
-   int64             entity_id      = 1;
+   uint32            entity_id      = 1;
    bs.types.Action   action         = 2;
    bs.types.Order    order          = 3;
 }
@@ -1605,8 +1605,8 @@ message TradeDataMessage
    string product = 1;
    int64  sequence_num = 2;
    string cl_ord_id = 3;
-   int64  sell_entity_id = 4;
-   int64  buy_entity_id = 5;
+   uint32 sell_entity_id = 4;
+   uint32 buy_entity_id = 5;
    string sell_trade_account = 6;
    string buy_trade_account = 7;
    double sell_amount = 8;
@@ -1629,11 +1629,11 @@ message CustomerAccountData
    string email = 1;
    string email_hashed = 2;
    string entity_name = 3;
-   int64  entity_id = 4;
+   uint32 entity_id = 4;
    string settlement_account = 5;
-   int64  settlement_acc_id = 6;
+   uint32 settlement_acc_id = 6;
    string trading_account = 7;
-   int64  trading_acc_id = 8;
+   uint32 trading_acc_id = 8;
    repeated BalanceData balances = 9;
    repeated BalanceData im_balances = 10;
 }
@@ -2003,8 +2003,8 @@ message ProxyMessage
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
-      int64                         user_connected = 10;	// entity_id
-      int64                         user_disconnected = 11;	// entity_id
+      uint32                        user_connected = 10;	// entity_id
+      uint32                        user_disconnected = 11;	// entity_id
    }
 }
 
@@ -2115,12 +2115,12 @@ message ObligationsManaging
 {
    message CustomerObligationsRequest
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
    }
 
    message CustomerObligationsResponse
    {
-      int64    entity_id      = 1;
+      uint32   entity_id      = 1;
       int64    to_deliver     = 2;
       string   bs_address     = 3;
       double   cutoff_price   = 4;
@@ -2129,7 +2129,7 @@ message ObligationsManaging
 
    message CustomerObligationRequest
    {
-      int64    entity_id      = 1;
+      uint32   entity_id      = 1;
       string   delivery_id    = 2;
       bs.types.XBTAmountValue value = 3;
       string   bs_address     = 4;
@@ -2139,7 +2139,7 @@ message ObligationsManaging
 
    message SubmitWhitelistedAddress
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       Blocksettle.Communication.ApiServer.Request.WhitelistedAddressRequest  address_data   = 2;
    }
 
@@ -2147,26 +2147,26 @@ message ObligationsManaging
    {
       // bs::network::SubmitWhitelistedAddressStatus
       int32    status_code = 1;
-      int64    entity_id = 2;
+      uint32   entity_id = 2;
       Blocksettle.Communication.ApiServer.Response.WhitelistedAddressResponse address_data = 3;
    }
 
    message RevokeUserAddress
    {
-      int64  entity_id     = 1;
+      uint32 entity_id     = 1;
       string address       = 2;
    }
 
    message RevokeUserAddressResponse
    {
-      int64    entity_id   = 1;
+      uint32   entity_id   = 1;
       string   address     = 2;
       int32    status_code = 3;
    }
 
    message XBTWithdrawRequest
    {
-      int64                   entity_id            = 1;
+      uint32                  entity_id            = 1;
       string                  address              = 2;
       bs.types.FXAmountValue  eur_amount           = 3;
       bs.types.XBTPrice       price                = 4;
@@ -2176,7 +2176,7 @@ message ObligationsManaging
 
    message XBTWithdrawResponse
    {
-      int64                   entity_id   = 1;
+      uint32                  entity_id   = 1;
       string                  address     = 2;
       bs.types.FXAmountValue  eur_amount  = 3;
       int32                   status_code = 4;
@@ -2226,7 +2226,7 @@ message PriceStreamManaging
    {
       message PriceOffer
       {
-         int64             owner_entity_id = 1;
+         uint32            owner_entity_id = 1;
          bs.types.XBTPrice price           = 2;
          uint64            timestamp       = 3;
       }
@@ -2244,20 +2244,20 @@ message PriceStreamManaging
 
    message PriceConsumedData
    {
-      int64  owner_entity_id = 1;
+      uint32 owner_entity_id = 1;
       uint64 timestamp       = 2;
       int32  product_type    = 3; // bs::network::asset::type
    }
 
    message SubmitPricesRequest
    {
-      int64                      owner_entity_id   = 1;
+      uint32                     owner_entity_id   = 1;
       bs.types.SubmitPricesData  submit_price_data = 2;
    }
 
    message SubmitPricesResponse
    {
-      int64                                  owner_entity_id     = 1;
+      uint32                                 owner_entity_id     = 1;
       bs.types.SubmitPriceProcessingResult   result              = 2;
       bs.types.SubmitPriceRejectReason       reject_reason       = 3;
       bs.types.SubmitPricesData              rejected_price_data = 4;
@@ -2265,13 +2265,13 @@ message PriceStreamManaging
 
    message PullPricesRequest
    {
-      int64                      owner_entity_id = 1;
+      uint32                     owner_entity_id = 1;
       bs.types.PullPricesData    pull_price_data = 2;
    }
 
    message NetExposureChangedUpdate
    {
-      int64                   entity_id    = 1;
+      uint32                  entity_id    = 1;
       int32                   product_type = 2; // bs::network::asset::type
       bs.types.XBTAmountValue net_exposure = 3;
    }
@@ -2295,7 +2295,7 @@ message PriceStreamManaging
       GetBestOfferResponse       best_price_offer        = 3;
       ClientData                 client_data             = 4;
       PriceConsumedData          consumed_price          = 5;
-      int64                      entity_id               = 6;
+      uint32                     entity_id               = 6;
       SubmitPricesRequest        submit_prices           = 7;
       SubmitPricesResponse       submit_prices_response  = 8;
       PullPricesRequest          pull_prices             = 9;
@@ -2372,7 +2372,7 @@ message ApiServerMsg
 {
    message UpdateOrder
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       bs.types.Order order = 2;
       bs.types.Action action = 3;
    }
@@ -2397,7 +2397,7 @@ message ApiServerMsg
 
    message UserNotify
    {
-      int64    broadcast_to   = 1;	// entity_id
+      uint32   broadcast_to   = 1;	// entity_id
       string   message        = 2;
       string   code           = 3;
       string   type           = 4;
@@ -2413,7 +2413,7 @@ message ApiServerMsg
 
    message UpdateBalances
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       repeated bs.types.Balance balances = 2;
    }
 
@@ -2431,8 +2431,8 @@ message ApiServerMsg
       TradingSessionClosed       trading_closed          = 4;
       Empty                      send_prices             = 5;
       Empty                      send_trading_stats      = 6;
-      int64                      user_connected          = 7;	// entity_id
-      int64                      user_disconnected       = 8;   // entity_id
+      uint32                     user_connected          = 7;	// entity_id
+      uint32                     user_disconnected       = 8;   // entity_id
       UserNotify                 user_notify             = 9;
       UpdateWithdrawPrices       update_withdraw_prices  = 10;
       Empty                      subscribe_price_offers  = 11;
@@ -2488,7 +2488,7 @@ message CashResMessage
 {
    message Order
    {
-      int64                   entity_id               = 1;
+      uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
@@ -2507,7 +2507,7 @@ message CashResMessage
 
    message EstimateImRequest
    {
-      int64                   entity_id = 1;
+      uint32                  entity_id = 1;
       string                  product   = 2;
       bs.types.XBTAmountValue qty       = 3;
       bs.types.Side           side      = 4;
@@ -2524,14 +2524,14 @@ message CashResMessage
 
    message MaxAmountRequest
    {
-      int64  entity_id = 1;
+      uint32 entity_id = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
    }
 
    message MaxAmountResponse
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
       bs.types.XBTAmountValue max_amount = 4;
@@ -2548,7 +2548,7 @@ message CashResMessage
 
    message OrdersRequest
    {
-      int64  entity_id = 1;
+      uint32 entity_id = 1;
       int32  product_type = 2;
    }
 
@@ -2556,7 +2556,7 @@ message CashResMessage
    {
       bool   loaded = 1;
       string error_text = 2;
-      int64  entity_id = 3;
+      uint32 entity_id = 3;
       repeated Order orders = 4;
    }
 
@@ -2578,20 +2578,20 @@ message CashResMessage
 
    message LoadBalancesResponse
    {
-      int64                entity_id = 1;
+      uint32               entity_id = 1;
       repeated BalanceData balances  = 2;
    }
 
    message TradeFeeForEntityRequest
    {
-      int64  entity_id = 1;
+      uint32 entity_id = 1;
       uint32 limit = 2;
       uint32 offset = 3;
    }
 
    message TradeFeeForEntityResponse
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
    }
 
@@ -2733,7 +2733,7 @@ message GenoaAdminMsg
 
    message OrderFailed
    {
-      int64 entity_id = 1;
+      uint32 entity_id = 1;
       int32 product_type = 2;
       bs.types.Side side = 3;
       bs.types.XBTAmountValue amount = 4;

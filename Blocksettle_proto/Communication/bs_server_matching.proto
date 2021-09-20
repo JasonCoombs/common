@@ -19,8 +19,8 @@ message XbtMatchedRequest
 {
    string   settlement_id                    = 1;
    string   cl_order_id                      = 2;
-   int64    requestor_entity_id              = 3;
-   int64    dealer_entity_id                 = 4;
+   uint32   requestor_entity_id              = 3;
+   uint32   dealer_entity_id                 = 4;
    bool     requestor_sell                   = 5;
    bs.types.XBTPrice   price                 = 6;
    string   security_id                      = 7;
@@ -177,7 +177,7 @@ message UserPropertiesSet
 
 message RFSMarketOrder
 {
-   int64                   entity_id           = 1;
+   uint32                  entity_id           = 1;
    // XBT/EUR
    bs.types.XBTAmountValue xbt_amount          = 2;
    bs.types.Side           side                = 3;
@@ -189,7 +189,7 @@ message RFSMarketOrder
 
 message RFSMarketOrderResponse
 {
-   int64                   entity_id         = 1;
+   uint32                  entity_id         = 1;
    bs.types.XBTAmountValue xbt_amount        = 2;
    bs.types.Side           side              = 3;
    bs.types.XBTPrice       order_price       = 4;
