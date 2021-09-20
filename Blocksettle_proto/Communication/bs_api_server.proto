@@ -364,6 +364,11 @@ message Request
         string sign = 1;
     }
 
+    message EidLoginApp
+    {
+        string public_key = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -425,6 +430,7 @@ message Request
         UnregisterFcm               unregister_fcm              = 65;
         StartCertLogin              start_cert_login            = 66;
         FinishCertLogin             finish_cert_login           = 67;
+        EidLoginApp                 eid_login_app               = 68;
     }
 }
 
@@ -906,6 +912,18 @@ message Response
         string session_id = 4;
     }
 
+    message EidLoginApp
+    {
+        string qr_code = 1;
+    }
+
+    message EidLoginAppUpd
+    {
+        EidStatus status = 1;
+        string error_msg = 2;
+        string cert = 3;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 1;
@@ -974,5 +992,7 @@ message Response
         UnregisterFcm           unregister_fcm              = 65;
         StartCertLogin          start_cert_login            = 66;
         FinishCertLogin         finish_cert_login           = 67;
+        EidLoginApp             eid_login_app               = 68;
+        EidLoginAppUpd          eid_login_app_upd           = 69;
     }
 }
