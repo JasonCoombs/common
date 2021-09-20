@@ -353,6 +353,16 @@ message Request
         string token = 1;
     }
 
+    message StartCertLogin
+    {
+        string cert = 1;
+    }
+
+    message FinishCertLogin
+    {
+        string sign = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -412,6 +422,8 @@ message Request
         ChargeCard                  charge_card                 = 63;
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
+        StartCertLogin              start_cert_login            = 66;
+        FinishCertLogin             finish_cert_login           = 67;
     }
 }
 
@@ -881,6 +893,20 @@ message Response
         string error_msg = 2;
     }
 
+    message StartCertLogin
+    {
+        bool success = 1;
+        string challenge = 2;
+    }
+
+    message FinishCertLogin
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string account_name = 3;
+        string session_id = 4;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 1;
@@ -947,5 +973,7 @@ message Response
         ChargeCard              charge_card                 = 63;
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
+        StartCertLogin          start_cert_login            = 66;
+        FinishCertLogin         finish_cert_login           = 67;
     }
 }
