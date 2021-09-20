@@ -293,6 +293,7 @@ message Request
     {
         string phone = 1;
         bool include_app_hash = 2;
+        string public_key = 3;
     }
 
     message VerifyBasicAccount
@@ -801,8 +802,7 @@ message Response
     {
         bool success = 1;
         string error_msg = 2;
-        string account_name = 3;
-        string session_id = 4;
+        string cert = 5;
     }
 
     message UpgradeBasicAccount
