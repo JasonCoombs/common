@@ -85,7 +85,7 @@ message Response
 
     message OrderFailed
     {
-        string entity_name = 1;
+        int64  entity_id = 1;
         string product_name = 2;
         bs.types.Side side = 3;
         string amount = 4;
