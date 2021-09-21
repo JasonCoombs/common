@@ -2531,6 +2531,8 @@ message CashResMessage
 
    message MaxAmountResponse
    {
+      bool success = 6;
+      string error_msg = 7;
       uint32 entity_id = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
