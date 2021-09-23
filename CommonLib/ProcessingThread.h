@@ -99,11 +99,11 @@ private:
 
          const auto& timeNow = std::chrono::steady_clock::now();
          std::vector<std::shared_ptr<T>> packets;
-         decltype(delayedPackets_)::iterator itDelayed;
+         auto itDelayed = delayedPackets_.cbegin();
 
          {
             FastLock locker{ pendingPacketsLock_ };
-            while ((itDelayed = delayedPackets_.begin()) != delayedPackets_.end()) {
+            while ((itDelayed = delayedPackets_.cbegin()) != delayedPackets_.end()) {
                if (itDelayed->first > timeNow) {
                   break;
                }
