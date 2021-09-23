@@ -93,29 +93,32 @@ private:
 
    void processingLoop()
    {
+      std::vector<std::shared_ptr<T>> packets;
+
       while (continueExecution_) {
-         pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 50 });
+         const bool expired = !pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 50 });
          if (!continueExecution_) {
             break;
          }
 
-         const auto& timeNow = std::chrono::steady_clock::now();
-         std::vector<std::shared_ptr<T>> packets;
          typename decltype(delayedPackets_)::const_iterator itDelayed;
 
          {
             FastLock locker{ pendingPacketsLock_ };
-            while ((itDelayed = delayedPackets_.cbegin()) != delayedPackets_.end()) {
-               if (itDelayed->first > timeNow) {
-                  break;
-               }
-               for (const auto& packet : itDelayed->second) {
-                  if (packet == nullptr) {
-                     continue;
+            if (expired) {
+               const auto& timeNow = std::chrono::steady_clock::now();
+               while ((itDelayed = delayedPackets_.cbegin()) != delayedPackets_.end()) {
+                  if (itDelayed->first > timeNow) {
+                     break;
                   }
-                  packets.emplace_back(std::move(packet));
+                  for (const auto& packet : itDelayed->second) {
+                     if (packet == nullptr) {
+                        continue;
+                     }
+                     packets.emplace_back(std::move(packet));
+                  }
+                  delayedPackets_.erase(itDelayed);
                }
-               delayedPackets_.erase(itDelayed);
             }
 
             while (!pendingPackets_.empty()) {
@@ -124,11 +127,14 @@ private:
             }
          }
 
-         for (const auto& packet : packets) {
-            if (packet == nullptr) {
-               continue;
+         if (!packets.empty()) {
+            for (const auto& packet : packets) {
+               if (packet == nullptr) {
+                  continue;
+               }
+               processPacket(*packet);
             }
-            processPacket(*packet);
+            packets.clear();
          }
       }
    }
