@@ -89,17 +89,19 @@ private:
    }
 
 private:
+   std::map<std::chrono::steady_clock::time_point, std::vector<std::shared_ptr<T>>> delayedPackets_;
+
    void processingLoop()
    {
       while (continueExecution_) {
-         pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 25 });
+         pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 50 });
          if (!continueExecution_) {
             break;
          }
 
          const auto& timeNow = std::chrono::steady_clock::now();
          std::vector<std::shared_ptr<T>> packets;
-         auto itDelayed = delayedPackets_.cbegin();
+         typename decltype(delayedPackets_)::const_iterator itDelayed;
 
          {
             FastLock locker{ pendingPacketsLock_ };
@@ -139,7 +141,6 @@ private:
    std::atomic_bool                       continueExecution_{ true };
    mutable std::atomic_flag               pendingPacketsLock_ = ATOMIC_FLAG_INIT;
    ManualResetEvent                       pendingPacketsEvent_;
-   std::map<std::chrono::steady_clock::time_point, std::vector<std::shared_ptr<T>>> delayedPackets_;
    std::queue<std::shared_ptr<T>>         pendingPackets_;
 };
 
