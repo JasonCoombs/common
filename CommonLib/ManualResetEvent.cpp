@@ -16,9 +16,9 @@ ManualResetEvent::ManualResetEvent()
 : eventFlag_(false)
 {}
 
-bool ManualResetEvent::WaitForEvent(std::chrono::milliseconds period)
+bool ManualResetEvent::WaitForEvent(const std::chrono::milliseconds& period)
 {
-   std::unique_lock<std::mutex>  locker(flagMutex_);
+   std::unique_lock<std::mutex> locker(flagMutex_);
    return event_.wait_for(locker, period, [this] () {
       return eventFlag_.load();
    });
