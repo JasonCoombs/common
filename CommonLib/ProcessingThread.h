@@ -96,7 +96,7 @@ private:
       std::vector<std::shared_ptr<T>> packets;
 
       while (continueExecution_) {
-         const bool expired = !pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 50 });
+         const bool expired = !pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 10 });
          if (!continueExecution_) {
             break;
          }

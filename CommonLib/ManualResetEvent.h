@@ -28,7 +28,7 @@ public:
    ManualResetEvent& operator = (ManualResetEvent&&) = delete;
 
    bool WaitForEvent(const std::chrono::milliseconds& timeout);
-   void WaitForEvent();
+   bool WaitForEvent();
 
    void SetEvent();
    void ResetEvent();
