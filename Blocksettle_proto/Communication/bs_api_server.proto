@@ -348,6 +348,16 @@ message Request
         string amount = 2;
     }
 
+    message RegisterFcm
+    {
+        string token = 1;
+    }
+
+    message UnregisterFcm
+    {
+        string token = 1;
+    }
+
     oneof data
     {
         Authorize                   authorize                   = 10;
@@ -406,6 +416,8 @@ message Request
         RequestAddCard              request_add_card            = 61;
         ConfirmCard                 confirm_card                = 62;
         ChargeCard                  charge_card                 = 63;
+        RegisterFcm                 register_fcm                = 64;
+        UnregisterFcm               unregister_fcm              = 65;
     }
 }
 
@@ -498,6 +510,8 @@ message Response
 
     message MaxTradeAmount
     {
+        bool success = 5;
+        string error_msg = 6;
         string product_type = 1;
         bs.types.Side side = 2;
         string qty = 3;
@@ -871,6 +885,18 @@ message Response
         string error_msg = 2;
     }
 
+    message RegisterFcm
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
+    message UnregisterFcm
+    {
+        bool success = 1;
+        string error_msg = 2;
+    }
+
     oneof data
     {
         Authorize               authorize                   = 1;
@@ -936,5 +962,7 @@ message Response
         RequestAddCard          request_add_card            = 61;
         ConfirmCard             confirm_card                = 62;
         ChargeCard              charge_card                 = 63;
+        RegisterFcm             register_fcm                = 64;
+        UnregisterFcm           unregister_fcm              = 65;
     }
 }
