@@ -13,6 +13,7 @@
 #define __PROCESSING_THREAD_H__
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -48,12 +49,21 @@ public:
    ProcessingThread(ProcessingThread&&) = delete;
    ProcessingThread& operator = (ProcessingThread&&) = delete;
 
-   void SchedulePacketProcessing(const T& packet)
+   void SchedulePacketProcessing(const T& packet, const std::chrono::milliseconds& delay = {})
    {
-      if (!processingHalted_) {
-         FastLock locker{pendingPacketsLock_};
-         pendingPackets_.emplace(std::make_shared<T>(packet));
+      if (processingHalted_) {
+         return;
+      }
+      const auto& p = std::make_shared<T>(packet);
+      if (delay.count() == 0) {
+         FastLock locker{ pendingPacketsLock_ };
+         pendingPackets_.emplace(p);
          pendingPacketsEvent_.SetEvent();
+      }
+      else {
+         const auto& execTime = std::chrono::steady_clock::now() + delay;
+         FastLock locker{ pendingPacketsLock_ };
+         delayedPackets_[execTime].push_back(p);
       }
    }
 
@@ -82,31 +92,42 @@ private:
    void processingLoop()
    {
       while (continueExecution_) {
-         pendingPacketsEvent_.WaitForEvent();
-
+         pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 25 });
          if (!continueExecution_) {
             break;
          }
 
-         std::shared_ptr<T> packet;
+         const auto& timeNow = std::chrono::steady_clock::now();
+         std::vector<std::shared_ptr<T>> packets;
+         decltype(delayedPackets_)::iterator itDelayed;
 
          {
-            FastLock locker{pendingPacketsLock_};
+            FastLock locker{ pendingPacketsLock_ };
+            while ((itDelayed = delayedPackets_.begin()) != delayedPackets_.end()) {
+               if (itDelayed->first > timeNow) {
+                  break;
+               }
+               for (const auto& packet : itDelayed->second) {
+                  if (packet == nullptr) {
+                     continue;
+                  }
+                  packets.emplace_back(std::move(packet));
+               }
+               delayedPackets_.erase(itDelayed);
+            }
 
-            if (!pendingPackets_.empty()) {
-               packet = pendingPackets_.front();
+            while (!pendingPackets_.empty()) {
+               packets.push_back(pendingPackets_.front());
                pendingPackets_.pop();
             }
+         }
 
-            if (pendingPackets_.empty()) {
-               pendingPacketsEvent_.ResetEvent();
+         for (const auto& packet : packets) {
+            if (packet == nullptr) {
+               continue;
             }
+            processPacket(*packet);
          }
-
-         if (packet == nullptr) {
-            continue;
-         }
-         processPacket(*packet);
       }
    }
 
@@ -118,6 +139,7 @@ private:
    std::atomic_bool                       continueExecution_{ true };
    mutable std::atomic_flag               pendingPacketsLock_ = ATOMIC_FLAG_INIT;
    ManualResetEvent                       pendingPacketsEvent_;
+   std::map<std::chrono::steady_clock::time_point, std::vector<std::shared_ptr<T>>> delayedPackets_;
    std::queue<std::shared_ptr<T>>         pendingPackets_;
 };
 
