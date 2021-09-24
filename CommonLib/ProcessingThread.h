@@ -125,6 +125,7 @@ private:
                packets.push_back(pendingPackets_.front());
                pendingPackets_.pop();
             }
+            pendingPacketsEvent_.ResetEvent();
          }
 
          if (!packets.empty()) {
