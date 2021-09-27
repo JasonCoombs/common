@@ -2249,18 +2249,31 @@ message PriceStreamManaging
       int32  product_type    = 3; // bs::network::asset::type
    }
 
+   message StreamPriceData
+   {
+      bs.types.XBTAmountValue range_id = 1;
+      string         ask      = 2;
+      string         bid      = 3;
+   }
+
+   message SubmitPricesData
+   {
+      string                     product_type   = 1;
+      repeated StreamPriceData   prices         = 2;
+   }
+
    message SubmitPricesRequest
    {
-      uint32                     owner_entity_id   = 1;
-      bs.types.SubmitPricesData  submit_price_data = 2;
+      uint32           owner_entity_id   = 1;
+      SubmitPricesData submit_price_data = 2;
    }
 
    message SubmitPricesResponse
    {
-      uint32                                 owner_entity_id     = 1;
-      bs.types.SubmitPriceProcessingResult   result              = 2;
-      bs.types.SubmitPriceRejectReason       reject_reason       = 3;
-      bs.types.SubmitPricesData              rejected_price_data = 4;
+      uint32                               owner_entity_id     = 1;
+      bs.types.SubmitPriceProcessingResult result              = 2;
+      bs.types.SubmitPriceRejectReason     reject_reason       = 3;
+      SubmitPricesData                     rejected_price_data = 4;
    }
 
    message PullPricesRequest
@@ -2381,9 +2394,9 @@ message ApiServerMsg
    {
       message Entry
       {
-         string            volume  = 1;
-         bs.types.XBTPrice bid     = 2;
-         bs.types.XBTPrice ask     = 3;
+         bs.types.XBTAmountValue id  = 1;
+         bs.types.XBTPrice       bid = 2;
+         bs.types.XBTPrice       ask = 3;
       }
 
       int32 		      book_type      = 1;
