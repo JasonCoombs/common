@@ -16,20 +16,27 @@ ManualResetEvent::ManualResetEvent()
 : eventFlag_(false)
 {}
 
-bool ManualResetEvent::WaitForEvent(std::chrono::milliseconds period)
+bool ManualResetEvent::WaitForEvent(const std::chrono::milliseconds& period)
 {
-   std::unique_lock<std::mutex>  locker(flagMutex_);
-   return event_.wait_for(locker, period, [this] () {
-      return eventFlag_.load();
-   });
-}
+   std::unique_lock<std::mutex> locker(flagMutex_);
+   if (eventFlag_) {
+      return true;
+   }
+   event_.wait_for(locker, period);
+   return eventFlag_;
+}  // waiting with predicate consumes 100% CPU, at least on Linux
+// https://stackoverflow.com/questions/67762275/wait-of-condition-variable-in-c-will-consume-cpu-resource
 
-void ManualResetEvent::WaitForEvent()
-{
+bool ManualResetEvent::WaitForEvent()
+{  // same applies here (on Linux) - need to build with -pthread which is not the case apparently
    std::unique_lock<std::mutex>  locker(flagMutex_);
-   event_.wait(locker,
-      [this] () { return eventFlag_.load(); }
-      );
+   if (eventFlag_) {
+      return true;
+   }
+   event_.wait(locker);
+//      [this] () { return eventFlag_.load(); }
+//      );
+   return eventFlag_;
 }
 
 void ManualResetEvent::SetEvent()
@@ -45,4 +52,5 @@ void ManualResetEvent::ResetEvent()
 {
    std::unique_lock<std::mutex>  locker(flagMutex_);
    eventFlag_ = false;
+   event_.notify_all();
 }

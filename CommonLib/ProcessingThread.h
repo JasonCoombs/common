@@ -13,6 +13,7 @@
 #define __PROCESSING_THREAD_H__
 
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <queue>
 #include <thread>
@@ -48,12 +49,21 @@ public:
    ProcessingThread(ProcessingThread&&) = delete;
    ProcessingThread& operator = (ProcessingThread&&) = delete;
 
-   void SchedulePacketProcessing(const T& packet)
+   void SchedulePacketProcessing(const T& packet, const std::chrono::milliseconds& delay = {})
    {
-      if (!processingHalted_) {
-         FastLock locker{pendingPacketsLock_};
-         pendingPackets_.emplace(std::make_shared<T>(packet));
+      if (processingHalted_) {
+         return;
+      }
+      const auto& p = std::make_shared<T>(packet);
+      if (delay.count() == 0) {
+         FastLock locker{ pendingPacketsLock_ };
+         pendingPackets_.emplace(p);
          pendingPacketsEvent_.SetEvent();
+      }
+      else {
+         const auto& execTime = std::chrono::steady_clock::now() + delay;
+         FastLock locker{ pendingPacketsLock_ };
+         delayedPackets_[execTime].push_back(p);
       }
    }
 
@@ -79,41 +89,63 @@ private:
    }
 
 private:
+   std::map<std::chrono::steady_clock::time_point, std::vector<std::shared_ptr<T>>> delayedPackets_;
+
    void processingLoop()
    {
-      while (continueExecution_) {
-         pendingPacketsEvent_.WaitForEvent();
+      std::vector<std::shared_ptr<T>> packets;
 
+      while (continueExecution_) {
+         const bool expired = !pendingPacketsEvent_.WaitForEvent(std::chrono::milliseconds{ 10 });
          if (!continueExecution_) {
             break;
          }
 
-         std::shared_ptr<T> packet;
+         typename decltype(delayedPackets_)::const_iterator itDelayed;
 
          {
-            FastLock locker{pendingPacketsLock_};
+            FastLock locker{ pendingPacketsLock_ };
+            if (expired) {
+               const auto& timeNow = std::chrono::steady_clock::now();
+               while ((itDelayed = delayedPackets_.cbegin()) != delayedPackets_.end()) {
+                  if (itDelayed->first > timeNow) {
+                     break;
+                  }
+                  for (const auto& packet : itDelayed->second) {
+                     if (packet == nullptr) {
+                        continue;
+                     }
+                     packets.emplace_back(std::move(packet));
+                  }
+                  delayedPackets_.erase(itDelayed);
+               }
+            }
 
-            if (!pendingPackets_.empty()) {
-               packet = pendingPackets_.front();
+            while (!pendingPackets_.empty()) {
+               packets.push_back(pendingPackets_.front());
                pendingPackets_.pop();
             }
+            pendingPacketsEvent_.ResetEvent();
+         }
 
-            if (pendingPackets_.empty()) {
-               pendingPacketsEvent_.ResetEvent();
+         if (!packets.empty()) {
+            for (const auto& packet : packets) {
+               if (packet == nullptr) {
+                  continue;
+               }
+               processPacket(*packet);
             }
+            packets.clear();
          }
-
-         if (packet == nullptr) {
-            continue;
-         }
-         processPacket(*packet);
       }
    }
+
+protected:
+   std::atomic_bool                       processingHalted_{ false };
 
 private:
    std::thread processingThread_;
    std::atomic_bool                       continueExecution_{ true };
-   std::atomic_bool                       processingHalted_{ false };
    mutable std::atomic_flag               pendingPacketsLock_ = ATOMIC_FLAG_INIT;
    ManualResetEvent                       pendingPacketsEvent_;
    std::queue<std::shared_ptr<T>>         pendingPackets_;
