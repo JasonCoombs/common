@@ -30,12 +30,10 @@ bool ManualResetEvent::WaitForEvent(const std::chrono::milliseconds& period)
 bool ManualResetEvent::WaitForEvent()
 {  // same applies here (on Linux) - need to build with -pthread which is not the case apparently
    std::unique_lock<std::mutex>  locker(flagMutex_);
-   if (eventFlag_) {
-      return true;
+   while (!eventFlag_) {
+      event_.wait(locker);
    }
-   event_.wait(locker);
-//      [this] () { return eventFlag_.load(); }
-//      );
+
    return eventFlag_;
 }
 
@@ -52,5 +50,4 @@ void ManualResetEvent::ResetEvent()
 {
    std::unique_lock<std::mutex>  locker(flagMutex_);
    eventFlag_ = false;
-   event_.notify_all();
 }
