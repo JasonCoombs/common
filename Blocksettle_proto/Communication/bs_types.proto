@@ -35,22 +35,6 @@ enum OrderStatus
    ORDER_STATUS_VOID = 3;
 }
 
-enum PriceBookType
-{
-   CashSettlePriceBook = 0;
-   DeliverablePriceBook = 1;
-}
-
-enum PriceRangeId
-{
-   RangeUndefined  = 0;
-   Range_0_1       = 1;
-   Range_1_5       = 2;
-   Range_5_10      = 3;
-   Range_10_25     = 4;
-   Range_25_100    = 5;
-}
-
 enum SubmitPriceProcessingResult
 {
    SubmitPriceProcessingResult_UNDEFINED  = 0;
@@ -68,19 +52,6 @@ enum SubmitPriceRejectReason
    PriceRejected_InvalidRangeValue     = 3;
    PriceRejected_InvalidPriceString    = 4;
    PriceRejected_InsufficientBalance   = 5;
-}
-
-message StreamPriceData
-{
-   PriceRangeId   range_id = 1;
-   string         ask      = 2;
-   string         bid      = 3;
-}
-
-message SubmitPricesData
-{
-   string                     product_type   = 1;
-   repeated StreamPriceData   prices         = 2;
 }
 
 message PullPricesData

@@ -102,6 +102,20 @@ message Answer
     string answer = 2;
 }
 
+message StreamPriceData
+{
+    int32  range_id = 1;
+    string ask      = 2;
+    string bid      = 3;
+}
+
+message SubmitPricesData
+{
+   string                     product_type   = 1;
+   repeated StreamPriceData   prices         = 2;
+}
+
+
 message Request
 {
     message Authorize
@@ -377,7 +391,7 @@ message Request
         MaxTradeAmount              max_trade_amount            = 24;
         TradingStats                trading_stats               = 25;
 
-        bs.types.SubmitPricesData   submit_prices               = 26;
+        SubmitPricesData            submit_prices               = 26;
         bs.types.PullPricesData     pull_prices                 = 27;
 
         WhitelistedAddressRequest   submit_address              = 28;
@@ -784,7 +798,7 @@ message Response
     {
         bs.types.SubmitPriceProcessingResult    result              = 1;
         bs.types.SubmitPriceRejectReason        reject_reason       = 2;
-        bs.types.SubmitPricesData               rejected_price_data = 3;
+        SubmitPricesData               	        rejected_price_data = 3;
     }
 
     message RegisterBasicAccount
