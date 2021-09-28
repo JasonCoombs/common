@@ -36,7 +36,7 @@ public:
 private:
    std::condition_variable event_;
    mutable std::mutex      flagMutex_;
-   std::atomic<bool>       eventFlag_;
+   bool                    eventFlag_;
 };
 
 #endif // __MANUAL_RESET_EVENT_H__
