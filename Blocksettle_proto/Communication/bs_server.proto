@@ -69,7 +69,7 @@ message WalletMessage
 {
    message AuthWalletLoaded
    {
-      string wallet_id = 1;	// not set atm
+      string wallet_id = 1;   // not set atm
       repeated string addresses = 2;
    }
 
@@ -113,7 +113,7 @@ message WalletMessage
 
    oneof data {
       Empty                                  wallet_reload           = 1;
-      string                                 wallet_loaded           = 2;	// wallet id
+      string                                 wallet_loaded           = 2; // wallet id
       AuthWalletLoaded                       auth_wallet_loaded      = 3;
       Blocksettle.Communication.pbcli.LoadUTXOResponse utxos         = 4;
       bool                                   get_all_utxo            = 5;
@@ -298,44 +298,43 @@ enum GenoaType
    GenoaGetDepositInfoType                = 33;
    GenoaWithdrawToExternalAccountType     = 34;
    GenoaGetCustomerBalance                = 35;
-   GenoaLoadDeliveryObligations           = 37;
-   GenoaSetDeliveryAddress                = 38;
-   GenoaSettleDelivery                    = 39;
-   GenoaTradeCycleStatus                  = 40;
-   GenoaReloadAccounts                    = 41;
-   GenoaAccountReloaded                   = 42;
-   GenoaCreateIbanAgreementUrlType        = 43;
-   GenoaGetIbanAccountsType               = 44;
-   GenoaGetIbanAccountDetailsType         = 45;
-   GenoaUserNotify                        = 46;
-   GenoaRegisterXBTDepositType            = 47;
-   GenoaConfirmXBTDepositType             = 48;
-   GenoaRegisterXBTWithdrawType           = 49;
-   GenoaConfirmXBTWithdrawType            = 50;
-   GenoaReportRejectedDeposit             = 51;
-   GenoaTradeHistory                      = 52;
-   GenoaTransactionsForEntity             = 53;
-   GenoaGetStatementDates                 = 55;
-   GenoaGetStatements                     = 56;
-   GenoaPoolMargins                       = 57;
-   GenoaProfitLossPayout                  = 58;
-   GenoaFutureCreateReservations          = 59;
-   GenoaCreateNovationAccount             = 60;
-   GenoaDisposeNovationAccount            = 61;
-   GenoaInitBasicSignup                   = 62;
-   GenoaApproveBasicSignup                = 63;
-   GenoaResolveLoginToken                 = 64;
-   GenoaUpgradeBasicAccount               = 65;
-   GenoaListClientBanks                   = 66;
-   GenoaBankOnboardingLink                = 67;
-   GenoaListRemoteAccounts                = 68;
-   GenoaSaveAccount                       = 69;
-   GenoaRequestAddCard                    = 70;
-   GenoaConfirmCard                       = 71;
-   GenoaChargeCard                        = 72;
-   GenoaRegisterFcm                       = 73;
-   GenoaUnregisterFcm                     = 74;
-   GenoaSendFcm                           = 75;
+   GenoaLoadDeliveryObligations           = 36;
+   GenoaSetDeliveryAddress                = 37;
+   GenoaSettleDelivery                    = 38;
+   GenoaReloadAccounts                    = 39;
+   GenoaAccountReloaded                   = 40;
+   GenoaCreateIbanAgreementUrlType        = 41;
+   GenoaGetIbanAccountsType               = 42;
+   GenoaGetIbanAccountDetailsType         = 43;
+   GenoaUserNotify                        = 44;
+   GenoaRegisterXBTDepositType            = 45;
+   GenoaConfirmXBTDepositType             = 46;
+   GenoaRegisterXBTWithdrawType           = 47;
+   GenoaConfirmXBTWithdrawType            = 48;
+   GenoaReportRejectedDeposit             = 49;
+   GenoaTradeHistory                      = 50;
+   GenoaTransactionsForEntity             = 51;
+   GenoaGetStatementDates                 = 52;
+   GenoaGetStatements                     = 53;
+   GenoaPoolMargins                       = 54;
+   GenoaProfitLossPayout                  = 55;
+   GenoaFutureCreateReservations          = 56;
+   GenoaCreateNovationAccount             = 57;
+   GenoaDisposeNovationAccount            = 58;
+   GenoaInitBasicSignup                   = 59;
+   GenoaApproveBasicSignup                = 60;
+   GenoaResolveLoginToken                 = 61;
+   GenoaUpgradeBasicAccount               = 62;
+   GenoaListClientBanks                   = 63;
+   GenoaBankOnboardingLink                = 64;
+   GenoaListRemoteAccounts                = 65;
+   GenoaSaveAccount                       = 66;
+   GenoaRequestAddCard                    = 67;
+   GenoaConfirmCard                       = 68;
+   GenoaChargeCard                        = 69;
+   GenoaRegisterFcm                       = 70;
+   GenoaUnregisterFcm                     = 71;
+   GenoaSendFcm                           = 72;
 }
 
 message GenoaDisconnectedBroadcast
@@ -674,23 +673,9 @@ message LoadAllObligationsResponse
    repeated LoadedGenoaObligationData  obligation  = 2;
 }
 
-message GenoaGetCurrentTradeCycleDetails
-{
-   bool success                     = 1;
-   string error_msg                 = 2;
-   string product_name              = 3;
-   int64 cut_off_at                 = 4;
-   double seconds_time_to_cut_off   = 5;
-   double open_interest             = 6;
-   double last_cut_off_price        = 7;
-   double fee                       = 8;
-   string fee_ccy                   = 9;
-   double im                        = 10;
-}
-
 message GenoaUserNotifyMsg
 {
-   uint32            broadcast_to         = 1;	// entity_id
+   uint32            broadcast_to         = 1; // entity_id
    string            message              = 2;
    string            code                 = 3;
    string            type                 = 4;
@@ -1309,9 +1294,6 @@ message GenoaMessage
 
       LoadAllObligationsResponse       loaded_obligations            = 36;
       SettleDelivery                   settle_delivery_status        = 37;
-
-      string                           trade_cycle_status            = 38;
-      GenoaGetCurrentTradeCycleDetails trade_cycle_status_resp       = 39;
 
       GenoaRegisterAccountRequest      register_account_req          = 40;
       GenoaRegisterAccountResponse     register_account_resp         = 41;
@@ -2003,8 +1985,8 @@ message ProxyMessage
    oneof data {
       ProxyOnlineUsersMessage       online_users         = 2;
       ProxyUserStatusUpdatedMessage user_status_updated  = 3;
-      uint32                        user_connected = 10;	// entity_id
-      uint32                        user_disconnected = 11;	// entity_id
+      uint32                        user_connected = 10; // entity_id
+      uint32                        user_disconnected = 11; // entity_id
    }
 }
 
@@ -2251,9 +2233,9 @@ message PriceStreamManaging
 
    message StreamPriceData
    {
-      bs.types.XBTAmountValue range_id = 1;
-      string         ask      = 2;
-      string         bid      = 3;
+      bs.types.XBTAmountValue volume   = 1;
+      bs.types.XBTPrice       ask      = 2;
+      bs.types.XBTPrice       bid      = 3;
    }
 
    message SubmitPricesData
@@ -2367,7 +2349,7 @@ message ApiInternalCommand
       bytes client_id = 1;
       int32 sign_error = 2;
       bytes request_id = 3;
-      bytes response = 4;	// can't include rp.proto for autheid.rp.GetResultResponse
+      bytes response = 4; // can't include rp.proto for autheid.rp.GetResultResponse
    }
 
    oneof data
@@ -2390,19 +2372,6 @@ message ApiServerMsg
       bs.types.Action action = 3;
    }
 
-   message UpdateBook
-   {
-      message Entry
-      {
-         bs.types.XBTAmountValue id  = 1;
-         bs.types.XBTPrice       bid = 2;
-         bs.types.XBTPrice       ask = 3;
-      }
-
-      int32 		      book_type      = 1;
-      repeated Entry          prices         = 2;
-   }
-
    message TradingSessionClosed
    {
       int32 product_type = 1; // bs::network::Asset::Type
@@ -2410,7 +2379,7 @@ message ApiServerMsg
 
    message UserNotify
    {
-      uint32   broadcast_to   = 1;	// entity_id
+      uint32   broadcast_to   = 1; // entity_id
       string   message        = 2;
       string   code           = 3;
       string   type           = 4;
@@ -2436,20 +2405,27 @@ message ApiServerMsg
       bs.types.XBTAmountValue open_interest  = 2;
    }
 
+   message BestPriceUpdate
+   {
+      int32                book_type   = 1;
+      bs.types.XBTPrice    bid         = 2;
+      bs.types.XBTPrice    ask         = 3;
+   }
+
    oneof data
    {
       UpdateOrder                update_order            = 1;
-      UpdateBook                 update_book             = 2;
+      BestPriceUpdate            best_price_update       = 2;
       TradingSessionOpen         trading_opened          = 3;
       TradingSessionClosed       trading_closed          = 4;
       Empty                      send_prices             = 5;
       Empty                      send_trading_stats      = 6;
-      uint32                     user_connected          = 7;	// entity_id
+      uint32                     user_connected          = 7; // entity_id
       uint32                     user_disconnected       = 8;   // entity_id
       UserNotify                 user_notify             = 9;
       UpdateWithdrawPrices       update_withdraw_prices  = 10;
       Empty                      subscribe_price_offers  = 11;
-      UpdateBook                 price_offer             = 12;
+      BestPriceUpdate            price_offer             = 12;
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
       ApiInternalCommand         internal_command        = 15;
@@ -2620,7 +2596,7 @@ message CashResMessage
       // users_im_info - deprecated
       UsersImInfo                users_im_info           = 5;
 
-      string                     get_session_info        = 6;	// product type for now
+      string                     get_session_info        = 6; // product type for now
       TradingSessionOpen         session_info_response   = 7;
 
       Order                      append_order            = 8;
