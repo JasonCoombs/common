@@ -2255,7 +2255,8 @@ message PriceStreamManaging
       uint32                               owner_entity_id     = 1;
       bs.types.SubmitPriceProcessingResult result              = 2;
       bs.types.SubmitPriceRejectReason     reject_reason       = 3;
-      SubmitPricesData                     rejected_price_data = 4;
+      string                               product_type        = 4;
+      repeated StreamPriceData             rejected_prices     = 5;
    }
 
    message PullPricesRequest

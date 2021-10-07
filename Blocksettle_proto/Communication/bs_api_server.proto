@@ -790,9 +790,10 @@ message Response
 
     message SubmitPrices
     {
-        bs.types.SubmitPriceProcessingResult    result              = 1;
-        bs.types.SubmitPriceRejectReason        reject_reason       = 2;
-        SubmitPricesData                        rejected_price_data = 3;
+        bs.types.SubmitPriceProcessingResult    result          = 1;
+        bs.types.SubmitPriceRejectReason        reject_reason   = 2;
+        string                                  product_type    = 3;
+        repeated StreamPriceData                rejected_prices = 4;
     }
 
     message RegisterBasicAccount
