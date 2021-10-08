@@ -120,12 +120,8 @@ message Request
 {
     message Authorize
     {
-        string api_key = 1;
-    }
-
-    message EidRegister
-    {
-        repeated Answer answers = 1;
+        string phone = 1;
+        bs.types.Token  token = 2;	// optional
     }
 
     message ResumeSession
@@ -375,9 +371,6 @@ message Request
     oneof data
     {
         Authorize                   authorize                   = 10;
-        Empty                       eid_login                   = 11;
-        EidRegister                 eid_register                = 12;
-        Empty                       eid_cancel                  = 13;
         ResumeSession               resume_session              = 14;
         Empty                       logout                      = 15;
         MarketOrder                 market_order                = 16;
@@ -442,6 +435,7 @@ message Response
         bool success = 1;
         string session_id = 2;
         string account_name = 3;
+        int32  validity = 4;
     }
 
     message EidLogin
@@ -914,8 +908,6 @@ message Response
     oneof data
     {
         Authorize               authorize                   = 1;
-        EidLogin                eid_login                   = 2;
-        EidRegister             eid_register                = 3;
         ResumeSession           resume_session              = 4;
         Empty                   logout                      = 5;
         MarketOrder             market_order                = 6;
@@ -948,7 +940,6 @@ message Response
         ResponseResult          unsubscribe_withdraw_prices = 33;
         MarketData              market_data                 = 34;
         Error                   fatal_error                 = 35;
-        EidLoginUpdate          eid_login_update            = 36;
         OrderUpdate             order_update                = 37;
         TradingClosed           trading_closed              = 38;
         Empty                   session_replaced            = 39;

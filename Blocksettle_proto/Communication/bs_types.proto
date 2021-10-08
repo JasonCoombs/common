@@ -126,3 +126,9 @@ enum ApiKeyError
     API_KEY_ERROR_UNKNOWN_IP_ADDR = 2;
     API_KEY_ERROR_SERVER_ERROR = 3;
 }
+
+message Token
+{
+    string x = 1;
+    string y = 2;
+}
