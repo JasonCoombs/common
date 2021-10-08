@@ -89,7 +89,7 @@ class GtestSettings(Configurator):
             return 'Debug'
 
     def install_win(self):
-        lib_dir = os.path.join(self.get_build_dir(), 'googlemock', 'gtest', self.get_win_build_configuration())
+        lib_dir = os.path.join(self.get_build_dir(), 'lib', self.get_win_build_configuration())
         include_dir = os.path.join(self.get_unpacked_gtest_sources_dir(), 'googletest', 'include')
 
         install_lib_dir = os.path.join(self.get_install_dir(), 'lib')
