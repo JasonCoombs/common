@@ -104,9 +104,9 @@ message Answer
 
 message StreamPriceData
 {
-    int32  range_id = 1;
-    string ask      = 2;
-    string bid      = 3;
+    string volume = 1;
+    string ask    = 2;
+    string bid    = 3;
 }
 
 message SubmitPricesData
@@ -573,16 +573,10 @@ message Response
 
     message MarketData
     {
-        message Item
-        {
-            string quantity = 1;
-            string bid = 2;
-            string ask = 3;
-        }
-
-        string product_type   = 1;
-        string live_cutoff    = 2;
-        repeated Item items   = 3;
+        string    product_type   = 1;
+        string    live_cutoff    = 2;
+        string    ask            = 3;
+        string    bid            = 4;
     }
 
     message EidLoginUpdate
@@ -796,9 +790,10 @@ message Response
 
     message SubmitPrices
     {
-        bs.types.SubmitPriceProcessingResult    result              = 1;
-        bs.types.SubmitPriceRejectReason        reject_reason       = 2;
-        SubmitPricesData               	        rejected_price_data = 3;
+        bs.types.SubmitPriceProcessingResult    result          = 1;
+        bs.types.SubmitPriceRejectReason        reject_reason   = 2;
+        string                                  product_type    = 3;
+        repeated StreamPriceData                rejected_prices = 4;
     }
 
     message RegisterBasicAccount
