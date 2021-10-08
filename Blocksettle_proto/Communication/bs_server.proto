@@ -1223,10 +1223,11 @@ message GenoaMessage
 
       bool                          reservation_succeed  = 1;
       string                        error_message        = 2;
+      int64                         processing_time_ms   = 3;
 
-      repeated ReservationInfo      reservations_info    = 3;
-      repeated EntityBalance        current_balances     = 4;
-      repeated RecordsCausedFailure rejected_entities    = 5;
+      repeated ReservationInfo      reservations_info    = 4;
+      repeated EntityBalance        current_balances     = 5;
+      repeated RecordsCausedFailure rejected_entities    = 6;
    }
 
    message NewNovationAccountRequest
