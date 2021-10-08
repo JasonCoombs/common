@@ -19,7 +19,7 @@ from component_configurator import Configurator
 class GtestSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '1.8.1'
+        self._version = '1.11.0'
         self._script_revision = '2'
         self._package_name = 'Gtest'
 
@@ -108,7 +108,7 @@ class GtestSettings(Configurator):
 
     def install_x(self):
         include_dir = os.path.join(self.get_unpacked_gtest_sources_dir(), 'googletest/include')
-        lib_dir = os.path.join(self.get_build_dir(), 'googlemock/gtest')
+        lib_dir = os.path.join(self.get_build_dir(), 'lib')
 
         install_lib_dir = os.path.join(self.get_install_dir(), 'lib')
         install_include_dir = os.path.join(self.get_install_dir(), 'include')
