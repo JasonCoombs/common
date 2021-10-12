@@ -2494,6 +2494,7 @@ message CashResMessage
       bs.types.XBTPrice       cut_off_price           = 11;
       bool                    reservation_confirmed   = 12;
       int64                   position_id             = 13;
+      bs.types.XBTAmountValue reference_exposure      = 14;
    }
 
    message EstimateImRequest
