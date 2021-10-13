@@ -2643,8 +2643,7 @@ message UserControlMessage
    message UpgradeBasicAccountRequest
    {
       uint32 entity_id = 1;
-      string answers = 2;
-      string kyc = 3;
+      string token = 2;
    }
 
    message UpgradeBasicAccountResponse
@@ -2652,6 +2651,7 @@ message UserControlMessage
       bool success = 1;
       string error_code = 2;
       string error_msg = 3;
+      string token = 4;
    }
 
    message ListClientBanksRequest
@@ -2746,7 +2746,7 @@ message UserControlMessage
       uint32 valid_for = 2;
       string token = 3;
       uint32 entity_id = 4;
-      int32  error_code = 5;
+      string error_code = 5;
       string error_text = 6;
    }
 
@@ -2762,8 +2762,9 @@ message UserControlMessage
       int32  age = 2;
       string token = 3;
       uint32 entity_id = 4;
-      int32  error_code = 5;
+      string error_code = 5;
       string error_text = 6;
+      int32  validity = 7;
    }
 
 
@@ -2807,5 +2808,7 @@ message UserControlMessage
       NewUserTokenResponse           new_user_token_response = 36;
       ValidateUserTokenRequest       validate_user_token_request = 37;
       ValidateUserTokenResponse      validate_user_token_response = 38;
+      string                         monitor_upgrade_request = 39;	// request_id
+      string                         monitor_sign_request = 40;         // request_id
    }
 }

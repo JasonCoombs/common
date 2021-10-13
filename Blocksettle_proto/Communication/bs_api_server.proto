@@ -96,12 +96,6 @@ message OhlcCandle
 message Empty
 {}
 
-message Answer
-{
-    string question = 1;
-    string answer = 2;
-}
-
 message StreamPriceData
 {
     string volume = 1;
@@ -317,7 +311,7 @@ message Request
 
     message UpgradeBasicAccount
     {
-        repeated Answer answers = 2;
+        string token = 1;
     }
 
     message ListClientBanks
@@ -438,20 +432,12 @@ message Response
         int32  validity = 4;
     }
 
-    message EidLogin
-    {
-        string qr_code = 1;
-    }
-
-    message EidRegister
-    {
-        string qr_code = 1;
-    }
-
     message ResumeSession
     {
         bool success = 1;
         string account_name = 2;
+        string token = 3;
+        int32  validity = 4;
     }
 
     message MarketOrder
