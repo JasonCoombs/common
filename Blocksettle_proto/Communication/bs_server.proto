@@ -997,10 +997,11 @@ message GenoaMessage
 
       bool                          reservation_succeed  = 1;
       string                        error_message        = 2;
+      int64                         processing_time_ms   = 3;
 
-      repeated ReservationInfo      reservations_info    = 3;
-      repeated EntityBalance        current_balances     = 4;
-      repeated RecordsCausedFailure rejected_entities    = 5;
+      repeated ReservationInfo      reservations_info    = 4;
+      repeated EntityBalance        current_balances     = 5;
+      repeated RecordsCausedFailure rejected_entities    = 6;
    }
 
    message NewNovationAccountRequest
@@ -2448,6 +2449,14 @@ message StatusExporterMessage
       string product_name = 1;
    }
 
+   message RequestProcessingTimeUpdate
+   {
+      // supported requests:
+      //    create_reservations - Genoa reservations_service method
+      string   request_name      = 1;
+      uint64   execution_time_ms = 2;
+   }
+
    oneof data
    {
       TradingStartedUpdate             trading_started               = 1;
@@ -2455,6 +2464,7 @@ message StatusExporterMessage
       InitialStatusQeuryTimeout        initial_status_query_timeout  = 3;
       SessionStatusPollTimeout         poll_session_status_timeout   = 4;
       SessionCloseGracePeriodTimeout   session_close_timeout         = 5;
+      RequestProcessingTimeUpdate      request_processing_time       = 6;
    }
 }
 
