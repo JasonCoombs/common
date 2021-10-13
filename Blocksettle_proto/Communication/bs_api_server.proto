@@ -15,25 +15,28 @@ package Blocksettle.Communication.ApiServer;
 import "bs_types.proto";
 import "market_data_history.proto";
 
-enum EidStatus {
-    EID_STATUS_INVALID = 0;
-    EID_STATUS_WAITING_SIGN = 10;
-    EID_STATUS_TIMEOUT = 20;
-    EID_STATUS_CANCELLED = 21;
-    EID_STATUS_SERVER_ERROR = 22;
-    EID_STATUS_ACCOUNT_NOT_FOUND = 23;
-    EID_STATUS_REGISTRATION_FAILED = 24;
-    EID_STATUS_ACCOUNT_NOT_VERIFIED = 25;
-    EID_STATUS_SUCCESS = 30;
+enum UserControlStatus
+{
+    STATUS_INVALID = 0;
+    STATUS_WAITING_SIGN = 10;
+    STATUS_TIMEOUT = 20;
+    STATUS_CANCELLED = 21;
+    STATUS_SERVER_ERROR = 22;
+    STATUS_ACCOUNT_NOT_FOUND = 23;
+    STATUS_REGISTRATION_FAILED = 24;
+    STATUS_ACCOUNT_NOT_VERIFIED = 25;
+    STATUS_SUCCESS = 30;
 }
 
-enum ErrorCode {
+enum ErrorCode
+{
     NO_ERROR_CODE = 0;
     ERROR_CODE_SERVER_ERROR = 1;
     ERROR_CODE_INVALID_REQUEST = 2;
 }
 
-enum AccountType {
+enum AccountType
+{
     ALL = 0;
     BANK = 1;
     CARD = 2;
@@ -798,7 +801,7 @@ message Response
 
     message UpgradeBasicAccountUpd
     {
-        EidStatus status = 1;
+        UserControlStatus status = 1;
         string error_msg = 2;
     }
 
