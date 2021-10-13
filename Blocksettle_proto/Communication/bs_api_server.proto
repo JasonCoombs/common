@@ -559,14 +559,6 @@ message Response
         string    bid            = 4;
     }
 
-    message EidLoginUpdate
-    {
-        EidStatus status = 1;
-        string session_id = 2;
-        string account_name = 3;
-        string error_msg = 4;
-    }
-
     message TradingClosed
     {
         string product_type = 1;
