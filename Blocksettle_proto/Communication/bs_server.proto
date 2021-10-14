@@ -2559,6 +2559,9 @@ message UserControlMessage
       string phone = 3;
       string otp_code = 4;
       string token = 5;
+      string error_msg = 6;
+      string error_data = 7;
+      string country = 8;
    }
 
    message ApproveBasicSignupRequest
