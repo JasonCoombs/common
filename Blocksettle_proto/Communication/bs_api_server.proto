@@ -59,18 +59,24 @@ message ExternalAccountInfo
 message Order
 {
    // order_id is set from FS position ID
-   string               id             = 1;
-   bs.types.OrderStatus status         = 2;
-   string               status_text    = 3;
-   double               timestamp      = 4;
-   string               product_type   = 5;
-   bs.types.Side        side           = 6;
-   string               quantity       = 7;
-   string               price          = 8;
-   string               cut_off_price  = 9;
-   string               trade_im       = 10;
-   bool                 is_rollover    = 11;
-   string               trade_pnl      = 12;
+   string               id                   = 1;
+   bs.types.OrderStatus status               = 2;
+   string               status_text          = 3;
+   double               timestamp            = 4;
+   string               product_type         = 5;
+   bs.types.Side        side                 = 6;
+   string               quantity             = 7;
+   string               price                = 8;
+   string               cut_off_price        = 9;
+   string               trade_im             = 10;
+   bool                 is_rollover          = 11;
+   string               trade_pnl            = 12;
+   // reference_exposure - positions created after trade
+   //                    show total user net exposure right after that trade
+   //                    -  for rollover positions displays user net exposure
+   //                    before roll. In case of default/liquidation session_exposure
+   //                    will differ from qty. Otherwise it will be the same
+   string               reference_exposure   = 13;
 }
 
 message ApiKey
