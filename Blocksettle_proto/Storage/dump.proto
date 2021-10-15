@@ -1,0 +1,76 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2018 - 2020, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+import "bs_types.proto";
+
+package BlockSettle.Storage.Dump;
+
+
+message SessionSnapshot
+{
+   message Order
+   {
+      uint32                  entity_id               = 1;
+      bs.types.XBTAmountValue qty                     = 2;
+      bs.types.XBTPrice       price                   = 4;
+      int32                   trade_type              = 5;
+      string                  cl_ord_id               = 6;
+      uint64                  timestamp               = 7;
+      bool                    is_rollover             = 8;
+      bs.types.FXAmountValue  im                      = 9;
+      bool                    is_LP                   = 10;
+      bs.types.XBTPrice       cut_off_price           = 11;
+      bool                    reservation_confirmed   = 12;
+      int64                   position_id             = 13;
+      bs.types.XBTAmountValue reference_net_exposure  = 14;
+   }
+
+   message Band
+   {
+      uint32 entity_id                     = 1;
+      bs.types.FXAmountValue  im           = 2;
+      bs.types.FXAmountValue  fee_paid     = 3;
+      bs.types.FXAmountValue  fee_earned   = 4;
+      bs.types.XBTAmountValue net_exposure = 5;
+   }
+
+   message NovationAccount
+   {
+      uint32 account_id = 1;
+      uint32 entity_id = 2;
+      int32  state = 3;
+   }
+   
+   int64    session_id              = 1;
+   string   name                    = 2;
+   uint64   open_timestamp          = 3;
+   int32    state                   = 4;
+   bs.types.XBTPrice open_price     = 5;
+   bs.types.XBTPrice cutoff_price   = 6;
+   NovationAccount novation_account = 7;
+   repeated Order orders            = 8;
+   repeated Band  bands             = 9;
+   repeated uint32 accounts         = 10;	// entity_id
+}
+
+
+message Envelope
+{
+   uint64 foreign_id = 1;
+   uint64 response_id = 2;
+   uint64 flags = 3;
+   int32  sender = 4;
+   int32  receiver = 5;
+   uint64 posted = 6;
+   uint64 execute_at = 7;
+   bytes  message = 8;
+}
