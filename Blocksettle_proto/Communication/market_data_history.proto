@@ -34,6 +34,7 @@ enum FuturesCandleIntervals
    ThirtyMinutesInterval   = 3;
    OneHourInterval         = 4;
    TwentyFourHoursInterval = 5;
+   OneWeekInterval         = 6;
 }
 
 enum MarketDataHistoryMessageType
