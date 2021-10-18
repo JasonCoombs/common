@@ -36,7 +36,7 @@ FUNCTION(GENERATE_PROTO PROTO_DIR)
       ADD_CUSTOM_COMMAND(OUTPUT ${PROTO_SOURCE_FILE}
                          OUTPUT ${PROTO_HEADER_FILE}
                          DEPENDS ${PROTO_FILE}
-                         COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=${OUT_DIR} --proto_path=${IN_DIR}
+                         COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTO_FILE} --cpp_out=${OUT_DIR} --proto_path=${IN_DIR} --proto_path=${PROTO_ROOT_DIR}/common/Blocksettle_proto
       )
    ENDFOREACH(PROTO_FILE)
 
@@ -47,6 +47,7 @@ FUNCTION(GENERATE_PROTO PROTO_DIR)
 
 ENDFUNCTION(GENERATE_PROTO)
 
+GENERATE_PROTO(.)
 GENERATE_PROTO(Communication)
 GENERATE_PROTO(Storage)
 GENERATE_PROTO("BS_MD/TradeHistoryServer")
