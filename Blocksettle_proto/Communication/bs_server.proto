@@ -2539,6 +2539,8 @@ message UserControlMessage
       string error_msg = 3;
       string client_payload = 4;
       int32  level = 5;
+      int32  validity = 6;
+      string device_id = 7;
    }
 
    message MonitorUpgradeRequest

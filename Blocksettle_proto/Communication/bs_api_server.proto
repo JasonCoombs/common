@@ -410,6 +410,7 @@ message Response
         bool   sms_sent   = 2;
         uint32 validity   = 3;
         int32  level      = 4;
+        string payload    = 5;
     }
 
     message RefreshSession
@@ -740,12 +741,7 @@ message Response
         string token = 2;
         string device_id = 3;
         int32  level = 4;
-    }
-
-    message UpgradeBasicAccountUpd
-    {
-        UserControlStatus status = 1;
-        string error_msg = 2;
+        int32  valid_for = 5;
     }
 
     message ListClientBanks
@@ -873,7 +869,6 @@ message Response
         TradeCreated            trade_created               = 50;
         SubmitPrices            submit_prices               = 51;
         UpgradeBasicAccount     upgrade_basic_account       = 55;
-        UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 56;
         ListClientBanks         list_client_banks           = 57;
         BankOnboardingLink      bank_onboarding_link        = 58;
         ListRemoteAccounts      list_remote_accounts        = 59;
