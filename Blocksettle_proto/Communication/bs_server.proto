@@ -1465,9 +1465,9 @@ message GenoaServerTradeUpdateEvent
 
 message GenoaServerDeposit
 {
-   uint32            entity_id   = 1;
-   string            ccy         = 2;
-   double            amount      = 3;
+   uint32                  entity_id   = 1;
+   string                  ccy         = 2;
+   bs.types.FXAmountValue  amount      = 3;
 }
 
 message GenoaServerMessage
