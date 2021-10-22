@@ -2098,7 +2098,7 @@ message ApiServerMsg
       TradingSessionClosed       trading_closed          = 4;
       Empty                      send_prices             = 5;
       Empty                      send_trading_stats      = 6;
-      uint32                     user_connected          = 7; // entity_id
+      uint32                     user_connected          = 7;   // entity_id
       uint32                     user_disconnected       = 8;   // entity_id
       UserNotify                 user_notify             = 9;
       UpdateWithdrawPrices       update_withdraw_prices  = 10;
@@ -2106,6 +2106,7 @@ message ApiServerMsg
       BestPriceUpdate            price_offer             = 12;
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
+      string                     expire_user_session     = 15;  // session id
    }
 }
 
@@ -2486,32 +2487,6 @@ message UserControlMessage
       uint32 entity_id = 4;
    }
 
-   message NewApiKeyRequest
-   {
-      uint32 entity_id = 1;
-      string label = 2;
-      string ip = 3;
-   }
-
-   message NewApiKeyResponse
-   {
-      bool error = 1;
-      ApiKey key = 2;
-      string secret = 3;
-   }
-
-   message DeleteApiKeyRequest
-   {
-      uint32 entity_id = 1;
-      int32 key_id = 2;
-   }
-
-   message DeleteApiKeyResponse
-   {
-      bool error = 1;
-      int32 key_id = 2;
-   }
-
    message GetAllExternalAccountsRequest
    {
       uint32 entity_id = 1;
@@ -2548,53 +2523,12 @@ message UserControlMessage
       string error_message  = 2;
    }
 
-   message InitBasicSignupRequest
-   {
-      string phone = 1;
-   }
-
-   message InitBasicSignupResponse
-   {
-      bool success = 1;
-      string error_code = 2;
-      string phone = 3;
-      string otp_code = 4;
-      string token = 5;
-      string error_msg = 6;
-      string error_data = 7;
-      string country = 8;
-   }
-
-   message ApproveBasicSignupRequest
-   {
-      string otp_code = 1;
-      string token = 2;
-   }
-
-   message ApproveBasicSignupResponse
-   {
-      bool success = 1;
-      string error_code = 2;
-      uint32 entity_id = 3;
-      string token = 5;
-   }
-
-   message ResolveLoginTokenRequest
-   {
-      string token = 1;
-   }
-
-   message ResolveLoginTokenResponse
-   {
-      bool success = 1;
-      uint32 entity_id = 2;
-      string phone = 4;
-   }
-
    message UpgradeBasicAccountRequest
    {
-      uint32 entity_id = 1;
-      string token = 2;
+      string entity_key = 1;
+      string device_id = 2;
+      string token = 3;
+      string email = 4;	// optional
    }
 
    message UpgradeBasicAccountResponse
@@ -2602,6 +2536,15 @@ message UserControlMessage
       bool success = 1;
       string error_code = 2;
       string error_msg = 3;
+      string client_payload = 4;
+      int32  level = 5;
+   }
+
+   message MonitorUpgradeRequest
+   {
+      string request_id = 1;
+      string entity_key = 2;
+      string device_id = 3;
       string token = 4;
    }
 
@@ -2687,35 +2630,71 @@ message UserControlMessage
    message NewUserTokenRequest
    {
       string phone = 1;
-      bs.types.Token token = 2;	// optional
+      bs.types.PublicKey token = 2;
       string ip_addr = 3;
    }
 
    message NewUserTokenResponse
    {
-      uint32 level = 1;
+      bool   login_allowed = 1;
       uint32 valid_for = 2;
       string token = 3;
       uint32 entity_id = 4;
       string error_code = 5;
       string error_text = 6;
+      string client_payload = 7;
+      bool   sms_sent = 8;
+      int32  level = 9;
    }
 
-   message ValidateUserTokenRequest
+   message RenewUserSessionRequest
+   {
+      string entity_key = 1;
+      string device_id = 2;
+      string signed_payload = 3;
+   }
+
+   message RenewUserSessionResponse
    {
       uint32 entity_id = 1;
-      string token = 2;
+      string verification_code = 2;
+      int32  level = 3;
+      uint32 valid_for = 4;
+      string error_code = 5;
+      string error_text = 6;
    }
 
-   message ValidateUserTokenResponse
+   message ValidateUserSessionResponse
    {
-      bool   is_valid = 1;
+      string entity_key = 1;
       int32  age = 2;
-      string token = 3;
+      uint32 valid_for = 3;
       uint32 entity_id = 4;
       string error_code = 5;
       string error_text = 6;
-      int32  validity = 7;
+      bool   valid = 7;
+      string token = 8;
+      int32  level = 9;
+   }
+
+   message ConfirmVerifCodeRequest
+   {
+      string entity_key = 1;
+      string signed_token = 2;
+      string device_id = 3;
+      string auth_code = 4;
+   }
+
+   message ConfirmVerifCodeResponse
+   {
+      bool   success = 1;
+      bool   login_allowed = 2;
+      string transfer_key = 3;
+      uint32 entity_id = 4;
+      uint32 valid_for = 5;
+      string client_payload = 6;
+      string error_code = 7;
+      string error_text = 8;
    }
 
 
@@ -2723,22 +2702,12 @@ message UserControlMessage
    {
       RegisterAccountRequest         register_account_req = 1;
       RegisterAccountResponse        register_account_resp = 2;
-      NewApiKeyRequest               new_api_key_req = 3;
-      NewApiKeyResponse              new_api_key_resp = 4;
-      DeleteApiKeyRequest            delete_api_key_req = 5;
-      DeleteApiKeyResponse           delete_api_key_resp = 6;
       GetAllExternalAccountsRequest  get_all_external_accounts_req = 7;
       GetAllExternalAccountsResponse get_all_external_accounts_resp = 8;
       GetDepositInfoRequest          get_deposit_info_req = 9;
       GetDepositInfoResponse         get_deposit_info_resp = 10;
       WithdrawToExtAccountRequest    withdraw_to_ext_account_req = 11;
       WithdrawToExtAccountResponse   withdraw_to_ext_account_resp = 12;
-      InitBasicSignupRequest         init_basic_signup_request = 13;
-      InitBasicSignupResponse        init_basic_signup_response = 14;
-      ApproveBasicSignupRequest      approve_basic_signup_request = 15;
-      ApproveBasicSignupResponse     approve_basic_signup_response = 16;
-      ResolveLoginTokenRequest       resolve_login_token_request = 17;
-      ResolveLoginTokenResponse      resolve_login_token_response = 18;
       UpgradeBasicAccountRequest     upgrade_basic_account_request = 19;
       UpgradeBasicAccountResponse    upgrade_basic_account_response = 20;
       ListClientBanksRequest         list_client_banks_request = 21;
@@ -2757,9 +2726,13 @@ message UserControlMessage
       ChargeCardResponse             charge_card_response = 34;
       NewUserTokenRequest            new_user_token_request = 35;
       NewUserTokenResponse           new_user_token_response = 36;
-      ValidateUserTokenRequest       validate_user_token_request = 37;
-      ValidateUserTokenResponse      validate_user_token_response = 38;
-      string                         monitor_upgrade_request = 39;	// request_id
-      string                         monitor_sign_request = 40;         // request_id
+      RenewUserSessionRequest        renew_user_token_request = 37;
+      RenewUserSessionResponse       renew_user_token_response = 38;
+      RenewUserSessionRequest        validate_user_token_request = 39;
+      ValidateUserSessionResponse    validate_user_token_response = 40;
+      ConfirmVerifCodeRequest        confirm_verif_code_request = 41;
+      ConfirmVerifCodeResponse       confirm_verif_code_response = 42;
+      MonitorUpgradeRequest          monitor_upgrade_request = 43;
+      string                         monitor_sign_request = 44;	// request_id
    }
 }
