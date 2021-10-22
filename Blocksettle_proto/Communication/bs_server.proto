@@ -1947,9 +1947,10 @@ message PriceStreamManaging
    {
       message PriceOffer
       {
-         uint32            owner_entity_id = 1;
-         bs.types.XBTPrice price           = 2;
-         uint64            timestamp       = 3;
+         uint32                  owner_entity_id = 1;
+         bs.types.XBTPrice       price           = 2;
+         uint64                  timestamp       = 3;
+         bs.types.XBTAmountValue max_amount      = 4;
       }
 
       bs.types.XBTAmountValue xbt_amount  = 1;
