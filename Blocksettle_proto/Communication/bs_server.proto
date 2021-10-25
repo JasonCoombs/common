@@ -2482,6 +2482,7 @@ message CashResMessage
    {
       uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
+      bool                    is_max_qty              = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
       string                  cl_ord_id               = 6;
@@ -2539,6 +2540,7 @@ message CashResMessage
       bool     success     = 2;
       string   error_text  = 3;
       int64    position_id = 4;
+      bs.types.XBTAmountValue qty = 5;
    }
 
    message OrdersRequest
