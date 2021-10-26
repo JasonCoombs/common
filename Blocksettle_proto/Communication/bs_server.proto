@@ -1393,14 +1393,15 @@ message GenoaMessage
 
 enum GenoaServerType
 {
-   GenoaServerResponse           = 0;
-   GenoaServerNewClient          = 1;
-   GenoaServerUpdBalance         = 2;
-   GenoaServerUpdTrdStatus       = 3;
-   GenoaServerXbtTrdStatus       = 4;
-   GenoaServerNewCcSeed          = 5;
-   GenoaServerNewCCDeposit       = 6;
-   GenoaServerCashResBalance     = 7;
+   GenoaServerResponse              = 0;
+   GenoaServerNewClient             = 1;
+   GenoaServerUpdBalance            = 2;
+   GenoaServerUpdTrdStatus          = 3;
+   GenoaServerXbtTrdStatus          = 4;
+   GenoaServerNewCcSeed             = 5;
+   GenoaServerNewCCDeposit          = 6;
+   GenoaServerCashResBalance        = 7;
+   GenoaServerDepositNotification   = 8;
 }
 
 message GenoaServerClientRequest
@@ -1462,6 +1463,13 @@ message GenoaServerTradeUpdateEvent
    bs.types.Order    order          = 3;
 }
 
+message GenoaServerDeposit
+{
+   uint32                  entity_id   = 1;
+   string                  ccy         = 2;
+   bs.types.FXAmountValue  amount      = 3;
+}
+
 message GenoaServerMessage
 {
    GenoaServerType type = 1;
@@ -1473,6 +1481,7 @@ message GenoaServerMessage
       GenoaServerNewCcSeedRequest      new_cc_seed          = 6;
       GenoaServerNewCCDepositRequest   new_cc_deposit       = 7;
       GenoaServerCashResBalanceUpdate  cash_res_balance_upd = 8;
+      GenoaServerDeposit               deposit_notification = 9;
 
       bool                             response             = 50;
    }
