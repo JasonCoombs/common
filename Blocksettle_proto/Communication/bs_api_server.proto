@@ -112,25 +112,11 @@ message SubmitPricesData
 
 message Request
 {
-    message NewUserKey
-    {
-        string phone = 1;
-        bs.types.PublicKey public_key = 2;
-    }
-
-    message ConfirmUserKey
-    {
-        string entity_key = 1;
-        string session_id = 2;
-        string device_id = 3;
-        string auth_code = 4;
-    }
-
-    message ResumeSession
+    message ValidateSession
     {
         string entity_key = 1;
         string device_id = 2;
-        string token = 3;	// optional - if not specfied, Auth eID will be used to sign in
+        string token = 3;
     }
 
     message MarketOrder
@@ -349,10 +335,7 @@ message Request
 
     oneof data
     {
-        NewUserKey                  new_user_key                = 9;
-        ConfirmUserKey              confirm_user_key            = 10;
-        ResumeSession               refresh_session             = 11;
-        ResumeSession               resume_session              = 12;
+        ValidateSession             authorize                   = 10;
         MarketOrder                 market_order                = 16;
         LoadOrders                  load_orders                 = 17;
         Empty                       load_balance                = 18;
@@ -404,28 +387,11 @@ message Request
 
 message Response
 {
-    message NewUserKey
-    {
-        bool   success    = 1;
-        bool   sms_sent   = 2;
-        uint32 validity   = 3;
-        int32  level      = 4;
-        string payload    = 5;
-    }
-
-    message RefreshSession
+    message ValidateSession
     {
         bool   success  = 1;
-        string token    = 2;
+        string grant    = 2;
         uint32 validity = 3;
-    }
-
-    message ResumeSession
-    {
-        bool   success  = 1;
-        string verify   = 2;
-        uint32 validity = 3;
-        int32  level = 4;
     }
 
     message MarketOrder
@@ -822,10 +788,7 @@ message Response
 
     oneof data
     {
-        NewUserKey              new_user_key                = 1;
-        RefreshSession          confirm_user_key            = 2;
-        RefreshSession          refresh_session             = 3;
-        ResumeSession           resume_session              = 4;
+        ValidateSession         authorize                   = 1;
         MarketOrder             market_order                = 6;
         LoadOrders              load_orders                 = 7;
         LoadBalance             load_balance                = 8;

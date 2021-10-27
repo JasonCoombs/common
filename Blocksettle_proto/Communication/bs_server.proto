@@ -2650,11 +2650,11 @@ message UserControlMessage
       int32  level = 9;
    }
 
-   message RenewUserSessionRequest
+   message ValidateSessionRequest
    {
       string entity_key = 1;
       string device_id = 2;
-      string signed_payload = 3;
+      string token = 3;
    }
 
    message RenewUserSessionResponse
@@ -2675,9 +2675,8 @@ message UserControlMessage
       uint32 entity_id = 4;
       string error_code = 5;
       string error_text = 6;
-      bool   valid = 7;
-      string token = 8;
-      int32  level = 9;
+      int32  grant_code = 7;
+      string grant = 8;
    }
 
    message ConfirmVerifCodeRequest
@@ -2729,9 +2728,7 @@ message UserControlMessage
       ChargeCardResponse             charge_card_response = 34;
       NewUserTokenRequest            new_user_token_request = 35;
       NewUserTokenResponse           new_user_token_response = 36;
-      RenewUserSessionRequest        renew_user_token_request = 37;
-      RenewUserSessionResponse       renew_user_token_response = 38;
-      RenewUserSessionRequest        validate_user_token_request = 39;
+      ValidateSessionRequest         validate_user_token_request = 39;
       ValidateUserSessionResponse    validate_user_token_response = 40;
       ConfirmVerifCodeRequest        confirm_verif_code_request = 41;
       ConfirmVerifCodeResponse       confirm_verif_code_response = 42;
