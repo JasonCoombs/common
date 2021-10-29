@@ -49,6 +49,26 @@ message SessionSnapshot
       uint32 entity_id = 2;
       int32  state = 3;
    }
+
+   message Account
+   {
+      message NetPosition {
+         message IMNettingResult {
+            bs.types.FXAmountValue pos_margin = 1;  // im + dm
+            bs.types.XBTAmountValue net_exposure = 2;
+            bs.types.FXAmountValue delivery_margin = 3;
+            bs.types.FXAmountValue fee_paid = 4;
+            bs.types.FXAmountValue fee_earned = 5;
+            bool is_valid = 6;
+         }
+         IMNettingResult margin = 1;
+         bs.types.FXAmountValue pl = 2;
+      }
+      uint32 entity_id = 1;
+      NetPosition net_position = 2;
+      bs.types.FXAmountValue fx_balance = 3;
+      bs.types.FXAmountValue fut_balance = 4;
+   }
    
    int64    session_id              = 1;
    string   name                    = 2;
@@ -59,7 +79,7 @@ message SessionSnapshot
    NovationAccount novation_account = 7;
    repeated Order orders            = 8;
    repeated Band  bands             = 9;
-   repeated uint32 accounts         = 10;	// entity_id
+   repeated Account accounts        = 10;
 }
 
 
