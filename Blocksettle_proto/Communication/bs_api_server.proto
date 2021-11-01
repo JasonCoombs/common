@@ -107,9 +107,7 @@ message Request
 {
     message ValidateSession
     {
-        string entity_key = 1;
-        string device_id = 2;
-        string token = 3;
+        string token = 1;
     }
 
     message MarketOrder

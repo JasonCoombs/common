@@ -2116,7 +2116,7 @@ message ApiServerMsg
       BestPriceUpdate            price_offer             = 12;
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
-      string                     expire_user_session     = 15;  // session id
+      bytes                      expire_user_session     = 15;  // client id
    }
 }
 
@@ -2661,8 +2661,6 @@ message UserControlMessage
 
    message ValidateSessionRequest
    {
-      string entity_key = 1;
-      string device_id = 2;
       string token = 3;
    }
 
@@ -2678,7 +2676,6 @@ message UserControlMessage
 
    message ValidateUserSessionResponse
    {
-      string entity_key = 1;
       int32  age = 2;
       uint32 valid_for = 3;
       uint32 entity_id = 4;
