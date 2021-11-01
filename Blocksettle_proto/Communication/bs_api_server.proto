@@ -44,19 +44,12 @@ enum AccountType
 
 message ExternalAccountInfo
 {
-    message Provider
-    {
-        string card_type = 1;
-        string last_four_digits = 2;
-        string product = 3;
-    }
-
-    string name         = 1;
-    string created_at   = 2;
-    string bank_name    = 3;
-    int32 account_id = 4;
-    AccountType account_type = 5;
-    Provider provider = 6;
+    string      name            = 1;
+    string      created_at      = 2;
+    string      bank_name       = 3;
+    int32       account_id      = 4;
+    AccountType account_type    = 5;
+    string      provider        = 6;
 }
 
 message Order
