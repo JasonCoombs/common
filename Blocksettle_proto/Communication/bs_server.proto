@@ -2196,14 +2196,13 @@ message PriceStreamManaging
    {
       GetBestOfferingPriceForOrder  = 0;
       CleanupExpiredPriceOfferings  = 1;
-      PriceConsumed                 = 2;
-      SubmitPrices                  = 3;
-      PullPrices                    = 4;
-      DealerConnected               = 5;
-      DealerDisconnected            = 6;
-      NetExposureUpdate             = 7;
-      TradingStartedUpdate          = 8;
-      TradingClosedUpdate           = 9;
+      SubmitPrices                  = 2;
+      PullPrices                    = 3;
+      DealerConnected               = 4;
+      DealerDisconnected            = 5;
+      NetExposureUpdate             = 6;
+      TradingStartedUpdate          = 7;
+      TradingClosedUpdate           = 8;
    };
 
    message GetBestOfferRequest
@@ -2233,13 +2232,6 @@ message PriceStreamManaging
    {
       bytes    client_id   = 1;
       bytes    client_data = 2;
-   }
-
-   message PriceConsumedData
-   {
-      uint32 owner_entity_id = 1;
-      uint64 timestamp       = 2;
-      int32  product_type    = 3; // bs::network::asset::type
    }
 
    message StreamPriceData
@@ -2301,14 +2293,13 @@ message PriceStreamManaging
       GetBestOfferRequest        get_best_price_offer    = 2;
       GetBestOfferResponse       best_price_offer        = 3;
       ClientData                 client_data             = 4;
-      PriceConsumedData          consumed_price          = 5;
-      uint32                     entity_id               = 6;
-      SubmitPricesRequest        submit_prices           = 7;
-      SubmitPricesResponse       submit_prices_response  = 8;
-      PullPricesRequest          pull_prices             = 9;
-      NetExposureChangedUpdate   net_exposure_update     = 10;
-      TradingStartedNotification trading_started         = 11;
-      TradingClosedNotification  trading_closed          = 12;
+      uint32                     entity_id               = 5;
+      SubmitPricesRequest        submit_prices           = 6;
+      SubmitPricesResponse       submit_prices_response  = 7;
+      PullPricesRequest          pull_prices             = 8;
+      NetExposureChangedUpdate   net_exposure_update     = 9;
+      TradingStartedNotification trading_started         = 10;
+      TradingClosedNotification  trading_closed          = 11;
    }
 }
 
