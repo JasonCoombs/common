@@ -2705,6 +2705,18 @@ message UserControlMessage
       string error_text = 8;
    }
 
+   message RevokeTokenRequest
+   {
+      string token = 1;
+   }
+
+   message RevokeTokenResponse
+   {
+      bool success = 1;
+      string error_code = 2;
+      string error_text = 3;
+   }
+
 
    oneof data
    {
@@ -2740,5 +2752,7 @@ message UserControlMessage
       ConfirmVerifCodeResponse       confirm_verif_code_response = 42;
       MonitorUpgradeRequest          monitor_upgrade_request = 43;
       string                         monitor_sign_request = 44;	// request_id
+      RevokeTokenRequest             revoke_token_request = 45;
+      RevokeTokenResponse            revoke_token_response = 46;
    }
 }
