@@ -2208,14 +2208,23 @@ message PriceStreamManaging
 
    message GetBestOfferRequest
    {
-      bs.types.XBTAmountValue xbt_amount        = 1;
-      int64                   requesting_entity = 2;
-      bool                    get_ask_price     = 3;
-      int32                   price_book        = 4;
+      bs.types.XBTAmountValue xbt_amount              = 1;
+      int64                   requesting_entity       = 2;
+      bool                    get_ask_price           = 3;
+      int32                   price_book              = 4;
+      uint32                  price_tolerance_ratio   = 5;
+      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
    {
+      enum MatchResult
+      {
+         OrderMatched                        = 0;
+         OrderNotMatched_PriceTolerance      = 1;
+         OrderNotMatched_NotEnoughCapacity   = 2;
+      }
+
       message PriceOffer
       {
          uint32                  owner_entity_id = 1;
@@ -2224,9 +2233,9 @@ message PriceStreamManaging
          bs.types.XBTAmountValue max_amount      = 4;
       }
 
-      bs.types.XBTAmountValue xbt_amount  = 1;
-      PriceOffer              best_offer  = 2;
-      bool                    matched     = 3;
+      bs.types.XBTAmountValue xbt_amount     = 1;
+      PriceOffer              best_offer     = 2;
+      MatchResult             match_result   = 3;
    }
 
    message GetBestOfferPackRequest
