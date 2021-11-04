@@ -289,14 +289,8 @@ enum GenoaType
    GenoaApiKey                            = 24;
    GetEntityId                            = 25;
    GetUserEmail                           = 26;
-   GenoaRegisterAccount                   = 27;
-   GenoaNewApiKeyType                     = 28;
    GenoaListApiKeysType                   = 29;
-   GenoaDeleteApiKeyType                  = 30;
    GenoaCreateExternalAccountType         = 31;
-   GenoaGetAllExternalAccountsType        = 32;
-   GenoaGetDepositInfoType                = 33;
-   GenoaWithdrawToExternalAccountType     = 34;
    GenoaGetCustomerBalance                = 35;
    GenoaLoadDeliveryObligations           = 36;
    GenoaSetDeliveryAddress                = 37;
@@ -321,17 +315,6 @@ enum GenoaType
    GenoaFutureCreateReservations          = 56;
    GenoaCreateNovationAccount             = 57;
    GenoaDisposeNovationAccount            = 58;
-   GenoaInitBasicSignup                   = 59;
-   GenoaApproveBasicSignup                = 60;
-   GenoaResolveLoginToken                 = 61;
-   GenoaUpgradeBasicAccount               = 62;
-   GenoaListClientBanks                   = 63;
-   GenoaBankOnboardingLink                = 64;
-   GenoaListRemoteAccounts                = 65;
-   GenoaSaveAccount                       = 66;
-   GenoaRequestAddCard                    = 67;
-   GenoaConfirmCard                       = 68;
-   GenoaChargeCard                        = 69;
    GenoaRegisterFcm                       = 70;
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
@@ -681,20 +664,6 @@ message GenoaUserNotifyMsg
    string            type                 = 4;
 }
 
-message GenoaRegisterAccountRequest
-{
-   string answers = 1;
-   string kyc = 2;
-}
-
-message GenoaRegisterAccountResponse
-{
-   bool success = 1;
-   string error_code = 2;
-   string error_msg = 3;
-   uint32 entity_id = 4;
-}
-
 message GenoaCreateIbanAgreementUrlRequest
 {
    uint32   entity_id            = 1;
@@ -741,50 +710,24 @@ message GenoaGetIbanAccountDetailsResponse
    string   account_ref       = 8;
 }
 
-message GenoaNewApiKeyRequest
-{
-   uint32 entity_id = 1;
-   string label = 2;
-   string ip = 3;
-}
-
-message GenoaNewApiKeyResponse
-{
-   bool error = 1;
-   GenoaListApiKeysResponse.ApiKey key = 2;
-   string secret = 3;
-}
-
 message GenoaListApiKeysRequest
 {
    uint32 entity_id = 1;
 }
 
+message ApiKey
+{
+   int32 id = 1;
+   string token = 2;
+   string allow = 3;
+   string label = 4;
+   string created = 5;
+}
+
 message GenoaListApiKeysResponse
 {
-   message ApiKey
-   {
-      int32 id = 1;
-      string token = 2;
-      string allow = 3;
-      string label = 4;
-      string created = 5;
-   }
-
    bool loaded = 1;
    repeated ApiKey keys = 2;
-}
-
-message GenoaDeleteApiKeyRequest
-{
-   uint32 entity_id = 1;
-   int32 key_id = 2;
-}
-
-message GenoaDeleteApiKeyResponse
-{
-   bool error = 1;
-   int32 key_id = 2;
 }
 
 message GenoaCreateExternalAccountRequest
@@ -804,42 +747,6 @@ message GenoaCreateExternalAccountResponse
 
    bool                 created  = 1;
    ExternalAccountInfo  account  = 2;
-}
-
-message GenoaGetAllExternalAccountsRequest
-{
-   uint32 entity_id = 1;
-   Blocksettle.Communication.ApiServer.AccountType account_type = 2;
-}
-
-message GenoaGetAllExternalAccountsResponse
-{
-   Blocksettle.Communication.ApiServer.Response.GetAllExternalAccounts result = 1;
-}
-
-message GenoaGetDepositInfoRequest
-{
-   uint32 entity_id = 1;
-}
-
-message GenoaGetDepositInfoResponse
-{
-   bool loaded = 1;
-   string data = 2;
-}
-
-message GenoaWithdrawToExternalAccountRequest
-{
-   uint32 entity_id = 1;
-   string account_name = 2;
-   bs.types.FXAmountValue amount = 3;
-   string ccy = 4;
-}
-
-message GenoaWithdrawToExternalAccountResponse
-{
-   bool success = 1;
-   string error_message  = 2;
 }
 
 message GenoaRegisterXBTDepositRequest
@@ -957,139 +864,6 @@ message GenoaGetStatementsRequest
 message GenoaGetStatementsResponse
 {
    Blocksettle.Communication.ApiServer.Response.GetStatements result = 2;
-}
-
-message GenoaInitBasicSignupRequest
-{
-   string phone = 1;
-}
-
-message GenoaInitBasicSignupResponse
-{
-   bool success = 1;
-   string error_code = 2;
-   string phone = 3;
-   string otp_code = 4;
-   string token = 5;
-}
-
-message GenoaApproveBasicSignupRequest
-{
-   string otp_code = 1;
-   string token = 2;
-}
-
-message GenoaApproveBasicSignupResponse
-{
-   bool success = 1;
-   string error_code = 2;
-   uint32 entity_id = 3;
-   string token = 5;
-}
-
-message GenoaResolveLoginTokenRequest
-{
-   string token = 1;
-}
-
-message GenoaResolveLoginTokenResponse
-{
-   bool success = 1;
-   uint32 entity_id = 2;
-   string phone = 4;
-}
-
-message GenoaUpgradeBasicAccountRequest
-{
-   uint32 entity_id = 1;
-   string answers = 2;
-   string kyc = 3;
-}
-
-message GenoaUpgradeBasicAccountResponse
-{
-   bool success = 1;
-   string error_code = 2;
-   string error_msg = 3;
-}
-
-message GenoaListClientBanksRequest
-{
-   string country_code = 1;
-}
-
-message GenoaListClientBanksResponse
-{
-   Blocksettle.Communication.ApiServer.Response.ListClientBanks result = 1;
-}
-
-message GenoaBankOnboardingLinkRequest
-{
-   string bank_id = 1;
-   string redirect_url = 2;
-   bool sandbox = 3;
-}
-
-message GenoaBankOnboardingLinkResponse
-{
-   string initiate = 1;
-   string req_id = 2;
-}
-
-message GenoaListRemoteAccountsRequest
-{
-   string req_id = 1;
-}
-
-message GenoaListRemoteAccountsResponse
-{
-   Blocksettle.Communication.ApiServer.Response.ListRemoteAccounts result = 1;
-}
-
-message GenoaSaveAccountRequest
-{
-   string account_ref = 1;
-   uint32 entity_id = 2;
-}
-
-message GenoaSaveAccountResponse
-{
-   Blocksettle.Communication.ApiServer.Response.SaveAccount result = 1;
-}
-
-message GenoaRequestAddCardRequest
-{
-   bool mobile = 1;
-}
-
-message GenoaRequestAddCardResponse
-{
-   Blocksettle.Communication.ApiServer.Response.RequestAddCard result = 1;
-}
-
-message GenoaConfirmCardRequest
-{
-   uint32 entity_id = 1;
-   string payment_ref = 2;
-}
-
-message GenoaConfirmCardResponse
-{
-   Blocksettle.Communication.ApiServer.Response.ConfirmCard result = 1;
-}
-
-message GenoaChargeCardRequest
-{
-   uint32 entity_id = 1;
-   int32 account_id = 2;
-   bs.types.FXAmountValue amount = 3;
-}
-
-message GenoaChargeCardResponse
-{
-   bool success = 1;
-   string error_code = 2;
-   string error_msg = 3;
 }
 
 message GenoaRegisterFcmRequest
@@ -1296,9 +1070,6 @@ message GenoaMessage
       LoadAllObligationsResponse       loaded_obligations            = 36;
       SettleDelivery                   settle_delivery_status        = 37;
 
-      GenoaRegisterAccountRequest      register_account_req          = 40;
-      GenoaRegisterAccountResponse     register_account_resp         = 41;
-
       GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 42;
       GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 43;
       GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 44;
@@ -1307,21 +1078,11 @@ message GenoaMessage
       GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 47;
       GenoaUserNotifyMsg                     user_notify                      = 48;
 
-      GenoaNewApiKeyRequest                  new_api_key_req                  = 49;
-      GenoaNewApiKeyResponse                 new_api_key_resp                 = 50;
       GenoaListApiKeysRequest                list_api_keys_req                = 51;
       GenoaListApiKeysResponse               list_api_keys_resp               = 52;
-      GenoaDeleteApiKeyRequest               delete_api_key_req               = 53;
-      GenoaDeleteApiKeyResponse              delete_api_key_resp              = 54;
 
       GenoaCreateExternalAccountRequest         create_external_account_req        = 55;
       GenoaCreateExternalAccountResponse        create_external_account_resp       = 56;
-      GenoaGetAllExternalAccountsRequest        get_all_external_accounts_req      = 57;
-      GenoaGetAllExternalAccountsResponse       get_all_external_accounts_resp     = 58;
-      GenoaGetDepositInfoRequest                get_deposit_info_req               = 59;
-      GenoaGetDepositInfoResponse               get_deposit_info_resp              = 60;
-      GenoaWithdrawToExternalAccountRequest     withdraw_to_external_account_req   = 61;
-      GenoaWithdrawToExternalAccountResponse    withdraw_to_external_account_resp  = 62;
 
       GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 63;
       GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 64;
@@ -1359,29 +1120,6 @@ message GenoaMessage
       DisposeNovationAccountRequest             dispose_novation_account            = 91;
       DisposeNovationAccountResponse            dispose_novation_account_response   = 92;
 
-      GenoaInitBasicSignupRequest               init_basic_signup_request           = 93;
-      GenoaInitBasicSignupResponse              init_basic_signup_response          = 94;
-      GenoaApproveBasicSignupRequest            approve_basic_signup_request        = 95;
-      GenoaApproveBasicSignupResponse           approve_basic_signup_response       = 96;
-      GenoaResolveLoginTokenRequest             resolve_login_token_request         = 97;
-      GenoaResolveLoginTokenResponse            resolve_login_token_response        = 98;
-      GenoaUpgradeBasicAccountRequest           upgrade_basic_account_request       = 99;
-      GenoaUpgradeBasicAccountResponse          upgrade_basic_account_response      = 100;
-
-      GenoaListClientBanksRequest               list_client_banks_request           = 101;
-      GenoaListClientBanksResponse              list_client_banks_response          = 102;
-      GenoaBankOnboardingLinkRequest            bank_onboarding_link_request        = 103;
-      GenoaBankOnboardingLinkResponse           bank_onboarding_link_response       = 104;
-      GenoaListRemoteAccountsRequest            list_remote_accounts_request        = 105;
-      GenoaListRemoteAccountsResponse           list_remote_accounts_response       = 106;
-      GenoaSaveAccountRequest                   save_account_request                = 107;
-      GenoaSaveAccountResponse                  save_account_response               = 108;
-      GenoaRequestAddCardRequest                request_add_card_request            = 109;
-      GenoaRequestAddCardResponse               request_add_card_response           = 110;
-      GenoaConfirmCardRequest                   confirm_card_request                = 111;
-      GenoaConfirmCardResponse                  confirm_card_response               = 112;
-      GenoaChargeCardRequest                    charge_card_request                 = 113;
-      GenoaChargeCardResponse                   charge_card_response                = 114;
       GenoaRegisterFcmRequest                   register_fcm_request                = 115;
       GenoaRegisterFcmResponse                  register_fcm_response               = 116;
       GenoaUnregisterFcmRequest                 unregister_fcm_request              = 117;
@@ -2313,68 +2051,6 @@ message PriceStreamManaging
 }
 
 
-message ApiInternalCommand
-{
-   message AutheidStartRequest
-   {
-      bytes  client_id = 1;
-      int32  type = 2;
-      string title = 3;
-      string description = 4;
-      uint64 timeout_ms = 5;
-      bool   use_local_account = 6;
-      string email = 7;
-      bytes  invisible_data = 8;
-   }
-
-   message AutheidSignRequest
-   {
-      AutheidStartRequest start_request = 1;
-      bytes  request_id = 2;
-      uint64 started_ms = 3;
-   }
-
-   message AutheidCommonRequest
-   {
-      bytes client_id = 1;
-      bytes request_id = 2;
-   }
-
-   message AutheidStartResponse
-   {
-      AutheidStartRequest request = 1;
-      bool   success = 2;
-      string error_msg = 3;
-      bytes  request_id = 4;
-   }
-
-   message AutheidSignResponse
-   {
-      bytes  client_id = 1;
-      bytes  request_id = 2;
-      int32  sign_error = 3;
-      string email = 4;
-   }
-
-   message AutheidResponse
-   {
-      bytes client_id = 1;
-      int32 sign_error = 2;
-      bytes request_id = 3;
-      bytes response = 4; // can't include rp.proto for autheid.rp.GetResultResponse
-   }
-
-   oneof data
-   {
-      AutheidStartRequest  autheid_start = 1;
-      AutheidSignRequest   autheid_sign = 2;
-      AutheidCommonRequest autheid_common = 3;
-      AutheidStartResponse start_response = 4;
-      AutheidSignResponse  sign_response = 5;
-      AutheidResponse      common_response = 6;
-   }
-}
-
 message ApiServerMsg
 {
    message UpdateOrder
@@ -2432,7 +2108,7 @@ message ApiServerMsg
       TradingSessionClosed       trading_closed          = 4;
       Empty                      send_prices             = 5;
       Empty                      send_trading_stats      = 6;
-      uint32                     user_connected          = 7; // entity_id
+      uint32                     user_connected          = 7;   // entity_id
       uint32                     user_disconnected       = 8;   // entity_id
       UserNotify                 user_notify             = 9;
       UpdateWithdrawPrices       update_withdraw_prices  = 10;
@@ -2440,7 +2116,7 @@ message ApiServerMsg
       BestPriceUpdate            price_offer             = 12;
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
-      ApiInternalCommand         internal_command        = 15;
+      bytes                      expire_user_session     = 15;  // client id
    }
 }
 
@@ -2801,5 +2477,282 @@ message StatusExporterMessage
       SessionStatusPollTimeout         poll_session_status_timeout   = 4;
       SessionCloseGracePeriodTimeout   session_close_timeout         = 5;
       RequestProcessingTimeUpdate      request_processing_time       = 6;
+   }
+}
+
+
+message UserControlMessage
+{
+   message RegisterAccountRequest
+   {
+      string answers = 1;
+      string kyc = 2;
+   }
+
+   message RegisterAccountResponse
+   {
+      bool success = 1;
+      string error_code = 2;
+      string error_msg = 3;
+      uint32 entity_id = 4;
+   }
+
+   message GetAllExternalAccountsRequest
+   {
+      uint32 entity_id = 1;
+      Blocksettle.Communication.ApiServer.AccountType account_type = 2;
+   }
+
+   message GetAllExternalAccountsResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.GetAllExternalAccounts result = 1;
+   }
+
+   message GetDepositInfoRequest
+   {
+      uint32 entity_id = 1;
+   }
+
+   message GetDepositInfoResponse
+   {
+      bool loaded = 1;
+      string data = 2;
+   }
+
+   message WithdrawToExtAccountRequest
+   {
+      uint32 entity_id = 1;
+      string account_name = 2;
+      bs.types.FXAmountValue amount = 3;
+      string ccy = 4;
+   }
+
+   message WithdrawToExtAccountResponse
+   {
+      bool success = 1;
+      string error_message  = 2;
+   }
+
+   message UpgradeBasicAccountRequest
+   {
+      string entity_key = 1;
+      string device_id = 2;
+      string token = 3;
+      string email = 4;	// optional
+   }
+
+   message UpgradeBasicAccountResponse
+   {
+      bool success = 1;
+      string error_code = 2;
+      string error_msg = 3;
+      string client_payload = 4;
+      int32  level = 5;
+      int32  validity = 6;
+      string device_id = 7;
+   }
+
+   message MonitorUpgradeRequest
+   {
+      string request_id = 1;
+      string entity_key = 2;
+      string device_id = 3;
+      string token = 4;
+   }
+
+   message ListClientBanksRequest
+   {
+      string country_code = 1;
+   }
+
+   message ListClientBanksResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.ListClientBanks result = 1;
+   }
+
+   message BankOnboardingLinkRequest
+   {
+      string bank_id = 1;
+      string redirect_url = 2;
+      bool sandbox = 3;
+   }
+
+   message BankOnboardingLinkResponse
+   {
+      string initiate = 1;
+      string req_id = 2;
+   }
+
+   message ListRemoteAccountsRequest
+   {
+      string req_id = 1;
+   }
+
+   message ListRemoteAccountsResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.ListRemoteAccounts result = 1;
+   }
+
+   message SaveAccountRequest
+   {
+      string account_ref = 1;
+      uint32 entity_id = 2;
+   }
+
+   message SaveAccountResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.SaveAccount result = 1;
+   }
+
+   message AddCardRequest
+   {
+      bool mobile = 1;
+   }
+
+   message AddCardResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.RequestAddCard result = 1;
+   }
+
+   message ConfirmCardRequest
+   {
+      uint32 entity_id = 1;
+      string payment_ref = 2;
+   }
+
+   message ConfirmCardResponse
+   {
+      Blocksettle.Communication.ApiServer.Response.ConfirmCard result = 1;
+   }
+
+   message ChargeCardRequest
+   {
+      uint32 entity_id = 1;
+      int32 account_id = 2;
+      bs.types.FXAmountValue amount = 3;
+   }
+
+   message ChargeCardResponse
+   {
+      bool success = 1;
+      string error_code = 2;
+      string error_msg = 3;
+   }
+
+   message NewUserTokenRequest
+   {
+      string phone = 1;
+      bs.types.PublicKey token = 2;
+      string ip_addr = 3;
+   }
+
+   message NewUserTokenResponse
+   {
+      bool   login_allowed = 1;
+      uint32 valid_for = 2;
+      string token = 3;
+      uint32 entity_id = 4;
+      string error_code = 5;
+      string error_text = 6;
+      string client_payload = 7;
+      bool   sms_sent = 8;
+      int32  level = 9;
+   }
+
+   message ValidateSessionRequest
+   {
+      string token = 3;
+   }
+
+   message RenewUserSessionResponse
+   {
+      uint32 entity_id = 1;
+      string verification_code = 2;
+      int32  level = 3;
+      uint32 valid_for = 4;
+      string error_code = 5;
+      string error_text = 6;
+   }
+
+   message ValidateUserSessionResponse
+   {
+      int32  age = 2;
+      uint32 valid_for = 3;
+      uint32 entity_id = 4;
+      string error_code = 5;
+      string error_text = 6;
+      int32  grant_code = 7;
+      string grant = 8;
+   }
+
+   message ConfirmVerifCodeRequest
+   {
+      string entity_key = 1;
+      string signed_token = 2;
+      string device_id = 3;
+      string auth_code = 4;
+   }
+
+   message ConfirmVerifCodeResponse
+   {
+      bool   success = 1;
+      bool   login_allowed = 2;
+      string transfer_key = 3;
+      uint32 entity_id = 4;
+      uint32 valid_for = 5;
+      string client_payload = 6;
+      string error_code = 7;
+      string error_text = 8;
+   }
+
+   message RevokeTokenRequest
+   {
+      string token = 1;
+   }
+
+   message RevokeTokenResponse
+   {
+      bool success = 1;
+      string error_code = 2;
+      string error_text = 3;
+   }
+
+
+   oneof data
+   {
+      RegisterAccountRequest         register_account_req = 1;
+      RegisterAccountResponse        register_account_resp = 2;
+      GetAllExternalAccountsRequest  get_all_external_accounts_req = 7;
+      GetAllExternalAccountsResponse get_all_external_accounts_resp = 8;
+      GetDepositInfoRequest          get_deposit_info_req = 9;
+      GetDepositInfoResponse         get_deposit_info_resp = 10;
+      WithdrawToExtAccountRequest    withdraw_to_ext_account_req = 11;
+      WithdrawToExtAccountResponse   withdraw_to_ext_account_resp = 12;
+      UpgradeBasicAccountRequest     upgrade_basic_account_request = 19;
+      UpgradeBasicAccountResponse    upgrade_basic_account_response = 20;
+      ListClientBanksRequest         list_client_banks_request = 21;
+      ListClientBanksResponse        list_client_banks_response = 22;
+      BankOnboardingLinkRequest      bank_onboarding_link_request = 23;
+      BankOnboardingLinkResponse     bank_onboarding_link_response = 24;
+      ListRemoteAccountsRequest      list_remote_accounts_request = 25;
+      ListRemoteAccountsResponse     list_remote_accounts_response = 26;
+      SaveAccountRequest             save_account_request = 27;
+      SaveAccountResponse            save_account_response = 28;
+      AddCardRequest                 add_card_request = 29;
+      AddCardResponse                add_card_response = 30;
+      ConfirmCardRequest             confirm_card_request = 31;
+      ConfirmCardResponse            confirm_card_response = 32;
+      ChargeCardRequest              charge_card_request = 33;
+      ChargeCardResponse             charge_card_response = 34;
+      NewUserTokenRequest            new_user_token_request = 35;
+      NewUserTokenResponse           new_user_token_response = 36;
+      ValidateSessionRequest         validate_user_token_request = 39;
+      ValidateUserSessionResponse    validate_user_token_response = 40;
+      ConfirmVerifCodeRequest        confirm_verif_code_request = 41;
+      ConfirmVerifCodeResponse       confirm_verif_code_response = 42;
+      MonitorUpgradeRequest          monitor_upgrade_request = 43;
+      string                         monitor_sign_request = 44;	// request_id
+      RevokeTokenRequest             revoke_token_request = 45;
+      RevokeTokenResponse            revoke_token_response = 46;
    }
 }
