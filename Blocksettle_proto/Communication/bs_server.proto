@@ -2196,26 +2196,35 @@ message PriceStreamManaging
    {
       GetBestOfferingPriceForOrder  = 0;
       CleanupExpiredPriceOfferings  = 1;
-      PriceConsumed                 = 2;
-      SubmitPrices                  = 3;
-      PullPrices                    = 4;
-      DealerConnected               = 5;
-      DealerDisconnected            = 6;
-      NetExposureUpdate             = 7;
-      TradingStartedUpdate          = 8;
-      TradingClosedUpdate           = 9;
+      SubmitPrices                  = 2;
+      PullPrices                    = 3;
+      DealerConnected               = 4;
+      DealerDisconnected            = 5;
+      NetExposureUpdate             = 6;
+      TradingStartedUpdate          = 7;
+      TradingClosedUpdate           = 8;
+      GetBestOfferPack              = 9;
    };
 
    message GetBestOfferRequest
    {
-      bs.types.XBTAmountValue xbt_amount        = 1;
-      int64                   requesting_entity = 2;
-      bool                    get_ask_price     = 3;
-      int32                   price_book        = 4;
+      bs.types.XBTAmountValue xbt_amount              = 1;
+      int64                   requesting_entity       = 2;
+      bool                    get_ask_price           = 3;
+      int32                   price_book              = 4;
+      uint32                  price_tolerance_ratio   = 5;
+      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
    {
+      enum MatchResult
+      {
+         OrderMatched                        = 0;
+         OrderNotMatched_PriceTolerance      = 1;
+         OrderNotMatched_NotEnoughCapacity   = 2;
+      }
+
       message PriceOffer
       {
          uint32                  owner_entity_id = 1;
@@ -2224,22 +2233,35 @@ message PriceStreamManaging
          bs.types.XBTAmountValue max_amount      = 4;
       }
 
-      bs.types.XBTAmountValue xbt_amount  = 1;
-      PriceOffer              best_offer  = 2;
-      bool                    matched     = 3;
+      bs.types.XBTAmountValue xbt_amount     = 1;
+      PriceOffer              best_offer     = 2;
+      MatchResult             match_result   = 3;
+   }
+
+   message GetBestOfferPackRequest
+   {
+      bs.types.XBTAmountValue xbt_amount        = 1;
+      int64                   requesting_entity = 2;
+      bool                    get_ask_price     = 3;
+      int32                   price_book        = 4;
+      int32                   offers_depth      = 5;
+   }
+
+   message GetBestOfferPackResponse
+   {
+      message Offer
+      {
+         bs.types.XBTPrice       offer_price       = 1;
+         bs.types.XBTAmountValue max_offer_amount  = 2;
+      }
+
+      repeated Offer offers = 1;
    }
 
    message ClientData
    {
       bytes    client_id   = 1;
       bytes    client_data = 2;
-   }
-
-   message PriceConsumedData
-   {
-      uint32 owner_entity_id = 1;
-      uint64 timestamp       = 2;
-      int32  product_type    = 3; // bs::network::asset::type
    }
 
    message StreamPriceData
@@ -2301,17 +2323,17 @@ message PriceStreamManaging
       GetBestOfferRequest        get_best_price_offer    = 2;
       GetBestOfferResponse       best_price_offer        = 3;
       ClientData                 client_data             = 4;
-      PriceConsumedData          consumed_price          = 5;
-      uint32                     entity_id               = 6;
-      SubmitPricesRequest        submit_prices           = 7;
-      SubmitPricesResponse       submit_prices_response  = 8;
-      PullPricesRequest          pull_prices             = 9;
-      NetExposureChangedUpdate   net_exposure_update     = 10;
-      TradingStartedNotification trading_started         = 11;
-      TradingClosedNotification  trading_closed          = 12;
+      uint32                     entity_id               = 5;
+      SubmitPricesRequest        submit_prices           = 6;
+      SubmitPricesResponse       submit_prices_response  = 7;
+      PullPricesRequest          pull_prices             = 8;
+      NetExposureChangedUpdate   net_exposure_update     = 9;
+      TradingStartedNotification trading_started         = 10;
+      TradingClosedNotification  trading_closed          = 11;
+      GetBestOfferPackRequest    get_offers_request      = 12;
+      GetBestOfferPackResponse   get_offers_response     = 13;
    }
 }
-
 
 message ApiInternalCommand
 {
