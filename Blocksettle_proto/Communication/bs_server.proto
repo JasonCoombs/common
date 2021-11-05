@@ -2533,33 +2533,6 @@ message UserControlMessage
       string error_message  = 2;
    }
 
-   message UpgradeBasicAccountRequest
-   {
-      string entity_key = 1;
-      string device_id = 2;
-      string token = 3;
-      string email = 4;	// optional
-   }
-
-   message UpgradeBasicAccountResponse
-   {
-      bool success = 1;
-      string error_code = 2;
-      string error_msg = 3;
-      string client_payload = 4;
-      int32  level = 5;
-      int32  validity = 6;
-      string device_id = 7;
-   }
-
-   message MonitorUpgradeRequest
-   {
-      string request_id = 1;
-      string entity_key = 2;
-      string device_id = 3;
-      string token = 4;
-   }
-
    message ListClientBanksRequest
    {
       string country_code = 1;
@@ -2639,42 +2612,12 @@ message UserControlMessage
       string error_msg = 3;
    }
 
-   message NewUserTokenRequest
-   {
-      string phone = 1;
-      bs.types.PublicKey token = 2;
-      string ip_addr = 3;
-   }
-
-   message NewUserTokenResponse
-   {
-      bool   login_allowed = 1;
-      uint32 valid_for = 2;
-      string token = 3;
-      uint32 entity_id = 4;
-      string error_code = 5;
-      string error_text = 6;
-      string client_payload = 7;
-      bool   sms_sent = 8;
-      int32  level = 9;
-   }
-
    message ValidateSessionRequest
    {
       string token = 3;
    }
 
-   message RenewUserSessionResponse
-   {
-      uint32 entity_id = 1;
-      string verification_code = 2;
-      int32  level = 3;
-      uint32 valid_for = 4;
-      string error_code = 5;
-      string error_text = 6;
-   }
-
-   message ValidateUserSessionResponse
+   message ValidateSessionResponse
    {
       int32  age = 2;
       uint32 valid_for = 3;
@@ -2683,26 +2626,6 @@ message UserControlMessage
       string error_text = 6;
       int32  grant_code = 7;
       string grant = 8;
-   }
-
-   message ConfirmVerifCodeRequest
-   {
-      string entity_key = 1;
-      string signed_token = 2;
-      string device_id = 3;
-      string auth_code = 4;
-   }
-
-   message ConfirmVerifCodeResponse
-   {
-      bool   success = 1;
-      bool   login_allowed = 2;
-      string transfer_key = 3;
-      uint32 entity_id = 4;
-      uint32 valid_for = 5;
-      string client_payload = 6;
-      string error_code = 7;
-      string error_text = 8;
    }
 
    message RevokeTokenRequest
@@ -2728,8 +2651,6 @@ message UserControlMessage
       GetDepositInfoResponse         get_deposit_info_resp = 10;
       WithdrawToExtAccountRequest    withdraw_to_ext_account_req = 11;
       WithdrawToExtAccountResponse   withdraw_to_ext_account_resp = 12;
-      UpgradeBasicAccountRequest     upgrade_basic_account_request = 19;
-      UpgradeBasicAccountResponse    upgrade_basic_account_response = 20;
       ListClientBanksRequest         list_client_banks_request = 21;
       ListClientBanksResponse        list_client_banks_response = 22;
       BankOnboardingLinkRequest      bank_onboarding_link_request = 23;
@@ -2744,14 +2665,8 @@ message UserControlMessage
       ConfirmCardResponse            confirm_card_response = 32;
       ChargeCardRequest              charge_card_request = 33;
       ChargeCardResponse             charge_card_response = 34;
-      NewUserTokenRequest            new_user_token_request = 35;
-      NewUserTokenResponse           new_user_token_response = 36;
       ValidateSessionRequest         validate_user_token_request = 39;
-      ValidateUserSessionResponse    validate_user_token_response = 40;
-      ConfirmVerifCodeRequest        confirm_verif_code_request = 41;
-      ConfirmVerifCodeResponse       confirm_verif_code_response = 42;
-      MonitorUpgradeRequest          monitor_upgrade_request = 43;
-      string                         monitor_sign_request = 44;	// request_id
+      ValidateSessionResponse        validate_user_token_response = 40;
       RevokeTokenRequest             revoke_token_request = 45;
       RevokeTokenResponse            revoke_token_response = 46;
    }
