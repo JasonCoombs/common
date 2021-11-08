@@ -320,11 +320,9 @@ message Request
     message LoadPnLHistory
     {
         string product_type = 1;
-        uint32 limit        = 2;
-        uint32 offset       = 3;
-        double start_time   = 4;
-        double end_time     = 5;
-        string reference    = 6;
+        string interval     = 2;
+        double start_time   = 3;
+        string reference    = 4;
     }
 
     oneof data

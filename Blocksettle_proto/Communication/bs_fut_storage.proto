@@ -197,12 +197,17 @@ message Message
 
    message LoadPnLHistoryRequest
    {
-      uint32   entity_id         = 1;
-      uint32   product_type      = 2;
-      uint32   limit             = 3;
-      uint32   offset            = 4;
-      uint64   timestamp_start   = 5;
-      uint64   timestamp_end     = 6;
+      enum HistoryInterval
+      {
+         OneHourInterval   = 0;
+         OneDayInterval    = 1;
+         OneWeekInterval   = 2;
+      }
+
+      uint32            entity_id         = 1;
+      uint32            product_type      = 2;
+      uint64            timestamp_start   = 3;
+      HistoryInterval   interval          = 4;
    }
 
    message LoadPnLHistoryResponse
