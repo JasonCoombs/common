@@ -195,6 +195,21 @@ message Message
       uint32                entity_id      = 4;
    }
 
+   message LoadPnLHistoryRequest
+   {
+      uint32   entity_id         = 1;
+      uint32   product_type      = 2;
+      uint32   limit             = 3;
+      uint32   offset            = 4;
+      uint64   timestamp_start   = 5;
+      uint64   timestamp_end     = 6;
+   }
+
+   message LoadPnLHistoryResponse
+   {
+      repeated Blocksettle.Communication.ApiServer.Response.LoadPnLHistory.Item items = 1;
+   }
+
    message TradeFeeForEntityRequest
    {
       uint32 entity_id = 1;
@@ -297,5 +312,8 @@ message Message
 
       UpdateReferenceExposure          update_reference_exposure_request   = 40;
       int32                            update_reference_exposure_response  = 41; // FuturesTradesStorage::StatusCode
+
+      LoadPnLHistoryRequest            load_pnl_history_request            = 42;
+      LoadPnLHistoryResponse           load_pnl_history_response           = 43;
    }
 }
