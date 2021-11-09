@@ -317,6 +317,14 @@ message Request
         string token = 1;
     }
 
+    message LoadPnLHistory
+    {
+        string product_type = 1;
+        string interval     = 2;
+        double start_time   = 3;
+        string reference    = 4;
+    }
+
     oneof data
     {
         ValidateSession             authorize                   = 10;
@@ -365,6 +373,7 @@ message Request
         ChargeCard                  charge_card                 = 63;
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
+        LoadPnLHistory              load_pnl_history            = 66;
     }
 }
 
@@ -765,6 +774,18 @@ message Response
         string error_msg = 2;
     }
 
+    message LoadPnLHistory
+    {
+        message Item
+        {
+            double timestamp    = 1;
+            string pnl          = 2;
+        }
+
+        string          reference   = 1;
+        repeated Item   items       = 2;
+    }
+
     oneof data
     {
         ValidateSession         authorize                   = 1;
@@ -820,5 +841,6 @@ message Response
         ChargeCard              charge_card                 = 63;
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
+        LoadPnLHistory          load_pnl_history            = 66;
     }
 }
