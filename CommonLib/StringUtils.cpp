@@ -43,6 +43,11 @@ namespace bs {
       return result;
    }
 
+   unsigned long fromHex(const std::string& str)
+   {
+      return std::stoul(str, nullptr, 16);
+   }
+
    std::string toLower(std::string str)
    {
       std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
