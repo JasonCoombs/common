@@ -2100,6 +2100,18 @@ message ApiServerMsg
       bs.types.XBTPrice    ask         = 3;
    }
 
+   message ClientConnected
+   {
+      bytes  client_id = 1;
+      string ip_address = 2;
+   }
+
+   message ClientRequest
+   {
+      bytes client_id = 1;
+      bytes message = 2;
+   }
+
    oneof data
    {
       UpdateOrder                update_order            = 1;
@@ -2117,6 +2129,10 @@ message ApiServerMsg
       UpdateBalances             update_balances         = 13;
       OpenInterestUpdate         update_open_interest    = 14;
       bytes                      expire_user_session     = 15;  // client id
+      ClientConnected            client_connected        = 16;
+      bytes                      client_disconnected     = 17;  // client id
+      ClientRequest              client_request          = 18;
+      bytes                      mdhs_data               = 19;
    }
 }
 
