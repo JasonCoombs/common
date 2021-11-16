@@ -2601,9 +2601,10 @@ message UserControlMessage
 
    message ChargeCardRequest
    {
-      uint32 entity_id = 1;
-      int32 account_id = 2;
-      bs.types.FXAmountValue amount = 3;
+      uint32                  entity_id      = 1;
+      int32                   account_id     = 2;
+      string                  access_token   = 3;
+      bs.types.FXAmountValue  amount         = 4;
    }
 
    message ChargeCardResponse
