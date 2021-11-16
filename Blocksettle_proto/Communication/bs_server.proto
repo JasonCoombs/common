@@ -751,11 +751,12 @@ message GenoaCreateExternalAccountResponse
 
 message GenoaRegisterXBTDepositRequest
 {
-   uint32                  entity_id     = 1;
-   bs.types.XBTPrice       price         = 2;
-   bs.types.XBTAmountValue xbt_amount    = 3;
-   bs.types.FXAmountValue  eur_amount    = 4;
-   string                  deposit_id    = 5;
+   uint32                  entity_id      = 1;
+   bs.types.XBTPrice       price          = 2;
+   bs.types.XBTAmountValue xbt_amount     = 3;
+   bs.types.FXAmountValue  eur_amount     = 4;
+   string                  deposit_id     = 5;
+   string                  access_token   = 6;
 }
 
 message GenoaRegisterXBTDepositResponse
@@ -766,7 +767,7 @@ message GenoaRegisterXBTDepositResponse
 
 message GenoaConfirmXBTDepositRequest
 {
-   string deposit_id = 1;
+   string deposit_id       = 1;
 }
 
 message GenoaConfirmXBTDepositResponse
@@ -782,6 +783,7 @@ message GenoaRegiserXBTWithdrawRequest
    bs.types.FXAmountValue  eur_amount    = 4;
    string                  deposit_id    = 5;
    bs.types.XBTAmountValue fee           = 6;
+   string                  access_token  = 7;
 }
 
 message GenoaRegiserXBTWithdrawResponse
@@ -2521,10 +2523,11 @@ message UserControlMessage
 
    message WithdrawToExtAccountRequest
    {
-      uint32 entity_id = 1;
-      string account_name = 2;
-      bs.types.FXAmountValue amount = 3;
-      string ccy = 4;
+      uint32                  entity_id      = 1;
+      string                  account_name   = 2;
+      bs.types.FXAmountValue  amount         = 3;
+      string                  ccy            = 4;
+      string                  access_token   = 5;
    }
 
    message WithdrawToExtAccountResponse
@@ -2600,9 +2603,10 @@ message UserControlMessage
 
    message ChargeCardRequest
    {
-      uint32 entity_id = 1;
-      int32 account_id = 2;
-      bs.types.FXAmountValue amount = 3;
+      uint32                  entity_id      = 1;
+      int32                   account_id     = 2;
+      string                  access_token   = 3;
+      bs.types.FXAmountValue  amount         = 4;
    }
 
    message ChargeCardResponse
@@ -2643,31 +2647,31 @@ message UserControlMessage
 
    oneof data
    {
-      RegisterAccountRequest         register_account_req = 1;
-      RegisterAccountResponse        register_account_resp = 2;
-      GetAllExternalAccountsRequest  get_all_external_accounts_req = 7;
-      GetAllExternalAccountsResponse get_all_external_accounts_resp = 8;
-      GetDepositInfoRequest          get_deposit_info_req = 9;
-      GetDepositInfoResponse         get_deposit_info_resp = 10;
-      WithdrawToExtAccountRequest    withdraw_to_ext_account_req = 11;
-      WithdrawToExtAccountResponse   withdraw_to_ext_account_resp = 12;
-      ListClientBanksRequest         list_client_banks_request = 21;
-      ListClientBanksResponse        list_client_banks_response = 22;
-      BankOnboardingLinkRequest      bank_onboarding_link_request = 23;
-      BankOnboardingLinkResponse     bank_onboarding_link_response = 24;
-      ListRemoteAccountsRequest      list_remote_accounts_request = 25;
-      ListRemoteAccountsResponse     list_remote_accounts_response = 26;
-      SaveAccountRequest             save_account_request = 27;
-      SaveAccountResponse            save_account_response = 28;
-      AddCardRequest                 add_card_request = 29;
-      AddCardResponse                add_card_response = 30;
-      ConfirmCardRequest             confirm_card_request = 31;
-      ConfirmCardResponse            confirm_card_response = 32;
-      ChargeCardRequest              charge_card_request = 33;
-      ChargeCardResponse             charge_card_response = 34;
-      ValidateSessionRequest         validate_user_token_request = 39;
-      ValidateSessionResponse        validate_user_token_response = 40;
-      RevokeTokenRequest             revoke_token_request = 45;
-      RevokeTokenResponse            revoke_token_response = 46;
+      RegisterAccountRequest         register_account_req            = 1;
+      RegisterAccountResponse        register_account_resp           = 2;
+      GetAllExternalAccountsRequest  get_all_external_accounts_req   = 3;
+      GetAllExternalAccountsResponse get_all_external_accounts_resp  = 4;
+      GetDepositInfoRequest          get_deposit_info_req            = 5;
+      GetDepositInfoResponse         get_deposit_info_resp           = 6;
+      WithdrawToExtAccountRequest    withdraw_to_ext_account_req     = 7;
+      WithdrawToExtAccountResponse   withdraw_to_ext_account_resp    = 8;
+      ListClientBanksRequest         list_client_banks_request       = 9;
+      ListClientBanksResponse        list_client_banks_response      = 10;
+      BankOnboardingLinkRequest      bank_onboarding_link_request    = 11;
+      BankOnboardingLinkResponse     bank_onboarding_link_response   = 12;
+      ListRemoteAccountsRequest      list_remote_accounts_request    = 13;
+      ListRemoteAccountsResponse     list_remote_accounts_response   = 14;
+      SaveAccountRequest             save_account_request            = 15;
+      SaveAccountResponse            save_account_response           = 16;
+      AddCardRequest                 add_card_request                = 17;
+      AddCardResponse                add_card_response               = 18;
+      ConfirmCardRequest             confirm_card_request            = 19;
+      ConfirmCardResponse            confirm_card_response           = 20;
+      ChargeCardRequest              charge_card_request             = 21;
+      ChargeCardResponse             charge_card_response            = 22;
+      ValidateSessionRequest         validate_user_token_request     = 23;
+      ValidateSessionResponse        validate_user_token_response    = 24;
+      RevokeTokenRequest             revoke_token_request            = 25;
+      RevokeTokenResponse            revoke_token_response           = 26;
    }
 }
