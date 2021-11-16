@@ -751,11 +751,12 @@ message GenoaCreateExternalAccountResponse
 
 message GenoaRegisterXBTDepositRequest
 {
-   uint32                  entity_id     = 1;
-   bs.types.XBTPrice       price         = 2;
-   bs.types.XBTAmountValue xbt_amount    = 3;
-   bs.types.FXAmountValue  eur_amount    = 4;
-   string                  deposit_id    = 5;
+   uint32                  entity_id      = 1;
+   bs.types.XBTPrice       price          = 2;
+   bs.types.XBTAmountValue xbt_amount     = 3;
+   bs.types.FXAmountValue  eur_amount     = 4;
+   string                  deposit_id     = 5;
+   string                  access_token   = 6;
 }
 
 message GenoaRegisterXBTDepositResponse
@@ -766,7 +767,7 @@ message GenoaRegisterXBTDepositResponse
 
 message GenoaConfirmXBTDepositRequest
 {
-   string deposit_id = 1;
+   string deposit_id       = 1;
 }
 
 message GenoaConfirmXBTDepositResponse
@@ -782,6 +783,7 @@ message GenoaRegiserXBTWithdrawRequest
    bs.types.FXAmountValue  eur_amount    = 4;
    string                  deposit_id    = 5;
    bs.types.XBTAmountValue fee           = 6;
+   string                  access_token  = 7;
 }
 
 message GenoaRegiserXBTWithdrawResponse
