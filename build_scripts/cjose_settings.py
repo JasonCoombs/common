@@ -22,7 +22,7 @@ class CJOSE(Configurator):
         Configurator.__init__(self, settings)
         self._version = '3f77bc82e078c6aa15cbffa796fb2d700612ecf4'
         self._script_revision = '1'
-        self._package_name = 'cjose-master'
+        self._package_name = 'cjose-' + self._version
         self._package_url = 'https://github.com/sergey-chernikov/cjose/archive/' + self._version + '.zip'
         self.openssl = OpenSslSettings(settings)
         self.jansson = JanssonSettings(settings)
