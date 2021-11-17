@@ -20,10 +20,10 @@ from component_configurator import Configurator
 class CJOSE(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '0.6.1'
+        self._version = '3f77bc82e078c6aa15cbffa796fb2d700612ecf4'
         self._script_revision = '1'
         self._package_name = 'cjose-master'
-        self._package_url = 'https://github.com/sergey-chernikov/cjose/archive/refs/heads/master.zip'
+        self._package_url = 'https://github.com/sergey-chernikov/cjose/archive/' + self._version + '.zip'
         self.openssl = OpenSslSettings(settings)
         self.jansson = JanssonSettings(settings)
 

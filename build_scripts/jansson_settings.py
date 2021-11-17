@@ -20,8 +20,8 @@ class JanssonSettings(Configurator):
         Configurator.__init__(self, settings)
         self._version = '2.14'
         self._script_revision = '1'
-        self._package_name = 'jansson-master'
-        self._package_url = 'https://github.com/akheron/jansson/archive/refs/heads/master.zip'
+        self._package_name = 'jansson-' + self._version
+        self._package_url = 'https://github.com/akheron/jansson/archive/refs/tags/' + self._version + '.zip'
 
     def get_package_name(self):
         return self._package_name
