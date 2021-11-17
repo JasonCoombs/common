@@ -25,7 +25,7 @@ class CJOSE(Configurator):
         self._package_name = 'cjose-master'
         self._package_url = 'https://github.com/sergey-chernikov/cjose/archive/refs/heads/master.zip'
         self.openssl = OpenSslSettings(settings)
-        self.jansson = OpenSslSettings(settings)
+        self.jansson = JanssonSettings(settings)
 
     def get_package_name(self):
         return self._package_name
