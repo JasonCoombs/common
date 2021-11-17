@@ -17,6 +17,7 @@
 namespace bs {
 
    std::string toHex(const std::string &str, bool uppercase = false);
+   unsigned long fromHex(const std::string&);
 
    // Works for ASCII encoding only
    std::string toLower(std::string str);
