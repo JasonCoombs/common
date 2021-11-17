@@ -12,6 +12,8 @@ import os
 import subprocess
 import shutil
 import multiprocessing
+from build_scripts.openssl_settings import OpenSslSettings
+from build_scripts.jansson_settings import JanssonSettings
 
 from component_configurator import Configurator
 
@@ -22,6 +24,8 @@ class CJOSE(Configurator):
         self._script_revision = '1'
         self._package_name = 'cjose-master'
         self._package_url = 'https://github.com/sergey-chernikov/cjose/archive/refs/heads/master.zip'
+        self.openssl = OpenSslSettings(settings)
+        self.jansson = OpenSslSettings(settings)
 
     def get_package_name(self):
         return self._package_name
@@ -44,8 +48,8 @@ class CJOSE(Configurator):
     def config(self):
         command = ['cmake',
             self.get_source_dir(),
-            '-DOPENSSL_INCLUDE_DIR=' + os.path.join(self._project_settings.get_common_build_dir(), 'OpenSSL/include'),
-            '-DJANSSON_INCLUDE_DIR=' + os.path.join(self._project_settings.get_common_build_dir(), 'jansson/include'),
+            '-DOPENSSL_INCLUDE_DIR=' + os.path.join(self.openssl.get_install_dir(), 'include'),
+            '-DJANSSON_INCLUDE_DIR=' + os.path.join(self.jansson.get_install_dir(), 'include'),
             '-DBUILD_INCLUDES=' + os.path.join(self.get_build_dir(), 'include')
         ]
 
