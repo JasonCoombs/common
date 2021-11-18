@@ -48,7 +48,7 @@ class BotanSettings(Configurator):
     def config(self):
         command = [sys.executable,
                    self.get_unpacked_sources_dir() + '/configure.py',
-                   '--without-documentation',
+                   '--without-documentation', '--build-targets=static'
         ]
 
         if self._enableSqlite:
