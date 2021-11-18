@@ -46,9 +46,6 @@ class CurlSettings(Configurator):
         print('Generating curl solution')
 
         command = ['cmake',
-            '-G',
-            self._project_settings.get_cmake_generator(),
-            '-A x64 '
             '-DCURL_DISABLE_FTP=ON',
             '-DCURL_DISABLE_LDAP=ON',
             '-DCURL_DISABLE_LDAPS=ON',
@@ -66,9 +63,11 @@ class CurlSettings(Configurator):
             '-DBUILD_SHARED_LIBS=OFF',
             '-DBUILD_CURL_EXE=OFF',
             '-DBUILD_TESTING=OFF',
+            '-G', self._project_settings.get_cmake_generator()
         ]
-
+            
         if self._project_settings.on_windows():
+            command.append('-A x64 ')
             cmdStr = r' '.join(command)
             result = subprocess.call(cmdStr)
         else:
