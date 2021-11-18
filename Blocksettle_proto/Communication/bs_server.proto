@@ -2618,7 +2618,8 @@ message UserControlMessage
 
    message ValidateSessionRequest
    {
-      string token = 3;
+      string token         = 1;
+      string api_endpoint  = 2;
    }
 
    message ValidateSessionResponse
