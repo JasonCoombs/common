@@ -1,7 +1,7 @@
 #
 #
 # ***********************************************************************************
-# * Copyright (C) 2018 - 2020, BlockSettle AB
+# * Copyright (C) 2018 - 2021, BlockSettle AB
 # * Distributed under the GNU Affero General Public License (AGPL v3)
 # * See LICENSE or http://www.gnu.org/licenses/agpl.html
 # *
@@ -19,8 +19,8 @@ from component_configurator import Configurator
 class CurlSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '7_63_0'
-        self._script_revision = '3'
+        self._version = '7_80_0'
+        self._script_revision = '4'
         self._package_name = 'curl-' + self._version
         self._package_url = 'https://github.com/curl/curl/archive/' + self._package_name + '.tar.gz'
         self._package_dir_name = 'curl-' + self._package_name
@@ -46,8 +46,6 @@ class CurlSettings(Configurator):
         print('Generating curl solution')
 
         command = ['cmake',
-            '-G',
-            self._project_settings.get_cmake_generator(),
             '-DCURL_DISABLE_FTP=ON',
             '-DCURL_DISABLE_LDAP=ON',
             '-DCURL_DISABLE_LDAPS=ON',
@@ -65,56 +63,26 @@ class CurlSettings(Configurator):
             '-DBUILD_SHARED_LIBS=OFF',
             '-DBUILD_CURL_EXE=OFF',
             '-DBUILD_TESTING=OFF',
+            '-G', self._project_settings.get_cmake_generator()
         ]
-
-        result = subprocess.call(command)
+            
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command)
         return result == 0
 
     def get_solution_file(self):
         return os.path.join(self.get_build_dir(), 'CURL.sln')
 
-    def make_windows(self):
-        print('Making curl: might take a while')
-        command = ['devenv',
-                   self.get_solution_file(),
-                   '/build',
-                   self.get_win_build_mode(),
-                   '/project', 'curl']
-
+    def make(self):
+        command = ['cmake', '--build', '.']
         result = subprocess.call(command)
         return result == 0
 
-    def get_win_build_mode(self):
-        if self._project_settings.get_build_mode() == 'release':
-            return 'RelWithDebInfo'
-        else:
-            return 'Debug'
-
-    def make_x(self):
-        command = ['make', '-j', str(multiprocessing.cpu_count())]
-
+    def install(self):
+        command = ['cmake', '--build', '.', '--target', 'install']
         result = subprocess.call(command)
         return result == 0
-
-    def install_win(self):
-        # copy libs
-        output_dir = os.path.join(self.get_install_dir(), 'lib')
-        lib_dir = os.path.join(self.get_build_dir(), 'lib', self.get_win_build_mode())
-        print('copy from ' + lib_dir + ' to ' + output_dir)
-        self.filter_copy(lib_dir, output_dir, '.lib')
-
-        # copy headers
-        output_dir = os.path.join(self.get_install_dir(), 'include')
-        inc_dir = os.path.join(self.get_build_dir(), 'include')
-        self.filter_copy(inc_dir, output_dir, '.h')
-
-        return True
-
-    def install_x(self):
-        command = ['make', 'install']
-        result = subprocess.call(command)
-        if result != 0:
-            print('Failed to install Curl')
-            return False
-
-        return True

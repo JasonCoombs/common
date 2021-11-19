@@ -19,10 +19,10 @@ from component_configurator import Configurator
 class ProtobufSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '3.11.4'
+        self._version = '3.19.1'
         self._package_name = 'protobuf-' + self._version
         self._package_name_url = 'protobuf-cpp-' + self._version
-        self._script_revision = '4'
+        self._script_revision = '5'
 
         self._package_url = 'https://github.com/protocolbuffers/protobuf/releases/download/v' + \
             self._version + '/' + self._package_name_url + '.tar.gz'

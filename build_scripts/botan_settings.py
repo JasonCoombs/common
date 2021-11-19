@@ -15,19 +15,21 @@ import subprocess
 import sys
 
 from component_configurator import Configurator
+from build_scripts.sqlite_settings import SqliteSettings
 
 
 class BotanSettings(Configurator):
     def __init__(self, settings, enableSqlite = False, enablePKCS11 = False):
         Configurator.__init__(self, settings)
-        self._version = '2.15.0'
+        self._version = '2.18.2'
         self._package_name = 'botan'
-        self._script_revision = '2'
+        self._script_revision = '3'
         self._enableSqlite = enableSqlite
         self._enablePKCS11 = enablePKCS11
-
+        self.sqlite = SqliteSettings(settings)
+        
         self._package_url = 'https://github.com/randombit/botan/archive/' + self._version + '.zip'
-
+        
     def get_package_name(self):
         return self._package_name + '-' + self._version
 
@@ -46,11 +48,13 @@ class BotanSettings(Configurator):
     def config(self):
         command = [sys.executable,
                    self.get_unpacked_sources_dir() + '/configure.py',
-                   '--without-documentation',
+                   '--without-documentation', '--build-targets=static'
         ]
 
         if self._enableSqlite:
             command += ['--with-sqlite3']
+            command += ['--with-external-includedir="' + self.sqlite.get_install_dir() + '"']
+            command += ['--with-external-libdir="' + self.sqlite.get_install_dir() + '"']
 
         if not self._enablePKCS11:
             command += ['--disable-modules=pkcs11']
