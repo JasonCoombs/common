@@ -18,15 +18,15 @@ namespace Blocksettle {
 namespace Communication {
 namespace Internal {
 
-class PasswordDialogDataWrapper : public PasswordDialogData
+class PasswordDialogDataWrapper
 {
 public:
-   PasswordDialogDataWrapper() : PasswordDialogData() {}
+   PasswordDialogDataWrapper() {}
 
    // copy constructors and operator= uses parent implementation
-   PasswordDialogDataWrapper(const PasswordDialogData &seed) : PasswordDialogData(seed){}
-   PasswordDialogDataWrapper(const PasswordDialogDataWrapper &other) : PasswordDialogData(static_cast<PasswordDialogData>(other)) {}
-   PasswordDialogDataWrapper& operator= (const PasswordDialogData &other) { PasswordDialogData::operator=(other); return *this;}
+   //PasswordDialogDataWrapper(const PasswordDialogData &seed) : data_(seed){}
+   PasswordDialogDataWrapper(const PasswordDialogData &other) : data_(static_cast<PasswordDialogData>(other)) {}
+   PasswordDialogDataWrapper& operator= (const PasswordDialogData &other) { data_ = other; return *this;}
 
    template<typename T>
    T value(const bs::sync::dialog::keys::Key &key) const noexcept
@@ -40,16 +40,18 @@ public:
    void insert(const bs::sync::dialog::keys::Key &key, double value);
    void insert(const bs::sync::dialog::keys::Key &key, const char *data, size_t size);
 
+   auto mutable_valuesmap() { return data_.mutable_valuesmap(); }
+
 private:
    template<typename T>
    T value(const std::string &key) const noexcept
    {
       try {
-         if (!valuesmap().contains(key)) {
+         if (!data_.valuesmap().contains(key)) {
             return T();
          }
 
-         const google::protobuf::Any &msg = valuesmap().at(key);
+         const google::protobuf::Any &msg = data_.valuesmap().at(key);
          Blocksettle::Communication::Internal::AnyMessage anyMsg;
          msg.UnpackTo(&anyMsg);
 
@@ -64,6 +66,9 @@ private:
 
    template<typename T>
    T valueImpl(const AnyMessage &anyMsg) const;
+
+private:
+   PasswordDialogData   data_;
 };
 
 

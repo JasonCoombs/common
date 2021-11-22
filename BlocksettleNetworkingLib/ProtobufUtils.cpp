@@ -43,5 +43,5 @@ std::string ProtobufUtils::pbMessageToString(const google::protobuf::Message& ms
 bool ProtobufUtils::fromJson(const std::string& jsonStr, google::protobuf::Message* msg)
 {
    const auto &status = google::protobuf::util::JsonStringToMessage(jsonStr, msg);
-   return (status == google::protobuf::util::Status::OK);
+   return status.ok();
 }
