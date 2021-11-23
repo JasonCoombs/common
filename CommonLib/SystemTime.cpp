@@ -2,6 +2,10 @@
 
 uint64_t sytem_time::getTimestampUTC()
 {
-   const auto currentTime = sytem_time::system_clock_t::now();
-   return std::chrono::duration_cast<std::chrono::milliseconds>(currentTime.time_since_epoch()).count();
+   return getTimestampUTC(sytem_time::system_clock_t::now());
+}
+
+uint64_t sytem_time::getTimestampUTC(const time_point_t& timepoint)
+{
+   return std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch()).count();
 }
