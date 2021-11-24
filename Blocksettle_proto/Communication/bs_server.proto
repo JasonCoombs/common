@@ -2306,6 +2306,19 @@ message CashResMessage
       Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
    }
 
+   message SessionInfoSnapshot
+   {
+      message SessionInfo
+      {
+         string            product_name      = 1;
+         string            session_state     = 2;
+         uint64            start_timestamp   = 3;
+         uint64            end_timestamp     = 4;
+         bs.types.XBTPrice open_price        = 5;
+      }
+
+      repeated SessionInfo session_info = 1;
+   }
 
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
@@ -2337,6 +2350,9 @@ message CashResMessage
 
       TradeFeeForEntityRequest   trade_fee_request       = 18;
       TradeFeeForEntityResponse  trade_fee_response      = 19;
+
+      Empty                      load_sessions_snapshot  = 20;
+      SessionInfoSnapshot        session_snapshot        = 21;
    }
 }
 
