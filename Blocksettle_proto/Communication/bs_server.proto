@@ -2035,7 +2035,7 @@ message PriceStreamManaging
       int32                   product_type   = 1; // bs::fut::Product
    }
 
-   message ActiveDealersInfo
+   message ActiveDealersInfoSnapshot
    {
       message ProductDealersInfo
       {
@@ -2061,7 +2061,7 @@ message PriceStreamManaging
       NetExposureChangedUpdate   net_exposure_update     = 10;
       TradingStartedNotification trading_started         = 11;
       TradingClosedNotification  trading_closed          = 12;
-      ActiveDealersInfo          dealers_info            = 13;
+      ActiveDealersInfoSnapshot  dealers_info            = 13;
    }
 }
 
