@@ -36,7 +36,7 @@ void PasswordDialogDataWrapper::insert(const bs::sync::dialog::keys::Key &key, c
    Any any;
    any.PackFrom(msg);
    const auto &p = MapPair<std::string, Any>(key.toString(), any);
-   mutable_valuesmap()->insert(p);
+   data_.mutable_valuesmap()->insert(p);
 }
 
 static AnyMessage &setValueImpl(AnyMessage &anyMsg, bool value)
@@ -72,7 +72,7 @@ inline void PasswordDialogDataWrapper::insertImpl(const std::string &key, T valu
    Any any;
    any.PackFrom(msg);
 
-   (*mutable_valuesmap())[key] = any;
+   (*data_.mutable_valuesmap())[key] = any;
 }
 
 ///

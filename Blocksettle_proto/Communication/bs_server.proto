@@ -2375,6 +2375,22 @@ message PriceAggregation
       double   bid            = 3;
    }
 
+   message PriceAggregatorsStatusSnapshot
+   {
+      message PullerState
+      {
+         string      puller_name             = 1;
+         string      product                 = 2;
+         double      ask                     = 3;
+         double      bid                     = 4;
+         bool        connected               = 5;
+         uint64      last_update_timestamp   = 6;
+      }
+
+      repeated PullerState puller_state         = 1;
+      uint64               snapshot_timestamp   = 2;
+   }
+
    oneof data
    {
       // internal messages
@@ -2382,6 +2398,9 @@ message PriceAggregation
       ExternalConnectionPriceUpdated   exchange_price_update      = 2;
       // broadcasted messages
       AggregatedPriceUpdate            aggregated_price           = 3;
+
+      Empty                            get_puller_state_snapshot  = 4;
+      PriceAggregatorsStatusSnapshot   puller_state_snapshot      = 5;
    }
 }
 
@@ -2699,5 +2718,7 @@ message AdminApiMessage
       ClientConnectedEvent       client_connected     = 1;
       ClientDisconnectedEvent    client_disconnected  = 2;
       DataFromClientEvent        data_from_client     = 3;
+
+      Empty                      update_ticker        = 4;
    }
 }
