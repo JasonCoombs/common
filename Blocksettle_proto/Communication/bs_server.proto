@@ -1944,6 +1944,7 @@ message PriceStreamManaging
       NetExposureUpdate             = 7;
       TradingStartedUpdate          = 8;
       TradingClosedUpdate           = 9;
+      ActiveDealersInfo             = 10;
    };
 
    message GetBestOfferRequest
@@ -2019,19 +2020,30 @@ message PriceStreamManaging
    message NetExposureChangedUpdate
    {
       uint32                  entity_id    = 1;
-      int32                   product_type = 2; // bs::network::asset::type
+      int32                   product_type = 2; // bs::fut::Product
       bs.types.XBTAmountValue net_exposure = 3;
    }
 
    message TradingStartedNotification
    {
-      int32                   product_type   = 1; // bs::network::Asset::Type
+      int32                   product_type   = 1; // bs::fut::Product
       bs.types.XBTPrice       session_im     = 2;
    }
 
    message TradingClosedNotification
    {
-      int32                   product_type   = 1; // bs::network::Asset::Type
+      int32                   product_type   = 1; // bs::fut::Product
+   }
+
+   message ActiveDealersInfo
+   {
+      message ProductDealersInfo
+      {
+         uint32  product_type    = 1; // bs::fut::Product
+         uint32  dealers_count   = 2;
+      }
+
+      repeated ProductDealersInfo dealers_info = 1;
    }
 
    MessageType   message_type = 1;
@@ -2049,6 +2061,7 @@ message PriceStreamManaging
       NetExposureChangedUpdate   net_exposure_update     = 10;
       TradingStartedNotification trading_started         = 11;
       TradingClosedNotification  trading_closed          = 12;
+      ActiveDealersInfo          dealers_info            = 13;
    }
 }
 
