@@ -2127,6 +2127,17 @@ message ApiServerMsg
       bytes message = 2;
    }
 
+   message ConnectedClientsSnapshot
+   {
+      message ConnectedClientsInfo
+      {
+         string endpoint_name       = 1;
+         uint32 active_connections  = 2;
+      }
+
+      repeated ConnectedClientsInfo connection_info = 1;
+   }
+
    oneof data
    {
       UpdateOrder                update_order            = 1;
@@ -2148,6 +2159,8 @@ message ApiServerMsg
       bytes                      client_disconnected     = 17;  // client id
       ClientRequest              client_request          = 18;
       bytes                      mdhs_data               = 19;
+      Empty                      load_connections_info   = 20;
+      ConnectedClientsSnapshot   connections_info        = 21;
    }
 }
 
