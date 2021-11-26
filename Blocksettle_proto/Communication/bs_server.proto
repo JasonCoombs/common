@@ -1944,6 +1944,7 @@ message PriceStreamManaging
       NetExposureUpdate             = 7;
       TradingStartedUpdate          = 8;
       TradingClosedUpdate           = 9;
+      ActiveDealersInfo             = 10;
    };
 
    message GetBestOfferRequest
@@ -2019,19 +2020,30 @@ message PriceStreamManaging
    message NetExposureChangedUpdate
    {
       uint32                  entity_id    = 1;
-      int32                   product_type = 2; // bs::network::asset::type
+      int32                   product_type = 2; // bs::fut::Product
       bs.types.XBTAmountValue net_exposure = 3;
    }
 
    message TradingStartedNotification
    {
-      int32                   product_type   = 1; // bs::network::Asset::Type
+      int32                   product_type   = 1; // bs::fut::Product
       bs.types.XBTPrice       session_im     = 2;
    }
 
    message TradingClosedNotification
    {
-      int32                   product_type   = 1; // bs::network::Asset::Type
+      int32                   product_type   = 1; // bs::fut::Product
+   }
+
+   message ActiveDealersInfoSnapshot
+   {
+      message ProductDealersInfo
+      {
+         uint32  product_type    = 1; // bs::fut::Product
+         uint32  dealers_count   = 2;
+      }
+
+      repeated ProductDealersInfo dealers_info = 1;
    }
 
    MessageType   message_type = 1;
@@ -2049,6 +2061,7 @@ message PriceStreamManaging
       NetExposureChangedUpdate   net_exposure_update     = 10;
       TradingStartedNotification trading_started         = 11;
       TradingClosedNotification  trading_closed          = 12;
+      ActiveDealersInfoSnapshot  dealers_info            = 13;
    }
 }
 
@@ -2114,6 +2127,17 @@ message ApiServerMsg
       bytes message = 2;
    }
 
+   message ConnectedClientsSnapshot
+   {
+      message ConnectedClientsInfo
+      {
+         string endpoint_name       = 1;
+         uint32 active_connections  = 2;
+      }
+
+      repeated ConnectedClientsInfo connection_info = 1;
+   }
+
    oneof data
    {
       UpdateOrder                update_order            = 1;
@@ -2135,6 +2159,8 @@ message ApiServerMsg
       bytes                      client_disconnected     = 17;  // client id
       ClientRequest              client_request          = 18;
       bytes                      mdhs_data               = 19;
+      Empty                      load_connections_info   = 20;
+      ConnectedClientsSnapshot   connections_info        = 21;
    }
 }
 
@@ -2293,6 +2319,19 @@ message CashResMessage
       Blocksettle.Communication.ApiServer.Response.TradeFeeForEntity result = 2;
    }
 
+   message SessionInfoSnapshot
+   {
+      message SessionInfo
+      {
+         string            product_name      = 1;
+         string            session_state     = 2;
+         uint64            start_timestamp   = 3;
+         uint64            end_timestamp     = 4;
+         bs.types.XBTPrice open_price        = 5;
+      }
+
+      repeated SessionInfo session_info = 1;
+   }
 
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
@@ -2324,6 +2363,9 @@ message CashResMessage
 
       TradeFeeForEntityRequest   trade_fee_request       = 18;
       TradeFeeForEntityResponse  trade_fee_response      = 19;
+
+      Empty                      load_sessions_snapshot  = 20;
+      SessionInfoSnapshot        session_snapshot        = 21;
    }
 }
 
