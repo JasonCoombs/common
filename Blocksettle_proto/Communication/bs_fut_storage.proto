@@ -257,6 +257,18 @@ message Message
       bs.types.XBTAmountValue reference_exposure   = 2;
    }
 
+   message LoadDamagedSessionInfoRequest
+   {
+      int64  session_id = 1;
+   }
+
+   message LoadDamagedSessionInfoResponse
+   {
+      int32    load_result    = 1; // FuturesTradesStorage::StatusCode
+      int64    session_id     = 2;
+      int32    session_state  = 3; // FuturesTradesStorage::FuturesSessionState
+      string   reason         = 4;
+   }
 
    oneof data {
       int32                            get_session                         = 1;  // bs::fut::Product
@@ -321,5 +333,8 @@ message Message
 
       LoadPnLHistoryRequest            load_pnl_history_request            = 42;
       LoadPnLHistoryResponse           load_pnl_history_response           = 43;
+
+      LoadDamagedSessionInfoRequest    load_damaged_session_info_request   = 44;
+      LoadDamagedSessionInfoResponse   load_damaged_session_info_response  = 45;
    }
 }
