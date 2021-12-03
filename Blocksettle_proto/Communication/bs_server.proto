@@ -318,6 +318,7 @@ enum GenoaType
    GenoaRegisterFcm                       = 70;
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
+   NovationAccountInfo                    = 73;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1031,6 +1032,18 @@ message GenoaMessage
       string   error_message     = 2;
    }
 
+   message LoadNovationAccountInfoRequest
+   {
+      int64 account_id = 1;
+   }
+
+   message LoadNovationAccountInfoResponse
+   {
+      bool                    loaded            = 1;
+      bool                    account_opened    = 2;
+      bs.types.FXAmountValue  account_balance   = 3;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaDisconnectedBroadcast       disconnected               = 2;
@@ -1072,62 +1085,65 @@ message GenoaMessage
       LoadAllObligationsResponse       loaded_obligations            = 36;
       SettleDelivery                   settle_delivery_status        = 37;
 
-      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 42;
-      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 43;
-      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 44;
-      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 45;
-      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 46;
-      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 47;
-      GenoaUserNotifyMsg                     user_notify                      = 48;
+      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 38;
+      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 39;
+      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 40;
+      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 41;
+      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 42;
+      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 43;
+      GenoaUserNotifyMsg                     user_notify                      = 44;
 
-      GenoaListApiKeysRequest                list_api_keys_req                = 51;
-      GenoaListApiKeysResponse               list_api_keys_resp               = 52;
+      GenoaListApiKeysRequest                list_api_keys_req                = 45;
+      GenoaListApiKeysResponse               list_api_keys_resp               = 46;
 
-      GenoaCreateExternalAccountRequest         create_external_account_req        = 55;
-      GenoaCreateExternalAccountResponse        create_external_account_resp       = 56;
+      GenoaCreateExternalAccountRequest         create_external_account_req        = 47;
+      GenoaCreateExternalAccountResponse        create_external_account_resp       = 48;
 
-      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 63;
-      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 64;
-      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 65;
-      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 66;
+      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 49;
+      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 50;
+      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 51;
+      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 52;
 
-      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 67;
-      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 68;
-      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 69;
-      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 70;
+      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 53;
+      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 54;
+      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 55;
+      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 56;
 
-      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 71;
-      GenoaGeneralResponse                      report_rejected_deposit_response = 72;
-      GenoaTradeHistoryRequest                  trade_history                    = 73;
-      GenoaTradeHistoryResponse                 trade_history_response           = 74;
-      GenoaTransactionsForEntityRequest         transactions_for_entity          = 75;
-      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 76;
-      GenoaGetStatementDatesRequest             get_statement_dates              = 79;
-      GenoaGetStatementDatesResponse            get_statement_dates_response     = 80;
-      GenoaGetStatementsRequest                 get_statements                   = 81;
-      GenoaGetStatementsResponse                get_statements_response          = 82;
+      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 57;
+      GenoaGeneralResponse                      report_rejected_deposit_response = 58;
+      GenoaTradeHistoryRequest                  trade_history                    = 59;
+      GenoaTradeHistoryResponse                 trade_history_response           = 60;
+      GenoaTransactionsForEntityRequest         transactions_for_entity          = 61;
+      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 62;
+      GenoaGetStatementDatesRequest             get_statement_dates              = 63;
+      GenoaGetStatementDatesResponse            get_statement_dates_response     = 64;
+      GenoaGetStatementsRequest                 get_statements                   = 65;
+      GenoaGetStatementsResponse                get_statements_response          = 66;
 
-      FutureMoveReservationsRequest             future_move_reservations_request    = 83;
-      FutureMoveReservationsResponse            future_move_reservations_response   = 84;
+      FutureMoveReservationsRequest             future_move_reservations_request    = 67;
+      FutureMoveReservationsResponse            future_move_reservations_response   = 68;
 
-      FuturePayoutRequest                       future_payout_request               = 85;
-      FuturePayoutResponse                      future_payout_response              = 86;
+      FuturePayoutRequest                       future_payout_request               = 69;
+      FuturePayoutResponse                      future_payout_response              = 70;
 
-      FutureCreateReservations                  future_create_reservations          = 87;
-      FutureCreateReservationsResponse          future_create_reservations_response = 88;
+      FutureCreateReservations                  future_create_reservations          = 71;
+      FutureCreateReservationsResponse          future_create_reservations_response = 72;
 
-      NewNovationAccountRequest                 new_novation_account_request        = 89;
-      NewNovationAccountResponse                new_novation_account_response       = 90;
+      NewNovationAccountRequest                 new_novation_account_request        = 73;
+      NewNovationAccountResponse                new_novation_account_response       = 74;
 
-      DisposeNovationAccountRequest             dispose_novation_account            = 91;
-      DisposeNovationAccountResponse            dispose_novation_account_response   = 92;
+      DisposeNovationAccountRequest             dispose_novation_account            = 75;
+      DisposeNovationAccountResponse            dispose_novation_account_response   = 76;
 
-      GenoaRegisterFcmRequest                   register_fcm_request                = 115;
-      GenoaRegisterFcmResponse                  register_fcm_response               = 116;
-      GenoaUnregisterFcmRequest                 unregister_fcm_request              = 117;
-      GenoaUnregisterFcmResponse                unregister_fcm_response             = 118;
-      GenoaSendFcmRequest                       send_fcm_request                    = 119;
-      GenoaSendFcmResponse                      send_fcm_response                   = 120;
+      GenoaRegisterFcmRequest                   register_fcm_request                = 77;
+      GenoaRegisterFcmResponse                  register_fcm_response               = 78;
+      GenoaUnregisterFcmRequest                 unregister_fcm_request              = 79;
+      GenoaUnregisterFcmResponse                unregister_fcm_response             = 80;
+      GenoaSendFcmRequest                       send_fcm_request                    = 81;
+      GenoaSendFcmResponse                      send_fcm_response                   = 82;
+
+      LoadNovationAccountInfoRequest            load_novation_account_info          = 83;
+      LoadNovationAccountInfoResponse           novation_account_info               = 84;
    }
 }
 
