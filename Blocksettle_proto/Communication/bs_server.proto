@@ -2349,6 +2349,18 @@ message CashResMessage
       repeated SessionInfo session_info = 1;
    }
 
+   message RevertDamagedSessionRequest
+   {
+      string   product_name   = 1;
+   }
+
+   message RevertDamagedSessionResult
+   {
+      string   product_name         = 1;
+      bool     revert_successfull   = 2;
+      string   error_message        = 3;
+   }
+
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
       EstimateImResponse         estimate_im_response    = 2;
@@ -2382,6 +2394,9 @@ message CashResMessage
 
       Empty                      load_sessions_snapshot  = 20;
       SessionInfoSnapshot        session_snapshot        = 21;
+
+      RevertDamagedSessionRequest   revert_session_request  = 22;
+      RevertDamagedSessionResult    revert_session_response = 23;
    }
 }
 
