@@ -84,8 +84,9 @@ message Message
 
    message MarkSessionDamaged
    {
-      int32             product_type      = 1;  // bs::fut::Product
-      string            reason            = 2;
+      int32             product_type      = 1; // bs::fut::Product
+      int32             reason            = 2; // FuturesTradesStorage::DamageSessionReason
+      string            reason_message    = 3;
    }
 
    message SessionPositions
@@ -267,7 +268,8 @@ message Message
       int32    load_result    = 1; // FuturesTradesStorage::StatusCode
       int64    session_id     = 2;
       int32    session_state  = 3; // FuturesTradesStorage::FuturesSessionState
-      string   reason         = 4;
+      int32    reason         = 4; // FuturesTradesStorage::DamageSessionReason
+      string   reason_message = 5;
    }
 
    oneof data {
