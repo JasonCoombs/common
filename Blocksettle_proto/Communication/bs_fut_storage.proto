@@ -298,8 +298,9 @@ message Message
 
       MarkSessionDamaged               mark_session_damaged_request        = 13;
       int32                            mark_session_damaged_response       = 14; // FuturesTradesStorage::StatusCode
-      SessionRequest                   session_recovered                   = 15;
-      int32                            session_result                      = 16; // FuturesTradesStorage::StatusCode
+
+      int32                            mark_damaged_as_resolved            = 15; // bs::fut::Product
+      int32                            mark_damaged_as_resolved_result     = 16; // FuturesTradesStorage::StatusCode
 
       RegisterTradePositions           open_positions_for_trade            = 17;
       RegisterTradePositionsResponse   open_positions_for_trade_response   = 18;

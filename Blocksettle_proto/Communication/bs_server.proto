@@ -2398,7 +2398,7 @@ message CashResMessage
       RevertDamagedSessionRequest   revert_session_request  = 22;
       RevertDamagedSessionResult    revert_session_response = 23;
 
-      CreateSessionFromScratch      session_name            = 24;
+      string                        session_name            = 24;
    }
 }
 
