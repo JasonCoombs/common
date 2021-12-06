@@ -175,8 +175,13 @@ message Message
 
    message LoadReservationIdsResponse
    {
-      int32                load_status    = 1; // FuturesTradesStorage::StatusCode
-      repeated string      reserve_id     = 2; // genoa ref ID
+      message ReservationReferenceInfo
+      {
+         uint32   entity_id      = 1;
+         string   reference_id   = 2; // genoa ref ID
+      }
+      int32                               load_status       = 1; // FuturesTradesStorage::StatusCode
+      repeated ReservationReferenceInfo   reservation_info  = 2;
    }
 
    message LoadTradeHistoryRequest
