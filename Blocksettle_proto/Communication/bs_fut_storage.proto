@@ -265,16 +265,17 @@ message Message
 
    message LoadDamagedSessionInfoRequest
    {
-      int64  session_id = 1;
+      int32 product_type = 1; // bs::fut::Product
    }
 
    message LoadDamagedSessionInfoResponse
    {
       int32    load_result    = 1; // FuturesTradesStorage::StatusCode
-      int64    session_id     = 2;
-      int32    session_state  = 3; // FuturesTradesStorage::FuturesSessionState
-      int32    reason         = 4; // FuturesTradesStorage::DamageSessionReason
-      string   reason_message = 5;
+      int32    product_type   = 2; // bs::fut::Product
+      int64    session_id     = 3;
+      int32    session_state  = 4; // FuturesTradesStorage::FuturesSessionState
+      int32    reason         = 5; // FuturesTradesStorage::DamageSessionReason
+      string   reason_message = 6;
    }
 
    oneof data {
