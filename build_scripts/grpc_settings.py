@@ -1,15 +1,19 @@
 #
 #
 # ***********************************************************************************
-# * Copyright (C) 2019 - 2021, BlockSettle AB
+# * Copyright (C) 2021, BlockSettle AB
 # * Distributed under the GNU Affero General Public License (AGPL v3)
 # * See LICENSE or http://www.gnu.org/licenses/agpl.html
 # *
 # **********************************************************************************
 #
 #
+# this build script is still incomplete, as it requires quite a lot of other lib dependencies
+# which doesn't make sense only to call the binary at generation phase
+
 import multiprocessing
 import os
+import shutil
 import subprocess
 
 from component_configurator import Configurator
@@ -18,70 +22,95 @@ from component_configurator import Configurator
 class gRPCSettings(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
-        self._version = '1.31.0'
-        self._package_name = 'grpc-' + self._version + '-2'
-        self._package_dir_name = 'gRPC'
+        self._version = '1.42.0'
+        self._package_name = 'grpc-' + self._version
+        self._package_name_url = 'grpc-' + self._version
+        self._script_revision = '3'
+        self._package_url = 'https://github.com/grpc/grpc/archive/refs/tags/v' + self._version + '.zip'
 
     def get_package_name(self):
         return self._package_name
 
     def get_revision_string(self):
-        return self._package_name
+        return self._version + '-' + self._script_revision
+
+    def get_url(self):
+        return self._package_url
 
     def get_install_dir(self):
-        return os.path.join(self._project_settings.get_common_build_dir(), 'gRPC')
+        return os.path.join(self._project_settings.get_common_build_dir(), 'grpc')
 
-    def config_component(self):
-        if self.build_required():
-            download_dir = os.path.join(self._project_settings.get_downloads_dir(), 'unpacked_sources', 'gRPC')
-            if not os.path.exists(download_dir):
-                os.makedirs(download_dir)
-            os.chdir(download_dir)
-            
-            subprocess.call(['git', 'clone', 'https://github.com/grpc/grpc', '.'])
-            subprocess.check_call(['git', 'fetch'])
-            subprocess.check_call(['git', 'checkout', 'v' + self._version])
-            subprocess.check_call(['git', 'checkout', '.'])
-            subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
-            
-            build_dir = self.get_build_dir()
-            self.remove_fs_object(build_dir)
-            os.makedirs(build_dir)
-            os.chdir(build_dir)
-
-            if self.config() and self.make() and self.install():
-                self.SetRevision()
-                return True
-            else:
-                return False
+    def is_archive(self):
         return True
 
-    def config_x(self):
-        command = ['cmake',
-            os.path.join(self.get_unpacked_sources_dir()),
-            '-G', self._project_settings.get_cmake_generator(),
-            '-DCMAKE_INSTALL_PREFIX=' + self.get_install_dir(),
-        ]
+    def config_windows(self):
+        self.copy_sources_to_build()
 
-        result = subprocess.check_call(command)
-        return True
+        command = ['cmake', '.',
+                   '-G',
+                   self._project_settings.get_cmake_generator(),
+                   '-DgRPC_BUILD_CSHARP_EXT=OFF'
+                  ]
 
-    def make_windows(self):
-        return False
+        if self._project_settings.on_windows():
+            command.append('-A x64 ')
 
-    def make_x(self):
-        command = ['make', '-j', str(multiprocessing.cpu_count())]
-        result = subprocess.check_call(command)
+        if self._project_settings.on_windows():
+            cmdStr = r' '.join(command)
+            result = subprocess.call(cmdStr)
+        else:
+            result = subprocess.call(command, shell=True)
         return result == 0
 
-    def install_win(self):
-        # not tested
-        result = subprocess.check_call('--build', './', '--config', 'Debug', '--target', 'INSTALL')
-        return True
+    def get_solution_file(self):
+        return os.path.join(self.get_build_dir(), 'grpc.sln')
 
-    def install_x(self):
-        command = ['make', 'install']
-        result = subprocess.check_call(command)
-        self.filter_copy('.', os.path.join(self.get_install_dir(), 'lib'), file_extension='.a')
-        self.filter_copy('.', os.path.join(self.get_install_dir(), 'bin'), file_extension='plugin')
+    def config_x(self):
+        cwd = os.getcwd()
+        os.chdir(self.get_unpacked_sources_dir())
+        command = ['./autogen.sh']
+        result = subprocess.call(command)
+        if result != 0:
+            return False
+
+        os.chdir(cwd)
+        command = [os.path.join(self.get_unpacked_sources_dir(), 'configure'),
+                   '--prefix',
+                   self.get_install_dir()]
+
+        result = subprocess.call(command)
+        return result == 0
+
+    def make_windows(self):
+        print('Making protobuf: might take a while')
+
+        command = ['msbuild',
+                   self.get_solution_file(),
+                   '/t:protoc',
+                   '/p:Configuration=' + self.get_win_build_mode(),
+                   '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
+
+        result = subprocess.call(command)
+        return result == 0
+
+    def make(self):
+        command = ['cmake', '--build', '.']
+        result = subprocess.call(command)
+        return result == 0
+
+#    def get_win_build_mode(self):
+#        if self._project_settings.get_build_mode() == 'release':
+#            return 'RelWithDebInfo'
+#        else:
+#            return 'Debug'
+#
+#    def make_x(self):
+#        command = ['make', '-j', str(multiprocessing.cpu_count())]
+#
+#        result = subprocess.call(command)
+#        return result == 0
+
+    def install(self):
+        command = ['cmake', '--build', '.', '--target', 'install']
+        result = subprocess.call(command)
         return result == 0

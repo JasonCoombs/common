@@ -127,3 +127,12 @@ enum ApiKeyError
     API_KEY_ERROR_UNKNOWN_IP_ADDR = 2;
     API_KEY_ERROR_SERVER_ERROR = 3;
 }
+
+message PublicKey
+{ //JWK format
+    string kty = 1;
+    string kid = 2;
+    string crv = 3;
+    string x = 4;
+    string y = 5;
+}

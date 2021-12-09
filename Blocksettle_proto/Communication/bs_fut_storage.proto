@@ -27,7 +27,7 @@ message Message
       bool                    is_rollover          = 6;
       uint64                  timestamp            = 7;
       uint32                  entity_id            = 8;
-      int32                   prod_type            = 9;  // bs::network::Asset::Type
+      int32                   prod_type            = 9;  // bs::fut::Product
       bool                    opened               = 10;
       string                  reserve_id           = 11; // genoa ref ID
       int32                   reserve_state        = 12; // FuturesTradesStorage::PositionReservationState
@@ -49,7 +49,7 @@ message Message
       int32             session_state     = 3;  // FuturesTradesStorage::FuturesSessionState
       uint64            timestamp_started = 4;
       uint64            timestamp_closed  = 5;
-      int32             product_type      = 6;  // bs::network::Asset::Type
+      int32             product_type      = 6;  // bs::fut::Product
       bs.types.XBTPrice open_price        = 7;
       bs.types.XBTPrice close_price       = 8;
       float             taker_fee         = 9;
@@ -61,7 +61,7 @@ message Message
    message SessionRequest
    {
       int64             session_id        = 1;
-      int32             product_type      = 2;  // bs::network::Asset::Type
+      int32             product_type      = 2;  // bs::fut::Product
       uint64            timestamp_start   = 3;
       uint64            timestamp_close   = 4;
       bs.types.XBTPrice open_price        = 5;
@@ -84,7 +84,9 @@ message Message
 
    message MarkSessionDamaged
    {
-      int32             product_type      = 1;  // bs::network::Asset::Type
+      int32             product_type      = 1; // bs::fut::Product
+      int32             reason            = 2; // FuturesTradesStorage::DamageSessionReason
+      string            reason_message    = 3;
    }
 
    message SessionPositions
@@ -99,7 +101,7 @@ message Message
       uint32                  taker_entity_id   = 1;
       uint32                  maker_entity_id   = 2;
       uint64                  timestamp         = 3;
-      int32                   product_type      = 4; // bs::network::Asset::Type
+      int32                   product_type      = 4; // bs::fut::Product
       bs.types.XBTAmountValue xbt_amount        = 5;
       bs.types.XBTPrice       price             = 6;
    }
@@ -121,7 +123,7 @@ message Message
    message NewRolloverPositionInfo
    {
       uint32                  entity_id         = 1;
-      int32                   product_type      = 2; // bs::network::Asset::Type
+      int32                   product_type      = 2; // bs::fut::Product
       bs.types.XBTAmountValue xbt_amount        = 3;
       bs.types.XBTAmountValue initial_exposure  = 4;
    }
@@ -173,8 +175,13 @@ message Message
 
    message LoadReservationIdsResponse
    {
-      int32                load_status    = 1; // FuturesTradesStorage::StatusCode
-      repeated string      reserve_id     = 2; // genoa ref ID
+      message ReservationReferenceInfo
+      {
+         uint32   entity_id      = 1;
+         string   reference_id   = 2; // genoa ref ID
+      }
+      int32                               load_status       = 1; // FuturesTradesStorage::StatusCode
+      repeated ReservationReferenceInfo   reservation_info  = 2;
    }
 
    message LoadTradeHistoryRequest
@@ -193,6 +200,26 @@ message Message
       bool                  loaded         = 1;
       repeated Position     positions      = 2;
       uint32                entity_id      = 4;
+   }
+
+   message LoadPnLHistoryRequest
+   {
+      enum HistoryInterval
+      {
+         OneHourInterval   = 0;
+         OneDayInterval    = 1;
+         OneWeekInterval   = 2;
+      }
+
+      uint32            entity_id         = 1;
+      uint32            product_type      = 2;
+      uint64            timestamp_start   = 3;
+      HistoryInterval   interval          = 4;
+   }
+
+   message LoadPnLHistoryResponse
+   {
+      repeated Blocksettle.Communication.ApiServer.Response.LoadPnLHistory.Item items = 1;
    }
 
    message TradeFeeForEntityRequest
@@ -236,9 +263,23 @@ message Message
       bs.types.XBTAmountValue reference_exposure   = 2;
    }
 
+   message LoadDamagedSessionInfoRequest
+   {
+      int32 product_type = 1; // bs::fut::Product
+   }
+
+   message LoadDamagedSessionInfoResponse
+   {
+      int32    load_result    = 1; // FuturesTradesStorage::StatusCode
+      int32    product_type   = 2; // bs::fut::Product
+      int64    session_id     = 3;
+      int32    session_state  = 4; // FuturesTradesStorage::FuturesSessionState
+      int32    reason         = 5; // FuturesTradesStorage::DamageSessionReason
+      string   reason_message = 6;
+   }
 
    oneof data {
-      int32                            get_session                         = 1;  // bs::network::Asset::Type
+      int32                            get_session                         = 1;  // bs::fut::Product
       SessionInfo                      session_info                        = 2;
 
       SessionRequest                   get_session_positions               = 3;
@@ -258,8 +299,9 @@ message Message
 
       MarkSessionDamaged               mark_session_damaged_request        = 13;
       int32                            mark_session_damaged_response       = 14; // FuturesTradesStorage::StatusCode
-      SessionRequest                   session_recovered                   = 15;
-      int32                            session_result                      = 16; // FuturesTradesStorage::StatusCode
+
+      int32                            mark_damaged_as_resolved            = 15; // bs::fut::Product
+      int32                            mark_damaged_as_resolved_result     = 16; // FuturesTradesStorage::StatusCode
 
       RegisterTradePositions           open_positions_for_trade            = 17;
       RegisterTradePositionsResponse   open_positions_for_trade_response   = 18;
@@ -297,5 +339,11 @@ message Message
 
       UpdateReferenceExposure          update_reference_exposure_request   = 40;
       int32                            update_reference_exposure_response  = 41; // FuturesTradesStorage::StatusCode
+
+      LoadPnLHistoryRequest            load_pnl_history_request            = 42;
+      LoadPnLHistoryResponse           load_pnl_history_response           = 43;
+
+      LoadDamagedSessionInfoRequest    load_damaged_session_info_request   = 44;
+      LoadDamagedSessionInfoResponse   load_damaged_session_info_response  = 45;
    }
 }

@@ -15,25 +15,28 @@ package Blocksettle.Communication.ApiServer;
 import "bs_types.proto";
 import "market_data_history.proto";
 
-enum EidStatus {
-    EID_STATUS_INVALID = 0;
-    EID_STATUS_WAITING_SIGN = 10;
-    EID_STATUS_TIMEOUT = 20;
-    EID_STATUS_CANCELLED = 21;
-    EID_STATUS_SERVER_ERROR = 22;
-    EID_STATUS_ACCOUNT_NOT_FOUND = 23;
-    EID_STATUS_REGISTRATION_FAILED = 24;
-    EID_STATUS_ACCOUNT_NOT_VERIFIED = 25;
-    EID_STATUS_SUCCESS = 30;
+enum UserControlStatus
+{
+    UC_STATUS_INVALID = 0;
+    UC_STATUS_WAITING_SIGN = 10;
+    UC_STATUS_TIMEOUT = 20;
+    UC_STATUS_CANCELLED = 21;
+    UC_STATUS_SERVER_ERROR = 22;
+    UC_STATUS_ACCOUNT_NOT_FOUND = 23;
+    UC_STATUS_REGISTRATION_FAILED = 24;
+    UC_STATUS_ACCOUNT_NOT_VERIFIED = 25;
+    UC_STATUS_SUCCESS = 30;
 }
 
-enum ErrorCode {
+enum ErrorCode
+{
     NO_ERROR_CODE = 0;
     ERROR_CODE_SERVER_ERROR = 1;
     ERROR_CODE_INVALID_REQUEST = 2;
 }
 
-enum AccountType {
+enum AccountType
+{
     ALL = 0;
     BANK = 1;
     CARD = 2;
@@ -72,15 +75,6 @@ message Order
    string               reference_exposure   = 13;
 }
 
-message ApiKey
-{
-    int32 id = 1;
-    string token = 2;
-    string allow = 3;
-    string label = 4;
-    string created = 5;
-}
-
 message OhlcCandle
 {
     double timestamp = 1;
@@ -94,12 +88,6 @@ message OhlcCandle
 
 message Empty
 {}
-
-message Answer
-{
-    string question = 1;
-    string answer = 2;
-}
 
 message StreamPriceData
 {
@@ -117,19 +105,9 @@ message SubmitPricesData
 
 message Request
 {
-    message Authorize
+    message ValidateSession
     {
-        string api_key = 1;
-    }
-
-    message EidRegister
-    {
-        repeated Answer answers = 1;
-    }
-
-    message ResumeSession
-    {
-        string session_id = 1;
+        string token = 1;
     }
 
     message MarketOrder
@@ -213,17 +191,6 @@ message Request
         string  description     = 2;
     }
 
-    message NewApiKey
-    {
-        string label = 1;
-        string ip = 2;
-    }
-
-    message DeleteApiKey
-    {
-        int32 key_id = 1;
-    }
-
     message CreateExternalAccount
     {
         string account_ref = 1;
@@ -237,8 +204,8 @@ message Request
     message WithdrawToExternalAccount
     {
         string account_name = 1;
-        string amount = 2;
-        string ccy = 3;
+        string amount       = 2;
+        string ccy          = 3;
     }
 
     message WithdrawBitcoin
@@ -302,27 +269,6 @@ message Request
         string product_type = 1;
     }
 
-    message RegisterBasicAccount
-    {
-        string phone = 1;
-        bool include_app_hash = 2;
-    }
-
-    message VerifyBasicAccount
-    {
-        string code = 1;
-    }
-
-    message LoginBasicAccount
-    {
-        string token = 1;
-    }
-
-    message UpgradeBasicAccount
-    {
-        repeated Answer answers = 2;
-    }
-
     message ListClientBanks
     {
         string country_code = 1;
@@ -371,14 +317,17 @@ message Request
         string token = 1;
     }
 
+    message LoadPnLHistory
+    {
+        string product_type = 1;
+        string interval     = 2;
+        double start_time   = 3;
+        string reference    = 4;
+    }
+
     oneof data
     {
-        Authorize                   authorize                   = 10;
-        Empty                       eid_login                   = 11;
-        EidRegister                 eid_register                = 12;
-        Empty                       eid_cancel                  = 13;
-        ResumeSession               resume_session              = 14;
-        Empty                       logout                      = 15;
+        ValidateSession             authorize                   = 10;
         MarketOrder                 market_order                = 16;
         LoadOrders                  load_orders                 = 17;
         Empty                       load_balance                = 18;
@@ -400,9 +349,6 @@ message Request
         CreateIbanAgreementUrl      create_iban_agreement       = 32;
         GetIbanAccounts             get_iban_accounts           = 33;
         GetIbanAccountDetails       get_iban_account_details    = 34;
-        NewApiKey                   new_api_key                 = 35;
-        Empty                       list_api_keys               = 36;
-        DeleteApiKey                delete_api_key              = 37;
         Empty                       get_deposit_info                = 38;
         CreateExternalAccount       create_external_account         = 39;
         GetAllExternalAccounts      get_all_external_accounts       = 40;
@@ -418,10 +364,6 @@ message Request
         GetStatements               get_statements              = 50;
         Ohlc                        ohlc                        = 51;
         SubscribeTradeCreated       subscribe_trade_created     = 52;
-        RegisterBasicAccount        register_basic_account      = 53;
-        VerifyBasicAccount          verify_basic_account        = 54;
-        LoginBasicAccount           login_basic_account         = 55;
-        UpgradeBasicAccount         upgrade_basic_account       = 56;
         ListClientBanks             list_client_banks           = 57;
         BankOnboardingLink          bank_onboarding_link        = 58;
         ListRemoteAccounts          list_remote_accounts        = 59;
@@ -431,32 +373,22 @@ message Request
         ChargeCard                  charge_card                 = 63;
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
+        LoadPnLHistory              load_pnl_history            = 66;
     }
 }
 
 message Response
 {
-    message Authorize
+    message ValidateSession
     {
-        bool success = 1;
-        string session_id = 2;
-        string account_name = 3;
+        bool   success  = 1;
+        string grant    = 2;
+        uint32 validity = 3;
     }
 
-    message EidLogin
+    message Logout
     {
-        string qr_code = 1;
-    }
-
-    message EidRegister
-    {
-        string qr_code = 1;
-    }
-
-    message ResumeSession
-    {
-        bool success = 1;
-        string account_name = 2;
+       string reason = 1;
     }
 
     message MarketOrder
@@ -578,14 +510,6 @@ message Response
         string    bid            = 4;
     }
 
-    message EidLoginUpdate
-    {
-        EidStatus status = 1;
-        string session_id = 2;
-        string account_name = 3;
-        string error_msg = 4;
-    }
-
     message TradingClosed
     {
         string product_type = 1;
@@ -635,27 +559,6 @@ message Response
         string message = 1;
         string code = 2;
         string type = 3;
-    }
-
-    message NewApiKey
-    {
-        bool success = 1;
-        string error_msg = 2;
-        ApiKey key = 3;
-        string secret = 4;
-    }
-
-    message ListApiKeys
-    {
-        bool success = 1;
-        repeated ApiKey keys = 2;
-    }
-
-    message DeleteApiKey
-    {
-        bool success = 1;
-        string error_msg = 2;
-        int32 key_id = 3;
     }
 
     message GetDepositInfo
@@ -795,40 +698,6 @@ message Response
         repeated StreamPriceData                rejected_prices = 4;
     }
 
-    message RegisterBasicAccount
-    {
-        bool success = 1;
-        string error_msg = 2;
-    }
-
-    message VerifyBasicAccount
-    {
-        bool success = 1;
-        string error_msg = 2;
-        string account_name = 3;
-        string session_id = 4;
-        string token = 5;
-    }
-
-    message LoginBasicAccount
-    {
-        bool success = 1;
-        string error_msg = 2;
-        string session_id = 3;
-        string account_name = 4;
-    }
-
-    message UpgradeBasicAccount
-    {
-        string qr_code = 1;
-    }
-
-    message UpgradeBasicAccountUpd
-    {
-        EidStatus status = 1;
-        string error_msg = 2;
-    }
-
     message ListClientBanks
     {
         message Bank
@@ -905,13 +774,22 @@ message Response
         string error_msg = 2;
     }
 
+    message LoadPnLHistory
+    {
+        message Item
+        {
+            double timestamp    = 1;
+            string pnl          = 2;
+        }
+
+        string          reference   = 1;
+        repeated Item   items       = 2;
+    }
+
     oneof data
     {
-        Authorize               authorize                   = 1;
-        EidLogin                eid_login                   = 2;
-        EidRegister             eid_register                = 3;
-        ResumeSession           resume_session              = 4;
-        Empty                   logout                      = 5;
+        ValidateSession         authorize                   = 1;
+        Logout                  logout                      = 2;
         MarketOrder             market_order                = 6;
         LoadOrders              load_orders                 = 7;
         LoadBalance             load_balance                = 8;
@@ -929,9 +807,6 @@ message Response
         CreateIbanAgreementUrl  create_iban_agreement       = 20;
         GetIbanAccounts         get_iban_accounts           = 21;
         GetIbanAccountDetails   get_iban_account_details    = 22;
-        NewApiKey               new_api_key                 = 23;
-        ListApiKeys             list_api_keys               = 24;
-        DeleteApiKey            delete_api_key              = 25;
         GetDepositInfo          get_deposit_info            = 26;
         CreateExternalAccount   create_external_account     = 27;
         GetAllExternalAccounts  get_all_external_accounts   = 28;
@@ -942,7 +817,6 @@ message Response
         ResponseResult          unsubscribe_withdraw_prices = 33;
         MarketData              market_data                 = 34;
         Error                   fatal_error                 = 35;
-        EidLoginUpdate          eid_login_update            = 36;
         OrderUpdate             order_update                = 37;
         TradingClosed           trading_closed              = 38;
         Empty                   session_replaced            = 39;
@@ -958,11 +832,6 @@ message Response
         Empty                   subscribe_trade_created     = 49;
         TradeCreated            trade_created               = 50;
         SubmitPrices            submit_prices               = 51;
-        RegisterBasicAccount    register_basic_account      = 52;
-        VerifyBasicAccount      verify_basic_account        = 53;
-        LoginBasicAccount       login_basic_account         = 54;
-        UpgradeBasicAccount     upgrade_basic_account       = 55;
-        UpgradeBasicAccountUpd  upgrade_basic_account_upd   = 56;
         ListClientBanks         list_client_banks           = 57;
         BankOnboardingLink      bank_onboarding_link        = 58;
         ListRemoteAccounts      list_remote_accounts        = 59;
@@ -972,5 +841,6 @@ message Response
         ChargeCard              charge_card                 = 63;
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
+        LoadPnLHistory          load_pnl_history            = 66;
     }
 }
