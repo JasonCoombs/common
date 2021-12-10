@@ -2813,3 +2813,36 @@ message AdminApiMessage
       Empty                      update_ticker        = 4;
    }
 }
+
+
+message LiquidMessage
+{
+   message WhitelistAddress
+   {
+      uint32 entity_id = 1;
+      string address = 2;
+      string description = 3;
+   }
+
+   message WithdrawRequest
+   {
+      uint32 entity_id = 1;
+      string address = 2;
+      string currency = 3;
+      bs.types.FXAmountValue amount = 4;
+   }
+
+   message WithdrawResponse
+   {
+      string tx_id = 1;
+      string error_msg = 2;
+   }
+
+   oneof data
+   {
+      WhitelistAddress whitelist_addr = 1;
+      bool             whitelist_addr_success = 2;
+      WithdrawRequest  withdraw_request = 3;
+      WithdrawResponse withdraw_response = 4;
+   }
+}

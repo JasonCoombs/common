@@ -208,11 +208,11 @@ message Request
         string ccy          = 3;
     }
 
-    message WithdrawBitcoin
+    message WithdrawLiquid
     {
         string address = 1;
-        string eur_amount = 2;
-        string xbt_receive_amount = 3;
+        string currency = 2;
+        string amount = 3;
         string fee_amount = 4;
         string price = 5;
     }
@@ -353,7 +353,7 @@ message Request
         CreateExternalAccount       create_external_account         = 39;
         GetAllExternalAccounts      get_all_external_accounts       = 40;
         WithdrawToExternalAccount   withdraw_to_external_account    = 41;
-        WithdrawBitcoin             withdraw_bitcoin                = 42;
+        WithdrawLiquid              withdraw_liquid                 = 42;
         Empty                       subscribe_withdraw_prices       = 43;
         Empty                       unsubscribe_withdraw_prices     = 44;
         HistoricalPL                historical_profit_loss      = 45;
@@ -811,7 +811,7 @@ message Response
         CreateExternalAccount   create_external_account     = 27;
         GetAllExternalAccounts  get_all_external_accounts   = 28;
         ResponseResult          withdraw_to_external_account= 29;
-        ResponseResult          withdraw_bitcoin            = 30;
+        ResponseResult          withdraw_liquid             = 30;
         ObligationRequest       obligation_request          = 31;
         ResponseResult          subscribe_withdraw_prices   = 32;
         ResponseResult          unsubscribe_withdraw_prices = 33;
