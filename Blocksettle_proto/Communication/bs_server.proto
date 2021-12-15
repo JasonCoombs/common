@@ -1058,7 +1058,9 @@ message GenoaMessage
          bs.types.FXAmountValue  reserved_amount   = 2;
       }
 
-      repeated ReservationBalanceInfo reservation_info = 1;
+      bool                             loaded            = 1;
+      repeated ReservationBalanceInfo  reservation_info  = 2;
+      string                           error_message     = 3;
    }
 
    GenoaType type = 1;
