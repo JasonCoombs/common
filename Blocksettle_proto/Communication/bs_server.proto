@@ -319,6 +319,7 @@ enum GenoaType
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
    NovationAccountInfo                    = 73;
+   LoadFuturesReservationsBalance         = 74;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1044,6 +1045,22 @@ message GenoaMessage
       bs.types.FXAmountValue  account_balance   = 3;
    }
 
+   message LoadFuturesReservationsBalanceRequest
+   {
+      repeated string reservation_id = 1;
+   }
+
+   message LoadFuturesReservationsBalanceResponse
+   {
+      message ReservationBalanceInfo
+      {
+         string                  reservation_id    = 1;
+         bs.types.FXAmountValue  reserved_amount   = 2;
+      }
+
+      repeated ReservationBalanceInfo reservation_info = 1;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaDisconnectedBroadcast       disconnected               = 2;
@@ -1144,6 +1161,9 @@ message GenoaMessage
 
       LoadNovationAccountInfoRequest            load_novation_account_info          = 83;
       LoadNovationAccountInfoResponse           novation_account_info               = 84;
+
+      LoadFuturesReservationsBalanceRequest     load_futures_reservation_balances   = 85;
+      LoadFuturesReservationsBalanceResponse    futures_reservation_balances        = 86;
    }
 }
 
