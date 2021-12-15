@@ -270,12 +270,13 @@ message Message
 
    message LoadDamagedSessionInfoResponse
    {
-      int32    load_result    = 1; // FuturesTradesStorage::StatusCode
-      int32    product_type   = 2; // bs::fut::Product
-      int64    session_id     = 3;
-      int32    session_state  = 4; // FuturesTradesStorage::FuturesSessionState
-      int32    reason         = 5; // FuturesTradesStorage::DamageSessionReason
-      string   reason_message = 6;
+      int32                load_result             = 1; // FuturesTradesStorage::StatusCode
+      int32                product_type            = 2; // bs::fut::Product
+      int64                session_id              = 3;
+      int32                session_state           = 4; // FuturesTradesStorage::FuturesSessionState
+      int32                reason                  = 5; // FuturesTradesStorage::DamageSessionReason
+      string               reason_message          = 6;
+      NovationAccountInfo  novation_account_info   = 7;
    }
 
    oneof data {
