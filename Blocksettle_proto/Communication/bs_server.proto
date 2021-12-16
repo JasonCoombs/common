@@ -1042,8 +1042,8 @@ message GenoaMessage
    {
       message BalanceInfo
       {
-         string                  currency = 1;
-         bs.types.FXAmountValue  balance  = 2;
+         string   currency = 1;
+         string   balance  = 2;
       }
 
       bool                    loaded            = 1;
