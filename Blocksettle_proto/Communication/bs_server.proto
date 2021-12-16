@@ -1040,9 +1040,16 @@ message GenoaMessage
 
    message LoadNovationAccountInfoResponse
    {
+      message BalanceInfo
+      {
+         string                  currency = 1;
+         bs.types.FXAmountValue  balance  = 2;
+      }
+
       bool                    loaded            = 1;
       bool                    account_opened    = 2;
-      bs.types.FXAmountValue  account_balance   = 3;
+      repeated BalanceInfo    balance_info      = 3;
+      string                  error_message     = 4;
    }
 
    message LoadFuturesReservationsBalanceRequest
