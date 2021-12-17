@@ -786,6 +786,19 @@ message Response
         repeated Item   items       = 2;
     }
 
+    message DealerOffers
+    {
+       message PriceOffer {
+          int32 side = 1;
+          string price = 2;
+          string volume = 3;
+       }
+       repeated PriceOffer offers = 1;
+       string product_type = 2;
+       double timestamp = 3;
+    }
+
+
     oneof data
     {
         ValidateSession         authorize                   = 1;
@@ -842,5 +855,6 @@ message Response
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
+        DealerOffers            dealer_offers               = 67;
     }
 }
