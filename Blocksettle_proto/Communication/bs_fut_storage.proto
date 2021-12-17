@@ -278,6 +278,7 @@ message Message
       int32                reason                  = 5; // FuturesTradesStorage::DamageSessionReason
       string               reason_message          = 6;
       NovationAccountInfo  novation_account_info   = 7;
+      uint64               timestamp_damaged       = 8;
    }
 
    oneof data {
