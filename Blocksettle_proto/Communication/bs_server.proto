@@ -319,6 +319,7 @@ enum GenoaType
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
    NovationAccountInfo                    = 73;
+   LoadFuturesReservationsBalance         = 74;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1039,9 +1040,34 @@ message GenoaMessage
 
    message LoadNovationAccountInfoResponse
    {
+      message BalanceInfo
+      {
+         string   currency = 1;
+         string   balance  = 2;
+      }
+
       bool                    loaded            = 1;
       bool                    account_opened    = 2;
-      bs.types.FXAmountValue  account_balance   = 3;
+      repeated BalanceInfo    balance_info      = 3;
+      string                  error_message     = 4;
+   }
+
+   message LoadFuturesReservationsBalanceRequest
+   {
+      repeated string reservation_id = 1;
+   }
+
+   message LoadFuturesReservationsBalanceResponse
+   {
+      message ReservationBalanceInfo
+      {
+         string                  reservation_id    = 1;
+         bs.types.FXAmountValue  reserved_amount   = 2;
+      }
+
+      bool                             loaded            = 1;
+      repeated ReservationBalanceInfo  reservation_info  = 2;
+      string                           error_message     = 3;
    }
 
    GenoaType type = 1;
@@ -1144,6 +1170,9 @@ message GenoaMessage
 
       LoadNovationAccountInfoRequest            load_novation_account_info          = 83;
       LoadNovationAccountInfoResponse           novation_account_info               = 84;
+
+      LoadFuturesReservationsBalanceRequest     load_futures_reservation_balances   = 85;
+      LoadFuturesReservationsBalanceResponse    futures_reservation_balances        = 86;
    }
 }
 
@@ -2332,6 +2361,32 @@ message CashResMessage
       string   error_message        = 3;
    }
 
+   message InspectDamagedSessionRequest
+   {
+      uint64 session_id = 1;
+   }
+
+   message InspectDamagedSessionResponse
+   {
+      message PayoutDryrunResult
+      {
+         bool                    dryrun_passed  = 1; // PayoutDryRunState
+         bs.types.FXAmountValue  sum_of_payouts = 2;
+         bs.types.FXAmountValue  sum_of_fees    = 3;
+         bs.types.FXAmountValue  pooled_amount  = 4;
+         bs.types.FXAmountValue  cash_pool_diff = 5;
+         bs.types.FXAmountValue  max_diff       = 6;
+         string                  error_message  = 7;
+      }
+
+      bool                    success                 = 1;
+      string                  error_message           = 2;
+      bs.types.XBTPrice       open_price              = 3;
+      bs.types.XBTPrice       close_price             = 4;
+      bs.types.FXAmountValue  total_im                = 5;
+      PayoutDryrunResult      payout_dryrun_result    = 6;
+   }
+
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
       EstimateImResponse         estimate_im_response    = 2;
@@ -2368,6 +2423,9 @@ message CashResMessage
       RevertDamagedSessionResult    revert_session_response = 23;
 
       string                        session_name            = 24;
+
+      InspectDamagedSessionRequest  inspect_damaged_session          = 25;
+      InspectDamagedSessionResponse inspect_damaged_session_response = 26;
    }
 }
 
