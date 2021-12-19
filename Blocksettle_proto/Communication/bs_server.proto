@@ -2351,7 +2351,8 @@ message CashResMessage
 
    message RevertDamagedSessionRequest
    {
-      string   product_name   = 1;
+      string   product_name      = 1;
+      int32    revert_scenario   = 2; // bs::trade::ResolveSessionScenario
    }
 
    message RevertDamagedSessionResult
