@@ -374,6 +374,8 @@ message Request
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
         LoadPnLHistory              load_pnl_history            = 66;
+        Subscribe                   subscribe_dealer_offers     = 67;
+        Unsubscribe                 unsubscribe_dealer_offers   = 68;
     }
 }
 
@@ -792,6 +794,8 @@ message Response
           int32 side = 1;
           string price = 2;
           string volume = 3;
+          string id = 4;
+          int32  command = 5;	// 1=insert, 0=delete
        }
        repeated PriceOffer offers = 1;
        string product_type = 2;
@@ -856,5 +860,7 @@ message Response
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
         DealerOffers            dealer_offers               = 67;
+        ResponseResult          subscribe_dealer_offers     = 68;
+        ResponseResult          unsubscribe_dealer_offers   = 69;
     }
 }
