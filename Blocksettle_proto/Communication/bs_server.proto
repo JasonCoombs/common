@@ -1961,14 +1961,17 @@ message PriceStreamManaging
       TradingStartedUpdate          = 8;
       TradingClosedUpdate           = 9;
       ActiveDealersInfo             = 10;
+      GetBestOfferPack              = 11;
    };
 
    message GetBestOfferRequest
    {
-      bs.types.XBTAmountValue xbt_amount        = 1;
-      int64                   requesting_entity = 2;
-      bool                    get_ask_price     = 3;
-      int32                   price_book        = 4;
+      bs.types.XBTAmountValue xbt_amount              = 1;
+      int64                   requesting_entity       = 2;
+      bool                    get_ask_price           = 3;
+      int32                   price_book              = 4;
+      uint32                  price_tolerance_ratio   = 5;
+      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
@@ -1981,9 +1984,29 @@ message PriceStreamManaging
          bs.types.XBTAmountValue max_amount      = 4;
       }
 
-      bs.types.XBTAmountValue xbt_amount  = 1;
-      PriceOffer              best_offer  = 2;
-      bool                    matched     = 3;
+      bs.types.XBTAmountValue xbt_amount     = 1;
+      PriceOffer              best_offer     = 2;
+      bool                    matched        = 3;
+   }
+
+   message GetBestOfferPackRequest
+   {
+      bs.types.XBTAmountValue xbt_amount        = 1;
+      int64                   requesting_entity = 2;
+      bool                    get_ask_price     = 3;
+      int32                   price_book        = 4;
+      int32                   offers_depth      = 5;
+   }
+
+   message GetBestOfferPackResponse
+   {
+      message Offer
+      {
+         bs.types.XBTPrice       offer_price       = 1;
+         bs.types.XBTAmountValue max_offer_amount  = 2;
+      }
+
+      repeated Offer offers = 1;
    }
 
    message ClientData
@@ -2078,6 +2101,8 @@ message PriceStreamManaging
       TradingStartedNotification trading_started         = 11;
       TradingClosedNotification  trading_closed          = 12;
       ActiveDealersInfoSnapshot  dealers_info            = 13;
+      GetBestOfferPackRequest    get_offers_request      = 14;
+      GetBestOfferPackResponse   get_offers_response     = 15;
    }
 }
 
@@ -2198,6 +2223,7 @@ message CashResMessage
    {
       uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
+      bool                    is_max_qty              = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
       string                  cl_ord_id               = 6;
@@ -2233,9 +2259,16 @@ message CashResMessage
 
    message MaxAmountRequest
    {
+      message Offer
+      {
+         bs.types.XBTPrice       offer_price       = 1;
+         bs.types.XBTAmountValue max_offer_amount  = 2;
+      }
+
       uint32 entity_id = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
+      repeated Offer offers = 4;
    }
 
    message MaxAmountResponse
@@ -2255,6 +2288,7 @@ message CashResMessage
       bool     success     = 2;
       string   error_text  = 3;
       int64    position_id = 4;
+      bs.types.XBTAmountValue qty = 5;
    }
 
    message OrdersRequest
