@@ -2851,6 +2851,28 @@ message AdminApiMessage
       bs.types.FXAmountValue sell = 3;
    }
 
+   message DealerOffer
+   {
+      message PriceOffer {
+         int32 side = 1;
+         bs.types.XBTPrice price = 2;
+         bs.types.XBTAmountValue volume = 3;
+      }
+      repeated PriceOffer offer = 1;
+      int32 product_type = 2;
+      uint32 entity_id = 3;
+      uint64 timestamp = 4;
+   }
+
+   message Trade
+   {
+      uint64 timestamp = 1;
+      int32  product_type = 2;
+      bs.types.XBTPrice price = 3;
+      uint32 counterpart1 = 4;
+      uint32 counterpart2 = 5;
+   }
+
 
    oneof data
    {
@@ -2862,5 +2884,8 @@ message AdminApiMessage
 
       InfoIM                     im_updated           = 5;
       OpenInterest               open_interest        = 6;
+
+      DealerOffer                dealer_offer         = 7;
+      Trade                      trade                = 8;
    }
 }
