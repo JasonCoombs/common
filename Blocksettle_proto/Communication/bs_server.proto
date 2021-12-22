@@ -2785,6 +2785,20 @@ message UserControlMessage
       string error_text = 2;
    }
 
+   message ReportDepositRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+      bs.types.FXAmountValue amount = 3;
+      string currency = 4;
+   }
+
+   message ReportDepositResponse
+   {
+      bs.types.FXAmountValue aggr_amount = 1;
+      string account_type = 2;
+   }
+
    oneof data
    {
       RegisterAccountRequest         register_account_req            = 1;
@@ -2817,6 +2831,9 @@ message UserControlMessage
       WhitelistAddressResponse       whitelist_address_response      = 28;
       WithdrawLiquidRequest          withdraw_liquid_request         = 29;
       WithdrawLiquidResponse         withdraw_liquid_response        = 30;
+      WithdrawLiquidRequest          withdraw_liquid_report          = 31;
+      ReportDepositRequest           report_deposit_request          = 32;
+      ReportDepositResponse          report_deposit_response         = 33;
    }
 }
 
