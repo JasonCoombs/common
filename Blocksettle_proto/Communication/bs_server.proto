@@ -2758,6 +2758,33 @@ message UserControlMessage
       string error_text = 3;
    }
 
+   message WhitelistAddressRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+   }
+
+   message WhitelistAddressResponse
+   {
+      string address = 1;
+      bool   success = 2;
+      string error_text = 3;
+   }
+
+   message WithdrawLiquidRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+      bs.types.FXAmountValue amount = 3;
+      string currency = 4;
+   }
+
+   message WithdrawLiquidResponse
+   {
+      bool   success = 1;
+      string error_text = 2;
+   }
+
    oneof data
    {
       RegisterAccountRequest         register_account_req            = 1;
@@ -2786,6 +2813,10 @@ message UserControlMessage
       ValidateSessionResponse        validate_user_token_response    = 24;
       RevokeTokenRequest             revoke_token_request            = 25;
       RevokeTokenResponse            revoke_token_response           = 26;
+      WhitelistAddressRequest        whitelist_address_request       = 27;
+      WhitelistAddressResponse       whitelist_address_response      = 28;
+      WithdrawLiquidRequest          withdraw_liquid_request         = 29;
+      WithdrawLiquidResponse         withdraw_liquid_response        = 30;
    }
 }
 
