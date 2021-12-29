@@ -318,6 +318,7 @@ enum GenoaType
    GenoaRegisterFcm                       = 70;
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
+   NovationAccountInfo                    = 73;
 }
 
 message GenoaDisconnectedBroadcast
@@ -1031,6 +1032,18 @@ message GenoaMessage
       string   error_message     = 2;
    }
 
+   message LoadNovationAccountInfoRequest
+   {
+      int64 account_id = 1;
+   }
+
+   message LoadNovationAccountInfoResponse
+   {
+      bool                    loaded            = 1;
+      bool                    account_opened    = 2;
+      bs.types.FXAmountValue  account_balance   = 3;
+   }
+
    GenoaType type = 1;
    oneof data {
       GenoaDisconnectedBroadcast       disconnected               = 2;
@@ -1072,62 +1085,65 @@ message GenoaMessage
       LoadAllObligationsResponse       loaded_obligations            = 36;
       SettleDelivery                   settle_delivery_status        = 37;
 
-      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 42;
-      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 43;
-      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 44;
-      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 45;
-      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 46;
-      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 47;
-      GenoaUserNotifyMsg                     user_notify                      = 48;
+      GenoaCreateIbanAgreementUrlRequest     create_iban_agreement_req        = 38;
+      GenoaCreateIbanAgreementUrlResponse    create_iban_agreement_resp       = 39;
+      GenoaGetIbanAccountsRequest            get_iban_accounts_req            = 40;
+      GenoaGetIbanAccountsResponse           get_iban_accounts_resp           = 41;
+      GenoaGetIbanAccountDetailsRequest      get_iban_account_details_req     = 42;
+      GenoaGetIbanAccountDetailsResponse     get_iban_account_details_resp    = 43;
+      GenoaUserNotifyMsg                     user_notify                      = 44;
 
-      GenoaListApiKeysRequest                list_api_keys_req                = 51;
-      GenoaListApiKeysResponse               list_api_keys_resp               = 52;
+      GenoaListApiKeysRequest                list_api_keys_req                = 45;
+      GenoaListApiKeysResponse               list_api_keys_resp               = 46;
 
-      GenoaCreateExternalAccountRequest         create_external_account_req        = 55;
-      GenoaCreateExternalAccountResponse        create_external_account_resp       = 56;
+      GenoaCreateExternalAccountRequest         create_external_account_req        = 47;
+      GenoaCreateExternalAccountResponse        create_external_account_resp       = 48;
 
-      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 63;
-      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 64;
-      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 65;
-      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 66;
+      GenoaRegisterXBTDepositRequest            xbt_register_deposit_request     = 49;
+      GenoaRegisterXBTDepositResponse           xbt_register_deposit_response    = 50;
+      GenoaConfirmXBTDepositRequest             xbt_confirm_deposit_request      = 51;
+      GenoaConfirmXBTDepositResponse            xbt_confirm_deposit_response     = 52;
 
-      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 67;
-      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 68;
-      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 69;
-      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 70;
+      GenoaRegiserXBTWithdrawRequest            xbt_register_withdraw_request    = 53;
+      GenoaRegiserXBTWithdrawResponse           xbt_register_withdraw_response   = 54;
+      GenoaConfirmXBTWithdrawRequest            xbt_confirm_withdraw_request     = 55;
+      GenoaConfirmXBTWithdrawResponse           xbt_confirm_withdraw_response    = 56;
 
-      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 71;
-      GenoaGeneralResponse                      report_rejected_deposit_response = 72;
-      GenoaTradeHistoryRequest                  trade_history                    = 73;
-      GenoaTradeHistoryResponse                 trade_history_response           = 74;
-      GenoaTransactionsForEntityRequest         transactions_for_entity          = 75;
-      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 76;
-      GenoaGetStatementDatesRequest             get_statement_dates              = 79;
-      GenoaGetStatementDatesResponse            get_statement_dates_response     = 80;
-      GenoaGetStatementsRequest                 get_statements                   = 81;
-      GenoaGetStatementsResponse                get_statements_response          = 82;
+      GenoaReportRejectedDepositRequest         report_rejected_deposit          = 57;
+      GenoaGeneralResponse                      report_rejected_deposit_response = 58;
+      GenoaTradeHistoryRequest                  trade_history                    = 59;
+      GenoaTradeHistoryResponse                 trade_history_response           = 60;
+      GenoaTransactionsForEntityRequest         transactions_for_entity          = 61;
+      GenoaTransactionsForEntityResponse        transactions_for_entity_response = 62;
+      GenoaGetStatementDatesRequest             get_statement_dates              = 63;
+      GenoaGetStatementDatesResponse            get_statement_dates_response     = 64;
+      GenoaGetStatementsRequest                 get_statements                   = 65;
+      GenoaGetStatementsResponse                get_statements_response          = 66;
 
-      FutureMoveReservationsRequest             future_move_reservations_request    = 83;
-      FutureMoveReservationsResponse            future_move_reservations_response   = 84;
+      FutureMoveReservationsRequest             future_move_reservations_request    = 67;
+      FutureMoveReservationsResponse            future_move_reservations_response   = 68;
 
-      FuturePayoutRequest                       future_payout_request               = 85;
-      FuturePayoutResponse                      future_payout_response              = 86;
+      FuturePayoutRequest                       future_payout_request               = 69;
+      FuturePayoutResponse                      future_payout_response              = 70;
 
-      FutureCreateReservations                  future_create_reservations          = 87;
-      FutureCreateReservationsResponse          future_create_reservations_response = 88;
+      FutureCreateReservations                  future_create_reservations          = 71;
+      FutureCreateReservationsResponse          future_create_reservations_response = 72;
 
-      NewNovationAccountRequest                 new_novation_account_request        = 89;
-      NewNovationAccountResponse                new_novation_account_response       = 90;
+      NewNovationAccountRequest                 new_novation_account_request        = 73;
+      NewNovationAccountResponse                new_novation_account_response       = 74;
 
-      DisposeNovationAccountRequest             dispose_novation_account            = 91;
-      DisposeNovationAccountResponse            dispose_novation_account_response   = 92;
+      DisposeNovationAccountRequest             dispose_novation_account            = 75;
+      DisposeNovationAccountResponse            dispose_novation_account_response   = 76;
 
-      GenoaRegisterFcmRequest                   register_fcm_request                = 115;
-      GenoaRegisterFcmResponse                  register_fcm_response               = 116;
-      GenoaUnregisterFcmRequest                 unregister_fcm_request              = 117;
-      GenoaUnregisterFcmResponse                unregister_fcm_response             = 118;
-      GenoaSendFcmRequest                       send_fcm_request                    = 119;
-      GenoaSendFcmResponse                      send_fcm_response                   = 120;
+      GenoaRegisterFcmRequest                   register_fcm_request                = 77;
+      GenoaRegisterFcmResponse                  register_fcm_response               = 78;
+      GenoaUnregisterFcmRequest                 unregister_fcm_request              = 79;
+      GenoaUnregisterFcmResponse                unregister_fcm_response             = 80;
+      GenoaSendFcmRequest                       send_fcm_request                    = 81;
+      GenoaSendFcmResponse                      send_fcm_response                   = 82;
+
+      LoadNovationAccountInfoRequest            load_novation_account_info          = 83;
+      LoadNovationAccountInfoResponse           novation_account_info               = 84;
    }
 }
 
@@ -1945,14 +1961,17 @@ message PriceStreamManaging
       TradingStartedUpdate          = 8;
       TradingClosedUpdate           = 9;
       ActiveDealersInfo             = 10;
+      GetBestOfferPack              = 11;
    };
 
    message GetBestOfferRequest
    {
-      bs.types.XBTAmountValue xbt_amount        = 1;
-      int64                   requesting_entity = 2;
-      bool                    get_ask_price     = 3;
-      int32                   price_book        = 4;
+      bs.types.XBTAmountValue xbt_amount              = 1;
+      int64                   requesting_entity       = 2;
+      bool                    get_ask_price           = 3;
+      int32                   price_book              = 4;
+      uint32                  price_tolerance_ratio   = 5;
+      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
@@ -1965,9 +1984,29 @@ message PriceStreamManaging
          bs.types.XBTAmountValue max_amount      = 4;
       }
 
-      bs.types.XBTAmountValue xbt_amount  = 1;
-      PriceOffer              best_offer  = 2;
-      bool                    matched     = 3;
+      bs.types.XBTAmountValue xbt_amount     = 1;
+      PriceOffer              best_offer     = 2;
+      bool                    matched        = 3;
+   }
+
+   message GetBestOfferPackRequest
+   {
+      bs.types.XBTAmountValue xbt_amount        = 1;
+      int64                   requesting_entity = 2;
+      bool                    get_ask_price     = 3;
+      int32                   price_book        = 4;
+      int32                   offers_depth      = 5;
+   }
+
+   message GetBestOfferPackResponse
+   {
+      message Offer
+      {
+         bs.types.XBTPrice       offer_price       = 1;
+         bs.types.XBTAmountValue max_offer_amount  = 2;
+      }
+
+      repeated Offer offers = 1;
    }
 
    message ClientData
@@ -2062,6 +2101,8 @@ message PriceStreamManaging
       TradingStartedNotification trading_started         = 11;
       TradingClosedNotification  trading_closed          = 12;
       ActiveDealersInfoSnapshot  dealers_info            = 13;
+      GetBestOfferPackRequest    get_offers_request      = 14;
+      GetBestOfferPackResponse   get_offers_response     = 15;
    }
 }
 
@@ -2165,35 +2206,6 @@ message ApiServerMsg
 }
 
 
-message UsersImInfo
-{
-   message InfoIM {
-      message PerProduct {
-         int32  product_type = 1;
-         bs.types.XBTAmountValue net_exposure = 2;
-         double leverage_ratio = 3;
-         bs.types.FXAmountValue balance = 4;
-         bs.types.FXAmountValue im_balance = 5;
-         bs.types.FXAmountValue profit_loss = 6;
-      }
-      string account_name = 1;
-      repeated PerProduct per_product = 2;
-      bs.types.FXAmountValue im_balance = 3;
-      bs.types.FXAmountValue balance = 4;
-      bs.types.FXAmountValue profit_loss = 5;
-   }
-   repeated InfoIM im_info = 1;
-   repeated string connected_users = 2;
-   repeated string lp_streaming_users = 3;
-
-   message OpenInterest {
-      int32  product_type = 1;
-      bs.types.FXAmountValue buy = 2;
-      bs.types.FXAmountValue sell = 3;
-   }
-   repeated OpenInterest open_interest = 4;
-}
-
 message TradingSessionOpen
 {
    string            product_name         = 1;
@@ -2211,6 +2223,7 @@ message CashResMessage
    {
       uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
+      bool                    is_max_qty              = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
       string                  cl_ord_id               = 6;
@@ -2246,9 +2259,16 @@ message CashResMessage
 
    message MaxAmountRequest
    {
+      message Offer
+      {
+         bs.types.XBTPrice       offer_price       = 1;
+         bs.types.XBTAmountValue max_offer_amount  = 2;
+      }
+
       uint32 entity_id = 1;
       int32  prod_type = 2;
       bs.types.Side side = 3;
+      repeated Offer offers = 4;
    }
 
    message MaxAmountResponse
@@ -2268,6 +2288,7 @@ message CashResMessage
       bool     success     = 2;
       string   error_text  = 3;
       int64    position_id = 4;
+      bs.types.XBTAmountValue qty = 5;
    }
 
    message OrdersRequest
@@ -2333,14 +2354,24 @@ message CashResMessage
       repeated SessionInfo session_info = 1;
    }
 
+   message RevertDamagedSessionRequest
+   {
+      string   product_name   = 1;
+   }
+
+   message RevertDamagedSessionResult
+   {
+      string   product_name         = 1;
+      bool     revert_successfull   = 2;
+      string   error_message        = 3;
+   }
+
    oneof data {
       EstimateImRequest          estimate_im_request     = 1;
       EstimateImResponse         estimate_im_response    = 2;
 
       MaxAmountRequest           max_amount_request      = 3;
       MaxAmountResponse          max_amount_response     = 4;
-      // users_im_info - deprecated
-      UsersImInfo                users_im_info           = 5;
 
       string                     get_session_info        = 6; // product type for now
       TradingSessionOpen         session_info_response   = 7;
@@ -2366,6 +2397,11 @@ message CashResMessage
 
       Empty                      load_sessions_snapshot  = 20;
       SessionInfoSnapshot        session_snapshot        = 21;
+
+      RevertDamagedSessionRequest   revert_session_request  = 22;
+      RevertDamagedSessionResult    revert_session_response = 23;
+
+      string                        session_name            = 24;
    }
 }
 
@@ -2771,6 +2807,26 @@ message AdminApiMessage
       bytes data        = 2;
    }
 
+   message InfoIM
+   {
+      uint32 entity_id = 1;
+      int32  product_type = 2;
+      bs.types.XBTAmountValue net_exposure = 3;
+      double leverage_ratio = 4;
+      bs.types.FXAmountValue balance = 5;
+      bs.types.FXAmountValue im_balance = 6;
+      bs.types.FXAmountValue profit_loss = 7;
+      bs.types.FXAmountValue delivery_margin = 8;
+   }
+
+   message OpenInterest
+   {
+      int32  product_type = 1;
+      bs.types.FXAmountValue buy = 2;
+      bs.types.FXAmountValue sell = 3;
+   }
+
+
    oneof data
    {
       ClientConnectedEvent       client_connected     = 1;
@@ -2778,5 +2834,8 @@ message AdminApiMessage
       DataFromClientEvent        data_from_client     = 3;
 
       Empty                      update_ticker        = 4;
+
+      InfoIM                     im_updated           = 5;
+      OpenInterest               open_interest        = 6;
    }
 }
