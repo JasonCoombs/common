@@ -146,7 +146,7 @@ void LoginAuthAdapter::processRenewToken()
    const auto& nowC = std::chrono::system_clock::to_time_t(timeNow);
    const auto& tmNow = *std::gmtime(&nowC);
    char buf[128];
-   std::strftime(buf, sizeof(buf), "%c", &tmNow);
+   std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tmNow);
    const std::string timestamp = buf;
    const json token{ {"thumbprint", pubKeyId_}, {"service_url", serviceURL_ }
       , {"created", timestamp }};
