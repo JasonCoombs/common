@@ -101,7 +101,7 @@ LoginAuthAdapter::~LoginAuthAdapter()
 
 bool LoginAuthAdapter::processEnvelope(const bs::message::Envelope& env)
 {
-   if (env.sender->isSystem()) {
+   if (env.sender->isSystem() || !env.receiver || env.receiver->isBroadcast()) {
       return true;   // don't handle system start
    }
    if (env.isRequest()) {
