@@ -1,3 +1,13 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
 #include "LoginAuthAdapter.h"
 #ifdef WIN32
 #include <Winsock2.h>
@@ -91,6 +101,9 @@ LoginAuthAdapter::~LoginAuthAdapter()
 
 bool LoginAuthAdapter::processEnvelope(const bs::message::Envelope& env)
 {
+   if (env.sender->isSystem()) {
+      return true;   // don't handle system start
+   }
    if (env.isRequest()) {
       envReq_ = env;    // requests are processed only synchronously
       LoginAuth::Message msg;
@@ -119,14 +132,16 @@ void LoginAuthAdapter::onTokenRefreshed(const std::string& token)
 {
    LoginAuth::Message msg;
    msg.set_refresh_response(token);
-   pushResponse(user_, std::move(envReq_), msg.SerializeAsString());
+   pushResponse(user_, envReq_, msg.SerializeAsString());
+   logger_->debug("[{}] {} sent to {}", __func__, token, envReq_.sender->name());
 }
 
 void LoginAuthAdapter::onNewToken(const std::string& token)
 {
    LoginAuth::Message msg;
    msg.set_renew_response(token);
-   pushResponse(user_, std::move(envReq_), msg.SerializeAsString());
+   pushResponse(user_, envReq_, msg.SerializeAsString());
+   logger_->debug("[{}] {} sent to {}", __func__, token, envReq_.sender->name());
 }
 
 void LoginAuthAdapter::processRefreshToken(const std::string& token)
@@ -134,6 +149,7 @@ void LoginAuthAdapter::processRefreshToken(const std::string& token)
    try {
       LoginServerConnection conn(logger_, host_, this);
       conn.refreshToken(token);
+      logger_->debug("[{}] finished", __func__);
    }
    catch (const std::exception& e) {
       logger_->error("[{}] HTTPS connection error: ", __func__, e.what());
@@ -172,6 +188,7 @@ void LoginAuthAdapter::processRenewToken()
    try {
       LoginServerConnection conn(logger_, host_, this);
       conn.renewToken(signedToken);
+      logger_->debug("[{}] finished", __func__);
    } catch (const std::exception& e) {
       logger_->error("[{}] HTTPS connection error: ", __func__, e.what());
    }
