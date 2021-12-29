@@ -105,7 +105,6 @@ bool LoginAuthAdapter::processEnvelope(const bs::message::Envelope& env)
       return true;   // don't handle system start
    }
    if (env.isRequest()) {
-      envReq_ = env;    // requests are processed only synchronously
       LoginAuth::Message msg;
       if (!msg.ParseFromString(env.message)) {
          logger_->error("[LoginAuthAdapter::processEnvelope] failed to parse msg #{}", env.foreignId());
@@ -113,9 +112,15 @@ bool LoginAuthAdapter::processEnvelope(const bs::message::Envelope& env)
       }
       switch (msg.data_case()) {
       case LoginAuth::Message::kRenewRequest:
+         envReq_ = env;    // requests are processed only synchronously
          processRenewToken();
          break;
       case LoginAuth::Message::kRefreshRequest:
+         if (msg.refresh_request().empty()) {
+            logger_->error("[{}] empty refresh request from {}", __func__, env.sender->name());
+            return true;
+         }
+         envReq_ = env;
          processRefreshToken(msg.refresh_request());
          break;
       default:

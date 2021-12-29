@@ -33,6 +33,10 @@ LoginServerConnection::LoginServerConnection(const std::shared_ptr<spdlog::logge
 
 void LoginServerConnection::refreshToken(const std::string& token)
 {
+   if (token.empty()) {
+      logger_->error("[{}] skip empty token", __func__);
+      return;
+   }
    inRequest_ = true;
    pendingRequest_ = RequestType::RefreshToken;
    const json req{ {"access_token", token} };
