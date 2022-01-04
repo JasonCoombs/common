@@ -549,9 +549,19 @@ message Response
         string  error_msg   = 3;
     }
 
+    message DepositTXupdate
+    {
+        string tx_id = 1;
+        uint32 nb_conf = 2;
+        string currency = 3;
+        string amount = 4;
+        string unblinded_link = 5;
+    }
+
     message LoadDepositAddress
     {
         string  address  = 1;
+        repeated DepositTXupdate txs = 2;
     }
 
     message UserNotify
@@ -842,5 +852,6 @@ message Response
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
+        DepositTXupdate         deposit_tx_update           = 67;
     }
 }

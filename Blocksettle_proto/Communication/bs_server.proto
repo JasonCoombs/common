@@ -2777,6 +2777,8 @@ message UserControlMessage
       uint32 entity_id = 2;
       bs.types.FXAmountValue amount = 3;
       string currency = 4;
+      string tx_id = 5;
+      string unblinded_link = 6;
    }
 
    message WithdrawLiquidResponse
@@ -2791,6 +2793,8 @@ message UserControlMessage
       uint32 entity_id = 2;
       bs.types.FXAmountValue amount = 3;
       string currency = 4;
+      string tx_id = 5;
+      string unblinded_link = 6;
    }
 
    message ReportDepositResponse
@@ -2925,6 +2929,22 @@ message LiquidMessage
       string error_msg = 3;
    }
 
+   message DepositTXupdate
+   {
+      uint32 entity_id = 1;
+      string tx_id = 2;
+      uint32 nb_conf = 3;
+      string currency = 4;
+      double amount = 5;
+      string unblinded_link = 6;
+   }
+
+   message DepositAddress
+   {
+      string address = 1;
+      repeated DepositTXupdate txs = 2;	// without entity_id filled
+   }
+
    oneof data
    {
       WhitelistAddress whitelist_addr = 1;
@@ -2934,7 +2954,8 @@ message LiquidMessage
       RevokeRequest    revoke_request = 5;
       RevokeResponse   revoke_response = 6;
       uint32           get_deposit_address = 7;   // entity_id
-      string           deposit_address = 8;
-      Empty            poll_balances = 9;
+      DepositAddress   deposit_address = 8;
+      DepositTXupdate  deposit_tx_update = 9;
+      Empty            poll_balances = 10;
    }
 }
