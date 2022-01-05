@@ -2945,6 +2945,22 @@ message LiquidMessage
       repeated DepositTXupdate txs = 2;	// without entity_id filled
    }
 
+   message Transactions
+   {
+      message Transaction {
+         string tx_id = 1;
+         string recv_address = 2;
+         string unconf_address = 3;
+         uint32 nb_conf = 4;
+         string currency = 5;
+         double amount = 6;
+         uint64 timestamp = 7;
+         string unblinded_link = 8;
+      }
+      repeated Transaction deposit_txs = 1;
+      repeated Transaction withdraw_txs = 2;
+   }
+
    oneof data
    {
       WhitelistAddress whitelist_addr = 1;
@@ -2957,5 +2973,7 @@ message LiquidMessage
       DepositAddress   deposit_address = 8;
       DepositTXupdate  deposit_tx_update = 9;
       Empty            poll_balances = 10;
+      uint32           get_transactions = 11;
+      Transactions     transactions = 12;
    }
 }

@@ -374,8 +374,10 @@ message Request
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
         LoadPnLHistory              load_pnl_history            = 66;
+        Empty                       liquid_transactions         = 67;
     }
 }
+
 
 message Response
 {
@@ -796,6 +798,22 @@ message Response
         repeated Item   items       = 2;
     }
 
+    message LiquidTransactions
+    {
+        message Transaction {
+           string tx_id = 1;
+           string recv_address = 2;
+           string unconf_address = 3;
+           uint32 nb_conf = 4;
+           string currency = 5;
+           string amount = 6;
+           double timestamp = 7;
+           string unblinded_link = 8;
+        }
+        repeated Transaction deposit_txs = 1;
+        repeated Transaction withdraw_txs = 2;
+    }
+
     oneof data
     {
         ValidateSession         authorize                   = 1;
@@ -853,5 +871,6 @@ message Response
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
         DepositTXupdate         deposit_tx_update           = 67;
+        LiquidTransactions      liquid_transactions         = 68;
     }
 }
