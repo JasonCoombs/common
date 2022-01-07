@@ -2888,6 +2888,16 @@ message AdminApiMessage
       bs.types.FXAmountValue sell = 3;
    }
 
+   message WalletBalances
+   {
+      message Balance {
+         string currency = 1;
+         double unconfirmed = 2;
+         double settled = 3;
+      }
+      repeated Balance balances = 1;
+   }
+
 
    oneof data
    {
@@ -2899,6 +2909,7 @@ message AdminApiMessage
 
       InfoIM                     im_updated           = 5;
       OpenInterest               open_interest        = 6;
+      WalletBalances             wallet_balances      = 7;
    }
 }
 
@@ -2982,7 +2993,7 @@ message LiquidMessage
       uint32           get_deposit_address = 7;   // entity_id
       DepositAddress   deposit_address = 8;
       DepositTXupdate  deposit_tx_update = 9;
-      Empty            poll_balances = 10;
+      Empty            poll_blocks = 10;
       uint32           get_transactions = 11;
       Transactions     transactions = 12;
    }
