@@ -551,7 +551,7 @@ message Response
         string  error_msg   = 3;
     }
 
-    message DepositTXupdate
+    message TXupdate
     {
         string tx_id = 1;
         uint32 nb_conf = 2;
@@ -563,7 +563,7 @@ message Response
     message LoadDepositAddress
     {
         string  address  = 1;
-        repeated DepositTXupdate txs = 2;
+        repeated TXupdate txs = 2;
     }
 
     message UserNotify
@@ -814,6 +814,14 @@ message Response
         repeated Transaction withdraw_txs = 2;
     }
 
+    message WithdrawLiquid
+    {
+        bool success = 1;
+        string error_msg = 2;
+        string tx_id = 3;
+    }
+
+
     oneof data
     {
         ValidateSession         authorize                   = 1;
@@ -839,7 +847,7 @@ message Response
         CreateExternalAccount   create_external_account     = 27;
         GetAllExternalAccounts  get_all_external_accounts   = 28;
         ResponseResult          withdraw_to_external_account= 29;
-        ResponseResult          withdraw_liquid             = 30;
+        WithdrawLiquid          withdraw_liquid             = 30;
         ObligationRequest       obligation_request          = 31;
         ResponseResult          subscribe_withdraw_prices   = 32;
         ResponseResult          unsubscribe_withdraw_prices = 33;
@@ -870,7 +878,7 @@ message Response
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
-        DepositTXupdate         deposit_tx_update           = 67;
+        TXupdate                tx_update                   = 67;
         LiquidTransactions      liquid_transactions         = 68;
     }
 }
