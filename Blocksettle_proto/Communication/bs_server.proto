@@ -2950,7 +2950,7 @@ message LiquidMessage
       string error_msg = 3;
    }
 
-   message DepositTXupdate
+   message TXupdate
    {
       uint32 entity_id = 1;
       string tx_id = 2;
@@ -2963,7 +2963,7 @@ message LiquidMessage
    message DepositAddress
    {
       string address = 1;
-      repeated DepositTXupdate txs = 2;	// without entity_id filled
+      repeated TXupdate txs = 2;	// without entity_id filled
    }
 
    message Transactions
@@ -2992,9 +2992,10 @@ message LiquidMessage
       RevokeResponse   revoke_response = 6;
       uint32           get_deposit_address = 7;   // entity_id
       DepositAddress   deposit_address = 8;
-      DepositTXupdate  deposit_tx_update = 9;
+      TXupdate         deposit_tx_update = 9;
       Empty            poll_blocks = 10;
       uint32           get_transactions = 11;
       Transactions     transactions = 12;
+      TXupdate         withdraw_tx_update = 13;
    }
 }
