@@ -811,7 +811,7 @@ message Response
         string total_longs   = 4;
         string total_shorts  = 5;
         string total_profits = 6;
-        string total_loses   = 7;
+        string total_losses  = 7;
     }
 
     oneof data

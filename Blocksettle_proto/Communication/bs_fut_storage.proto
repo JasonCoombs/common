@@ -294,7 +294,7 @@ message Message
       bs.types.XBTAmountValue  total_longs   = 4;
       bs.types.XBTAmountValue  total_shorts  = 5;
       bs.types.FXAmountValue   total_profits = 6;
-      bs.types.FXAmountValue   total_loses   = 7;
+      bs.types.FXAmountValue   total_losses  = 7;
    }
 
    oneof data {
