@@ -354,8 +354,6 @@ message Request
         GetAllExternalAccounts      get_all_external_accounts       = 40;
         WithdrawToExternalAccount   withdraw_to_external_account    = 41;
         WithdrawLiquid              withdraw_liquid                 = 42;
-        Empty                       subscribe_withdraw_prices       = 43;
-        Empty                       unsubscribe_withdraw_prices     = 44;
         HistoricalPL                historical_profit_loss      = 45;
         TradeHistory                trade_history               = 46;
         TransactionsForEntity       transactions_for_entity     = 47;
@@ -614,14 +612,6 @@ message Response
         string   bs_address     = 4;
     }
 
-    message UpdateWithdrawPrices
-    {
-        string sell_price     = 1;
-        string buy_price      = 2;
-        string network_fee    = 3;
-        string min_xbt_amount = 4;
-   }
-
     message HistoricalPL
     {
         string product_type = 1;
@@ -798,18 +788,20 @@ message Response
         repeated Item   items       = 2;
     }
 
+    message Transaction
+    {
+        string tx_id = 1;
+        string recv_address = 2;
+        string unconf_address = 3;
+        uint32 nb_conf = 4;
+        string currency = 5;
+        string amount = 6;
+        double timestamp = 7;
+        string unblinded_link = 8;
+    }
+
     message LiquidTransactions
     {
-        message Transaction {
-           string tx_id = 1;
-           string recv_address = 2;
-           string unconf_address = 3;
-           uint32 nb_conf = 4;
-           string currency = 5;
-           string amount = 6;
-           double timestamp = 7;
-           string unblinded_link = 8;
-        }
         repeated Transaction deposit_txs = 1;
         repeated Transaction withdraw_txs = 2;
     }
@@ -818,7 +810,7 @@ message Response
     {
         bool success = 1;
         string error_msg = 2;
-        string tx_id = 3;
+        Transaction tx = 3;
     }
 
 
@@ -849,15 +841,12 @@ message Response
         ResponseResult          withdraw_to_external_account= 29;
         WithdrawLiquid          withdraw_liquid             = 30;
         ObligationRequest       obligation_request          = 31;
-        ResponseResult          subscribe_withdraw_prices   = 32;
-        ResponseResult          unsubscribe_withdraw_prices = 33;
         MarketData              market_data                 = 34;
         Error                   fatal_error                 = 35;
         OrderUpdate             order_update                = 37;
         TradingClosed           trading_closed              = 38;
         Empty                   session_replaced            = 39;
         UserNotify              user_notify                 = 40;
-        UpdateWithdrawPrices    update_withdraw_prices      = 41;
         HistoricalPL            historical_profit_loss      = 42;
         TradeHistory            trade_history               = 43;
         TransactionsForEntity   transactions_for_entity     = 44;
@@ -880,5 +869,6 @@ message Response
         LoadPnLHistory          load_pnl_history            = 66;
         TXupdate                tx_update                   = 67;
         LiquidTransactions      liquid_transactions         = 68;
+        Transaction             new_deposit_tx              = 69;
     }
 }

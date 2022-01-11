@@ -2931,9 +2931,22 @@ message LiquidMessage
       bs.types.FXAmountValue amount = 4;
    }
 
-   message WithdrawResponse
+   message Transaction
    {
       string tx_id = 1;
+      string recv_address = 2;
+      string unconf_address = 3;
+      uint32 nb_conf = 4;
+      string currency = 5;
+      double amount = 6;
+      uint64 timestamp = 7;
+      string unblinded_link = 8;
+      uint32 entity_id = 9;
+   }
+
+   message WithdrawResponse
+   {
+      Transaction tx = 1;
       string error_msg = 2;
    }
 
@@ -2968,16 +2981,6 @@ message LiquidMessage
 
    message Transactions
    {
-      message Transaction {
-         string tx_id = 1;
-         string recv_address = 2;
-         string unconf_address = 3;
-         uint32 nb_conf = 4;
-         string currency = 5;
-         double amount = 6;
-         uint64 timestamp = 7;
-         string unblinded_link = 8;
-      }
       repeated Transaction deposit_txs = 1;
       repeated Transaction withdraw_txs = 2;
    }
@@ -2992,10 +2995,10 @@ message LiquidMessage
       RevokeResponse   revoke_response = 6;
       uint32           get_deposit_address = 7;   // entity_id
       DepositAddress   deposit_address = 8;
-      TXupdate         deposit_tx_update = 9;
+      Transaction      new_deposit_tx = 9;
       Empty            poll_blocks = 10;
       uint32           get_transactions = 11;
       Transactions     transactions = 12;
-      TXupdate         withdraw_tx_update = 13;
+      TXupdate         tx_update = 13;
    }
 }
