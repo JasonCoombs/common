@@ -558,10 +558,22 @@ message Response
         string unblinded_link = 5;
     }
 
+    message Transaction
+    {
+        string tx_id = 1;
+        string recv_address = 2;
+        string unconf_address = 3;
+        uint32 nb_conf = 4;
+        string currency = 5;
+        string amount = 6;
+        double timestamp = 7;
+        string unblinded_link = 8;
+    }
+
     message LoadDepositAddress
     {
-        string  address  = 1;
-        repeated TXupdate txs = 2;
+        string address  = 1;
+        repeated Transaction txs = 2;
     }
 
     message UserNotify
@@ -786,18 +798,6 @@ message Response
 
         string          reference   = 1;
         repeated Item   items       = 2;
-    }
-
-    message Transaction
-    {
-        string tx_id = 1;
-        string recv_address = 2;
-        string unconf_address = 3;
-        uint32 nb_conf = 4;
-        string currency = 5;
-        string amount = 6;
-        double timestamp = 7;
-        string unblinded_link = 8;
     }
 
     message LiquidTransactions

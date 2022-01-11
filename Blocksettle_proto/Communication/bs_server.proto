@@ -2976,7 +2976,7 @@ message LiquidMessage
    message DepositAddress
    {
       string address = 1;
-      repeated TXupdate txs = 2;	// without entity_id filled
+      repeated Transaction txs = 2;	// without entity_id filled
    }
 
    message Transactions
