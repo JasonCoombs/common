@@ -376,6 +376,7 @@ message Request
         LoadPnLHistory              load_pnl_history            = 66;
         Subscribe                   subscribe_dealer_offers     = 67;
         Unsubscribe                 unsubscribe_dealer_offers   = 68;
+        Empty                       load_account_summary        = 69;
     }
 }
 
@@ -802,6 +803,16 @@ message Response
        double timestamp = 3;
     }
 
+    message AccountSummary
+    {
+        bool   loaded        = 1;
+        string total_im      = 2;
+        string fee_paid      = 3;
+        string total_longs   = 4;
+        string total_shorts  = 5;
+        string total_profits = 6;
+        string total_loses   = 7;
+    }
 
     oneof data
     {
@@ -862,5 +873,6 @@ message Response
         DealerOffers            dealer_offers               = 67;
         ResponseResult          subscribe_dealer_offers     = 68;
         ResponseResult          unsubscribe_dealer_offers   = 69;
+        AccountSummary          load_account_summary        = 70;
     }
 }
