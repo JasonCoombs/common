@@ -281,6 +281,22 @@ message Message
       uint64               timestamp_damaged       = 8;
    }
 
+   message LoadAccountSummaryRequest
+   {
+      uint32            entity_id         = 1;
+   }
+
+   message LoadAccountSummaryResponse
+   {
+      int32                    load_result   = 1; // FuturesTradesStorage::StatusCode
+      bs.types.FXAmountValue   total_im      = 2;
+      bs.types.FXAmountValue   fee_paid      = 3;
+      bs.types.XBTAmountValue  total_longs   = 4;
+      bs.types.XBTAmountValue  total_shorts  = 5;
+      bs.types.FXAmountValue   total_profits = 6;
+      bs.types.FXAmountValue   total_losses  = 7;
+   }
+
    oneof data {
       int32                            get_session                         = 1;  // bs::fut::Product
       SessionInfo                      session_info                        = 2;
@@ -348,5 +364,8 @@ message Message
 
       LoadDamagedSessionInfoRequest    load_damaged_session_info_request   = 44;
       LoadDamagedSessionInfoResponse   load_damaged_session_info_response  = 45;
+
+      LoadAccountSummaryRequest        load_account_summary_request        = 46;
+      LoadAccountSummaryResponse       load_account_summary_response       = 47;
    }
 }
