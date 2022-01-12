@@ -962,8 +962,9 @@ message GenoaMessage
    {
       message AccountMargin {
          // GenoaAdapter will populate that field and pass down to genoa bus
-         uint32                 entity_id       = 2;
-         bs.types.FXAmountValue amount          = 3;
+         uint32                 entity_id       = 1;
+         bs.types.FXAmountValue amount          = 2;
+         bs.types.FXAmountValue previous_amount = 3;
          int64                  position_id     = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
          // rollover reservations. Could be non-empty for trades only in case
