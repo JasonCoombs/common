@@ -2881,8 +2881,8 @@ message AdminApiMessage
    message OpenInterest
    {
       int32  product_type = 1;
-      bs.types.FXAmountValue buy = 2;
-      bs.types.FXAmountValue sell = 3;
+      bs.types.XBTAmountValue buy = 2;
+      bs.types.XBTAmountValue sell = 3;
    }
 
    message DealerOffer
