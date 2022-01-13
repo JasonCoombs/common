@@ -2403,9 +2403,9 @@ message CashResMessage
 
    message InspectDamagedSessionResponse
    {
-      message PayoutDryrunResult
+      message PayoutChecksResult
       {
-         bool                    dryrun_passed  = 1; // PayoutDryRunState
+         bool                    checks_passed  = 1; // PayoutChecksState
          bs.types.FXAmountValue  sum_of_payouts = 2;
          bs.types.FXAmountValue  sum_of_fees    = 3;
          bs.types.FXAmountValue  pooled_amount  = 4;
@@ -2419,7 +2419,7 @@ message CashResMessage
       bs.types.XBTPrice       open_price              = 3;
       bs.types.XBTPrice       close_price             = 4;
       bs.types.FXAmountValue  total_im                = 5;
-      PayoutDryrunResult      payout_dryrun_result    = 6;
+      PayoutChecksResult      payout_checks_result    = 6;
    }
 
    oneof data {
