@@ -319,6 +319,7 @@ enum GenoaType
    GenoaUnregisterFcm                     = 71;
    GenoaSendFcm                           = 72;
    NovationAccountInfo                    = 73;
+   LoadFuturesReservationsBalance         = 74;
 }
 
 message GenoaDisconnectedBroadcast
@@ -961,8 +962,9 @@ message GenoaMessage
    {
       message AccountMargin {
          // GenoaAdapter will populate that field and pass down to genoa bus
-         uint32                 entity_id       = 2;
-         bs.types.FXAmountValue amount          = 3;
+         uint32                 entity_id       = 1;
+         bs.types.FXAmountValue amount          = 2;
+         bs.types.FXAmountValue previous_amount = 3;
          int64                  position_id     = 4;
          // reservation_ref - genoa reservation reference ID. always empty for
          // rollover reservations. Could be non-empty for trades only in case
@@ -1039,9 +1041,34 @@ message GenoaMessage
 
    message LoadNovationAccountInfoResponse
    {
+      message BalanceInfo
+      {
+         string   currency = 1;
+         string   balance  = 2;
+      }
+
       bool                    loaded            = 1;
       bool                    account_opened    = 2;
-      bs.types.FXAmountValue  account_balance   = 3;
+      repeated BalanceInfo    balance_info      = 3;
+      string                  error_message     = 4;
+   }
+
+   message LoadFuturesReservationsBalanceRequest
+   {
+      repeated string reservation_id = 1;
+   }
+
+   message LoadFuturesReservationsBalanceResponse
+   {
+      message ReservationBalanceInfo
+      {
+         string                  reservation_id    = 1;
+         bs.types.FXAmountValue  reserved_amount   = 2;
+      }
+
+      bool                             loaded            = 1;
+      repeated ReservationBalanceInfo  reservation_info  = 2;
+      string                           error_message     = 3;
    }
 
    GenoaType type = 1;
@@ -1144,6 +1171,9 @@ message GenoaMessage
 
       LoadNovationAccountInfoRequest            load_novation_account_info          = 83;
       LoadNovationAccountInfoResponse           novation_account_info               = 84;
+
+      LoadFuturesReservationsBalanceRequest     load_futures_reservation_balances   = 85;
+      LoadFuturesReservationsBalanceResponse    futures_reservation_balances        = 86;
    }
 }
 
@@ -2356,7 +2386,8 @@ message CashResMessage
 
    message RevertDamagedSessionRequest
    {
-      string   product_name   = 1;
+      string   product_name      = 1;
+      int32    revert_scenario   = 2; // bs::trade::ResolveSessionScenario
    }
 
    message RevertDamagedSessionResult
@@ -2364,6 +2395,32 @@ message CashResMessage
       string   product_name         = 1;
       bool     revert_successfull   = 2;
       string   error_message        = 3;
+   }
+
+   message InspectDamagedSessionRequest
+   {
+      uint64 session_id = 1;
+   }
+
+   message InspectDamagedSessionResponse
+   {
+      message PayoutChecksResult
+      {
+         bool                    checks_passed  = 1; // PayoutChecksState
+         bs.types.FXAmountValue  sum_of_payouts = 2;
+         bs.types.FXAmountValue  sum_of_fees    = 3;
+         bs.types.FXAmountValue  pooled_amount  = 4;
+         bs.types.FXAmountValue  cash_pool_diff = 5;
+         bs.types.FXAmountValue  max_diff       = 6;
+         string                  error_message  = 7;
+      }
+
+      bool                    success                 = 1;
+      string                  error_message           = 2;
+      bs.types.XBTPrice       open_price              = 3;
+      bs.types.XBTPrice       close_price             = 4;
+      bs.types.FXAmountValue  total_im                = 5;
+      PayoutChecksResult      payout_checks_result    = 6;
    }
 
    oneof data {
@@ -2402,6 +2459,9 @@ message CashResMessage
       RevertDamagedSessionResult    revert_session_response = 23;
 
       string                        session_name            = 24;
+
+      InspectDamagedSessionRequest  inspect_damaged_session          = 25;
+      InspectDamagedSessionResponse inspect_damaged_session_response = 26;
    }
 }
 
@@ -2822,8 +2882,30 @@ message AdminApiMessage
    message OpenInterest
    {
       int32  product_type = 1;
-      bs.types.FXAmountValue buy = 2;
-      bs.types.FXAmountValue sell = 3;
+      bs.types.XBTAmountValue buy = 2;
+      bs.types.XBTAmountValue sell = 3;
+   }
+
+   message DealerOffer
+   {
+      message PriceOffer {
+         int32 side = 1;
+         bs.types.XBTPrice price = 2;
+         bs.types.XBTAmountValue volume = 3;
+      }
+      repeated PriceOffer offer = 1;
+      int32 product_type = 2;
+      uint32 entity_id = 3;
+      uint64 timestamp = 4;
+   }
+
+   message Trade
+   {
+      uint64 timestamp = 1;
+      int32  product_type = 2;
+      bs.types.XBTPrice price = 3;
+      uint32 counterpart1 = 4;
+      uint32 counterpart2 = 5;
    }
 
 
@@ -2837,5 +2919,8 @@ message AdminApiMessage
 
       InfoIM                     im_updated           = 5;
       OpenInterest               open_interest        = 6;
+
+      DealerOffer                dealer_offer         = 7;
+      Trade                      trade                = 8;
    }
 }
