@@ -11,40 +11,7 @@
 #include "CommonTypes.h"
 #include "TradesVerification.h"
 
-Q_DECLARE_METATYPE(bs::PayoutSignatureType)
-
 using namespace bs::network;
-
-class CommonTypesMetaRegistration
-{
-public:
-   CommonTypesMetaRegistration()
-   {
-      qRegisterMetaType<bs::network::Asset::Type>("AssetType");
-      qRegisterMetaType<bs::network::Quote>("Quote");
-      qRegisterMetaType<bs::network::Order>("Order");
-      qRegisterMetaType<bs::network::SecurityDef>("SecurityDef");
-      qRegisterMetaType<bs::network::QuoteReqNotification>("QuoteReqNotification");
-      qRegisterMetaType<bs::network::QuoteNotification>("QuoteNotification");
-      qRegisterMetaType<bs::network::MDField>("MDField");
-      qRegisterMetaType<bs::network::MDFields>("MDFields");
-      qRegisterMetaType<bs::network::CCSecurityDef>("CCSecurityDef");
-      qRegisterMetaType<bs::network::NewTrade>("NewTrade");
-      qRegisterMetaType<bs::network::NewPMTrade>("NewPMTrade");
-      qRegisterMetaType<bs::network::UnsignedPayinData>();
-      qRegisterMetaType<bs::PayoutSignatureType>();
-   }
-
-   ~CommonTypesMetaRegistration() noexcept = default;
-
-   CommonTypesMetaRegistration(const CommonTypesMetaRegistration&) = delete;
-   CommonTypesMetaRegistration& operator = (const CommonTypesMetaRegistration&) = delete;
-
-   CommonTypesMetaRegistration(CommonTypesMetaRegistration&&) = delete;
-   CommonTypesMetaRegistration& operator = (CommonTypesMetaRegistration&&) = delete;
-};
-
-static CommonTypesMetaRegistration commonTypesRegistrator{};
 
 bool RFQ::isXbtBuy() const
 {
@@ -55,8 +22,8 @@ bool RFQ::isXbtBuy() const
 }
 
 
-QuoteNotification::QuoteNotification(const QuoteReqNotification &qrn
-   , const std::string &_authKey, double prc, const std::string &txData)
+QuoteNotification::QuoteNotification(const QuoteReqNotification& qrn
+   , const std::string& _authKey, double prc, const std::string& txData)
    : authKey(_authKey), reqAuthKey(qrn.requestorAuthPublicKey)
    , settlementId(qrn.settlementId), sessionToken(qrn.sessionToken)
    , quoteRequestId(qrn.quoteRequestId), security(qrn.security), product(qrn.product)
@@ -75,7 +42,7 @@ MDField MDField::get(const MDFields &fields, MDField::Type type)
          return field;
       }
    }
-   return { MDField::Unknown, 0, QString() };
+   return { MDField::Unknown, 0, {} };
 }
 
 bs::network::MDInfo bs::network::MDField::get(const MDFields &fields)
@@ -90,15 +57,15 @@ bs::network::MDInfo bs::network::MDField::get(const MDFields &fields)
 bool bs::network::MDField::isIndicativeForFutures() const
 {
    // used for bid/offer only
-   return levelQuantity == QStringLiteral("1");
+   return levelQuantity == "1";
 }
 
 
 const char *Side::toString(Side::Type side)
 {
    switch (side) {
-      case Buy:   return QT_TR_NOOP("BUY");
-      case Sell:  return QT_TR_NOOP("SELL");
+      case Buy:   return "BUY";
+      case Sell:  "SELL";
       default:    return "unknown";
    }
 }
@@ -106,8 +73,8 @@ const char *Side::toString(Side::Type side)
 const char *Side::responseToString(Side::Type side)
 {
    switch (side) {
-      case Buy:   return QT_TR_NOOP("Offer");
-      case Sell:  return QT_TR_NOOP("Bid");
+      case Buy:   return "Offer";
+      case Sell:  return "Bid";
       default:    return "";
    }
 }
@@ -136,10 +103,10 @@ bool bs::fut::isDeliverable(bs::fut::Product p)
 const char* bs::fut::toString(bs::fut::Product p)
 {
    switch (p) {
-   case bs::fut::Product::DelvXbtEur:  return QT_TR_NOOP("XBT/EUR 1-day deliverable");
-   case bs::fut::Product::RollXbtEur:  return QT_TR_NOOP("XBT/EUR 1-day rolling");
-   case bs::fut::Product::DelvXbtUsd:  return QT_TR_NOOP("XBT/USD 1-day deliverable");
-   case bs::fut::Product::RollXbtUsd:  return QT_TR_NOOP("XBT/USD 1-day rolling");
+   case bs::fut::Product::DelvXbtEur:  return "XBT/EUR 1-day deliverable";
+   case bs::fut::Product::RollXbtEur:  return "XBT/EUR 1-day rolling";
+   case bs::fut::Product::DelvXbtUsd:  return "XBT/USD 1-day deliverable";
+   case bs::fut::Product::RollXbtUsd:  return "XBT/USD 1-day rolling";
    }
    std::invalid_argument("unknown product " + std::to_string((int)p));
 }
@@ -169,10 +136,10 @@ bs::fut::Product bs::fut::fromProdType(const std::string& pt)
 const char *bs::network::Asset::toString(bs::network::Asset::Type at)
 {
    switch (at) {
-   case SpotFX:               return QT_TR_NOOP("Spot FX");
-   case SpotXBT:              return QT_TR_NOOP("Spot XBT");
-   case PrivateMarket:        return QT_TR_NOOP("Private Market");
-   case Future:               return QT_TR_NOOP("Future");
+   case SpotFX:               return "Spot FX";
+   case SpotXBT:              return "Spot XBT";
+   case PrivateMarket:        return "Private Market";
+   case Future:               return "Future";
    default:                   return "";
    }
 }

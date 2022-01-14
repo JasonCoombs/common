@@ -11,14 +11,10 @@
 #ifndef __ASSET__MANAGER_H__
 #define __ASSET__MANAGER_H__
 
-#include "CommonTypes.h"
-
 #include <memory>
 #include <unordered_map>
-
-#include <QDateTime>
-#include <QMutex>
 #include <QObject>
+#include "CommonTypes.h"
 
 namespace Blocksettle {
    namespace Communication {
@@ -70,7 +66,8 @@ public:
 public:
    std::vector<std::string> currencies();
    virtual std::vector<std::string> privateShares(bool forceExternal = false);
-   virtual double getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const;
+   virtual double getBalance(const std::string& currency, bool includeZc
+      , const std::shared_ptr<bs::sync::Wallet> &) const;
    bool checkBalance(const std::string &currency, double amount, bool includeZc) const;
    double getPrice(const std::string& currency) const;
    double getTotalAssets();
@@ -144,7 +141,6 @@ protected:
 
    bool     securitiesReceived_ = false;
    std::vector<std::string>   currencies_;
-   QMutex   mtxCurrencies_;
    std::unordered_map<std::string, double> balances_;
    std::unordered_map<std::string, double> prices_;
    std::unordered_map<std::string, bs::network::SecurityDef>   securities_;
@@ -152,7 +148,7 @@ protected:
 
    std::string assignedAccount_;
 
-   std::unordered_map<std::string, QDateTime>  xbtPriceUpdateTimes_;
+   std::unordered_map<std::string, std::chrono::system_clock::time_point>  xbtPriceUpdateTimes_;
 
    std::map<std::string, bs::types::Order> orders_;
 

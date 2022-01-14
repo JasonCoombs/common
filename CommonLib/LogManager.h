@@ -18,10 +18,10 @@
 #include <vector>
 
 namespace spdlog {
-   class logger;
    namespace sinks {
       class sink;
    }
+   class logger;
 }
 
 namespace bs {

@@ -8,6 +8,7 @@
 **********************************************************************************
 
 */
+#include <chrono>
 #include "MessageUtils.h"
 #include "terminal.pb.h"
 
@@ -67,7 +68,6 @@ void bs::message::toMsg(const bs::network::RFQ& rfq, BlockSettle::Terminal::RFQ*
    msg->set_coin_tx_input(rfq.coinTxInput);
 }
 
-
 bs::network::Quote bs::message::fromMsg(const BlockSettle::Terminal::Quote& msg)
 {
    bs::network::Quote quote;
@@ -84,7 +84,7 @@ bs::network::Quote bs::message::fromMsg(const BlockSettle::Terminal::Quote& msg)
    quote.dealerAuthPublicKey = msg.deal_auth_pub_key();
    quote.settlementId = msg.settlement_id();
    quote.dealerTransaction = msg.dealer_tx();
-   quote.expirationTime = QDateTime::fromSecsSinceEpoch(msg.expiration_time());
+   quote.expirationTime = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds{ msg.expiration_time() });
    quote.timeSkewMs = msg.time_skew_ms();
    quote.celerTimestamp = msg.timestamp();
    return quote;
@@ -105,19 +105,18 @@ void bs::message::toMsg(const bs::network::Quote& quote, BlockSettle::Terminal::
    msg->set_deal_auth_pub_key(quote.dealerAuthPublicKey);
    msg->set_settlement_id(quote.settlementId);
    msg->set_dealer_tx(quote.dealerTransaction);
-   msg->set_expiration_time(quote.expirationTime.toSecsSinceEpoch());
+   msg->set_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(quote.expirationTime.time_since_epoch()).count());
    msg->set_time_skew_ms(quote.timeSkewMs);
    msg->set_timestamp(quote.celerTimestamp);
 }
-
 
 bs::network::Order bs::message::fromMsg(const BlockSettle::Terminal::MatchingMessage_Order& msg)
 {
    bs::network::Order order;
    order.clOrderId = msg.cl_order_id();
-   order.exchOrderId = QString::fromStdString(msg.exchange_id());
+   order.exchOrderId = msg.exchange_id();
    order.quoteId = msg.quote_id();
-   order.dateTime = QDateTime::fromMSecsSinceEpoch(msg.timestamp());
+   order.dateTime = std::chrono::time_point<std::chrono::system_clock>(std::chrono::milliseconds{ msg.timestamp() });
    order.security = msg.security();
    order.product = msg.product();
    order.settlementId = BinaryData::fromString(msg.settlement_id());
@@ -138,9 +137,9 @@ bs::network::Order bs::message::fromMsg(const BlockSettle::Terminal::MatchingMes
 void bs::message::toMsg(const bs::network::Order& order, MatchingMessage_Order* msg)
 {
    msg->set_cl_order_id(order.clOrderId);
-   msg->set_exchange_id(order.exchOrderId.toStdString());
+   msg->set_exchange_id(order.exchOrderId);
    msg->set_quote_id(order.quoteId);
-   msg->set_timestamp(order.dateTime.toMSecsSinceEpoch());
+   msg->set_timestamp(std::chrono::duration_cast<std::chrono::milliseconds>(order.dateTime.time_since_epoch()).count());
    msg->set_security(order.security);
    msg->set_product(order.product);
    msg->set_settlement_id(order.settlementId.toBinStr());
