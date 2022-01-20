@@ -13,7 +13,7 @@
 #include "ArmoryConnection.h"
 #include "ArmoryServersProvider.h"
 #include "AutheIDClient.h"
-#include "BlockDataManagerConfig.h"
+#include "BitcoinSettings.h"
 #include "EncryptionUtils.h"
 #include "FastLock.h"
 
@@ -685,25 +685,24 @@ void ApplicationSettings::selectNetwork()
 {
    // Set up Armory as needed. Even though the BDMC object isn't used, it sets
    // global values that are used later.
-   BlockDataManagerConfig config;
 
+   std::map<std::string, std::string> args;
    switch (get<NetworkType>(netType)) {
-   case NetworkType::MainNet:
-      config.selectNetwork(NETWORK_MODE_MAINNET);
-      break;
+   case NetworkType::MainNet: break;   // empty args means mainnet
 
    case NetworkType::TestNet:
-      config.selectNetwork(NETWORK_MODE_TESTNET);
+      args = { {"testnet", {}} };
       break;
 
    case NetworkType::RegTest:
-      config.selectNetwork(NETWORK_MODE_REGTEST);
+      args = { {"regtest", {}} };
       break;
 
    default:
       assert(false);
       break;
    }
+   Armory::Config::BitcoinSettings::processArgs(args);
 }
 
 AuthEidEnv ApplicationSettings::autheidEnv() const

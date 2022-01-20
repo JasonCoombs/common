@@ -13,7 +13,7 @@
 
 using namespace bs::network::bip15x;
 
-void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, MsgType type)
+void MessageBuilder::construct(const uint8_t *data, uint32_t dataSize, ArmoryAEAD::BIP151_PayloadType type)
 {
    construct(data, dataSize, (uint8_t)type);
 }
@@ -40,7 +40,7 @@ MessageBuilder::MessageBuilder(const std::vector<uint8_t> &data, uint8_t type)
    construct(data.data(), data.size(), type);
 }
 
-MessageBuilder::MessageBuilder(const BinaryDataRef &data, MsgType type)
+MessageBuilder::MessageBuilder(const BinaryDataRef &data, ArmoryAEAD::BIP151_PayloadType type)
 {
    construct(data.getPtr(), data.getSize(), type);
 }
@@ -93,21 +93,21 @@ Message Message::parse(const BinaryDataRef &packet)
       if (packetLen != reader.getSizeRemaining()) {
          return {};
       }
-      const uint8_t type = reader.get_uint8_t();
+      const auto type = static_cast<ArmoryAEAD::BIP151_PayloadType>(reader.get_uint8_t());
       switch (type)
       {
-      case (uint8_t)MsgType::SinglePacket:
+      case ArmoryAEAD::BIP151_PayloadType::SinglePacket:
          break;
 
-      case ArmoryAEAD::HandshakeSequence::Start:
-      case ArmoryAEAD::HandshakeSequence::PresentPubKey:
-      case ArmoryAEAD::HandshakeSequence::PresentPubKeyChild:
-      case ArmoryAEAD::HandshakeSequence::EncInit:
-      case ArmoryAEAD::HandshakeSequence::EncAck:
-      case ArmoryAEAD::HandshakeSequence::Rekey:
-      case ArmoryAEAD::HandshakeSequence::Challenge:
-      case ArmoryAEAD::HandshakeSequence::Reply:
-      case ArmoryAEAD::HandshakeSequence::Propose:
+      case ArmoryAEAD::BIP151_PayloadType::Start:
+      case ArmoryAEAD::BIP151_PayloadType::PresentPubKey:
+      case ArmoryAEAD::BIP151_PayloadType::PresentPubKeyChild:
+      case ArmoryAEAD::BIP151_PayloadType::EncInit:
+      case ArmoryAEAD::BIP151_PayloadType::EncAck:
+      case ArmoryAEAD::BIP151_PayloadType::Rekey:
+      case ArmoryAEAD::BIP151_PayloadType::Challenge:
+      case ArmoryAEAD::BIP151_PayloadType::Reply:
+      case ArmoryAEAD::BIP151_PayloadType::Propose:
          break;
 
       default:
@@ -125,22 +125,22 @@ Message Message::parse(const BinaryDataRef &packet)
 
 bool Message::isForAEADHandshake() const
 {
-   return (type_ > ArmoryAEAD::HandshakeSequence::Threshold_Begin)
-      && (type_ < ArmoryAEAD::HandshakeSequence::Threshold_End);
+   return (type_ > ArmoryAEAD::BIP151_PayloadType::Threshold_Begin)
+      && (type_ < ArmoryAEAD::BIP151_PayloadType::Threshold_End);
 }
 
-MsgType Message::getMsgType() const
+ArmoryAEAD::BIP151_PayloadType Message::getMsgType() const
 {
    if (isForAEADHandshake())
       throw std::runtime_error("msg is for AEAD sequence");
 
-   return MsgType(type_);
+   return type_;
 }
 
-ArmoryAEAD::HandshakeSequence Message::getAEADType() const
+ArmoryAEAD::BIP151_PayloadType Message::getAEADType() const
 {
    if (!isForAEADHandshake())
       throw std::runtime_error("msg is not for AEAD sequence");
 
-   return ArmoryAEAD::HandshakeSequence(type_);
+   return type_;
 }

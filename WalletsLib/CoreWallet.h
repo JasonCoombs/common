@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <lmdbpp.h>
 #include "Address.h"
-#include "Assets.h"
+#include "Wallets/Assets.h"
 #include "BtcDefinitions.h"
 #include "CheckRecipSigner.h"
 #include "EasyCoDec.h"
@@ -25,7 +25,8 @@
 #include "Signer.h"
 #include "TxClasses.h"
 #include "WalletEncryption.h"
-#include "Wallets.h"
+#include "Wallets/Wallets.h"
+#include "Wallets/WalletIdTypes.h"
 #include "BIP32_Node.h"
 #include "HDPath.h"
 
@@ -57,7 +58,7 @@ namespace bs {
    namespace core {
       class Wallet;
       namespace wallet {
-         class AssetEntryMeta : public AssetEntry
+         class AssetEntryMeta : public Armory::Assets::AssetEntry
          {
          public:
             enum Type {
@@ -66,25 +67,27 @@ namespace bs {
                Settlement = 5,
                SettlementCP = 6
             };
-            AssetEntryMeta(Type type, int id) : AssetEntry(AssetEntryType_Single, id, {}), type_(type) {}
+            AssetEntryMeta(Type type, Armory::Wallets::AssetId id)
+               : Armory::Assets::AssetEntry(Armory::Assets::AssetEntryType_Single, id)
+               , type_(type) {}
             virtual ~AssetEntryMeta() = default;
 
             Type type() const { return type_; }
             virtual BinaryData key() const {
                BinaryWriter bw;
                bw.put_uint8_t(ASSETENTRY_PREFIX);
-               bw.put_int32_t(index_);
+               bw.put_int32_t(ID_.getAssetKey());
                return bw.getData();
             }
             static std::shared_ptr<AssetEntryMeta> deserialize(int index, BinaryDataRef value);
             virtual bool deserialize(BinaryRefReader brr) = 0;
 
             bool hasPrivateKey(void) const override { return false; }
-            const BinaryData& getPrivateEncryptionKeyId(void) const override { return emptyKey_; }
+            const Armory::Wallets::EncryptionKeyId&
+               getPrivateEncryptionKeyId(void) const override { return {}; }
 
          private:
             Type  type_;
-            BinaryData  emptyKey_;
          };
 
          class AssetEntryComment : public AssetEntryMeta
@@ -92,9 +95,10 @@ namespace bs {
             BinaryData  key_;
             std::string comment_;
          public:
-            AssetEntryComment(int id, const BinaryData &key, const std::string &comment)
+            AssetEntryComment(Armory::Wallets::AssetId id, const BinaryData &key
+               , const std::string &comment)
                : AssetEntryMeta(AssetEntryMeta::Comment, id), key_(key), comment_(comment) {}
-            AssetEntryComment() : AssetEntryMeta(AssetEntryMeta::Comment, 0) {}
+            AssetEntryComment() : AssetEntryMeta(AssetEntryMeta::Comment, {}) {}
 
             BinaryData key() const override { return key_; }
             const std::string &comment() const { return comment_; }
@@ -121,7 +125,8 @@ namespace bs {
             bs::Address authAddr_;
 
          public:
-            AssetEntrySettlement(int id, const BinaryData &settlId, const bs::Address &authAddr)
+            AssetEntrySettlement(Armory::Wallets::AssetId id, const BinaryData &settlId
+               , const bs::Address &authAddr)
                : AssetEntryMeta(AssetEntryMeta::Settlement, id), settlementId_(settlId)
                , authAddr_(authAddr)
             {
@@ -132,7 +137,7 @@ namespace bs {
                   throw std::invalid_argument("invalid auth address");
                }
             }
-            AssetEntrySettlement() : AssetEntryMeta(AssetEntryMeta::Settlement, 0) {}
+            AssetEntrySettlement() : AssetEntryMeta(AssetEntryMeta::Settlement, {}) {}
 
             BinaryData key() const override { return settlementId_; }
             bs::Address address() const { return authAddr_; }
@@ -147,8 +152,8 @@ namespace bs {
             BinaryData  cpPubKey_;
 
          public:
-            AssetEntrySettlCP(int id, const BinaryData &payinHash, const BinaryData &settlementId
-               , const BinaryData &cpPubKey)
+            AssetEntrySettlCP(Armory::Wallets::AssetId id, const BinaryData &payinHash
+               , const BinaryData &settlementId, const BinaryData &cpPubKey)
                : AssetEntryMeta(AssetEntryMeta::SettlementCP, id), txHash_(payinHash)
                , settlementId_(settlementId), cpPubKey_(cpPubKey)
             {
@@ -159,7 +164,7 @@ namespace bs {
                   throw std::invalid_argument("wrong settlementId size");
                }
             }
-            AssetEntrySettlCP() : AssetEntryMeta(AssetEntryMeta::SettlementCP, 0) {}
+            AssetEntrySettlCP() : AssetEntryMeta(AssetEntryMeta::SettlementCP, {}) {}
 
             BinaryData key() const override { return txHash_; }
             BinaryData settlementId() const { return settlementId_; }
@@ -185,8 +190,8 @@ namespace bs {
                return nullptr;
             }
             void set(const std::shared_ptr<AssetEntryMeta> &value);
-            bool write(const std::shared_ptr<DBIfaceTransaction> &);
-            void readFromDB(const std::shared_ptr<DBIfaceTransaction> &);
+            bool write(const std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> &);
+            void readFromDB(const std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> &);
             std::map<BinaryData, std::shared_ptr<AssetEntryMeta>> fetchAll() const { return data_; }
          };
 
@@ -271,7 +276,7 @@ namespace bs {
             std::chrono::system_clock::time_point expiredTimestamp{};
             BinaryData txHash;
 
-            ArmorySigner::Signer armorySigner_;
+            Armory::Signer::Signer armorySigner_;
 
             TXSignRequest() {}
             TXSignRequest(const TXSignRequest &other)
@@ -300,14 +305,14 @@ namespace bs {
             Codec_SignerState::SignerState serializeState(void) const {
                return armorySigner_.serializeState();
             }
-            BinaryData txId(const std::shared_ptr<ArmorySigner::ResolverFeed> &resolver=nullptr) {
+            BinaryData txId(const std::shared_ptr<Armory::Signer::ResolverFeed> &resolver=nullptr) {
                if (resolver != nullptr) {
                   armorySigner_.resetFeed();
                   armorySigner_.setFeed(resolver);
                }
                return armorySigner_.getTxId();
             }
-            void resolveSpenders(const std::shared_ptr<ArmorySigner::ResolverFeed> &resolver = nullptr) {
+            void resolveSpenders(const std::shared_ptr<Armory::Signer::ResolverFeed> &resolver = nullptr) {
                if (resolver != nullptr) {
                   armorySigner_.resetFeed();
                   armorySigner_.setFeed(resolver);
@@ -330,21 +335,22 @@ namespace bs {
             uint64_t getFee() const;
 
             std::vector<UTXO> getInputs(const ContainsAddressCb &containsAddressCb) const;
-            std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> getRecipients(const ContainsAddressCb &containsAddressCb) const;
+            std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> getRecipients(const ContainsAddressCb &containsAddressCb) const;
 
             bool isSourceOfTx(const Tx &signedTx) const;
 
-            void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>& logger, bool serializeAndPrint, const std::shared_ptr<ArmorySigner::ResolverFeed> &resolver=nullptr);
+            void DebugPrint(const std::string& prefix, const std::shared_ptr<spdlog::logger>&
+               , bool serializeAndPrint, const std::shared_ptr<Armory::Signer::ResolverFeed> &resolver=nullptr);
 
          private:
-            ArmorySigner::Signer& getSigner(void);
+            Armory::Signer::Signer& getSigner(void);
          };
 
 
          struct TXMultiSignRequest
          {
-            std::set<std::string> walletIDs_;
-            ArmorySigner::Signer armorySigner_;
+            std::set<std::string>   walletIDs_;
+            Armory::Signer::Signer  armorySigner_;
             bool RBF;
 
             bool isValid() const noexcept;
@@ -372,22 +378,6 @@ namespace bs {
       };
 
 
-      class GenericAsset : public AssetEntry
-      {
-      public:
-         GenericAsset(AssetEntryType type, int id = -1) :
-            AssetEntry(type, id, {}), id_(id) {}
-
-         void setId(int id) {
-            id_ = id;
-            ID_ = WRITE_UINT32_BE(id);
-         }
-         int id() const { return id_; }
-
-      protected:
-         int id_;
-      };
-
       using InputSigs = std::map<unsigned int, BinaryData>;
       class Wallet : protected wallet::MetaData   // Abstract parent for generic wallet classes
       {
@@ -405,7 +395,7 @@ namespace bs {
 
          virtual bool containsAddress(const bs::Address &addr) = 0;
          virtual bool containsHiddenAddress(const bs::Address &) const { return false; }
-         virtual BinaryData getRootId() const = 0;
+         virtual Armory::Wallets::AccountKeyType getRootId() const = 0;
          virtual NetworkType networkType(void) const = 0;
 
          virtual bool isWatchingOnly() const = 0;
@@ -456,8 +446,8 @@ namespace bs {
          ***/
          virtual std::vector<bs::Address> extendAddressChain(unsigned count, bool extInt) = 0;
 
-         virtual std::shared_ptr<ArmorySigner::ResolverFeed> getResolver(void) const = 0;
-         virtual std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver(void) const = 0;
+         virtual std::shared_ptr<Armory::Signer::ResolverFeed> getResolver(void) const = 0;
+         virtual std::shared_ptr<Armory::Signer::ResolverFeed> getPublicResolver(void) const = 0;
          virtual ReentrantLock lockDecryptedContainer() = 0;
 
          virtual BinaryData signTXRequest(const wallet::TXSignRequest &
@@ -476,14 +466,14 @@ namespace bs {
 
          //find the path for a set of prefixed scrAddr
          virtual std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) = 0;
-         virtual bool hasBip32Path(const ArmorySigner::BIP32_AssetPath&) const = 0;
+         virtual bool hasBip32Path(const Armory::Signer::BIP32_AssetPath&) const = 0;
 
-         ArmorySigner::Signer getSigner(const wallet::TXSignRequest &,
+         Armory::Signer::Signer getSigner(const wallet::TXSignRequest &,
             bool keepDuplicatedRecipients = false);
 
       protected:
-         virtual std::shared_ptr<DBIfaceTransaction> getDBWriteTx() = 0;
-         virtual std::shared_ptr<DBIfaceTransaction> getDBReadTx() = 0;
+         virtual std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> getDBWriteTx() = 0;
+         virtual std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> getDBReadTx() = 0;
 
       protected:
          std::string       walletName_;

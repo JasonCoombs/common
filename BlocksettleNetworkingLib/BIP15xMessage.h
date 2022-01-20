@@ -39,11 +39,6 @@ namespace bs {
    namespace network {
       namespace bip15x {
 
-         enum class MsgType : uint8_t {
-            Undefined = 0,
-            SinglePacket = 1,
-         };
-
          constexpr unsigned int AEAD_REKEY_INTERVAL_SECS = 600;
 
          // A class used to represent messages on the wire that need to be created.
@@ -57,7 +52,7 @@ namespace bs {
             MessageBuilder(const std::vector<uint8_t>& data, uint8_t type);
             MessageBuilder(const BinaryDataRef& data, uint8_t type);
             MessageBuilder(const std::string& data, uint8_t type);
-            MessageBuilder(const BinaryDataRef& data, MsgType type);
+            MessageBuilder(const BinaryDataRef& data, ArmoryAEAD::BIP151_PayloadType type);
 
             // Constructs plain packet without data
             MessageBuilder(uint8_t type);
@@ -69,7 +64,7 @@ namespace bs {
             BinaryData build() const;
 
          private:
-            void construct(const uint8_t *data, uint32_t dataSize, MsgType type);
+            void construct(const uint8_t *data, uint32_t dataSize, ArmoryAEAD::BIP151_PayloadType type);
             void construct(const uint8_t *data, uint32_t dataSize, uint8_t type);
 
          private:
@@ -86,11 +81,11 @@ namespace bs {
             static Message parse(const BinaryDataRef& packet);
 
             // Validate if packet is valid before use
-            bool isValid() const { return type_ != (uint8_t)MsgType::Undefined; }
+            bool isValid() const { return type_ != ArmoryAEAD::BIP151_PayloadType::Undefined; }
 
             // Packet's type (SinglePacket, Heartbeat etc)
-            MsgType getMsgType() const;
-            ArmoryAEAD::HandshakeSequence getAEADType() const;
+            ArmoryAEAD::BIP151_PayloadType getMsgType() const;
+            ArmoryAEAD::BIP151_PayloadType getAEADType() const;
 
             // Packet's payload
             BinaryDataRef getData() const { return data_; }
@@ -102,7 +97,7 @@ namespace bs {
 
          private:
             BinaryDataRef data_;
-            uint8_t type_{ (uint8_t)MsgType::Undefined };
+            ArmoryAEAD::BIP151_PayloadType type_{ ArmoryAEAD::BIP151_PayloadType::Undefined };
          };
 
       }  // namespace bip15x

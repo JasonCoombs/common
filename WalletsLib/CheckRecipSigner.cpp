@@ -11,12 +11,11 @@
 #include "CheckRecipSigner.h"
 
 #include "ArmoryConnection.h"
+#include "BitcoinSettings.h"
 #include "CoinSelection.h"
-#include "FastLock.h"
-#include "NetworkConfig.h"
 
 using namespace bs;
-using namespace ArmorySigner;
+using namespace Armory::Signer;
 
 
 void bs::TxAddressChecker::containsInputAddress(Tx tx, std::function<void(bool)> cb
@@ -181,10 +180,10 @@ uint64_t CheckRecipSigner::estimateFee(float &feePerByte, uint64_t fixedFee) con
 
    const auto origFeePerByte = feePerByte;
    try {
-      PaymentStruct payment(recipients_, fixedFee, 0, 0);
+      Armory::CoinSelection::PaymentStruct payment(recipients_, fixedFee, 0, 0);
 
       auto usedUTXOCopy{ transactions };
-      UtxoSelection selection{ usedUTXOCopy };
+      Armory::CoinSelection::UtxoSelection selection{ usedUTXOCopy };
       selection.computeSizeAndFee(payment);
 
       if (selection.fee_byte_ > 0) {
@@ -410,10 +409,10 @@ bool TxChecker::hasInput(const BinaryData &txHash) const
 
 NetworkType getNetworkType()
 {
-   switch (NetworkConfig::getMode()) {
-   case NETWORK_MODE_MAINNET: return NetworkType::MainNet;
-   case NETWORK_MODE_TESTNET: return NetworkType::TestNet;
-   case NETWORK_MODE_REGTEST: return NetworkType::RegTest;
+   switch (Armory::Config::BitcoinSettings::getMode()) {
+   case Armory::Config::NETWORK_MODE_MAINNET: return NetworkType::MainNet;
+   case Armory::Config::NETWORK_MODE_TESTNET: return NetworkType::TestNet;
+   case Armory::Config::NETWORK_MODE_REGTEST: return NetworkType::RegTest;
    default:       return NetworkType::RegTest;
    }
 }

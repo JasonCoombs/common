@@ -21,9 +21,9 @@ class LibBTC(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self.mpir = MPIRSettings(settings)
-        self._version = 'd5a25cb138532167d1475a1270e53a917d1f2156'
+        self._version = '8370a3c853f4ac0d4ca4e35ada81e752c6df4368'
         self._package_name = 'libbtc'
-        self._script_revision = '3'
+        self._script_revision = '4'
 
         self._package_url = 'https://github.com/sergey-chernikov/' + self._package_name + '/archive/%s.zip' % self._version
 
@@ -43,8 +43,10 @@ class LibBTC(Configurator):
         return True
 
     def config(self):
-        command = ['cmake',
-                self.get_unpacked_sources_dir()]
+        command = ['cmake', self.get_unpacked_sources_dir(),
+                     '-DWITH_TOOLS=OFF', '-DWITH_WALLET=OFF', 
+                     '-DWITH_NET=OFF'
+                  ]
 
         # for static lib
         if self._project_settings.on_windows() and self._project_settings.get_link_mode() != 'shared':
@@ -75,7 +77,7 @@ class LibBTC(Configurator):
     def make_windows(self):
         command = ['msbuild',
                    self.get_solution_file(),
-                   '/t:' + self._package_name,
+                   '/t:btc',
                    '/p:Configuration=' + self.get_win_build_configuration(),
                    '/p:CL_MPCount=' + str(max(1, multiprocessing.cpu_count() - 1))]
 

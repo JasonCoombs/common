@@ -58,9 +58,9 @@ namespace bs {
 
       bool operator==(const TXEntry &other) const { return (txHash == other.txHash); }
       void merge(const TXEntry &);
-      static TXEntry fromLedgerEntry(const ClientClasses::LedgerEntry &);
-      static std::vector<TXEntry> fromLedgerEntries(const std::vector<ClientClasses::LedgerEntry> &);
-      static std::vector<TXEntry> fromLedgerEntries(const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &);
+      static TXEntry fromLedgerEntry(const DBClientClasses::LedgerEntry &);
+      static std::vector<TXEntry> fromLedgerEntries(const std::vector<DBClientClasses::LedgerEntry> &);
+      static std::vector<TXEntry> fromLedgerEntries(const std::vector<std::shared_ptr<DBClientClasses::LedgerEntry>> &);
    };
 }
 
@@ -117,14 +117,15 @@ public:
    // arguments: ids
    virtual void onZCInvalidated(const std::set<BinaryData> &) {}
    virtual void onLoadProgress(BDMPhase, float, unsigned int, unsigned int) {}
-   virtual void onNodeStatus(NodeStatus, bool, RpcStatus) {}
+   virtual void onNodeStatus(DBClientClasses::NodeStatus) {}
    // arguments: errCode, errText
    virtual void onError(int , const std::string &) {}
    // arguments: requestId, txHash, errCode, errText
    virtual void onTxBroadcastError(const std::string&
       , const BinaryData &, int, const std::string &) {}
 
-   virtual void onLedgerForAddress(const bs::Address &, const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
+   virtual void onLedgerForAddress(const bs::Address &
+      , const std::shared_ptr<AsyncClient::LedgerDelegate> &) {}
 
 protected:
    ArmoryConnection* armory_{ nullptr };
@@ -170,13 +171,13 @@ public:
 
    ArmoryState state() const { return state_; }
 
-   bool getNodeStatus(const std::function<void(const std::shared_ptr<::ClientClasses::NodeStatusStruct>)>& userCB);
+   bool getNodeStatus(const std::function<void(const std::shared_ptr<DBClientClasses::NodeStatus>)>& userCB);
 
    bool goOnline();
 
    unsigned int topBlock() const { return topBlock_; }
 
-   using WalletsHistoryCb = std::function<void(const std::vector<ClientClasses::LedgerEntry>&)>;
+   using WalletsHistoryCb = std::function<void(const std::vector<DBClientClasses::LedgerEntry>&)>;
    using LedgerDelegateCb = std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)>;
    using UTXOsCb = std::function<void(const std::vector<UTXO> &)>;
 
@@ -236,10 +237,10 @@ public:
    virtual std::string pushZC(const BinaryData &) const;
    virtual std::string pushZCs(const std::vector<BinaryData> &) const;
 
-   bool isTransactionVerified(const ClientClasses::LedgerEntry &) const;
+   bool isTransactionVerified(const DBClientClasses::LedgerEntry &) const;
    bool isTransactionVerified(uint32_t blockNum) const;
-   bool isTransactionConfirmed(const ClientClasses::LedgerEntry &) const;
-   unsigned int getConfirmationsNumber(const ClientClasses::LedgerEntry &item) const;
+   bool isTransactionConfirmed(const DBClientClasses::LedgerEntry &) const;
+   unsigned int getConfirmationsNumber(const DBClientClasses::LedgerEntry &item) const;
    unsigned int getConfirmationsNumber(uint32_t blockNum) const;
 
    bool isOnline() const { return isOnline_; }
@@ -275,7 +276,8 @@ private:
    void registerBDV(NetworkType);
    void setTopBlock(unsigned int topBlock);
    void onRefresh(const std::vector<BinaryData> &);
-   void onZCsReceived(const std::string& requestId, const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &);
+   void onZCsReceived(const std::string& requestId
+      , const std::vector<std::shared_ptr<DBClientClasses::LedgerEntry>> &);
    void onZCsInvalidated(const std::set<BinaryData> &);
 
    void stopServiceThreads();

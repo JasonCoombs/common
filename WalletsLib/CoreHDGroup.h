@@ -34,7 +34,7 @@ namespace bs {
             friend class hd::SettlementGroup;
 
          public:
-            Group(const std::shared_ptr<AssetWallet_Single> &, bs::hd::Path::Elem, NetworkType netType
+            Group(const std::shared_ptr<Armory::Wallets::AssetWallet_Single> &, bs::hd::Path::Elem, NetworkType netType
                , bool isExtOnly, const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
             virtual ~Group(void);
@@ -64,13 +64,13 @@ namespace bs {
             bool isExtOnly(void) const { return isExtOnly_; }
 
             virtual std::shared_ptr<hd::Group> getCopy(
-               std::shared_ptr<AssetWallet_Single>) const;
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const;
 
          protected:
             virtual bool needsCommit() const { return needsCommit_; }
             void committed() { needsCommit_ = false; }
 
-            void commit(const std::shared_ptr<DBIfaceTransaction> &
+            void commit(const std::shared_ptr<Armory::Wallets::IO::DBIfaceTransaction> &
                , bool force = false);
 
             virtual void serializeLeaves(BinaryWriter &) const;
@@ -89,13 +89,13 @@ namespace bs {
 
             std::map<bs::hd::Path, std::shared_ptr<hd::Leaf>>  leaves_;
 
-            std::shared_ptr<AssetWallet_Single>                walletPtr_;
+            std::shared_ptr<Armory::Wallets::AssetWallet_Single>  walletPtr_;
 
          private:
             virtual BinaryData serialize() const;
 
             static std::shared_ptr<Group> deserialize(
-               std::shared_ptr<AssetWallet_Single>,
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>,
                BinaryDataRef key, BinaryDataRef val
                , const std::string &name
                , const std::string &desc
@@ -108,7 +108,7 @@ namespace bs {
          class AuthGroup : public Group
          {
          public:
-            AuthGroup(std::shared_ptr<AssetWallet_Single>,
+            AuthGroup(std::shared_ptr<Armory::Wallets::AssetWallet_Single>,
                NetworkType netType,
                const std::shared_ptr<spdlog::logger> &);
             ~AuthGroup() override = default;
@@ -121,7 +121,7 @@ namespace bs {
             const SecureBinaryData& getSalt(void) const { return salt_; }
 
             std::shared_ptr<hd::Group> getCopy(
-               std::shared_ptr<AssetWallet_Single>) const override;
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
          protected:
             bool addLeaf(const std::shared_ptr<Leaf> &) override;
@@ -141,7 +141,7 @@ namespace bs {
          class CCGroup : public Group
          {
          public:
-            CCGroup(std::shared_ptr<AssetWallet_Single> walletPtr
+            CCGroup(std::shared_ptr<Armory::Wallets::AssetWallet_Single> walletPtr
                , NetworkType netType, const std::shared_ptr<spdlog::logger> &logger)
                : Group(walletPtr, bs::hd::CoinType::BlockSettle_CC, netType, true, logger)
             {} //CC groups are always ext only
@@ -160,7 +160,7 @@ namespace bs {
             friend class hd::Wallet;
 
          public:
-            SettlementGroup(std::shared_ptr<AssetWallet_Single> walletPtr
+            SettlementGroup(std::shared_ptr<Armory::Wallets::AssetWallet_Single> walletPtr
                , NetworkType netType, const std::shared_ptr<spdlog::logger> &logger)
                : Group(walletPtr, bs::hd::CoinType::BlockSettle_Settlement
                   , netType, true, logger)
@@ -190,7 +190,7 @@ namespace bs {
             void initLeaf(std::shared_ptr<hd::Leaf> &, const bs::hd::Path &,
                unsigned lookup = UINT32_MAX) const override
             {
-               throw AccountException("cannot setup ECDH accounts from HD account routines");
+               throw Armory::Accounts::AccountException("cannot setup ECDH accounts from HD account routines");
             }
 
             void initLeaf(std::shared_ptr<hd::Leaf> &,
@@ -207,7 +207,7 @@ namespace bs {
          class HWGroup : public Group
          {
          public:
-            HWGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
+            HWGroup(const std::shared_ptr<Armory::Wallets::AssetWallet_Single> &walletPtr
                , bs::hd::Path::Elem index, NetworkType netType, bool isExtOnly
                , const std::shared_ptr<spdlog::logger> &logger)
                : Group(walletPtr, index, netType, isExtOnly, logger)
@@ -231,7 +231,7 @@ namespace bs {
          class VirtualGroup : public Group
          {
          public:
-            VirtualGroup(const std::shared_ptr<AssetWallet_Single> &walletPtr
+            VirtualGroup(const std::shared_ptr<Armory::Wallets::AssetWallet_Single> &walletPtr
                          , NetworkType netType
                          , const std::shared_ptr<spdlog::logger> &logger);
             ~VirtualGroup() override = default;
@@ -247,7 +247,7 @@ namespace bs {
 
             std::set<AddressEntryType> getAddressTypeSet(void) const override;
 
-            std::shared_ptr<hd::Group> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+            std::shared_ptr<hd::Group> getCopy(std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
          protected:
             bool needsCommit() const override { return false; }

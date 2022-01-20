@@ -13,10 +13,14 @@
 #include "CheckRecipSigner.h"
 #include "CoreHDLeaf.h"
 #include "Wallets.h"
+#include "ResolverFeed_Wallets.h"
 
 #define ADDR_KEY     0x00002002
 
 using namespace bs::core;
+using namespace Armory::Accounts;
+using namespace Armory::Assets;
+using namespace Armory::Wallets;
 
 hd::Leaf::Leaf(NetworkType netType,
    std::shared_ptr<spdlog::logger> logger,
@@ -31,7 +35,7 @@ hd::Leaf::~Leaf()
 
 void hd::Leaf::init(
    std::shared_ptr<AssetWallet_Single> walletPtr,
-   const BinaryData& addrAccId)
+   const Armory::Wallets::AccountKeyType& addrAccId)
 {
    reset();
    auto accPtr = walletPtr->getAccountForID(addrAccId);
@@ -68,12 +72,12 @@ void hd::Leaf::reset()
    accountPtr_ = nullptr;
 }
 
-std::shared_ptr<DBIfaceTransaction> hd::Leaf::getDBWriteTx()
+std::shared_ptr<IO::WalletIfaceTransaction> hd::Leaf::getDBWriteTx()
 {
    return walletPtr_->beginSubDBTransaction(BS_WALLET_DBNAME, true);
 }
 
-std::shared_ptr<DBIfaceTransaction> hd::Leaf::getDBReadTx()
+std::shared_ptr<IO::WalletIfaceTransaction> hd::Leaf::getDBReadTx()
 {
    return walletPtr_->beginSubDBTransaction(BS_WALLET_DBNAME, false);
 }
@@ -81,8 +85,7 @@ std::shared_ptr<DBIfaceTransaction> hd::Leaf::getDBReadTx()
 std::string hd::Leaf::walletId() const
 {
    if (walletId_.empty()) {
-
-      walletId_ = wallet::computeID(getRootId()).toBinStr();
+      walletId_ = AddressAccountId(getRootId()).toHexStr();
    }
    return walletId_;
 }
@@ -97,8 +100,7 @@ bool hd::Leaf::containsHiddenAddress(const bs::Address &addr) const
    try
    {
       auto& addrPair = accountPtr_->getAssetIDPairForAddr(addr.prefixed());
-      if (addrPair.first.getSize() != 0)
-         return true;
+      return addrPair.first.isValid();
    }
    catch(std::exception&)
    { }
@@ -106,9 +108,9 @@ bool hd::Leaf::containsHiddenAddress(const bs::Address &addr) const
    return false;
 }
 
-BinaryData hd::Leaf::getRootId() const
+AccountKeyType hd::Leaf::getRootId() const
 {
-   return accountPtr_->getID();
+   return accountPtr_->getID().getAddressAccountKey();
 }
 
 std::vector<bs::Address> hd::Leaf::getPooledAddressList() const
@@ -130,19 +132,19 @@ ReentrantLock hd::Leaf::lockDecryptedContainer()
 // Return an external-facing address.
 bs::Address hd::Leaf::getNewExtAddress()
 {
-   return newAddress();
+   return newAddress(walletPtr_->getIface());
 }
 
 // Return an internal-facing address.
 bs::Address hd::Leaf::getNewIntAddress()
 {
-   return newInternalAddress();
+   return newInternalAddress(walletPtr_->getIface());
 }
 
 // Return a change address.
 bs::Address hd::Leaf::getNewChangeAddress()
 {
-   return newInternalAddress();
+   return newInternalAddress(walletPtr_->getIface());
 }
 
 std::shared_ptr<AddressEntry> hd::Leaf::getAddressEntryForAddr(const BinaryData &addr)
@@ -160,7 +162,7 @@ std::shared_ptr<AddressEntry> hd::Leaf::getAddressEntryForAddr(const BinaryData 
 SecureBinaryData hd::Leaf::getPublicKeyFor(const bs::Address &addr)
 {
    auto idPair = accountPtr_->getAssetIDPairForAddr(addr.prefixed());
-   auto assetPtr = accountPtr_->getAssetForID(idPair.first.getSliceRef(4, 8));
+   auto assetPtr = accountPtr_->getAssetForID(idPair.first);
 
    auto assetSingle = std::dynamic_pointer_cast<AssetEntry_Single>(assetPtr);
    if (assetSingle == nullptr)
@@ -169,9 +171,9 @@ SecureBinaryData hd::Leaf::getPublicKeyFor(const bs::Address &addr)
    return assetSingle->getPubKey()->getCompressedKey();
 }
 
-bs::Address hd::Leaf::newAddress()
+bs::Address hd::Leaf::newAddress(const std::shared_ptr<Armory::Wallets::IO::WalletDBInterface>& iface)
 {
-   auto addrPtr = accountPtr_->getNewAddress(defaultAddressType());
+   auto addrPtr = accountPtr_->getNewAddress(iface, defaultAddressType());
 
    //this will not work with MS assets nor P2PK (the output script does not use a hash)
    auto&& addr = bs::Address::fromAddressEntry(*addrPtr);
@@ -179,9 +181,9 @@ bs::Address hd::Leaf::newAddress()
    return addr;
 }
 
-bs::Address hd::Leaf::newInternalAddress()
+bs::Address hd::Leaf::newInternalAddress(const std::shared_ptr<Armory::Wallets::IO::WalletDBInterface>& iface)
 {
-   auto addrPtr = accountPtr_->getNewChangeAddress(defaultAddressType());
+   auto addrPtr = accountPtr_->getNewChangeAddress(iface, defaultAddressType());
 
    //this will not work with MS assets nor P2PK (the output script does not use a hash)
    auto&& addr = bs::Address::fromAddressEntry(*addrPtr);
@@ -192,19 +194,16 @@ bs::Address hd::Leaf::newInternalAddress()
 void hd::Leaf::topUpAddressPool(size_t count, bool intExt)
 {
    //intExt: true for external, false for internal
-   BinaryData accountID;
+   AssetAccountId accountID;
 
-   if (intExt)
+   if (intExt) {
       accountID = accountPtr_->getOuterAccountID();
-   else
+   }
+   else {
       accountID = accountPtr_->getInnerAccountID();
-
-   auto accMap = accountPtr_->getAccountMap();
-   auto iter = accMap.find(accountID);
-   if (iter == accMap.end())
-      throw AccountException("unexpected account id");
-
-   iter->second->extendPublicChain(count);
+   }
+   const auto account = accountPtr_->getAccountForID(accountID);
+   account->extendPublicChain(walletPtr_->getIface(), count);
 }
 
 std::vector<bs::Address> hd::Leaf::extendAddressChain(unsigned count, bool extInt)
@@ -219,7 +218,7 @@ std::vector<bs::Address> hd::Leaf::extendAddressChain(unsigned count, bool extIn
    auto& addrHashMap_new = accountPtr_->getAddressHashMap();
 
    //get diff
-   std::map<BinaryData, std::pair<BinaryData, AddressEntryType>> diffMap;
+   std::map<BinaryData, std::pair<AssetId, AddressEntryType>> diffMap;
    std::set_difference(
       addrHashMap_new.begin(), addrHashMap_new.end(),
       addrHashMap_orig.begin(), addrHashMap_orig.end(),
@@ -265,20 +264,11 @@ bs::hd::Path::Elem hd::Leaf::addressIndex(const bs::Address &addr) const
 bs::hd::Path hd::Leaf::getPathForAddress(const bs::Address &addr) const
 {
    //grab assetID by prefixed address hash
-   try
-   {
+   try {
       auto& assetIDPair = accountPtr_->getAssetIDPairForAddr(addr.prefixed());
-
-      //assetID: BIP32 root ID (4 bytes) | BIP32 node id (4 bytes) | asset index (4 bytes)
-      BinaryRefReader brr(assetIDPair.first);
-      brr.get_uint32_t(); //skip root id
-      auto nodeid = brr.get_uint32_t(BE);
-      auto indexid = brr.get_uint32_t(BE);
-
-      bs::hd::Path addrPath;
-      addrPath.append(nodeid);
-      addrPath.append(indexid);
-
+      const auto& assetAccId = assetIDPair.first.getAssetAccountId();
+      const bs::hd::Path addrPath{ {bs::hd::Path::Elem(assetAccId.getAssetAccountKey())
+         , bs::hd::Path::Elem(assetIDPair.first.getAssetKey())} };
       return addrPath;
    }
    catch (std::exception&) {
@@ -305,19 +295,11 @@ bool hd::Leaf::isExternalAddress(const bs::Address &addr) const
    return (path.get(-2) == addrTypeExternal_);
 }
 
-bs::Address hd::Leaf::getAddressByIndex(unsigned int id, bool ext) const
+bs::Address hd::Leaf::getAddressByIndex(int id, bool ext) const
 {
-   BinaryWriter accBw;
-   accBw.put_BinaryData(accountPtr_->getID());
-   if (ext) {
-      accBw.put_BinaryData(accountPtr_->getOuterAccountID());
-   }
-   else {
-      accBw.put_BinaryData(accountPtr_->getInnerAccountID());
-   }
-   accBw.put_uint32_t(id, BE);
-
-   auto addrPtr = accountPtr_->getAddressEntryForID(accBw.getDataRef());
+   const AssetId assetId(ext ? accountPtr_->getOuterAccountID()
+      : accountPtr_->getInnerAccountID(), id);
+   auto addrPtr = accountPtr_->getAddressEntryForID(assetId);
    const auto acceptableTypes = addressTypes();
    if (acceptableTypes.find(addrPtr->getType()) == acceptableTypes.end()) {
       throw AccountException("type mismatch for instantiated address " + std::to_string(id));
@@ -343,9 +325,7 @@ BinaryData hd::Leaf::serialize() const
    bw.put_uint32_t(LEAF_KEY);
 
    //address account id
-   auto&& rootID = getRootId();
-   bw.put_var_int(rootID.getSize());
-   bw.put_BinaryData(rootID);
+   bw.put_int32_t(getRootId());
 
    //path
    bw.put_var_int(path_.length());
@@ -355,7 +335,7 @@ BinaryData hd::Leaf::serialize() const
    return bw.getData();
 }
 
-std::pair<std::shared_ptr<hd::Leaf>, BinaryData> hd::Leaf::deserialize(
+std::pair<std::shared_ptr<hd::Leaf>, AccountKeyType> hd::Leaf::deserialize(
    const BinaryData &ser, NetworkType netType, std::shared_ptr<spdlog::logger> logger)
 {
    BinaryRefReader brr(ser);
@@ -369,8 +349,7 @@ std::pair<std::shared_ptr<hd::Leaf>, BinaryData> hd::Leaf::deserialize(
    auto key = brr.get_uint32_t();
 
    //address account id
-   auto len = brr.get_var_int();
-   auto id = brr.get_BinaryData(len);
+   AccountKeyType id = brr.get_int32_t();
 
    //path
    auto count = brr.get_var_int();
@@ -411,7 +390,7 @@ std::pair<std::shared_ptr<hd::Leaf>, BinaryData> hd::Leaf::deserialize(
 
    case AUTH_LEAF_KEY:
    {
-      len = brr.get_var_int();
+      int len = brr.get_var_int();
       auto&& salt = brr.get_BinaryData(len);
 
       auto authPtr = std::make_shared<hd::AuthLeaf>(netType, logger);
@@ -434,14 +413,14 @@ std::pair<std::shared_ptr<hd::Leaf>, BinaryData> hd::Leaf::deserialize(
    return std::make_pair(leafPtr, id);
 }
 
-std::shared_ptr<ArmorySigner::ResolverFeed> hd::Leaf::getResolver() const
+std::shared_ptr<Armory::Signer::ResolverFeed> hd::Leaf::getResolver() const
 {
-   return std::make_shared<ResolverFeed_AssetWalletSingle>(walletPtr_);
+   return std::make_shared<Armory::Signer::ResolverFeed_AssetWalletSingle>(walletPtr_);
 }
 
-std::shared_ptr<ArmorySigner::ResolverFeed> hd::Leaf::getPublicResolver() const
+std::shared_ptr<Armory::Signer::ResolverFeed> hd::Leaf::getPublicResolver() const
 {
-   class PublicResolver : public ResolverFeed_AssetWalletSingle
+   class PublicResolver : public Armory::Signer::ResolverFeed_AssetWalletSingle
    {
    public:
       PublicResolver(const std::shared_ptr<AssetWallet_Single> &walletPtr)
@@ -457,7 +436,7 @@ std::shared_ptr<ArmorySigner::ResolverFeed> hd::Leaf::getPublicResolver() const
 
 bool hd::Leaf::isWatchingOnly() const
 {
-   auto rootPtr = accountPtr_->getOutterAssetRoot();
+   auto rootPtr = accountPtr_->getOuterAssetRoot();
    return !rootPtr->hasPrivateKey();
 }
 
@@ -498,12 +477,9 @@ size_t hd::Leaf::getExtAddressCount() const
 std::vector<bs::Address> hd::Leaf::getIntAddressList() const
 {
    auto& accID = accountPtr_->getInnerAccountID();
-   auto& accMap = accountPtr_->getAccountMap();
-   auto iter = accMap.find(accID);
-   if (iter == accMap.end())
-      throw WalletException("invalid inner account id");
+   const auto& account = accountPtr_->getAccountForID(accID);
 
-   auto& addressMap = iter->second->getAddressHashMap(
+   auto& addressMap = account->getAddressHashMap(
          accountPtr_->getAddressTypeSet());
 
    std::vector<bs::Address> addrVec;
@@ -524,15 +500,11 @@ size_t hd::Leaf::getIntAddressCount() const
    auto& accID = accountPtr_->getInnerAccountID();
 
    //return 0 if the address account does not have an inner chain
-   if (accountPtr_->getOuterAccountID() == accID)
+   if (accountPtr_->getOuterAccountID() == accID) {
       return 0;
-
-   auto& accMap = accountPtr_->getAccountMap();
-   auto iter = accMap.find(accID);
-   if (iter == accMap.end())
-      throw WalletException("invalid inner account id");
-
-   return iter->second->getHighestUsedIndex() + 1;
+   }
+   const auto& account = accountPtr_->getAccountForID(accID);
+   return account->getHighestUsedIndex() + 1;
 }
 
 std::string hd::Leaf::getFilename() const
@@ -649,20 +621,10 @@ std::map<BinaryData, bs::hd::Path> hd::Leaf::indexPath(const std::set<BinaryData
       if (iter == addrHashMap.end()) {
          throw AccountException("unknown scrAddr");
       }
-      bs::hd::Path path;
-
-      /*
-      IDs in addrHashMap are always 12 bytes long:
-        AddressAccountID (4) | AssetAccountID (4) | AssetID (4)
-      */
-      BinaryRefReader brr(iter->second.first);
-      brr.advance(4);
-
-      //account id (ext/int)
-      path.append(bs::hd::Path::Elem(brr.get_uint32_t(BE)));
-
-      //asset id
-      path.append(bs::hd::Path::Elem(brr.get_uint32_t(BE)));
+      const auto& asset = accountPtr_->getAssetIDPairForAddr(addr);
+      const auto& assetAccId = asset.first.getAssetAccountId();
+      bs::hd::Path path{ {bs::hd::Path::Elem(assetAccId.getAssetAccountKey())
+         , bs::hd::Path::Elem(asset.first.getAssetKey())} };
 
       result.emplace(std::move(addr), std::move(path));
    }
@@ -670,7 +632,7 @@ std::map<BinaryData, bs::hd::Path> hd::Leaf::indexPath(const std::set<BinaryData
    return result;
 }
 
-bool hd::Leaf::hasBip32Path(const ArmorySigner::BIP32_AssetPath& path) const
+bool hd::Leaf::hasBip32Path(const Armory::Signer::BIP32_AssetPath& path) const
 {
    if (accountPtr_ == nullptr)
       throw AccountException("null account ptr");
@@ -683,7 +645,7 @@ std::shared_ptr<AssetEntry> hd::Leaf::getRootAsset() const
    if (accountPtr_ == nullptr)
       throw AccountException("null account ptr");
 
-   auto rootPtr = accountPtr_->getOutterAssetRoot();
+   auto rootPtr = accountPtr_->getOuterAssetRoot();
    return rootPtr;
 }
 
@@ -755,9 +717,7 @@ BinaryData hd::AuthLeaf::serialize() const
    bw.put_uint32_t(AUTH_LEAF_KEY);
 
    //address account id
-   auto&& rootID = getRootId();
-   bw.put_var_int(rootID.getSize());
-   bw.put_BinaryData(rootID);
+   bw.put_int32_t(getRootId());
 
    //path
    bw.put_var_int(path_.length());
@@ -798,9 +758,7 @@ BinaryData hd::SettlementLeaf::serialize() const
    bw.put_uint32_t(SETTLEMENT_LEAF_KEY);
 
    //address account id
-   auto&& rootID = getRootId();
-   bw.put_var_int(rootID.getSize());
-   bw.put_BinaryData(rootID);
+   bw.put_int32_t(getRootId());
 
    //path
    bw.put_var_int(path_.length());
@@ -812,19 +770,20 @@ BinaryData hd::SettlementLeaf::serialize() const
 
 unsigned hd::SettlementLeaf::addSettlementID(const SecureBinaryData& id)
 {
-   auto assetAcc = std::dynamic_pointer_cast<AssetAccount_ECDH>(
-      accountPtr_->getOuterAccount());
+   auto assetAcc = dynamic_cast<Armory::Accounts::AssetAccount_ECDH*>(
+      accountPtr_->getOuterAccount().get());
    if (assetAcc == nullptr)
       throw AccountException("unexpected settlement asset account type");
 
-   return assetAcc->addSalt(id);
+   //FIXME: filename in SubDBTransaction if needed
+   return assetAcc->addSalt(walletPtr_->beginSubDBTransaction("", true), id);
 }
 
-unsigned hd::SettlementLeaf::getIndexForSettlementID(const SecureBinaryData& id) const
+AssetKeyType hd::SettlementLeaf::getIndexForSettlementID(const SecureBinaryData& id) const
 {
    try {
       auto accountPtr = accountPtr_->getOuterAccount();
-      auto accountEcdh = std::dynamic_pointer_cast<AssetAccount_ECDH>(accountPtr);
+      auto accountEcdh = dynamic_cast<AssetAccount_ECDH*>(accountPtr.get());
       if (accountEcdh == nullptr) {
          throw AccountException("unexpected account type");
       }
@@ -833,7 +792,7 @@ unsigned hd::SettlementLeaf::getIndexForSettlementID(const SecureBinaryData& id)
    catch(DerivationSchemeException&)
    {}
 
-   return UINT32_MAX;
+   return -1;
 }
 
 std::shared_ptr<hd::Leaf> hd::LeafArmoryWallet::getCopy(std::shared_ptr<AssetWallet_Single> wltPtr) const
@@ -863,5 +822,5 @@ AddressEntryType hd::LeafArmoryWallet::defaultAddressType() const
       throw WalletException("armory wallet leaf not initialized");
    }
 
-   return accountPtr_->getAddressType();
+   return accountPtr_->getDefaultAddressType();
 }

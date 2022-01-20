@@ -58,7 +58,7 @@ namespace bs {
       }
       class Wallet;
 
-      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>>;
+      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>>>;
 
       class WalletsManager : public QObject, public ArmoryCallbackTarget, public WalletCallbackTarget
       {

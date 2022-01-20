@@ -12,6 +12,7 @@
 
 #include "CoinSelection.h"
 #include "Wallets.h"
+#include "WalletFileInterface.h"
 #include "XBTAmount.h"
 #include "ArmoryConnection.h"
 #include "Bip39.h"
@@ -22,7 +23,9 @@
 
 #include <sstream>
 
-using namespace ArmorySigner;
+using namespace Armory::Assets;
+using namespace Armory::Signer;
+using namespace Armory::Wallets;
 using namespace bs::core;
 
 std::shared_ptr<wallet::AssetEntryMeta> wallet::AssetEntryMeta::deserialize(int, BinaryDataRef value)
@@ -146,7 +149,7 @@ void wallet::MetaData::set(const std::shared_ptr<AssetEntryMeta> &value)
    data_[value->key()] = value;
 }
 
-bool wallet::MetaData::write(const std::shared_ptr<DBIfaceTransaction> &tx)
+bool wallet::MetaData::write(const std::shared_ptr<IO::WalletIfaceTransaction> &tx)
 {
    if (!tx) {
       return false;
@@ -175,7 +178,7 @@ bool wallet::MetaData::write(const std::shared_ptr<DBIfaceTransaction> &tx)
    return true;
 }
 
-void wallet::MetaData::readFromDB(const std::shared_ptr<DBIfaceTransaction> &tx)
+void wallet::MetaData::readFromDB(const std::shared_ptr<IO::WalletIfaceTransaction> &tx)
 {
    if (!tx) {
       throw WalletException("DB interface is not initialized");
@@ -234,10 +237,11 @@ Signer& wallet::TXSignRequest::getSigner()
    return armorySigner_;
 }
 
-static UtxoSelection computeSizeAndFee(const std::vector<UTXO> &inUTXOs, const PaymentStruct &inPS)
+static Armory::CoinSelection::UtxoSelection computeSizeAndFee(const std::vector<UTXO> &inUTXOs
+   , const Armory::CoinSelection::PaymentStruct &inPS)
 {
    auto usedUTXOCopy{ inUTXOs };
-   UtxoSelection selection{ usedUTXOCopy };
+   Armory::CoinSelection::UtxoSelection selection{ usedUTXOCopy };
 
    try {
       selection.computeSizeAndFee(inPS);
@@ -246,7 +250,7 @@ static UtxoSelection computeSizeAndFee(const std::vector<UTXO> &inUTXOs, const P
    return selection;
 }
 
-static size_t getVirtSize(const UtxoSelection &inUTXOSel)
+static size_t getVirtSize(const Armory::CoinSelection::UtxoSelection &inUTXOSel)
 {
    const size_t nonWitSize = inUTXOSel.size_ - inUTXOSel.witnessSize_;
    return std::ceil(static_cast<float>(3 * nonWitSize + inUTXOSel.size_) / 4.0f);
@@ -257,7 +261,7 @@ size_t wallet::TXSignRequest::estimateTxVirtSize() const
    auto transactions = bs::Address::decorateUTXOsCopy(getInputs(nullptr));
 
    try {
-      const PaymentStruct payment(armorySigner_.getRecipientMap(), fee, 0, 0);
+      const Armory::CoinSelection::PaymentStruct payment(armorySigner_.getRecipientMap(), fee, 0, 0);
       return getVirtSize(computeSizeAndFee(transactions, payment));
    }
    catch (const std::exception &) {}
@@ -484,10 +488,10 @@ std::string wallet::Seed::getWalletId() const
       if (pubKey.empty()) {
          return {};
       }
-      auto assetSingle = std::make_shared<AssetEntry_Single>(
-         ROOT_ASSETENTRY_ID, BinaryData(), pubKey, nullptr);
+      auto assetSingle = std::make_shared<AssetEntry_Single>(AssetId{}
+         , pubKey, nullptr);
 
-      auto addrVec = derScheme.extendPublicChain(assetSingle, 1, 1);
+      auto addrVec = derScheme.extendPublicChain(assetSingle, 1, 1, nullptr);
       assert(addrVec.size() == 1);
       auto firstEntry = std::dynamic_pointer_cast<AssetEntry_Single>(addrVec[0]);
       assert(firstEntry != nullptr);
@@ -614,7 +618,8 @@ bool Wallet::setAddressComment(const bs::Address &address, const std::string &co
    if (address.empty()) {
       return false;
    }
-   set(std::make_shared<wallet::AssetEntryComment>(++nbMetaData_, address.id(), comment));
+   set(std::make_shared<wallet::AssetEntryComment>(AssetId{ AssetAccountId{}, (AssetKeyType)++nbMetaData_ }
+      , address.id(), comment));
    return write(getDBWriteTx());
 }
 
@@ -633,7 +638,8 @@ bool Wallet::setTransactionComment(const BinaryData &txHash, const std::string &
    if (txHash.empty() || comment.empty()) {
       return false;
    }
-   set(std::make_shared<wallet::AssetEntryComment>(++nbMetaData_, txHash, comment));
+   set(std::make_shared<wallet::AssetEntryComment>(AssetId{ AssetAccountId{}, (AssetKeyType)++nbMetaData_ }
+      , txHash, comment));
    return write(getDBWriteTx());
 }
 
@@ -656,7 +662,7 @@ bool Wallet::setSettlementMeta(const BinaryData &settlementId, const bs::Address
    if (settlementId.empty() || !authAddr.isValid()) {
       return false;
    }
-   set(std::make_shared<wallet::AssetEntrySettlement>(++nbMetaData_ + 0x100000
+   set(std::make_shared<wallet::AssetEntrySettlement>(AssetId{ AssetAccountId{}, (AssetKeyType)++nbMetaData_ + 0x100000 }
       , settlementId, authAddr));
    return write(getDBWriteTx());
 }
@@ -679,7 +685,8 @@ bool Wallet::setSettlCPMeta(const BinaryData &payinHash, const BinaryData &settl
    }
    auto txHash = payinHash;
    txHash.swapEndian();    // this is to avoid clashing with tx comment key
-   set(std::make_shared<wallet::AssetEntrySettlCP>(++nbMetaData_ + 0x100000, txHash, settlementId, cpPubKey));
+   set(std::make_shared<wallet::AssetEntrySettlCP>(AssetId{ AssetAccountId{}, (AssetKeyType)++nbMetaData_ + 0x100000 }
+      , txHash, settlementId, cpPubKey));
    return write(getDBWriteTx());
 }
 
@@ -701,7 +708,7 @@ std::pair<BinaryData, BinaryData> Wallet::getSettlCP(const BinaryData &txHash)
 Signer Wallet::getSigner(const wallet::TXSignRequest &request,
                              bool keepDuplicatedRecipients)
 {
-   ArmorySigner::Signer signer(request.armorySigner_);
+   Signer signer(request.armorySigner_);
    signer.resetFeed();
    signer.setFeed(getResolver());
    return signer;
@@ -759,7 +766,7 @@ BinaryData Wallet::signTXRequestWithWitness(const wallet::TXSignRequest &request
       throw std::invalid_argument("inputSigs do not equal to inputs count");
    }
 
-   ArmorySigner::Signer signer(request.armorySigner_);
+   Signer signer(request.armorySigner_);
    for (unsigned i = 0; i < signer.getTxInCount(); ++i) {
       const auto &itSig = inputSigs.find(i);
       if (itSig == inputSigs.end()) {

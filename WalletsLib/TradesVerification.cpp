@@ -15,6 +15,7 @@
 #include "BinaryData.h"
 #include "CheckRecipSigner.h"
 #include "SettableField.h"
+#include "Signer/Transactions.h"
 
 namespace {
 
@@ -22,6 +23,7 @@ namespace {
    const float kFeeRateIncreaseThreshold = 0.05f;
 
 }
+using namespace Armory::Wallets;
 
 const char *bs::toString(const bs::PayoutSignatureType t)
 {
@@ -46,19 +48,19 @@ bs::Address bs::TradesVerification::constructSettlementAddress(const BinaryData 
       auto buySaltedKey = CryptoECDSA::PubKeyScalarMultiply(buyAuthKey, settlementId);
       auto sellSaltedKey = CryptoECDSA::PubKeyScalarMultiply(sellAuthKey, settlementId);
 
-      const auto buyAsset = std::make_shared<AssetEntry_Single>(0, BinaryData()
+      const auto buyAsset = std::make_shared<Armory::Assets::AssetEntry_Single>(AssetId{}
          , buySaltedKey, nullptr);
-      const auto sellAsset = std::make_shared<AssetEntry_Single>(0, BinaryData()
+      const auto sellAsset = std::make_shared<Armory::Assets::AssetEntry_Single>(AssetId{}
          , sellSaltedKey, nullptr);
 
       //create ms asset
-      std::map<BinaryData, std::shared_ptr<AssetEntry>> assetMap;
+      std::map<BinaryData, std::shared_ptr<Armory::Assets::AssetEntry>> assetMap;
 
       assetMap.insert(std::make_pair(BinaryData::CreateFromHex("00"), buyAsset));
       assetMap.insert(std::make_pair(BinaryData::CreateFromHex("01"), sellAsset));
 
-      const auto assetMs = std::make_shared<AssetEntry_Multisig>(
-         0, BinaryData(), assetMap, 1, 2);
+      const auto assetMs = std::make_shared<Armory::Assets::AssetEntry_Multisig>(
+         AssetId{}, assetMap, 1, 2);
 
       //create ms address
       const auto addrMs = std::make_shared<AddressEntry_Multisig>(assetMs, true);
@@ -147,7 +149,7 @@ bs::PayoutSignatureType bs::TradesVerification::whichSignature(const Tx &tx, uin
 
    //setup verifier
    try {
-      TransactionVerifier tsv(*bctx, utxoMap);
+      Armory::Signer::TransactionVerifier tsv(*bctx, utxoMap);
 
       auto tsvFlags = tsv.getFlags();
       tsvFlags |= SCRIPT_VERIFY_P2SH_SHA256 | SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_SEGWIT;
@@ -447,7 +449,7 @@ std::shared_ptr<bs::TradesVerification::Result> bs::TradesVerification::verifySi
       }
       try {
          const auto &bctx = BCTX::parse(signedPayin);
-         TransactionVerifier tsv(*bctx, prevUtxoMap);
+         Armory::Signer::TransactionVerifier tsv(*bctx, prevUtxoMap);
          auto tsvFlags = tsv.getFlags();
          tsvFlags |= SCRIPT_VERIFY_P2SH_SHA256 | SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_SEGWIT;
          tsv.setFlags(tsvFlags);

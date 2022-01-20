@@ -155,7 +155,7 @@ private:
    void processNotification(void);
 
 private:
-   ArmoryThreading::BlockingQueue<std::shared_ptr<DBNotificationStruct>> notifQueue_;
+   Armory::Threading::BlockingQueue<std::shared_ptr<DBNotificationStruct>> notifQueue_;
    std::thread processThr_;
 
 protected:
@@ -279,18 +279,18 @@ public:
    const bs::Address &findValidationAddressForTxHash(const BinaryData&) const;
 
    //tx generating methods
-   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
+   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<Armory::Signer::ResolverFeed>,
       const bs::Address& validationAddr = bs::Address()) const;
-   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
+   BinaryData fundUserAddress(const bs::Address&, std::shared_ptr<Armory::Signer::ResolverFeed>,
       const UTXO &) const;
    BinaryData fundUserAddresses(const std::vector<bs::Address> &, const bs::Address &validationAddress
-      , std::shared_ptr<ArmorySigner::ResolverFeed>, const std::vector<UTXO> &, int64_t totalFee) const;
-   BinaryData vetUserAddress(const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>,
+      , std::shared_ptr<Armory::Signer::ResolverFeed>, const std::vector<UTXO> &, int64_t totalFee) const;
+   BinaryData vetUserAddress(const bs::Address&, std::shared_ptr<Armory::Signer::ResolverFeed>,
       const bs::Address& validationAddr = bs::Address()) const;
    BinaryData revokeValidationAddress(
-      const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>) const;
+      const bs::Address&, std::shared_ptr<Armory::Signer::ResolverFeed>) const;
    BinaryData revokeUserAddress(
-      const bs::Address&, std::shared_ptr<ArmorySigner::ResolverFeed>);
+      const bs::Address&, std::shared_ptr<Armory::Signer::ResolverFeed>);
 
    std::vector<UTXO> filterVettingUtxos(const bs::Address &validationAddr
       , const std::vector<UTXO> &) const;
@@ -326,7 +326,7 @@ private:
       , bool withZC = false) const;
 
 private:
-   ArmoryThreading::TimedQueue<BinaryData> refreshQueue_;
+   Armory::Threading::TimedQueue<BinaryData> refreshQueue_;
 
    std::map<bs::Address, std::shared_ptr<ValidationAddressStruct>>   validationAddresses_;
    unsigned topBlock_ = 0;
@@ -393,11 +393,11 @@ namespace AuthAddressLogic
    AddrPathsStatus getAddrPathsStatus(const AuthAddressValidator &
       , const OutpointBatch &);
    BinaryData revoke(const AuthAddressValidator &, const bs::Address &
-      , const std::shared_ptr<ArmorySigner::ResolverFeed> &);
+      , const std::shared_ptr<Armory::Signer::ResolverFeed> &);
    std::pair<bs::Address, UTXO> getRevokeData(const AuthAddressValidator &
       , const bs::Address &authAddr);
    BinaryData revoke(const bs::Address & 
-      , const std::shared_ptr<ArmorySigner::ResolverFeed> &
+      , const std::shared_ptr<Armory::Signer::ResolverFeed> &
       , const bs::Address &validationAddr, const UTXO &);
 };
 

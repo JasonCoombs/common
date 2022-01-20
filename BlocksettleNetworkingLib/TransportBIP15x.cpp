@@ -23,6 +23,7 @@
 #include "BIP15xMessage.h"
 #include "BIP15x_Handshake.h"
 
+using namespace Armory::Wallets;
 using namespace bs::network;
 
 
@@ -38,7 +39,8 @@ BinaryData TransportBIP15x::getOwnPubKey_FromKeyFile(const std::string &ownKeyFi
    , const std::string &ownKeyFileName)
 {
    try {
-      AuthorizedPeers authPeers(ownKeyFileDir, ownKeyFileName, [](const std::set<BinaryData> &)
+      AuthorizedPeers authPeers(ownKeyFileDir, ownKeyFileName, []
+         (const std::set<Armory::Wallets::EncryptionKeyId>&)
       {
          return SecureBinaryData{};
       });
@@ -198,7 +200,7 @@ bool TransportBIP15xClient::sendData(const std::string &data)
    rekeyIfNeeded(data.size());
 
    auto packet = bip15x::MessageBuilder(BinaryData::fromString(data)
-      , bip15x::MsgType::SinglePacket).encryptIfNeeded(bip151Connection_.get()).build();
+      , ArmoryAEAD::BIP151_PayloadType::SinglePacket).encryptIfNeeded(bip151Connection_.get()).build();
    // An error message is already logged elsewhere if the send fails.
    sendPacket(packet);
    return true;
@@ -241,7 +243,7 @@ void TransportBIP15xClient::rekey()
    memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
    auto packet = bip15x::MessageBuilder(rekeyData
-      , ArmoryAEAD::HandshakeSequence::Rekey).encryptIfNeeded(bip151Connection_.get()).build();
+      , ArmoryAEAD::BIP151_PayloadType::Rekey).encryptIfNeeded(bip151Connection_.get()).build();
    logger_->debug("[TransportBIP15xClient::rekey] rekeying session ({} {})"
       , rekeyData.toHexStr(), packet.toHexStr());
    sendPacket(packet);
@@ -371,7 +373,9 @@ void TransportBIP15xClient::processIncomingData(const BinaryData &payload)
 bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
 {
    // Function used to send data out on the wire.
-   auto writeData = [this](const BinaryData &payload, uint8_t type, bool encrypt)->bool {
+   auto writeData = [this]
+      (const BinaryData &payload, ArmoryAEAD::BIP151_PayloadType type, bool encrypt)->bool
+   {
       auto conn = encrypt ? bip151Connection_.get() : nullptr;
       auto packet = bip15x::MessageBuilder(payload, type).encryptIfNeeded(conn).build();
       return sendPacket(packet, (conn != nullptr));
@@ -380,7 +384,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
    const std::string &srvId = host_ + ":" + port_;
    switch (msgObj.getAEADType())
    {
-   case ArmoryAEAD::HandshakeSequence::PresentPubKey:
+   case ArmoryAEAD::BIP151_PayloadType::PresentPubKey:
    {
       /*
       Packet is the server's pubkey, do we have it?
@@ -416,7 +420,7 @@ bool TransportBIP15xClient::processAEADHandshake(const bip15x::Message &msgObj)
       return true;
    }
 
-   case ArmoryAEAD::HandshakeSequence::EncInit:
+   case ArmoryAEAD::BIP151_PayloadType::EncInit:
    {
       //reject encinit from a mismatched server
       if (bip151Connection_->isOneWayAuth() && !gotKeyAnnounce_) {

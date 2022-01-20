@@ -2215,12 +2215,12 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
             return;
          }
          auto utxos = bs::Address::decorateUTXOsCopy(inputs);
-         std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>> recipientsMap;
-         std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> recVec({
+         std::map<unsigned, std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>>> recipientsMap;
+         std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> recVec({
             settlAddr.getRecipient(bs::XBTAmount{static_cast<bs::XBTAmount::satoshi_type>(request.amount())}) });
          recipientsMap.emplace(0, recVec);
-         const auto &payment = PaymentStruct(recipientsMap, 0, settlementFee_, 0);
-         const auto& coinSelection = CoinSelection(nullptr, {}, request.amount(), topBlock_);
+         const auto &payment = Armory::CoinSelection::PaymentStruct(recipientsMap, 0, settlementFee_, 0);
+         const auto& coinSelection = Armory::CoinSelection::CoinSelection(nullptr, {}, request.amount(), topBlock_);
          uint64_t utxoAmount = 0;
          for (const auto& utxo : utxos) {
             utxoAmount += utxo.getValue();
@@ -2229,8 +2229,7 @@ bool WalletsAdapter::processPayin(const bs::message::Envelope& env
             , utxoAmount, request.amount());
 
          try { // since we always use reservation, all supplied inputs should be used
-            UtxoSelection selection;
-            selection = UtxoSelection(utxos);
+            auto selection = Armory::CoinSelection::UtxoSelection(utxos);
             selection.fee_byte_ = settlementFee_;
             selection.computeSizeAndFee(payment);
             auto selectedInputs = selection.utxoVec_;

@@ -16,7 +16,6 @@
 #include <spdlog/spdlog.h>
 
 #include "ArmoryErrors.h"
-#include "ClientClasses.h"
 #include "DbHeader.h"
 #include "EncryptionUtils.h"
 #include "JSON_codec.h"
@@ -262,7 +261,7 @@ void ArmoryConnection::setupConnection(NetworkType netType
       logger_->debug("[ArmoryConnection::setupConnection] connecting to Armory {}:{}"
                      , host, port);
 
-      auto passLbd = [](const std::set<BinaryData>&)->SecureBinaryData
+      auto passLbd = [](const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
       {
          //return empty passphase, we don't want to lock the key-store wallet (TODO: revisit)
          return SecureBinaryData();
@@ -386,13 +385,15 @@ std::string ArmoryConnection::broadcastZC(const BinaryData& rawTx)
    return bdv_->broadcastZC(rawTx);
 }
 
-bool ArmoryConnection::getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &cb)
+bool ArmoryConnection::getWalletsHistory(const std::vector<std::string> &walletIDs
+   , const WalletsHistoryCb &cb)
 {
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::getWalletsHistory] invalid state: {}", (int)state_.load());
       return false;
    }
-   const auto &cbWrap = [logger=logger_, cb](ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entries)
+   const auto &cbWrap = [logger=logger_, cb]
+      (ReturnMessage<std::vector<DBClientClasses::LedgerEntry>> entries)
    {
       try {
          if (cb) {
@@ -525,7 +526,7 @@ bool ArmoryConnection::getSpendableZCoutputs(const std::vector<std::string> &wal
    return true;
 }
 
-bool ArmoryConnection::getNodeStatus(const std::function<void(const std::shared_ptr<::ClientClasses::NodeStatusStruct>)>& userCB)
+bool ArmoryConnection::getNodeStatus(const std::function<void(const std::shared_ptr<DBClientClasses::NodeStatus>)>& userCB)
 {
    if (!bdv_ || (state_ != ArmoryState::Ready)) {
       logger_->error("[ArmoryConnection::getNodeStatus] invalid state: {}", (int)state_.load());
@@ -537,7 +538,8 @@ bool ArmoryConnection::getNodeStatus(const std::function<void(const std::shared_
       return false;
    }
 
-   const auto cbWrap = [logger=logger_, userCB](ReturnMessage<std::shared_ptr<::ClientClasses::NodeStatusStruct>> reply)
+   const auto cbWrap = [logger=logger_, userCB]
+      (ReturnMessage<std::shared_ptr<DBClientClasses::NodeStatus>> reply)
    {
       try {
          const auto nodeStatus = reply.get();
@@ -947,7 +949,7 @@ bool ArmoryConnection::estimateFee(unsigned int nbBlocks, const FloatCb &cb)
       logger_->error("[{}] invalid state: {}", __func__, (int)state_.load());
       return false;
    }
-   const auto &cbProcess = [this, cb, nbBlocks](ClientClasses::FeeEstimateStruct feeStruct) {
+   const auto &cbProcess = [this, cb, nbBlocks](DBClientClasses::FeeEstimateStruct feeStruct) {
       if (feeStruct.error_.empty()) {
          if (cb) {
             cb(feeStruct.val_);
@@ -962,7 +964,7 @@ bool ArmoryConnection::estimateFee(unsigned int nbBlocks, const FloatCb &cb)
       }
    };
    const auto &cbWrap = [logger=logger_, cbProcess, cb, nbBlocks]
-                        (ReturnMessage<ClientClasses::FeeEstimateStruct> feeStruct) {
+                        (ReturnMessage<DBClientClasses::FeeEstimateStruct> feeStruct) {
       try {
          cbProcess(feeStruct.get());
       }
@@ -989,7 +991,7 @@ bool ArmoryConnection::getFeeSchedule(const FloatMapCb &cb)
    }
 
    const auto &cbProcess = [this, cb] (std::map<unsigned int
-         , ClientClasses::FeeEstimateStruct> feeStructMap) {
+         , DBClientClasses::FeeEstimateStruct> feeStructMap) {
       // Create a new map with the # of blocks and the recommended fee/byte.
       std::map<unsigned int, float> feeFloatMap;
       for (auto it : feeStructMap) {
@@ -1008,7 +1010,7 @@ bool ArmoryConnection::getFeeSchedule(const FloatMapCb &cb)
    };
 
    const auto &cbWrap = [logger=logger_, cbProcess]
-      (ReturnMessage<std::map<unsigned int, ClientClasses::FeeEstimateStruct>> feeStructMap)
+      (ReturnMessage<std::map<unsigned int, DBClientClasses::FeeEstimateStruct>> feeStructMap)
    {
       try {
          cbProcess(feeStructMap.get());
@@ -1050,12 +1052,12 @@ unsigned int ArmoryConnection::getConfirmationsNumber(uint32_t blockNum) const
    return 0;
 }
 
-unsigned int ArmoryConnection::getConfirmationsNumber(const ClientClasses::LedgerEntry &item) const
+unsigned int ArmoryConnection::getConfirmationsNumber(const DBClientClasses::LedgerEntry &item) const
 {
    return getConfirmationsNumber(item.getBlockNum());
 }
 
-bool ArmoryConnection::isTransactionVerified(const ClientClasses::LedgerEntry &item) const
+bool ArmoryConnection::isTransactionVerified(const DBClientClasses::LedgerEntry &item) const
 {
    return isTransactionVerified(item.getBlockNum());
 }
@@ -1065,7 +1067,7 @@ bool ArmoryConnection::isTransactionVerified(uint32_t blockNum) const
    return getConfirmationsNumber(blockNum) >= 6;
 }
 
-bool ArmoryConnection::isTransactionConfirmed(const ClientClasses::LedgerEntry &item) const
+bool ArmoryConnection::isTransactionConfirmed(const DBClientClasses::LedgerEntry &item) const
 {
    return getConfirmationsNumber(item) > 1;
 }
@@ -1089,7 +1091,7 @@ void ArmoryConnection::onRefresh(const std::vector<BinaryData>& ids)
 }
 
 void ArmoryConnection::onZCsReceived(const std::string& requestId
-   , const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
+   , const std::vector<std::shared_ptr<DBClientClasses::LedgerEntry>> &entries)
 {
    const auto newEntries = bs::TXEntry::fromLedgerEntries(entries);
 
@@ -1200,9 +1202,9 @@ void ArmoryCallback::run(BdmNotification bdmNotif)
    case BDMAction_NodeStatus: {
       const auto nodeStatus = *bdmNotif.nodeStatus_;
       logger_->debug("[ArmoryCallback::run] BDMAction_NodeStatus: status={}, RPC status={}"
-         , (int)nodeStatus.status(), (int)nodeStatus.rpcStatus());
+         , (int)nodeStatus.state(), (int)nodeStatus.rpcState());
       connection_->addToQueue([nodeStatus](ArmoryCallbackTarget *tgt) {
-         tgt->onNodeStatus(nodeStatus.status(), nodeStatus.isSegWitEnabled(), nodeStatus.rpcStatus());
+         tgt->onNodeStatus(nodeStatus);
       });
       break;
    }
@@ -1264,7 +1266,7 @@ void bs::TXEntry::merge(const bs::TXEntry &other)
    merged = true;
 }
 
-bs::TXEntry bs::TXEntry::fromLedgerEntry(const ClientClasses::LedgerEntry &entry)
+bs::TXEntry bs::TXEntry::fromLedgerEntry(const DBClientClasses::LedgerEntry &entry)
 {
    bs::TXEntry result{ entry.getTxHash(), { entry.getID() }, entry.getValue()
       , entry.getBlockNum(), entry.getTxTime(), entry.isOptInRBF()
@@ -1279,7 +1281,7 @@ bs::TXEntry bs::TXEntry::fromLedgerEntry(const ClientClasses::LedgerEntry &entry
    return result;
 }
 
-std::vector<bs::TXEntry> bs::TXEntry::fromLedgerEntries(const std::vector<ClientClasses::LedgerEntry> &entries)
+std::vector<bs::TXEntry> bs::TXEntry::fromLedgerEntries(const std::vector<DBClientClasses::LedgerEntry> &entries)
 {
    // Looks like we don't need to merge TXs here (like it was done before).
    // So there would be two TX when two different local wallets are used (with different wallet IDs),
@@ -1291,7 +1293,7 @@ std::vector<bs::TXEntry> bs::TXEntry::fromLedgerEntries(const std::vector<Client
    return result;
 }
 
-std::vector<bs::TXEntry> bs::TXEntry::fromLedgerEntries(const std::vector<std::shared_ptr<ClientClasses::LedgerEntry>> &entries)
+std::vector<bs::TXEntry> bs::TXEntry::fromLedgerEntries(const std::vector<std::shared_ptr<DBClientClasses::LedgerEntry>> &entries)
 {
    std::vector<bs::TXEntry> result;
    for (const auto &entry : entries) {

@@ -16,7 +16,11 @@
 #include <string>
 #include "BinaryData.h"
 
-class AuthorizedPeers;
+namespace Armory {
+   namespace Wallets {
+      class AuthorizedPeers;
+   }
+}
 struct btc_pubkey_;
 template<typename T> class FutureValue;
 
@@ -50,8 +54,8 @@ namespace bs {
          // Convert to BinaryData, return empty result if key is not compressed
          BinaryData convertCompressedKey(const PubKey &pubKey);
          bool isValidPubKey(const BinaryData &pubKey);
-         bool addAuthPeer(AuthorizedPeers *authPeers, const BIP15xPeer &);
-         void updatePeerKeys(AuthorizedPeers *authPeers, const BIP15xPeers &);
+         bool addAuthPeer(Armory::Wallets::AuthorizedPeers *authPeers, const BIP15xPeer &);
+         void updatePeerKeys(Armory::Wallets::AuthorizedPeers *authPeers, const BIP15xPeers &);
       }  // namespace bip15x
 
       using BIP15xNewKeyCb = std::function<void(const std::string &oldKey, const std::string &newKey

@@ -14,7 +14,9 @@
 #include <spdlog/spdlog.h>
 
 using namespace bs::core;
-
+using namespace Armory::Accounts;
+using namespace Armory::Assets;
+using namespace Armory::Wallets;
 
 hd::Group::Group(const std::shared_ptr<AssetWallet_Single> &walletPtr
    , bs::hd::Path::Elem index, NetworkType netType, bool isExtOnly
@@ -265,26 +267,26 @@ void hd::Group::initLeaf(
       pathInt.push_back(path.get(i));
    }
    //setup address account
-   auto accTypePtr = std::make_shared<AccountType_BIP32>(pathInt);
+   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(0, { pathInt }); //FIXME
 
    //account IDs and nodes
-   if (!isExtOnly_)
-   {
+   if (!isExtOnly_) {
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_, hd::Leaf::addrTypeInternal_ });
-      accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
-      accTypePtr->setInnerAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeInternal_));
+      accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
+      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeInternal_);
    }
-   else
-   {
+   else {
       //ext only address account uses the same asset account for both outer and
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
-      accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
-      accTypePtr->setInnerAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
+      accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
+      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeExternal_);
    }
 
    //address types
-   accTypePtr->setAddressTypes(leaf->addressTypes());
+   for (const auto& addrType : leaf->addressTypes()) {
+      accTypePtr->addAddressType(addrType);
+   }
    accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //address lookup
@@ -298,7 +300,7 @@ void hd::Group::initLeaf(
 
    auto accID = walletPtr_->createBIP32Account(accTypePtr);
    leaf->setPath(path);
-   leaf->init(walletPtr_, accID);
+   leaf->init(walletPtr_, accID.getAddressAccountKey());
 }
 
 void bs::core::hd::HWGroup::initLeafXpub(
@@ -312,6 +314,21 @@ void bs::core::hd::HWGroup::initLeafXpub(
    BIP32_Node newPubNode;
    newPubNode.initFromBase58(SecureBinaryData::fromString(xpub));
 
+   //no derivation path is passed to the account, it will use the pub root as is
+   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(0, { });  //FIXME: seed fp
+
+   std::set<unsigned> nodes = { BIP32_OUTER_ACCOUNT_DERIVATIONID, BIP32_INNER_ACCOUNT_DERIVATIONID };
+   accTypePtr->setNodes(nodes);
+   for (const auto& addrType : leaf->addressTypes()) {
+      accTypePtr->addAddressType(addrType);
+   }
+   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
+   accTypePtr->setAddressLookup(lookup);
+   accTypePtr->setOuterAccountID(*nodes.begin());
+   accTypePtr->setInnerAccountID(*nodes.rbegin());
+   accTypePtr->setMain(true);
+
+#if 0 //FIXME
    auto pubkeyCopy = newPubNode.getPublicKey();
    auto chaincodeCopy = newPubNode.getChaincode();
 
@@ -321,27 +338,16 @@ void bs::core::hd::HWGroup::initLeafXpub(
       , seedFingerprint
       , path.toVector());
 
-   //no derivation path is passed to the account, it will use the pub root as is
-   auto accTypePtr = std::make_shared<AccountType_BIP32>(std::vector<uint32_t>());
-
-   std::set<unsigned> nodes = { BIP32_OUTER_ACCOUNT_DERIVATIONID, BIP32_INNER_ACCOUNT_DERIVATIONID };
-   accTypePtr->setNodes(nodes);
-   accTypePtr->setAddressTypes(leaf->addressTypes());
-   accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
-   accTypePtr->setAddressLookup(lookup);
-   accTypePtr->setOuterAccountID(WRITE_UINT32_BE(*nodes.begin()));
-   accTypePtr->setInnerAccountID(WRITE_UINT32_BE(*nodes.rbegin()));
-   accTypePtr->setMain(true);
-
    // We assume the passphrase prompt lambda is already set.
    auto lock = walletPtr_->lockDecryptedContainer();
 
    //we're adding an xpub account to a WO wallet, we cannot derive the account
    //root from the wallet's seed, we have to provide it along with the account data
    auto accID = walletPtr_->createBIP32Account_WithParent(pubRootAsset, accTypePtr);
+#endif   //0
 
    leaf->setPath(path);
-   leaf->init(walletPtr_, accID);
+   //FIXME: leaf->init(walletPtr_, accID);
 }
 
 
@@ -384,7 +390,7 @@ std::set<AddressEntryType> hd::Group::getAddressTypeSet(void) const
       };
 }
 
-void hd::Group::commit(const std::shared_ptr<DBIfaceTransaction> &tx, bool force)
+void hd::Group::commit(const std::shared_ptr<IO::DBIfaceTransaction> &tx, bool force)
 {
    if (!force && !needsCommit()) {
       return;
@@ -438,24 +444,26 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    if (salt_.getSize() != 32) {
       throw AccountException("empty auth group salt");
    }
-   auto accTypePtr = std::make_shared<AccountType_BIP32_Salted>(pathInt, salt_);
+   auto accTypePtr = AccountType_BIP32_Salted::makeFromDerPaths(0, { pathInt }, salt_);   //FIXME: seed fp
 
    //account IDs and nodes
    if (!isExtOnly_) {
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_, hd::Leaf::addrTypeInternal_ });
-      accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
-      accTypePtr->setInnerAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeInternal_));
+      accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
+      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeInternal_);
    }
    else {
       //ext only address account uses the same asset account for both outer and
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
-      accTypePtr->setOuterAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
-      accTypePtr->setInnerAccountID(WRITE_UINT32_BE(hd::Leaf::addrTypeExternal_));
+      accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
+      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeExternal_);
    }
 
    //address types
-   accTypePtr->setAddressTypes(leaf->addressTypes());
+   for (const auto& addrType : leaf->addressTypes()) {
+      accTypePtr->addAddressType(addrType);
+   }
    accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //address lookup
@@ -470,7 +478,7 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    auto accID = walletPtr_->createBIP32Account(accTypePtr);
 
    authLeafPtr->setPath(path);
-   authLeafPtr->init(walletPtr_, accID);
+   authLeafPtr->init(walletPtr_, accID.getAddressAccountKey());
    authLeafPtr->setSalt(salt_);
 }
 
@@ -604,7 +612,9 @@ void hd::SettlementGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf,
    auto accTypePtr = std::make_shared<AccountType_ECDH>(privKey, pubKey);
 
    //address types
-   accTypePtr->setAddressTypes(leaf->addressTypes());
+   for (const auto& addrType : leaf->addressTypes()) {
+      accTypePtr->addAddressType(addrType);
+   }
    accTypePtr->setDefaultAddressType(leaf->defaultAddressType());
 
    //Lock the underlying armory wallet to allow accounts to derive their root from
@@ -613,7 +623,7 @@ void hd::SettlementGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf,
    auto accPtr = walletPtr_->createAccount(accTypePtr);
    auto& accID = accPtr->getID();
 
-   settlLeafPtr->init(walletPtr_, accID);
+   settlLeafPtr->init(walletPtr_, accID.getAddressAccountKey());
 }
 
 std::shared_ptr<hd::Leaf> hd::SettlementGroup::createLeaf(
@@ -743,7 +753,7 @@ bs::core::hd::VirtualGroup::VirtualGroup(const std::shared_ptr<AssetWallet_Singl
    auto leaf = std::make_shared <bs::core::hd::LeafArmoryWallet>(netType, logger);
 
    leaf->setPath(leafPath_);
-   leaf->init(walletPtr, WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID));
+   leaf->init(walletPtr, ARMORY_LEGACY_ACCOUNTID);
 
    addLeaf(leaf);
 }

@@ -10,7 +10,7 @@
 */
 #include "AuthAddressLogic.h"
 
-using namespace ArmorySigner;
+using namespace Armory::Signer;
 
 namespace {
    constexpr bs::XBTAmount::satoshi_type kAuthValueThreshold = 1000;
@@ -63,7 +63,7 @@ void ValidationAddressACT::processNotification()
       try {
          dbNotifPtr = notifQueue_.pop_front();
       }
-      catch (ArmoryThreading::StopBlockingLoop&) {
+      catch (Armory::Threading::StopBlockingLoop&) {
          break;
       }
 
@@ -308,10 +308,10 @@ void AuthAddressValidator::waitOnRefresh(const std::string& id)
             break;
          }
       }
-      catch (const ArmoryThreading::StopBlockingLoop&) {
+      catch (const Armory::Threading::StopBlockingLoop&) {
          break;
       }
-      catch (const ArmoryThreading::StackTimedOutException &) {
+      catch (const Armory::Threading::StackTimedOutException &) {
          if (stopped_) {
             break;
          }
@@ -704,11 +704,11 @@ BinaryData AuthAddressValidator::fundUserAddress(
    const UTXO &vettingUtxo) const
 {
    //#3: create vetting tx
-   ArmorySigner::Signer signer;
+   Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
+   auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
    signer.addSpender(spenderPtr);
 
    //vetting output
@@ -741,7 +741,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
    , std::shared_ptr<ResolverFeed> feedPtr
    , const std::vector<UTXO> &vettingUtxos, int64_t totalFee) const
 {
-   ArmorySigner::Signer signer;
+   Signer signer;
    signer.setFeed(feedPtr);
 
    //vetting outputs
@@ -752,7 +752,7 @@ BinaryData AuthAddressValidator::fundUserAddresses(
    bs::XBTAmount::satoshi_type changeVal = 0;
    //spenders
    for (const auto &vettingUtxo : vettingUtxos) {
-      auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(vettingUtxo);
+      auto spenderPtr = std::make_shared<ScriptSpender>(vettingUtxo);
       signer.addSpender(spenderPtr);
 
       const auto &addr = bs::Address::fromUTXO(vettingUtxo);
@@ -828,11 +828,11 @@ BinaryData AuthAddressValidator::revokeValidationAddress(
    }
 
    //spend it
-   ArmorySigner::Signer signer;
+   Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
-   auto spenderPtr = std::make_shared<ArmorySigner::ScriptSpender>(firstUtxo);
+   auto spenderPtr = std::make_shared<ScriptSpender>(firstUtxo);
    signer.addSpender(spenderPtr);
 
    //revocation output, no need for change
@@ -891,7 +891,7 @@ BinaryData AuthAddressValidator::revokeUserAddress(
    }
 
    //3: spend to the user address
-   ArmorySigner::Signer signer;
+   Signer signer;
    signer.setFeed(feedPtr);
 
    //spender
@@ -1271,9 +1271,9 @@ BinaryData AuthAddressLogic::revoke(const bs::Address &
    , const bs::Address &, const UTXO &revokeUtxo)
 {
    //User side revoke: burn the validation UTXO as an OP_RETURN
-   ArmorySigner::Signer signer;
+   Signer signer;
    signer.setFeed(feedPtr);
-   signer.addSpender(std::make_shared<ArmorySigner::ScriptSpender>(revokeUtxo));
+   signer.addSpender(std::make_shared<ScriptSpender>(revokeUtxo));
 
    //don't waste space, OP_RETURNs are useless to the chain
    const std::string opReturnMsg = "BSTrevoke";

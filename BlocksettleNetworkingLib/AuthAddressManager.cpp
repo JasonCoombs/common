@@ -17,7 +17,7 @@
 #include "ArmoryConnection.h"
 #include "BsClient.h"
 #include "CheckRecipSigner.h"
-#include "ClientClasses.h"
+#include "DBClientClasses.h"
 #include "FastLock.h"
 #include "HeadlessContainer.h"
 #include "RequestReplyCommand.h"

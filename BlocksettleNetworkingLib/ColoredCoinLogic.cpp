@@ -1935,7 +1935,7 @@ void ColoredCoinACT::processNotification()
       try {
          dbNotifPtr = notifQueue_.pop_front();
       }
-      catch (ArmoryThreading::StopBlockingLoop&) {
+      catch (Armory::Threading::StopBlockingLoop&) {
          break;
       }
 

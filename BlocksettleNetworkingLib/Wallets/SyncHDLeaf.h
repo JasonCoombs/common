@@ -69,7 +69,7 @@ namespace bs {
             std::vector<UTXO> getIncompleteUTXOs() const override;
             BTCNumericTypes::balance_type getSpendableBalance() const override;
             bool getHistoryPage(uint32_t id, std::function<void(const bs::sync::Wallet *wallet
-               , std::vector<ClientClasses::LedgerEntry>)>, bool onlyNew = false) const;
+               , std::vector<DBClientClasses::LedgerEntry>)>, bool onlyNew = false) const;
 
             bool containsAddress(const bs::Address &addr) override;
             bool containsHiddenAddress(const bs::Address &addr) const override;
@@ -90,8 +90,6 @@ namespace bs {
             void getNewChangeAddress(const CbAddress &) override;
             std::string getAddressIndex(const bs::Address &) override;
             std::string getWalletIdForAddress(const bs::Address &) const override;
-            bool getLedgerDelegateForAddress(const bs::Address &
-               , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &) override;
 
             int addAddress(const bs::Address &, const std::string &index, bool sync = true) override;
 
@@ -100,9 +98,6 @@ namespace bs {
             bs::hd::Purpose purpose() const;
             bool extOnly() const { return isExtOnly_; }
 
-            [[deprecated]] std::vector<std::string> registerWallet(const std::shared_ptr<ArmoryConnection> &armory = nullptr
-               , bool asNew = false) override;
-            [[deprecated]] void unregisterWallet() override;
             WalletRegData regData() const override;
             UnconfTgtData unconfTargets() const override;
 
@@ -116,7 +111,7 @@ namespace bs {
 
             virtual std::vector<std::string> setUnconfirmedTarget(void);
 
-            std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const override;
+            std::shared_ptr<Armory::Signer::ResolverFeed> getPublicResolver() const override;
 
          protected:
             struct AddrPoolKey {
@@ -283,19 +278,6 @@ namespace bs {
 
             void getRootPubkey(const std::function<void(const SecureBinaryData &)> &) const;
             void setSettlementID(const SecureBinaryData &, const std::function<void(bool)> &);
-
-            [[deprecated]] std::vector<std::string> registerWallet(const std::shared_ptr<ArmoryConnection> &armory = nullptr
-               , bool asNew = false) override
-            {
-               if (wct_) {
-                  wct_->walletReady(walletId());
-               }
-               return {};
-            }
-            WalletRegData regData() const override
-            {
-               return {};
-            }
 
          protected:
             void createAddress(const CbAddress &, const AddrPoolKey &) override;
