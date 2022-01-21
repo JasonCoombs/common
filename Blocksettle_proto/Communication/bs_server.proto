@@ -2289,27 +2289,20 @@ message CashResMessage
 
    message MaxAmountRequest
    {
-      message Offer
-      {
-         bs.types.XBTPrice       offer_price       = 1;
-         bs.types.XBTAmountValue max_offer_amount  = 2;
-      }
-
-      uint32 entity_id = 1;
-      int32  prod_type = 2;
-      bs.types.Side side = 3;
-      repeated Offer offers = 4;
+      uint32         entity_id   = 1;
+      int32          prod_type   = 2;
+      bs.types.Side  side        = 3;
    }
 
    message MaxAmountResponse
    {
-      bool success = 6;
-      string error_msg = 7;
-      uint32 entity_id = 1;
-      int32  prod_type = 2;
-      bs.types.Side side = 3;
-      bs.types.XBTAmountValue max_amount = 4;
-      bs.types.FXAmountValue fee = 5;
+      uint32                  entity_id   = 1;
+      int32                   prod_type   = 2;
+      bs.types.Side           side        = 3;
+      bs.types.XBTAmountValue max_amount  = 4;
+      bs.types.FXAmountValue  fee         = 5;
+      bool                    success     = 6;
+      string                  error_msg   = 7;
    }
 
    message OrderResponse
