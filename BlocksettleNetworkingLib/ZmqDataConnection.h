@@ -117,7 +117,11 @@ public:
       : ZmqDataConnection(logger, useMonitor) {}
    ~ZmqSubConnection() noexcept override = default;
 
-   bool subscribeTopics(const std::vector<std::string>&);
+   void subscribeTopics(const std::vector<std::string>& topics)
+   {
+      topics_ = topics;
+   }
+   bool ConfigureDataSocket(const ZmqContext::sock_ptr&) override;
    bool openConnection(const std::string& host, const std::string& port
       , DataConnectionListener* listener) override
    {
@@ -133,6 +137,7 @@ protected:
 
 protected:
    DataTopicListener* topicListener_{ nullptr };
+   std::vector<std::string>   topics_;
 };
 
 #endif // __ZEROMQ_DATA_CONNECTION_H__
