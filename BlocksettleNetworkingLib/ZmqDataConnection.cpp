@@ -494,3 +494,52 @@ bool ZmqDataConnection::SetZMQTransport(ZMQTransport transport)
       return false;
    }
 }
+
+bool ZmqSubConnection::subscribeTopics(const std::vector<std::string>& topics)
+{
+   for (const auto& topic : topics) {
+      zmq_setsockopt(dataSocket_.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length());
+   }
+   return true;
+}
+
+bool ZmqSubConnection::openConnection(const std::string& host, const std::string& port, DataTopicListener* listener)
+{
+   topicListener_ = listener;
+   return ZmqDataConnection::openConnection(host, port, listener);
+}
+
+ZmqContext::sock_ptr ZmqSubConnection::CreateDataSocket()
+{
+   return context_->CreateSubSocket();
+}
+
+bool ZmqSubConnection::recvData()
+{
+   MessageHolder topic, data;
+
+   int result = zmq_msg_recv(&topic, dataSocket_.get(), ZMQ_RCVMORE);
+   if (result == -1) {
+      if (logger_) {
+         logger_->error("[{}] {} failed to recv ID frame from stream: {}"
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+      }
+      return false;
+   }
+
+   result = zmq_msg_recv(&data, dataSocket_.get(), ZMQ_DONTWAIT);
+   if (result == -1) {
+      if (logger_) {
+         logger_->error("[{}] {} failed to recv data frame from stream: {}"
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+      }
+      return false;
+   }
+
+   if (topic.GetSize() == 0) { //we are either connected or disconncted
+      zeroFrameReceived();
+   } else {
+      topicListener_->OnDataReceived(topic.ToString(), data.ToString());
+   }
+   return true;
+}
