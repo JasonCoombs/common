@@ -56,7 +56,7 @@ protected:
    virtual bool recvData();
 
    virtual ZmqContext::sock_ptr CreateDataSocket();
-   virtual bool ConfigureDataSocket(const ZmqContext::sock_ptr& socket);
+   virtual bool ConfigureDataSocket(const ZmqContext::sock_ptr& socket, const std::string& connName);
 
    // socket monitor is not added. so will use 0 frame as notification
    void zeroFrameReceived();
@@ -121,7 +121,7 @@ public:
    {
       topics_ = topics;
    }
-   bool ConfigureDataSocket(const ZmqContext::sock_ptr&) override;
+   bool ConfigureDataSocket(const ZmqContext::sock_ptr&, const std::string& connName) override;
    bool openConnection(const std::string& host, const std::string& port
       , DataConnectionListener* listener) override
    {

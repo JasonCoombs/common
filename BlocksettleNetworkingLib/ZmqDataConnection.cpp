@@ -60,12 +60,14 @@ bool ZmqDataConnection::openConnection(const std::string& host
 {
    assert(context_ != nullptr);
    assert(listener != nullptr);
-   connectionName_ = context_->GenerateConnectionName(host, port);
 
+   if (logger_) {
+      logger_->debug("[ZmqDataConnection::openConnection] {}", connectionName_);
+   }
    if (isActive()) {
       if (logger_) {
-         logger_->error("[{}] connection active. You should close it first: {}."
-            , __func__, connectionName_);
+         logger_->error("[ZmqDataConnection::openConnection] connection {} "
+            "active. You should close it first", connectionName_);
       }
       return false;
    }
@@ -73,23 +75,22 @@ bool ZmqDataConnection::openConnection(const std::string& host
    hostAddr_ = host;
    hostPort_ = port;
 
-   char buf[256];
-   size_t  buf_size = 256;
+   auto tempConnectionName = context_->GenerateConnectionName(host, port);
 
    // create stream socket ( connected to server )
    ZmqContext::sock_ptr tempDataSocket = CreateDataSocket();
    if (tempDataSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create data socket socket {} : {}"
-            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
 
-   if (!ConfigureDataSocket(tempDataSocket)) {
+   if (!ConfigureDataSocket(tempDataSocket, tempConnectionName)) {
       if (logger_) {
          logger_->error("[{}] failed to configure data socket socket {}"
-            , __func__, connectionName_);
+            , __func__, tempConnectionName);
       }
       return false;
    }
@@ -104,14 +105,14 @@ bool ZmqDataConnection::openConnection(const std::string& host
    }
 
    int result = 0;
-   std::string controlEndpoint = std::string("inproc://") + connectionName_;
+   std::string controlEndpoint = std::string("inproc://") + tempConnectionName;
 
    // create master and slave paired sockets to control connection and resend data
    ZmqContext::sock_ptr tempThreadMasterSocket = context_->CreateInternalControlSocket();
    if (tempThreadMasterSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create ThreadMasterSocket socket {}: {}"
-            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -120,7 +121,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to bind ThreadMasterSocket socket {}: {}"
-            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -129,7 +130,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (tempThreadSlaveSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create ThreadSlaveSocket socket {} : {}"
-            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -138,13 +139,13 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to connect ThreadSlaveSocket socket {}"
-            , __func__, connectionName_);
+            , __func__, tempConnectionName);
       }
       return false;
    }
 
    if (useMonitor_) {
-      int rc = zmq_socket_monitor(tempDataSocket.get(), ("inproc://mon-" + connectionName_).c_str(), ZMQ_EVENT_ALL);
+      int rc = zmq_socket_monitor(tempDataSocket.get(), ("inproc://mon-" + tempConnectionName).c_str(), ZMQ_EVENT_ALL);
       if (rc != 0) {
          if (logger_) {
             logger_->error("[{}] Failed to create monitor socket: {}", __func__
@@ -153,7 +154,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
          return false;
       }
       auto tempMonSocket = context_->CreateMonitorSocket();
-      rc = zmq_connect(tempMonSocket.get(), ("inproc://mon-" + connectionName_).c_str());
+      rc = zmq_connect(tempMonSocket.get(), ("inproc://mon-" + tempConnectionName).c_str());
       if (rc != 0) {
          if (logger_) {
             logger_->error("[{}] Failed to connect monitor socket: {}", __func__
@@ -175,17 +176,20 @@ bool ZmqDataConnection::openConnection(const std::string& host
    }
 
    // get socket id
-   result = zmq_getsockopt(tempDataSocket.get(), ZMQ_IDENTITY, buf, &buf_size);
+   char buf[256];
+   size_t bufSize = 256;
+   result = zmq_getsockopt(tempDataSocket.get(), ZMQ_IDENTITY, buf, &bufSize);
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to get socket Id {}", __func__
-            , connectionName_);
+            , tempConnectionName);
       }
       return false;
    }
 
    // ok, move temp data to members
-   socketId_ = std::string(buf, buf_size);
+   connectionName_ = std::move(tempConnectionName);
+   socketId_ = std::string(buf, bufSize);
    dataSocket_ = std::move(tempDataSocket);
    threadMasterSocket_ = std::move(tempThreadMasterSocket);
    threadSlaveSocket_ = std::move(tempThreadSlaveSocket);
@@ -200,14 +204,14 @@ bool ZmqDataConnection::openConnection(const std::string& host
    return true;
 }
 
-bool ZmqDataConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
+bool ZmqDataConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket, const std::string &connName)
 {
    int lingerPeriod = 0;
    int result = zmq_setsockopt(socket.get(), ZMQ_LINGER, &lingerPeriod, sizeof(lingerPeriod));
    if (result != 0) {
       if (logger_) {
          logger_->error("[ZmqDataConnection::ConfigureDataSocket] {} failed to set linger interval: {}"
-            , connectionName_, zmq_strerror(zmq_errno()));
+            , connName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -215,28 +219,28 @@ bool ZmqDataConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
    constexpr int enableKeepalive = 1; // boolean enable
    if (zmq_setsockopt(socket.get(), ZMQ_TCP_KEEPALIVE, &enableKeepalive, sizeof(enableKeepalive)) != 0) {
       logger_->error("[ZmqDataConnection::ConfigureDataSocket] {} failed to set ZMQ_TCP_KEEPALIVE {}: {}"
-         , connectionName_, enableKeepalive, zmq_strerror(zmq_errno()));
+         , connName, enableKeepalive, zmq_strerror(zmq_errno()));
       return false;
    }
 
    constexpr int keepaliveCount = 20; // 20 probes
    if (zmq_setsockopt(socket.get(), ZMQ_TCP_KEEPALIVE_CNT, &keepaliveCount, sizeof(keepaliveCount)) != 0) {
       logger_->error("[ZmqDataConnection::ConfigureDataSocket] {} failed to set ZMQ_TCP_KEEPALIVE_CNT {}: {}"
-         , connectionName_, keepaliveCount, zmq_strerror(zmq_errno()));
+         , connName, keepaliveCount, zmq_strerror(zmq_errno()));
       return false;
    }
 
    constexpr int keepaliveIdleTimeout = 600; // seconds
    if (zmq_setsockopt(socket.get(), ZMQ_TCP_KEEPALIVE_IDLE, &keepaliveIdleTimeout, sizeof(keepaliveIdleTimeout)) != 0) {
       logger_->error("[ZmqDataConnection::ConfigureDataSocket] {} failed to set ZMQ_TCP_KEEPALIVE_IDLE {}: {}"
-         , connectionName_, keepaliveIdleTimeout, zmq_strerror(zmq_errno()));
+         , connName, keepaliveIdleTimeout, zmq_strerror(zmq_errno()));
       return false;
    }
 
    constexpr int keepaliveInterval = 60; //seconds
    if (zmq_setsockopt(socket.get(), ZMQ_TCP_KEEPALIVE_INTVL, &keepaliveInterval, sizeof(keepaliveInterval)) != 0) {
       logger_->error("[ZmqDataConnection::ConfigureDataSocket] {} failed to set ZMQ_TCP_KEEPALIVE_INTVL {}: {}"
-         , connectionName_, keepaliveInterval, zmq_strerror(zmq_errno()));
+         , connName, keepaliveInterval, zmq_strerror(zmq_errno()));
       return false;
    }
 
@@ -285,8 +289,11 @@ void ZmqDataConnection::listenFunction()
             break;
          }
 
-         auto command_code = command.ToInt();
-         if (command_code == ZmqDataConnection::CommandSend) {
+         const int commandCode = command.ToInt();
+         if (logger_) {
+            logger_->debug("[ZmqDataConnection::listenFunction] control command {}", commandCode);
+         }
+         if (commandCode == ZmqDataConnection::CommandSend) {
             std::vector<std::string> tmpBuf;
             {
                FastLock locker(lockFlag_);
@@ -313,12 +320,12 @@ void ZmqDataConnection::listenFunction()
                }
             }
          }
-         else if (command_code == ZmqDataConnection::CommandStop) {
+         else if (commandCode == ZmqDataConnection::CommandStop) {
             break;
          } else {
             if (logger_) {
                logger_->error("[{}] unexpected command code {} for {}", __func__
-                  , command_code, connectionName_);
+                  , commandCode, connectionName_);
             }
             break;
          }
@@ -336,7 +343,11 @@ void ZmqDataConnection::listenFunction()
       }
 
       if (monSocket_ && (poll_items[ZmqDataConnection::MonitorSocketIndex].revents & ZMQ_POLLIN)) {
-         switch (bs::network::get_monitor_event(monSocket_.get())) {
+         const int monEvent = bs::network::get_monitor_event(monSocket_.get());
+         if (logger_) {
+            logger_->debug("[ZmqDataConnection::listenFunction] monitor event {}", monEvent);
+         }
+         switch (monEvent) {
          case ZMQ_EVENT_CONNECTED:
          // NOTE: for ZMQ based connections this event might better suited than ZMQ_EVENT_CONNECTED
          // but they always came in pairs
@@ -493,26 +504,26 @@ bool ZmqDataConnection::SetZMQTransport(ZMQTransport transport)
    }
 }
 
-bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
+bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket, const std::string& connName)
 {
-   if (!ZmqDataConnection::ConfigureDataSocket(socket)) {
+   if (!ZmqDataConnection::ConfigureDataSocket(socket, connName)) {
       return false;
    }
 
    if (logger_) {
-      logger_->debug("[ZmqSubConnection::ConfigureDataSocket] {}", connectionName_);
+      logger_->debug("[ZmqSubConnection::ConfigureDataSocket] {}", connName);
    }
    int rcvHWM = 0;
    int result = zmq_setsockopt(socket.get(), ZMQ_RCVHWM, &rcvHWM, sizeof(rcvHWM));
    if (result != 0) {
       if (logger_) {
          logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to set receive HWM: {}"
-            , connectionName_, zmq_strerror(zmq_errno()));
+            , connName, zmq_strerror(zmq_errno()));
       }
       return false;
    }
 
-   if (topics_.empty()) {
+/*   if (topics_.empty()) {
       if (logger_) {
          logger_->error("[ZmqSubConnection::ConfigureDataSocket] no topics were set");
       }
@@ -522,22 +533,35 @@ bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
       if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length()) == -1) {
          if (logger_) {
             logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe {}: {}"
-               , connectionName_, topic, zmq_strerror(zmq_errno()));
+               , connName, topic, zmq_strerror(zmq_errno()));
          }
          return false;
       }
+   }*/
+   if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, "", 0) == -1) {   // subscribe to all topics
+      if (logger_) {
+         logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe: {}"
+            , connName, zmq_strerror(zmq_errno()));
+      }
+      return false;
    }
    return true;
 }
 
 bool ZmqSubConnection::openConnection(const std::string& host, const std::string& port, DataTopicListener* listener)
 {
+   if (logger_) {
+      logger_->debug("[ZmqSubConnection::openConnection] {} to {}:{}", connectionName_, host, port);
+   }
    topicListener_ = listener;
    return ZmqDataConnection::openConnection(host, port, listener);
 }
 
 ZmqContext::sock_ptr ZmqSubConnection::CreateDataSocket()
 {
+   if (logger_) {
+      logger_->debug("[ZmqSubConnection::CreateDataSocket] {}", connectionName_);
+   }
    return context_->CreateSubSocket();
 }
 
@@ -546,11 +570,15 @@ bool ZmqSubConnection::recvData()
    MessageHolder topic, msg;
    std::string data;
 
+   if (logger_) {
+      logger_->debug("[ZmqSubConnection::recvData] {}", connectionName_);
+   }
+
    int result = zmq_msg_recv(&topic, dataSocket_.get(), 0);
    if (result == -1) {
       if (logger_) {
-         logger_->error("[{}] {} failed to recv ID frame from stream: {}"
-            , __func__, connectionName_, zmq_strerror(zmq_errno()));
+         logger_->error("[ZmqSubConnection::recvData] {} failed to recv ID frame from stream: {}"
+            , connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -570,6 +598,8 @@ bool ZmqSubConnection::recvData()
          zmq_msg_recv(&msg, dataSocket_.get(), 0);
       }
    }
+
+   logger_->debug("[ZmqSubConnection::recvData] {}: {} {}", connectionName_, topic.ToString(), data);
 
    if (topic.GetSize() == 0) { //we are either connected or disconncted
       zeroFrameReceived();
