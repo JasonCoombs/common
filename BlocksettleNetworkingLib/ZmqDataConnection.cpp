@@ -60,6 +60,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
 {
    assert(context_ != nullptr);
    assert(listener != nullptr);
+   connectionName_ = context_->GenerateConnectionName(host, port);
 
    if (isActive()) {
       if (logger_) {
@@ -71,7 +72,6 @@ bool ZmqDataConnection::openConnection(const std::string& host
 
    hostAddr_ = host;
    hostPort_ = port;
-   std::string tempConnectionName = context_->GenerateConnectionName(host, port);
 
    char buf[256];
    size_t  buf_size = 256;
@@ -81,7 +81,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (tempDataSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create data socket socket {} : {}"
-            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -89,7 +89,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (!ConfigureDataSocket(tempDataSocket)) {
       if (logger_) {
          logger_->error("[{}] failed to configure data socket socket {}"
-            , __func__, tempConnectionName);
+            , __func__, connectionName_);
       }
       return false;
    }
@@ -104,14 +104,14 @@ bool ZmqDataConnection::openConnection(const std::string& host
    }
 
    int result = 0;
-   std::string controlEndpoint = std::string("inproc://") + tempConnectionName;
+   std::string controlEndpoint = std::string("inproc://") + connectionName_;
 
    // create master and slave paired sockets to control connection and resend data
    ZmqContext::sock_ptr tempThreadMasterSocket = context_->CreateInternalControlSocket();
    if (tempThreadMasterSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create ThreadMasterSocket socket {}: {}"
-            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -120,7 +120,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to bind ThreadMasterSocket socket {}: {}"
-            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -129,7 +129,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (tempThreadSlaveSocket == nullptr) {
       if (logger_) {
          logger_->error("[{}] failed to create ThreadSlaveSocket socket {} : {}"
-            , __func__, tempConnectionName, zmq_strerror(zmq_errno()));
+            , __func__, connectionName_, zmq_strerror(zmq_errno()));
       }
       return false;
    }
@@ -138,13 +138,13 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to connect ThreadSlaveSocket socket {}"
-            , __func__, tempConnectionName);
+            , __func__, connectionName_);
       }
       return false;
    }
 
    if (useMonitor_) {
-      int rc = zmq_socket_monitor(tempDataSocket.get(), ("inproc://mon-" + tempConnectionName).c_str(), ZMQ_EVENT_ALL);
+      int rc = zmq_socket_monitor(tempDataSocket.get(), ("inproc://mon-" + connectionName_).c_str(), ZMQ_EVENT_ALL);
       if (rc != 0) {
          if (logger_) {
             logger_->error("[{}] Failed to create monitor socket: {}", __func__
@@ -153,7 +153,7 @@ bool ZmqDataConnection::openConnection(const std::string& host
          return false;
       }
       auto tempMonSocket = context_->CreateMonitorSocket();
-      rc = zmq_connect(tempMonSocket.get(), ("inproc://mon-" + tempConnectionName).c_str());
+      rc = zmq_connect(tempMonSocket.get(), ("inproc://mon-" + connectionName_).c_str());
       if (rc != 0) {
          if (logger_) {
             logger_->error("[{}] Failed to connect monitor socket: {}", __func__
@@ -179,13 +179,12 @@ bool ZmqDataConnection::openConnection(const std::string& host
    if (result != 0) {
       if (logger_) {
          logger_->error("[{}] failed to get socket Id {}", __func__
-            , tempConnectionName);
+            , connectionName_);
       }
       return false;
    }
 
    // ok, move temp data to members
-   connectionName_ = std::move(tempConnectionName);
    socketId_ = std::string(buf, buf_size);
    dataSocket_ = std::move(tempDataSocket);
    threadMasterSocket_ = std::move(tempThreadMasterSocket);
@@ -520,7 +519,7 @@ bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket)
       return false;
    }
    for (const auto& topic : topics_) {
-      if ((result = zmq_setsockopt(dataSocket_.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length())) == -1) {
+      if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length()) == -1) {
          if (logger_) {
             logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe {}: {}"
                , connectionName_, topic, zmq_strerror(zmq_errno()));
