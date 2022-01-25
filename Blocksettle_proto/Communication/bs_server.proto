@@ -3085,5 +3085,6 @@ message LiquidMessage
       uint32           get_transactions = 11;
       Transactions     transactions = 12;
       TXupdate         tx_update = 13;
+      Empty            invoke_poll = 14;
    }
 }

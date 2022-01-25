@@ -61,9 +61,6 @@ bool ZmqDataConnection::openConnection(const std::string& host
    assert(context_ != nullptr);
    assert(listener != nullptr);
 
-   if (logger_) {
-      logger_->debug("[ZmqDataConnection::openConnection] {}", connectionName_);
-   }
    if (isActive()) {
       if (logger_) {
          logger_->error("[ZmqDataConnection::openConnection] connection {} "
@@ -290,9 +287,6 @@ void ZmqDataConnection::listenFunction()
          }
 
          const int commandCode = command.ToInt();
-         if (logger_) {
-            logger_->debug("[ZmqDataConnection::listenFunction] control command {}", commandCode);
-         }
          if (commandCode == ZmqDataConnection::CommandSend) {
             std::vector<std::string> tmpBuf;
             {
@@ -344,9 +338,6 @@ void ZmqDataConnection::listenFunction()
 
       if (monSocket_ && (poll_items[ZmqDataConnection::MonitorSocketIndex].revents & ZMQ_POLLIN)) {
          const int monEvent = bs::network::get_monitor_event(monSocket_.get());
-         if (logger_) {
-            logger_->debug("[ZmqDataConnection::listenFunction] monitor event {}", monEvent);
-         }
          switch (monEvent) {
          case ZMQ_EVENT_CONNECTED:
          // NOTE: for ZMQ based connections this event might better suited than ZMQ_EVENT_CONNECTED
@@ -510,9 +501,6 @@ bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket, c
       return false;
    }
 
-   if (logger_) {
-      logger_->debug("[ZmqSubConnection::ConfigureDataSocket] {}", connName);
-   }
    int rcvHWM = 0;
    int result = zmq_setsockopt(socket.get(), ZMQ_RCVHWM, &rcvHWM, sizeof(rcvHWM));
    if (result != 0) {
@@ -550,29 +538,19 @@ bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket, c
 
 bool ZmqSubConnection::openConnection(const std::string& host, const std::string& port, DataTopicListener* listener)
 {
-   if (logger_) {
-      logger_->debug("[ZmqSubConnection::openConnection] {} to {}:{}", connectionName_, host, port);
-   }
    topicListener_ = listener;
    return ZmqDataConnection::openConnection(host, port, listener);
 }
 
 ZmqContext::sock_ptr ZmqSubConnection::CreateDataSocket()
 {
-   if (logger_) {
-      logger_->debug("[ZmqSubConnection::CreateDataSocket] {}", connectionName_);
-   }
    return context_->CreateSubSocket();
 }
 
 bool ZmqSubConnection::recvData()
 {
    MessageHolder topic, msg;
-   std::string data;
-
-   if (logger_) {
-      logger_->debug("[ZmqSubConnection::recvData] {}", connectionName_);
-   }
+   std::vector<std::string> data;
 
    int result = zmq_msg_recv(&topic, dataSocket_.get(), 0);
    if (result == -1) {
@@ -584,22 +562,18 @@ bool ZmqSubConnection::recvData()
    }
 
    if (zmq_msg_more(&topic)) {
-      result = zmq_msg_recv(&msg, dataSocket_.get(), 0);
-      if (result == -1) {
-         if (logger_) {
-            logger_->error("[{}] {} failed to recv data frame from stream: {}"
-               , __func__, connectionName_, zmq_strerror(zmq_errno()));
+      do {
+         result = zmq_msg_recv(&msg, dataSocket_.get(), 0);
+         if (result == -1) {
+            if (logger_) {
+               logger_->error("[{}] {} failed to recv data frame from stream: {}"
+                  , __func__, connectionName_, zmq_strerror(zmq_errno()));
+            }
+            return false;
          }
-         return false;
-      }
-      data = msg.ToString();
-
-      while (zmq_msg_more(&msg)) {
-         zmq_msg_recv(&msg, dataSocket_.get(), 0);
-      }
+         data.push_back(msg.ToString());
+      } while (zmq_msg_more(&msg));
    }
-
-   logger_->debug("[ZmqSubConnection::recvData] {}: {} {}", connectionName_, topic.ToString(), data);
 
    if (topic.GetSize() == 0) { //we are either connected or disconncted
       zeroFrameReceived();
