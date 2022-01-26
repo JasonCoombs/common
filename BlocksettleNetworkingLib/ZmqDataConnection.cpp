@@ -511,27 +511,25 @@ bool ZmqSubConnection::ConfigureDataSocket(const ZmqContext::sock_ptr& socket, c
       return false;
    }
 
-/*   if (topics_.empty()) {
-      if (logger_) {
-         logger_->error("[ZmqSubConnection::ConfigureDataSocket] no topics were set");
-      }
-      return false;
-   }
-   for (const auto& topic : topics_) {
-      if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length()) == -1) {
+   if (topics_.empty()) {
+      if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, "", 0) == -1) {   // subscribe to all topics
          if (logger_) {
-            logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe {}: {}"
-               , connName, topic, zmq_strerror(zmq_errno()));
+            logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe: {}"
+               , connName, zmq_strerror(zmq_errno()));
          }
          return false;
       }
-   }*/
-   if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, "", 0) == -1) {   // subscribe to all topics
-      if (logger_) {
-         logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe: {}"
-            , connName, zmq_strerror(zmq_errno()));
+   }
+   else {
+      for (const auto& topic : topics_) {
+         if (zmq_setsockopt(socket.get(), ZMQ_SUBSCRIBE, topic.c_str(), topic.length()) == -1) {
+            if (logger_) {
+               logger_->error("[ZmqSubConnection::ConfigureDataSocket] {} failed to subscribe {}: {}"
+                  , connName, topic, zmq_strerror(zmq_errno()));
+            }
+            return false;
+         }
       }
-      return false;
    }
    return true;
 }
