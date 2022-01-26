@@ -284,6 +284,7 @@ message Message
    message LoadAccountSummaryRequest
    {
       uint32            entity_id         = 1;
+      int32             product_type      = 2; // bs::fut::Product
    }
 
    message LoadAccountSummaryResponse
@@ -295,6 +296,28 @@ message Message
       bs.types.XBTAmountValue  total_shorts  = 5;
       bs.types.FXAmountValue   total_profits = 6;
       bs.types.FXAmountValue   total_losses  = 7;
+   }
+
+   // load only buy positions summary
+   // this request is used for 24h volume, and since net exposure is always balanced
+   // amount of sells is exactly the same as amount of buys
+   message LoadBuyTradesSummaryRequest
+   {
+      int32    product_type            = 1; // bs::fut::Product
+      uint64   starting_from_timestamp = 2;
+   }
+
+   message LoadBuyTradesSummaryResponse
+   {
+      message PositionSummary
+      {
+         uint64                  timestamp   = 1;
+         bs.types.XBTAmountValue amount      = 2;
+      }
+
+      int32                      product_type   = 1; // bs::fut::Product
+      int32                      load_result    = 2;  // FuturesTradesStorage::StatusCode
+      repeated PositionSummary   positions      = 3;
    }
 
    oneof data {
@@ -367,5 +390,8 @@ message Message
 
       LoadAccountSummaryRequest        load_account_summary_request        = 46;
       LoadAccountSummaryResponse       load_account_summary_response       = 47;
+
+      LoadBuyTradesSummaryRequest      load_buy_positions_summary_request  = 48;
+      LoadBuyTradesSummaryResponse     load_buy_positions_summary_response = 49;
    }
 }

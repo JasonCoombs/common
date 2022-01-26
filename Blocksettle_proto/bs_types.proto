@@ -64,7 +64,7 @@ message Order
    string         id                   = 1;
    OrderStatus    status               = 2;
    string         status_text          = 3;
-   int64          timestamp_ms         = 4;
+   uint64         timestamp_ms         = 4;
    string         product              = 5; // for example "XBT"
    string         product_against      = 6; // for example "EUR"
    Side           side                 = 7;
