@@ -54,6 +54,7 @@ public:
    sock_ptr    CreateInternalControlSocket();
    sock_ptr    CreateMonitorSocket();
    sock_ptr    CreateStreamSocket();
+   sock_ptr    CreateSubSocket();
 
    sock_ptr    CreateServerSocket();
    sock_ptr    CreateClientSocket();
