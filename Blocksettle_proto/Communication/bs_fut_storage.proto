@@ -284,6 +284,7 @@ message Message
    message LoadAccountSummaryRequest
    {
       uint32            entity_id         = 1;
+      int32             product_type      = 2; // bs::fut::Product
    }
 
    message LoadAccountSummaryResponse

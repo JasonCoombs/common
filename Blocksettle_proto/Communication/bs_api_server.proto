@@ -325,6 +325,11 @@ message Request
         string reference    = 4;
     }
 
+    message AccountSummary
+    {
+        string product_type = 1;
+    }
+
     oneof data
     {
         ValidateSession             authorize                   = 10;
@@ -376,7 +381,7 @@ message Request
         LoadPnLHistory              load_pnl_history            = 66;
         Subscribe                   subscribe_dealer_offers     = 67;
         Unsubscribe                 unsubscribe_dealer_offers   = 68;
-        Empty                       load_account_summary        = 69;
+        AccountSummary              load_account_summary        = 69;
     }
 }
 
