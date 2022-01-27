@@ -87,6 +87,7 @@ message Message
       int32             product_type      = 1; // bs::fut::Product
       int32             reason            = 2; // FuturesTradesStorage::DamageSessionReason
       string            reason_message    = 3;
+      uint64            timestamp_damaged = 4;
    }
 
    message SessionPositions
@@ -270,12 +271,53 @@ message Message
 
    message LoadDamagedSessionInfoResponse
    {
-      int32    load_result    = 1; // FuturesTradesStorage::StatusCode
-      int32    product_type   = 2; // bs::fut::Product
-      int64    session_id     = 3;
-      int32    session_state  = 4; // FuturesTradesStorage::FuturesSessionState
-      int32    reason         = 5; // FuturesTradesStorage::DamageSessionReason
-      string   reason_message = 6;
+      int32                load_result             = 1; // FuturesTradesStorage::StatusCode
+      int32                product_type            = 2; // bs::fut::Product
+      int64                session_id              = 3;
+      int32                session_state           = 4; // FuturesTradesStorage::FuturesSessionState
+      int32                reason                  = 5; // FuturesTradesStorage::DamageSessionReason
+      string               reason_message          = 6;
+      NovationAccountInfo  novation_account_info   = 7;
+      uint64               timestamp_damaged       = 8;
+   }
+
+   message LoadAccountSummaryRequest
+   {
+      uint32            entity_id         = 1;
+      int32             product_type      = 2; // bs::fut::Product
+   }
+
+   message LoadAccountSummaryResponse
+   {
+      int32                    load_result   = 1; // FuturesTradesStorage::StatusCode
+      bs.types.FXAmountValue   total_im      = 2;
+      bs.types.FXAmountValue   fee_paid      = 3;
+      bs.types.XBTAmountValue  total_longs   = 4;
+      bs.types.XBTAmountValue  total_shorts  = 5;
+      bs.types.FXAmountValue   total_profits = 6;
+      bs.types.FXAmountValue   total_losses  = 7;
+   }
+
+   // load only buy positions summary
+   // this request is used for 24h volume, and since net exposure is always balanced
+   // amount of sells is exactly the same as amount of buys
+   message LoadBuyTradesSummaryRequest
+   {
+      int32    product_type            = 1; // bs::fut::Product
+      uint64   starting_from_timestamp = 2;
+   }
+
+   message LoadBuyTradesSummaryResponse
+   {
+      message PositionSummary
+      {
+         uint64                  timestamp   = 1;
+         bs.types.XBTAmountValue amount      = 2;
+      }
+
+      int32                      product_type   = 1; // bs::fut::Product
+      int32                      load_result    = 2;  // FuturesTradesStorage::StatusCode
+      repeated PositionSummary   positions      = 3;
    }
 
    oneof data {
@@ -345,5 +387,11 @@ message Message
 
       LoadDamagedSessionInfoRequest    load_damaged_session_info_request   = 44;
       LoadDamagedSessionInfoResponse   load_damaged_session_info_response  = 45;
+
+      LoadAccountSummaryRequest        load_account_summary_request        = 46;
+      LoadAccountSummaryResponse       load_account_summary_response       = 47;
+
+      LoadBuyTradesSummaryRequest      load_buy_positions_summary_request  = 48;
+      LoadBuyTradesSummaryResponse     load_buy_positions_summary_response = 49;
    }
 }
