@@ -56,16 +56,16 @@ protected:
    virtual bool recvData();
 
    virtual ZmqContext::sock_ptr CreateDataSocket();
-   virtual bool ConfigureDataSocket(const ZmqContext::sock_ptr& socket);
+   virtual bool ConfigureDataSocket(const ZmqContext::sock_ptr& socket, const std::string& connName);
+
+   // socket monitor is not added. so will use 0 frame as notification
+   void zeroFrameReceived();
 
 private:
    void resetConnectionObjects();
 
    // run in thread
    void listenFunction();
-
-   // socket monitor is not added. so will use 0 frame as notification
-   void zeroFrameReceived();
 
 private:
    enum SocketIndex {
@@ -91,6 +91,7 @@ protected:
    ZmqContext::sock_ptr             monSocket_;
    std::string                      hostAddr_;
    std::string                      hostPort_;
+
 private:
    std::string                      socketId_;
 
@@ -106,6 +107,37 @@ private:
    ZMQTransport                     zmqTransport_ = ZMQTransport::TCPTransport;
 
    std::shared_ptr<bool>            continueExecution_ = nullptr;
+};
+
+
+class ZmqSubConnection : public ZmqDataConnection
+{
+public:
+   ZmqSubConnection(const std::shared_ptr<spdlog::logger>& logger, bool useMonitor = false)
+      : ZmqDataConnection(logger, useMonitor) {}
+   ~ZmqSubConnection() noexcept override = default;
+
+   void subscribeTopics(const std::vector<std::string>& topics)
+   {
+      topics_ = topics;
+   }
+   bool ConfigureDataSocket(const ZmqContext::sock_ptr&, const std::string& connName) override;
+   bool openConnection(const std::string& host, const std::string& port
+      , DataConnectionListener* listener) override
+   {
+      throw std::runtime_error("not supported");
+   }
+   virtual bool openConnection(const std::string& host, const std::string& port
+      , DataTopicListener*);
+   bool send(const std::string& data) override { return false; }  // can't send, only subscribe
+
+protected:
+   ZmqContext::sock_ptr CreateDataSocket() override;
+   bool recvData() override;
+
+protected:
+   DataTopicListener* topicListener_{ nullptr };
+   std::vector<std::string>   topics_;
 };
 
 #endif // __ZEROMQ_DATA_CONNECTION_H__
