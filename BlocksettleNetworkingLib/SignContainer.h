@@ -99,31 +99,10 @@ public:
    using SignerStateCb = std::function<void(bs::error::ErrorCode result
       , const Codec_SignerState::SignerState &)>;
 
-   // If wallet is offline serialize request and write to file with path TXSignRequest::offlineFilePath
-   [[deprecated]] virtual bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
-      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
-
    virtual void signTXRequest(const bs::core::wallet::TXSignRequest&
       , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
          , const std::string& errorReason)> &
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) = 0;
-
-   virtual bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &dialogData
-      , TXSignMode mode = TXSignMode::Full
-      , bool keepDuplicatedRecipients = false
-      , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> &cb = nullptr) = 0;
-
-   virtual bs::signer::RequestId signSettlementPartialTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &dialogData
-      , const SignTxCb &cb = nullptr) = 0;
-
-   virtual bs::signer::RequestId signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::core::wallet::SettlementData &, const bs::sync::PasswordDialogData &dialogData
-      , const SignTxCb &cb = nullptr) = 0;
-
-   virtual bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
-      , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) = 0;
 
    virtual bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
       , const SignerStateCb &cb) = 0;
@@ -131,9 +110,6 @@ public:
    virtual bs::signer::RequestId updateDialogData(const bs::sync::PasswordDialogData &dialogData, uint32_t dialogId = 0) = 0;
 
    virtual bs::signer::RequestId CancelSignTx(const BinaryData &txId) = 0;
-
-   virtual bs::signer::RequestId setUserId(const BinaryData &, const std::string &walletId) = 0;
-   virtual bs::signer::RequestId syncCCNames(const std::vector<std::string> &) = 0;
 
    virtual bs::signer::RequestId GetInfo(const std::string &rootWalletId) = 0;
 
@@ -151,7 +127,6 @@ public:
    virtual bool isWalletOffline(const std::string &) const { return true; }
 
    bool isLocal() const { return mode_ == OpMode::Local || mode_ == OpMode::LocalInproc; }
-   bool isWindowVisible() const { return isWindowVisible_; } // available only for local signer
 
    SignerCallbackTarget* cbTarget() const { return sct_; }
 
@@ -159,7 +134,6 @@ protected:
    std::shared_ptr<spdlog::logger> logger_;
    SignerCallbackTarget* sct_{ nullptr };
    const OpMode mode_;
-   bool isWindowVisible_{};
 };
 
 

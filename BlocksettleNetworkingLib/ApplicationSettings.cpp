@@ -12,7 +12,6 @@
 
 #include "ArmoryConnection.h"
 #include "ArmoryServersProvider.h"
-#include "AutheIDClient.h"
 #include "BitcoinSettings.h"
 #include "EncryptionUtils.h"
 #include "FastLock.h"
@@ -661,6 +660,7 @@ QString ApplicationSettings::bootstrapFilePath() const
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 
+#if 0 // no client-side Auth eID direct usage
 std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthKeys()
 {
    if (!authPrivKey_.empty() && !authPubKey_.empty()) {
@@ -680,6 +680,7 @@ std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthK
    authPubKey_ = autheid::getPublicKey(authPrivKey_);
    return { authPrivKey_, authPubKey_ };
 }
+#endif   //0
 
 void ApplicationSettings::selectNetwork()
 {
@@ -705,6 +706,7 @@ void ApplicationSettings::selectNetwork()
    Armory::Config::BitcoinSettings::processArgs(args);
 }
 
+#if 0 // no client-side Auth eID direct usage
 AuthEidEnv ApplicationSettings::autheidEnv() const
 {
    auto conf = ApplicationSettings::EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
@@ -721,6 +723,7 @@ AuthEidEnv ApplicationSettings::autheidEnv() const
    }
    return AuthEidEnv::Prod;
 }
+#endif   //0
 
 // static
 std::string ApplicationSettings::envName(ApplicationSettings::EnvConfiguration conf)

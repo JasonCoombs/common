@@ -144,7 +144,8 @@ TransportBIP15xClient::TransportBIP15xClient(const std::shared_ptr<spdlog::logge
    // In general, load the server key from a special Armory wallet file.
    if (!params.ephemeralPeers) {
       authPeers_ = std::make_unique<AuthorizedPeers>(
-         params.ownKeyFileDir, params.ownKeyFileName, [](const std::set<BinaryData> &)
+         params.ownKeyFileDir, params.ownKeyFileName, []
+         (const std::set<Armory::Wallets::EncryptionKeyId> &)
       {
          return SecureBinaryData{};
       });

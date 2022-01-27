@@ -59,28 +59,10 @@ public:
    HeadlessContainer(const std::shared_ptr<spdlog::logger> &, OpMode, SignerCallbackTarget *);
    ~HeadlessContainer() noexcept override = default;
 
-   [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
-      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
    void signTXRequest(const bs::core::wallet::TXSignRequest&
       , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
          , const std::string& errorReason)>&
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
-
-   bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txSignReq
-      , const bs::sync::PasswordDialogData &dialogData
-      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false
-      , const SignTxCb &cb = nullptr) override;
-
-   bs::signer::RequestId signSettlementPartialTXRequest(const bs::core::wallet::TXSignRequest &txSignReq
-      , const bs::sync::PasswordDialogData &dialogData
-      , const SignTxCb &cb = nullptr) override;
-
-   bs::signer::RequestId signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &txSignReq
-      , const bs::core::wallet::SettlementData &, const bs::sync::PasswordDialogData &dialogData
-      , const SignTxCb &cb = nullptr) override;
-
-   bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
-      , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override;
 
    bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
       , const SignerStateCb &cb) override;
@@ -89,17 +71,8 @@ public:
 
    bs::signer::RequestId CancelSignTx(const BinaryData &txId) override;
 
-   bs::signer::RequestId setUserId(const BinaryData &, const std::string &walletId) override;
-   bs::signer::RequestId syncCCNames(const std::vector<std::string> &) override;
-
    bool createHDLeaf(const std::string &rootWalletId, const bs::hd::Path &
       , const std::vector<bs::wallet::PasswordData>& = {}, bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) override;
-
-   bool enableTradingInHDWallet(const std::string& rootWalletId, const BinaryData &userId
-      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
-
-   bool promoteWalletToPrimary(const std::string& rootWalletId
-      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
 
    bs::signer::RequestId DeleteHDRoot(const std::string &rootWalletId) override;
    bs::signer::RequestId DeleteHDLeaf(const std::string &leafWalletId) override;
@@ -113,14 +86,6 @@ public:
    void syncAddressComment(const std::string &walletId, const bs::Address &, const std::string &) override;
    void syncTxComment(const std::string &walletId, const BinaryData &, const std::string &) override;
 
-   void setSettlAuthAddr(const std::string &walletId, const BinaryData &, const bs::Address &addr) override;
-   void getSettlAuthAddr(const std::string &walletId, const BinaryData &
-      , const std::function<void(const bs::Address &)> &) override;
-   void setSettlCP(const std::string &walletId, const BinaryData &payinHash, const BinaryData &settlId
-      , const BinaryData &cpPubKey) override;
-   void getSettlCP(const std::string &walletId, const BinaryData &payinHash
-      , const std::function<void(const BinaryData &, const BinaryData &)> &) override;
-
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
       , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
    void syncAddressBatch(const std::string &walletId,
@@ -128,17 +93,8 @@ public:
    void extendAddressChain(const std::string &walletId, unsigned count, bool extInt,
       const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
-   void createSettlementWallet(const bs::Address &authAddr
-      , const std::function<void(const SecureBinaryData &)> &) override;
-   void setSettlementID(const std::string &walletId, const SecureBinaryData &id
-      , const std::function<void(bool)> &) override;
-   void getSettlementPayinAddress(const std::string &walletId
-      , const bs::core::wallet::SettlementData &
-      , const std::function<void(bool, bs::Address)> &) override;
    void getRootPubkey(const std::string &walletID
       , const std::function<void(bool, const SecureBinaryData &)> &) override;
-   void getChatNode(const std::string &walletID
-      , const std::function<void(const BIP32_Node &)> &) override;
 
    bool isReady() const override;
    bool isWalletOffline(const std::string &walletId) const override;
@@ -153,11 +109,9 @@ public:
 protected:
    bs::signer::RequestId Send(const Blocksettle::Communication::headless::RequestPacket &, bool incSeqNo = true);
    void ProcessSignTXResponse(unsigned int id, const std::string &data);
-   void ProcessSettlementSignTXResponse(unsigned int id, const std::string &data);
    void ProcessPubResolveResponse(unsigned int id, const std::string &data);
    void ProcessCreateHDLeafResponse(unsigned int id, const std::string &data);
    void ProcessEnableTradingInWalletResponse(unsigned int id, const std::string& data);
-   void ProcessPromoteWalletResponse(unsigned int id, const std::string& data);
    void ProcessGetHDWalletInfoResponse(unsigned int id, const std::string &data);
    void ProcessAutoSignActEvent(unsigned int id, const std::string &data);
    void ProcessSyncWalletInfo(unsigned int id, const std::string &data);
@@ -165,16 +119,8 @@ protected:
    void ProcessSyncWallet(unsigned int id, const std::string &data);
    void ProcessSyncAddresses(unsigned int id, const std::string &data);
    void ProcessExtAddrChain(unsigned int id, const std::string &data);
-   void ProcessSettlWalletCreate(unsigned int id, const std::string &data);
-   void ProcessSetSettlementId(unsigned int id, const std::string &data);
-   void ProcessSetUserId(const std::string &data);
-   void ProcessGetPayinAddr(unsigned int id, const std::string &data);
    void ProcessSettlGetRootPubkey(unsigned int id, const std::string &data);
    void ProcessUpdateStatus(const std::string &data);
-   void ProcessChatNodeResponse(unsigned int id, const std::string &data);
-   void ProcessSettlAuthResponse(unsigned int id, const std::string &data);
-   void ProcessSettlCPResponse(unsigned int id, const std::string &data);
-   void ProcessWindowStatus(unsigned int id, const std::string &data);
 
 protected:
    std::shared_ptr<HeadlessListener>   listener_;
@@ -186,20 +132,12 @@ protected:
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::HDWalletData)>>  cbHDWalletMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::WalletData)>>    cbWalletMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bs::sync::SyncState)>>     cbSyncAddrsMap_;
+   bs::ThreadSafeMap<bs::signer::RequestId, CreateHDLeafCb> cbCreateLeafMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbExtAddrsMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)>> cbNewAddrsMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, SignTxCb> cbSettlementSignTxMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, SignerStateCb>  cbSignerStateMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const SecureBinaryData &)>>   cbSettlWalletMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool)>>                       cbSettlIdMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool, bs::Address)>>          cbPayinAddrMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(bool, const SecureBinaryData &)>>   cbSettlPubkeyMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const BIP32_Node &)>>   cbChatNodeMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const bs::Address &)>>  cbSettlAuthMap_;
-   bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(const BinaryData &, const BinaryData &)>>  cbSettlCPMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, std::function<void(BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)>> signTxMap_;
-
-   bs::ThreadSafeMap<bs::signer::RequestId, CreateHDLeafCb>          cbCCreateLeafMap_;
    bs::ThreadSafeMap<bs::signer::RequestId, UpdateWalletStructureCB> cbUpdateWalletMap_;
 };
 

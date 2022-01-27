@@ -564,12 +564,6 @@ message SignerMessage
       string comment = 3;
    }
 
-   message SetSettlementId
-   {
-      string wallet_id = 1;
-      bytes  settlement_id = 2;
-   }
-
    message RootPubKey
    {
       string wallet_id = 1;
@@ -593,33 +587,10 @@ message SignerMessage
       string error_text = 4;
    }
 
-   message SetUserId
-   {
-      string wallet_id = 1;
-      bytes  user_id = 2;
-   }
-
-   message SignSettlementTx
-   {
-      Blocksettle.Communication.headless.SignTxRequest tx_request = 1;
-      bytes  settlement_id = 2;
-      bytes  contra_auth_pubkey = 3;
-      bool   own_key_first = 4;
-      Blocksettle.Communication.Internal.PasswordDialogData details = 5;
-   }
-
    message AddressResult
    {
       bool   success = 1;
       string address = 2;
-   }
-
-   message GetSettlPayinAddr
-   {
-      string wallet_id = 1;
-      bytes  settlement_id = 2;
-      bytes  contra_auth_pubkey = 3;
-      bool   own_key_first = 4;
    }
 
    message SignerState
@@ -654,7 +625,6 @@ message SignerMessage
       Empty              wallet_storage_decrypted = 6;
       Empty              need_new_wallet_prompt = 7;
       Empty              wallets_ready_to_sync = 8;
-      bool               window_visible_changed = 9;
       Empty              start_wallets_sync = 10;
       WalletsInfo        wallets_info = 11;
       SyncAddresses      sync_addresses = 12;
@@ -669,19 +639,13 @@ message SignerMessage
       HDWalletData       hd_wallet_synced = 21;
       SyncAddressComment sync_addr_comment = 22;
       SyncTxComment      sync_tx_comment = 23;
-      SetSettlementId    set_settl_id = 24;
-      bool               settl_id_set = 25;
       string             get_root_pubkey = 26;
       RootPubKey         root_pubkey = 27;
       string             del_hd_root = 28;
       string             del_hd_leaf = 29;
       SignTxRequest      sign_tx_request = 30;
       SignTxResponse     sign_tx_response = 31;
-      SetUserId          set_user_id = 32;
-      string             create_settl_wallet = 33;
       bytes              auth_pubkey = 34;
-      SignSettlementTx   sign_settlement_tx = 35;
-      GetSettlPayinAddr  get_settl_payin_addr = 36;
       AddressResult      payin_address = 37;
       Blocksettle.Communication.headless.SignTxRequest resolve_pub_spenders = 38;
       SignerState        resolved_spenders = 39;
@@ -816,8 +780,6 @@ message WalletsMessage
       bool   nested_sw = 5;
       bool   hardware = 6;
       bool   watch_only = 7;
-      bool   auth_group = 8;
-      bool   cc_group = 9;
    }
 
    message WalletsListResponse
@@ -839,12 +801,6 @@ message WalletsMessage
       string id = 1;
       string wallet_id = 2;
       repeated bytes utxos = 3;
-   }
-
-   message AuthKey
-   {
-      string auth_address = 1;
-      bytes  auth_key = 2;
    }
 
    message ReserveUTXOs
@@ -870,32 +826,11 @@ message WalletsMessage
       string sub_id = 2;
    }
 
-   message PayinRequest
-   {
-      string own_auth_address = 1;
-      string counter_auth_address = 2;
-      bytes  counter_auth_pubkey = 3;
-      bytes  settlement_id = 4;
-      string reserve_id = 5;
-      uint64 amount = 6;
-   }
-
    message XbtTxResponse
    {
       string settlement_address = 1;
       Blocksettle.Communication.headless.SignTxRequest tx_request = 2;
       string error_text = 3;
-   }
-
-   message PayoutRequest
-   {
-      string own_auth_address = 1;
-      bytes  settlement_id = 2;
-      bytes  counter_auth_pubkey = 3;
-      bytes  payin_hash = 4;
-      uint64 amount = 5;
-      string wallet_id = 6;
-      string recv_address = 7;
    }
 
    oneof data
@@ -935,17 +870,12 @@ message WalletsMessage
       WalletsListResponse wallets_list_response = 33;
       UtxoListRequest     get_utxos = 34;
       UtxoListResponse    utxos = 35;
-      string              set_user_id = 36;
       float               set_settlement_fee = 37;
-      WalletData          auth_wallet = 38;
-      string              get_auth_key = 39;
-      AuthKey             auth_key = 40;
+//      WalletData          auth_wallet = 38;
       ReserveUTXOs        reserve_utxos = 41;
       ReservedUTXOs       reserved_utxos = 42;
       ReservationKey      get_reserved_utxos = 43;
       ReservationKey      unreserve_utxos = 44;
-      PayinRequest        payin_request = 45;
-      PayoutRequest       payout_request = 46;
       XbtTxResponse       xbt_tx_response = 47;
    }
 }

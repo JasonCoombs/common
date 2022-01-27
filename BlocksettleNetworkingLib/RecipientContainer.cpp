@@ -11,7 +11,6 @@
 #include "RecipientContainer.h"
 #include <QtGlobal>
 #include "ScriptRecipient.h"
-#include "BlockDataManagerConfig.h"
 #include "BTCNumericTypes.h"
 #include "Wallets.h"
 
@@ -57,7 +56,7 @@ bs::XBTAmount RecipientContainer::GetAmount() const
    return xbtAmount_;
 }
 
-std::shared_ptr<ArmorySigner::ScriptRecipient> RecipientContainer::GetScriptRecipient() const
+std::shared_ptr<Armory::Signer::ScriptRecipient> RecipientContainer::GetScriptRecipient() const
 {
    if (!IsReady()) {
       return nullptr;

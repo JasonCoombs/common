@@ -45,9 +45,6 @@ WalletsAdapter::WalletsAdapter(const std::shared_ptr<spdlog::logger> &logger
       logger_->debug("[WalletsAdapter] no wallets found");
    });
    signerClient_->setWalletsListUpdated([this] { reset(); });
-   signerClient_->setAuthLeafAdded([this](const std::string& walletId) {
-      authLeafAdded(walletId);
-   });
 }
 
 WalletsAdapter::~WalletsAdapter()
@@ -371,15 +368,16 @@ void WalletsAdapter::saveWallet(const std::shared_ptr<bs::sync::hd::Wallet> &wal
 
 void WalletsAdapter::addWallet(const std::shared_ptr<Wallet> &wallet)
 {
+#if 0
    auto ccLeaf = std::dynamic_pointer_cast<bs::sync::hd::CCLeaf>(wallet);
    if (ccLeaf) {
       logger_->warn("[{}] added CC leaf {} without proper metadata resolution"
          , __func__, wallet->walletId());
-//      ccLeaf->setCCDataResolver(ccResolver_);
-//      updateTracker(ccLeaf);   //TODO: should be request to OnChainTrackerClient
+      ccLeaf->setCCDataResolver(ccResolver_);
+      updateTracker(ccLeaf);   //TODO: should be request to OnChainTrackerClient
    }
    wallet->setUserId(userId_);
-
+#endif
    const auto &itWallet = wallets_.find(wallet->walletId());
    if (itWallet != wallets_.end()) {
       itWallet->second->merge(wallet);
@@ -600,6 +598,7 @@ void WalletsAdapter::sendWalletError(const std::string &walletId
    pushBroadcast(ownUser_, msg.SerializeAsString());
 }
 
+#if 0
 void WalletsAdapter::authLeafAdded(const std::string& walletId)
 {
    const auto &priWallet = getPrimaryWallet();
@@ -631,6 +630,7 @@ void WalletsAdapter::authLeafAdded(const std::string& walletId)
       pushBroadcast(ownUser_, msg.SerializeAsString());
    });
 }
+#endif   //0
 
 void WalletsAdapter::addressAdded(const std::string &walletId)
 {
@@ -950,20 +950,12 @@ bool WalletsAdapter::processOwnRequest(const bs::message::Envelope &env)
       return processTXDetails(env, msg.tx_details_request());
    case WalletsMessage::kGetUtxos:
       return processGetUTXOs(env, msg.get_utxos());
-   case WalletsMessage::kSetUserId:
-      return processSetUserId(msg.set_user_id());
-   case WalletsMessage::kGetAuthKey:
-      return processAuthKey(env, msg.get_auth_key());
    case WalletsMessage::kReserveUtxos:
       return processReserveUTXOs(env, msg.reserve_utxos());
    case WalletsMessage::kGetReservedUtxos:
       return processGetReservedUTXOs(env, msg.get_reserved_utxos());
    case WalletsMessage::kUnreserveUtxos:
       return processUnreserveUTXOs(msg.unreserve_utxos());
-   case WalletsMessage::kPayinRequest:
-      return processPayin(env, msg.payin_request());
-   case WalletsMessage::kPayoutRequest:
-      return processPayout(env, msg.payout_request());
    default: break;
    }
    return true;
@@ -990,12 +982,12 @@ bool WalletsAdapter::processHdWalletGet(const Envelope &env
       msgGroup->set_ext_only(group->extOnly());
       msgGroup->set_name(group->name());
       msgGroup->set_desc(group->description());
-
+#if 0
       const auto &authGroup = std::dynamic_pointer_cast<bs::sync::hd::AuthGroup>(group);
       if (authGroup && !authGroup->userId().empty()) {
          msgGroup->set_salt(authGroup->userId().toBinStr());
       }
-
+#endif   //0
       for (const auto &leaf : group->getLeaves()) {
          auto msgLeaf = msgGroup->add_leaves();
          for (const auto &id : leaf->internalIds()) {
@@ -1079,7 +1071,7 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
       hdWallet.name = wallet->name();
       hdWallet.primary = wallet->isPrimary();
       hdWallet.offline = wallet->isOffline();
-
+#if 0 // trading is being removed
       if (request.auth_group()) {
          const auto& grp = wallet->getGroup(bs::hd::BlockSettle_Auth);
          if (grp) {
@@ -1101,7 +1093,7 @@ bool WalletsAdapter::processWalletsList(const bs::message::Envelope& env
             hdWallet.groups.push_back(hdGroup);
          }
       }
-
+#endif   //0
       const auto& xbtGroup = wallet->getGroup(wallet->getXBTGroupType());
       if (!xbtGroup) {
          continue;
@@ -1927,67 +1919,6 @@ bool WalletsAdapter::processUTXOs(uint64_t msgId, const ArmoryMessage_UTXOs& res
    return true;
 }
 
-bool WalletsAdapter::processSetUserId(const std::string& userIdHex)
-{
-   const auto& userId = BinaryData::CreateFromHex(userIdHex);
-   std::string primaryWalletId;
-   for (const auto& hdWallet : hdWallets_) {
-      hdWallet->setUserId(userId);
-      if (primaryWalletId.empty() && hdWallet->isPrimary()) {
-         primaryWalletId = hdWallet->walletId();
-      }
-   }
-   signerClient_->setUserId(userId, primaryWalletId);
-   return true;
-}
-
-bool WalletsAdapter::processAuthKey(const bs::message::Envelope& env
-   , const std::string& address)
-{
-   bs::Address authAddr;
-   try {
-      authAddr = bs::Address::fromAddressString(address);
-   }
-   catch (const std::exception&) {
-      logger_->error("[{}] failed to deser auth address {}", __func__, address);
-      return true;
-   }
-   const auto& cbPubKey = [this, env, authAddr](const SecureBinaryData& pubKey)
-   {
-      WalletsMessage msg;
-      auto msgResp = msg.mutable_auth_key();
-      msgResp->set_auth_address(authAddr.display());
-      msgResp->set_auth_key(pubKey.toBinStr());
-      pushResponse(ownUser_, env, msg.SerializeAsString());
-   };
-   const auto &priWallet = getPrimaryWallet();
-   if (!priWallet) {
-      cbPubKey({});
-      return true;
-   }
-   const auto &group = priWallet->getGroup(bs::hd::BlockSettle_Settlement);
-   std::shared_ptr<bs::sync::hd::SettlementLeaf> settlLeaf;
-   if (group) {
-      const auto settlGroup = std::dynamic_pointer_cast<bs::sync::hd::SettlementGroup>(group);
-      if (!settlGroup) {
-         logger_->error("[WalletsAdapter::processAuthKey] wrong settlement group type");
-         return true;
-      }
-      settlLeaf = settlGroup->getLeaf(authAddr);
-   }
-   if (settlLeaf) {
-      settlLeaf->getRootPubkey(cbPubKey);
-   } else {
-      const auto& cbWrap = [this, priWallet, cbPubKey](const SecureBinaryData& pubKey)
-      {
-         cbPubKey(pubKey);
-         priWallet->synchronize([] {});
-      };
-      signerClient_->createSettlementWallet(authAddr, cbWrap);
-   }
-   return true;
-}
-
 bool WalletsAdapter::processReserveUTXOs(const bs::message::Envelope& env
    , const WalletsMessage_ReserveUTXOs& request)
 {
@@ -2123,6 +2054,7 @@ bool WalletsAdapter::processUnreserveUTXOs(const WalletsMessage_ReservationKey& 
    return true;
 }
 
+#if 0 // settlement is being removed
 bool WalletsAdapter::processPayin(const bs::message::Envelope& env
    , const WalletsMessage_PayinRequest& request)
 {
@@ -2456,3 +2388,4 @@ bool WalletsAdapter::processPayout(const bs::message::Envelope& env
    });
    return true;
 }
+#endif   //0

@@ -30,12 +30,12 @@ const int UserHasher::KeyLength = 12;
 
 UserHasher::UserHasher()
 {
-   kdf_ = KeyDerivationFunction::deserialize(BinaryData::CreateFromHex(kdf_iv));
+   kdf_ = Armory::Wallets::Encryption::KeyDerivationFunction::deserialize(BinaryData::CreateFromHex(kdf_iv));
 }
 
 UserHasher::UserHasher(const BinaryData& iv)
 {
-   kdf_ = KeyDerivationFunction::deserialize(iv);
+   kdf_ = Armory::Wallets::Encryption::KeyDerivationFunction::deserialize(iv);
 }
 
 std::string UserHasher::deriveKey(const std::string& rawData) const

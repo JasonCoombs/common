@@ -67,7 +67,7 @@ namespace bs {
          float feeRatePb_{};
       };
 
-      struct PayinArgs : public Args
+      /*struct PayinArgs : public Args
       {
          // Set if createPayin is used with manual UTXO selection
          std::vector<UTXO> fixedInputs;
@@ -91,7 +91,7 @@ namespace bs {
          bs::Address recvAddr;
 
          std::shared_ptr<bs::sync::Wallet> outputXbtWallet;
-      };
+      };*/
 
       struct Result
       {
@@ -104,17 +104,17 @@ namespace bs {
          static Result error(std::string msg);
       };
 
-      struct PayinResult : public Result
+      /*struct PayinResult : public Result
       {
          BinaryData     payinHash;
 
          static PayinResult error(std::string msg);
-      };
+      };*/
 
-      using PayoutResult = Result;
+      //using PayoutResult = Result;
 
-      using PayinResultCb = std::function<void(bs::tradeutils::PayinResult result)>;
-      using PayoutResultCb = std::function<void(bs::tradeutils::PayoutResult result)>;
+      //using PayinResultCb = std::function<void(bs::tradeutils::PayinResult result)>;
+      //using PayoutResultCb = std::function<void(bs::tradeutils::PayoutResult result)>;
 
       unsigned feeTargetBlockCount();
 
@@ -123,20 +123,20 @@ namespace bs {
       uint32_t payoutMaxTxSize();
       XBTAmount minXbtAmount(float feePerByte);
 
-      uint64_t estimatePayinFeeWithoutChange(const std::vector<UTXO> &inputs, float feePerByte);
+      //uint64_t estimatePayinFeeWithoutChange(const std::vector<UTXO> &inputs, float feePerByte);
 
       UTXO getInputFromTX(const bs::Address &, const BinaryData &payinHash
          , unsigned txOutIndex, const bs::XBTAmount& amount);
-      bs::core::wallet::TXSignRequest createPayoutTXRequest(UTXO
-         , const bs::Address &recvAddr, float feePerByte, unsigned int topBlock);
+      //bs::core::wallet::TXSignRequest createPayoutTXRequest(UTXO
+      //   , const bs::Address &recvAddr, float feePerByte, unsigned int topBlock);
 
       // Callback is called from background thread
-      void createPayin(PayinArgs args, PayinResultCb cb);
+      //void createPayin(PayinArgs args, PayinResultCb cb);
 
       // Callback is called from background thread
-      void createPayout(PayoutArgs args, PayoutResultCb cb, bool myKeyFirst = true);
+      //void createPayout(PayoutArgs args, PayoutResultCb cb, bool myKeyFirst = true);
 
-      struct PayoutVerifyArgs
+      /*struct PayoutVerifyArgs
       {
          BinaryData signedTx;
          bs::Address settlAddr;
@@ -150,7 +150,7 @@ namespace bs {
          std::string errorMsg;
       };
 
-      PayoutVerifyResult verifySignedPayout(PayoutVerifyArgs args);
+      PayoutVerifyResult verifySignedPayout(PayoutVerifyArgs args);*/
 
       // Maximum XBT amount multiplier for possible price changes
       double reservationQuantityMultiplier();

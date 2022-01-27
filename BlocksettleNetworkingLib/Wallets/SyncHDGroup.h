@@ -85,7 +85,7 @@ namespace bs {
             WalletCallbackTarget *wct_{};
          };
 
-
+#if 0
          class AuthGroup : public Group
          {
          public:
@@ -146,7 +146,7 @@ namespace bs {
          private:
             std::map<BinaryData, bs::hd::Path>  addrMap_;
          };
-
+#endif   //0
       }  //namespace hd
    }  //namespace sync
 }  //namespace bs

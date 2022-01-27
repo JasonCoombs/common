@@ -412,13 +412,13 @@ bool Wallet::getAddressTxnCounts(const std::function<void(void)> &cb)
 
 bool Wallet::getHistoryPage(const std::shared_ptr<AsyncClient::BtcWallet> &btcWallet
    , uint32_t id, std::function<void(const Wallet *wallet
-   , std::vector<ClientClasses::LedgerEntry>)> clientCb, bool onlyNew) const
+   , std::vector<DBClientClasses::LedgerEntry>)> clientCb, bool onlyNew) const
 {
    if (!isBalanceAvailable()) {
       return false;
    }
    const auto &cb = [this, id, onlyNew, clientCb, handle = validityFlag_.handle(), logger=logger_]
-                    (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entries) mutable -> void
+                    (ReturnMessage<std::vector<DBClientClasses::LedgerEntry>> entries) mutable -> void
    {
       try {
          auto le = entries.get();
@@ -439,13 +439,13 @@ bool Wallet::getHistoryPage(const std::shared_ptr<AsyncClient::BtcWallet> &btcWa
                clientCb(this, {});
             }
             else {
-               std::vector<ClientClasses::LedgerEntry> diff;
+               std::vector<DBClientClasses::LedgerEntry> diff;
                struct comparator {
-                  bool operator() (const ClientClasses::LedgerEntry &a, const ClientClasses::LedgerEntry &b) const {
+                  bool operator() (const DBClientClasses::LedgerEntry &a, const DBClientClasses::LedgerEntry &b) const {
                      return (a.getTxHash() < b.getTxHash());
                   }
                };
-               std::set<ClientClasses::LedgerEntry, comparator> diffSet;
+               std::set<DBClientClasses::LedgerEntry, comparator> diffSet;
                diffSet.insert(le.begin(), le.end());
                for (const auto &entry : histPage->second) {
                   diffSet.erase(entry);
@@ -718,6 +718,7 @@ void Wallet::onRegistered()
    init();
 }
 
+#if 0
 std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConnection> &armory, bool asNew)
 {
    setArmory(armory);
@@ -737,25 +738,26 @@ std::vector<std::string> Wallet::registerWallet(const std::shared_ptr<ArmoryConn
    return {};
 }
 
-Wallet::WalletRegData Wallet::regData() const
+void Wallet::unregisterWallet()
 {
-   WalletRegData result;
-   const auto &addrHashes = getAddrHashes();
-   result[walletId()] = addrHashes;
-   registeredAddresses_.insert(addrHashes.begin(), addrHashes.end());
-   logger_->debug("[bs::sync::Wallet::regData] wallet {}, {} addresses = {}"
-      , walletId(), getAddrHashes().size(), regId_);
-   return result;
+   historyCache_.clear();
 }
+#endif   //0
 
 Wallet::UnconfTgtData Wallet::unconfTargets() const
 {
    return { { walletId(), 1 } };
 }
 
-void Wallet::unregisterWallet()
+Wallet::WalletRegData Wallet::regData() const
 {
-   historyCache_.clear();
+   WalletRegData result;
+   const auto& addrHashes = getAddrHashes();
+   result[walletId()] = addrHashes;
+   registeredAddresses_.insert(addrHashes.begin(), addrHashes.end());
+   logger_->debug("[bs::sync::Wallet::regData] wallet {}, {} addresses = {}"
+      , walletId(), getAddrHashes().size(), regId_);
+   return result;
 }
 
 void Wallet::init(bool force)
@@ -782,7 +784,7 @@ void Wallet::init(bool force)
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::string> &walletsIds
    , const std::vector<UTXO> &inputs
-   , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
+   , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &recipients
    , bool allowBroadcasts, const bs::Address &changeAddr
    , const std::string &changeIndex
    , const uint64_t fee
@@ -798,7 +800,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
    }
 
    for (const auto& utxo : inputs) {
-      auto spender = std::make_shared<ArmorySigner::ScriptSpender>(utxo);
+      auto spender = std::make_shared<Armory::Signer::ScriptSpender>(utxo);
       if (isRBF) {
          spender->setSequence(UINT32_MAX - 2);
       }
@@ -841,7 +843,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet*> &wallets
    , const std::vector<UTXO> &inputs
-   , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
+   , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &recipients
    , bool allowBroadcasts
    , const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
@@ -870,7 +872,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<Wallet
 
 bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
    , const std::vector<UTXO> &inputs
-   , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients
+   , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &recipients
    , bool allowBroadcasts, const bs::Address &changeAddr
    , const uint64_t fee, bool isRBF)
 {
@@ -882,7 +884,7 @@ bs::core::wallet::TXSignRequest wallet::createTXRequest(const std::vector<std::s
 }
 
 bs::core::wallet::TXSignRequest Wallet::createTXRequest(const std::vector<UTXO> &inputs
-   , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &recipients, bool allowBroadcasts, const uint64_t fee
+   , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &recipients, bool allowBroadcasts, const uint64_t fee
    , bool isRBF, const bs::Address &changeAddress)
 {
    if (!changeAddress.empty()) {
@@ -927,6 +929,7 @@ void WalletACT::onLedgerForAddress(const bs::Address &addr
    }
 }
 
+#if 0
 bool Wallet::getLedgerDelegateForAddress(const bs::Address &addr
    , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &cb)
 {
@@ -944,6 +947,7 @@ bool Wallet::getLedgerDelegateForAddress(const bs::Address &addr
    }
    return armory_->getLedgerDelegateForAddress(walletId(), addr);
 }
+#endif   //0
 
 int Wallet::addAddress(const bs::Address &addr, const std::string &index
    , bool sync)
@@ -966,6 +970,7 @@ int Wallet::addAddress(const bs::Address &addr, const std::string &index
    return (usedAddresses_.size() - 1);
 }
 
+#if 0
 void Wallet::syncAddresses()
 {
    if (armory_) {
@@ -980,6 +985,7 @@ void Wallet::syncAddresses()
       signContainer_->syncAddressBatch(walletId(), addrSet, [](bs::sync::SyncState) {});
    }
 }
+#endif   //0
 
 void Wallet::newAddresses(const std::vector<std::string> &inData
    , const CbAddresses &cb)

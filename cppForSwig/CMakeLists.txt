@@ -15,8 +15,13 @@ PROJECT(${CRYPTO_LIB_NAME})
 SET(CPP_FOR_SWIG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../ArmoryDB/cppForSwig)
 
 SET (SOURCES
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AccountTypes.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AddressAccounts.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AssetAccounts.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/MetaAccounts.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/Addresses.cpp
    ${CPP_FOR_SWIG_ROOT}/ArmoryBackups.cpp
+   ${CPP_FOR_SWIG_ROOT}/ArmoryConfig.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/AssetEncryption.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/Assets.cpp
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.cpp
@@ -28,7 +33,9 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/BitcoinSettings.cpp
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.cpp
    ${CPP_FOR_SWIG_ROOT}/CoinSelection.cpp
+   ${CPP_FOR_SWIG_ROOT}/DBClientClasses.cpp
    ${CPP_FOR_SWIG_ROOT}/DBUtils.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/EncryptedDB.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/DecryptedDataContainer.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/DerivationScheme.cpp
    ${CPP_FOR_SWIG_ROOT}/EncryptionUtils.cpp
@@ -39,6 +46,7 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/log.cpp
    ${CPP_FOR_SWIG_ROOT}/ReentrantLock.cpp
    ${CPP_FOR_SWIG_ROOT}/Signer/ResolverFeed.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/ResolverFeed_Wallets.cpp
    ${CPP_FOR_SWIG_ROOT}/Signer/Script.cpp
    ${CPP_FOR_SWIG_ROOT}/Signer/ScriptRecipient.cpp
    ${CPP_FOR_SWIG_ROOT}/SecureBinaryData.cpp
@@ -49,14 +57,18 @@ SET (SOURCES
    ${CPP_FOR_SWIG_ROOT}/Signer/Transactions.cpp
    ${CPP_FOR_SWIG_ROOT}/TxClasses.cpp
    ${CPP_FOR_SWIG_ROOT}/Signer/TxEvalState.cpp
+   ${CPP_FOR_SWIG_ROOT}/TxHashFilters.cpp
+   ${CPP_FOR_SWIG_ROOT}/TxOutScrRef.cpp
    ${CPP_FOR_SWIG_ROOT}/UniversalTimer.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/WalletFileInterface.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/WalletHeader.cpp
    ${CPP_FOR_SWIG_ROOT}/BridgeAPI/WalletManager.cpp
    ${CPP_FOR_SWIG_ROOT}/Wallets/Wallets.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletIdTypes.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketClient.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketMessage.cpp
    ${CPP_FOR_SWIG_ROOT}/ZeroConfNotifications.cpp
+   ${CPP_FOR_SWIG_ROOT}/ZeroConfUtils.cpp
    ${CPP_FOR_SWIG_ROOT}/hkdf/hkdf.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/mdb.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/midl.c

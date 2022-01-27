@@ -12,7 +12,6 @@
 
 #include "AddressValidationState.h"
 #include "CheckRecipSigner.h"
-#include "ColoredCoinLogic.h"
 #include "FastLock.h"
 #include "WalletSignerContainer.h"
 #include "WalletUtils.h"
@@ -27,6 +26,7 @@ const uint32_t kExtConfCount = 1;
 const uint32_t kIntConfCount = 1;
 static const std::string& kScanSuffix{ ".scan" };
 
+using namespace Armory::Wallets;
 using namespace bs::sync;
 
 hd::Leaf::Leaf(const std::string &walletId, const std::string &name, const std::string &desc
@@ -486,6 +486,7 @@ std::vector<BinaryData> hd::Leaf::getAddrHashesInt() const
    return std::vector<BinaryData>(result.begin(), result.end());
 }
 
+#if 0
 std::vector<std::string> hd::Leaf::registerWallet(
    const std::shared_ptr<ArmoryConnection> &armory, bool asNew)
 {
@@ -521,6 +522,21 @@ std::vector<std::string> hd::Leaf::registerWallet(
    return {};
 }
 
+void hd::Leaf::unregisterWallet()
+{
+   // Check armory state before unregister call as armory will throw LWS_Error if socket connection is offline
+   if (armory_ && armory_->state() == ArmoryState::Ready) {
+      if (btcWallet_) {
+         btcWallet_->unregister();
+      }
+      if (btcWalletInt_) {
+         btcWalletInt_->unregister();
+      }
+   }
+   bs::sync::Wallet::unregisterWallet();
+}
+#endif //0
+
 Wallet::WalletRegData hd::Leaf::regData() const
 {
    const auto addrsExt = getAddrHashesExt();
@@ -541,21 +557,7 @@ Wallet::WalletRegData hd::Leaf::regData() const
 Wallet::UnconfTgtData hd::Leaf::unconfTargets() const
 {
    return isExtOnly_ ? Wallet::UnconfTgtData{ { walletId(), 1 } }
-      : Wallet::UnconfTgtData{ { walletId(), 1 }, { walletIdInt(), 1 } };
-}
-
-void hd::Leaf::unregisterWallet()
-{
-   // Check armory state before unregister call as armory will throw LWS_Error if socket connection is offline
-   if (armory_ && armory_->state() == ArmoryState::Ready) {
-      if (btcWallet_) {
-         btcWallet_->unregister();
-      }
-      if (btcWalletInt_) {
-         btcWalletInt_->unregister();
-      }
-   }
-   bs::sync::Wallet::unregisterWallet();
+   : Wallet::UnconfTgtData{ { walletId(), 1 }, { walletIdInt(), 1 } };
 }
 
 void hd::Leaf::createAddress(const CbAddress &cb, bool isInternal)
@@ -722,11 +724,12 @@ bs::hd::Path hd::Leaf::getPathForAddress(const bs::Address &addr) const
    return index.path;
 }
 
-std::shared_ptr<ArmorySigner::ResolverFeed> hd::Leaf::getPublicResolver() const
+std::shared_ptr<Armory::Signer::ResolverFeed> hd::Leaf::getPublicResolver() const
 {
    return nullptr;
 }
 
+#if 0
 bool hd::Leaf::getLedgerDelegateForAddress(const bs::Address &addr
    , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &cb)
 {
@@ -751,6 +754,7 @@ bool hd::Leaf::getLedgerDelegateForAddress(const bs::Address &addr
       return armory_->getLedgerDelegateForAddress(walletId(), addr);
    }
 }
+#endif   //0
 
 bool hd::Leaf::hasId(const std::string &id) const
 {
@@ -827,12 +831,12 @@ BTCNumericTypes::balance_type hd::Leaf::getSpendableBalance() const
 }
 
 bool hd::Leaf::getHistoryPage(uint32_t id, std::function<void(const Wallet *wallet
-   , std::vector<ClientClasses::LedgerEntry>)> cb, bool onlyNew) const
+   , std::vector<DBClientClasses::LedgerEntry>)> cb, bool onlyNew) const
 {
    auto cbCnt = std::make_shared<std::atomic_uint>(0);
-   auto result = std::make_shared<std::vector<ClientClasses::LedgerEntry>>();
+   auto result = std::make_shared<std::vector<DBClientClasses::LedgerEntry>>();
    const auto &cbWrap = [this, cb, cbCnt, result](const Wallet *wallet
-      , std::vector<ClientClasses::LedgerEntry> entries) {
+      , std::vector<DBClientClasses::LedgerEntry> entries) {
       result->insert(result->end(), entries.begin(), entries.end());
       if (isExtOnly_ || (cbCnt->fetch_add(1) > 0)) {
          cb(wallet, *result);
@@ -914,9 +918,8 @@ hd::XBTLeaf::~XBTLeaf()
    validityFlag_.reset();
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#if 0
 hd::AuthLeaf::AuthLeaf(const std::string &walletId, const std::string &name, const std::string &desc
    , WalletSignerContainer *container,const std::shared_ptr<spdlog::logger> &logger)
    : Leaf(walletId, name, desc, container, logger, bs::core::wallet::Type::Authentication, true)
@@ -1220,3 +1223,4 @@ void hd::SettlementLeaf::getRootPubkey(const std::function<void(const SecureBina
    };
    signContainer_->getRootPubkey(walletId(), cbWrap);
 }
+#endif   //0

@@ -83,10 +83,6 @@ namespace bs {
             void setUserId(const BinaryData &usedId);
             bool deleteRemotely();
 
-            [[deprecated]] std::vector<std::string> registerWallet(
-               const std::shared_ptr<ArmoryConnection> &, bool asNew = false);
-            [[deprecated]] std::vector<std::string> setUnconfirmedTargets(void);
-
             void setArmory(const std::shared_ptr<ArmoryConnection> &);
             void startRescan();
             void scan(const std::function<void(bs::sync::SyncState)> &);
@@ -99,22 +95,12 @@ namespace bs {
                const std::shared_ptr<ArmoryConnection> &armory)
             {
                const auto &leaves = getLeaves();
-               for (auto& leaf : leaves)
-               {
-                  //settlement leaves are not registered, they dont need an ACT
-                  if (leaf->type() == bs::core::wallet::Type::Settlement)
-                     continue;
-
+               for (auto& leaf : leaves) {
                   leaf->setCustomACT<U>(armory);
                }
             }
 
             [[deprecated]] void setWCT(WalletCallbackTarget *);
-
-            //settlement shenanigans
-            void getSettlementPayinAddress(const SecureBinaryData &settlId
-               , const SecureBinaryData &cpPubKey, const bs::sync::Wallet::CbAddress &
-               , bool myFirst = true) const;
 
          protected:
             void addressAdded(const std::string &walletId) override { wct_->addressAdded(walletId); }

@@ -147,15 +147,15 @@ private:
 
    bool onSignTxRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &packet
       , Blocksettle::Communication::headless::RequestType requestType);
-   bool onSignSettlementPayoutTxRequest(const std::string &clientId
-      , const Blocksettle::Communication::headless::RequestPacket &packet);
-   bool onSignAuthAddrRevokeRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &);
+   //bool onSignSettlementPayoutTxRequest(const std::string &clientId
+   //   , const Blocksettle::Communication::headless::RequestPacket &packet);
+   //bool onSignAuthAddrRevokeRequest(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &);
    bool onResolvePubSpenders(const std::string &clientId, const Blocksettle::Communication::headless::RequestPacket &packet);
    bool onCreateHDLeaf(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket &packet);
-   bool onEnableTradingInWallet(const std::string& clientId, Blocksettle::Communication::headless::RequestPacket& packet);
-   bool onPromoteWalletToPrimary(const std::string& clientId, Blocksettle::Communication::headless::RequestPacket& packet);
-   bool onSetUserId(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket &packet);
-   bool onSyncCCNames(Blocksettle::Communication::headless::RequestPacket &packet);
+   //bool onEnableTradingInWallet(const std::string& clientId, Blocksettle::Communication::headless::RequestPacket& packet);
+   //bool onPromoteWalletToPrimary(const std::string& clientId, Blocksettle::Communication::headless::RequestPacket& packet);
+   //bool onSetUserId(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket &packet);
+   //bool onSyncCCNames(Blocksettle::Communication::headless::RequestPacket &packet);
    bool onGetHDWalletInfo(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket &packet);
    bool onCancelSignTx(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
    bool onUpdateDialogData(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
@@ -166,15 +166,15 @@ private:
    bool onSyncAddresses(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
    bool onExtAddrChain(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
    bool onSyncNewAddr(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onChatNodeRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onSettlAuthRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onSettlCPRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onChatNodeRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onSettlAuthRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onSettlCPRequest(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
    bool onExecCustomDialog(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
 
-   bool onCreateSettlWallet(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onSetSettlementId(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onGetPayinAddr(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
-   bool onSettlGetRootPubkey(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onCreateSettlWallet(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onSetSettlementId(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onGetPayinAddr(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
+   //bool onSettlGetRootPubkey(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
 
    bool AuthResponse(const std::string &clientId, Blocksettle::Communication::headless::RequestPacket packet);
    void SignTXResponse(const std::string &clientId, unsigned int id, Blocksettle::Communication::headless::RequestType reqType
@@ -188,8 +188,8 @@ private:
    void GetHDWalletInfoResponse(const std::string &clientId, unsigned int id, const std::string &walletId
       , const std::shared_ptr<bs::core::hd::Wallet> &, const std::string &error = {});
    void SyncAddrsResponse(const std::string &clientId, unsigned int id, const std::string &walletId, bs::sync::SyncState);
-   void setUserIdResponse(const std::string &clientId, unsigned int id
-      , Blocksettle::Communication::headless::AuthWalletResponseType, const std::string &walletId = {});
+   //void setUserIdResponse(const std::string &clientId, unsigned int id
+   //   , Blocksettle::Communication::headless::AuthWalletResponseType, const std::string &walletId = {});
    void AutoSignActivatedEvent(bs::error::ErrorCode result, const std::string &walletId);
 
    bool RequestPasswordIfNeeded(const std::string &clientId, const std::string &walletId
@@ -204,9 +204,9 @@ private:
       , const PasswordReceivedCb &cb);
    void RunDeferredPwDialog();
 
-   bool createAuthLeaf(const std::shared_ptr<bs::core::hd::Wallet> &, const BinaryData &salt);
-   bool createSettlementLeaves(const std::shared_ptr<bs::core::hd::Wallet> &wallet
-      , const std::vector<bs::Address> &authAddresses);
+   //bool createAuthLeaf(const std::shared_ptr<bs::core::hd::Wallet> &, const BinaryData &salt);
+   //bool createSettlementLeaves(const std::shared_ptr<bs::core::hd::Wallet> &wallet
+   //   , const std::vector<bs::Address> &authAddresses);
 
    bool checkSpendLimit(uint64_t value, const std::string &walletId, bool autoSign);
 

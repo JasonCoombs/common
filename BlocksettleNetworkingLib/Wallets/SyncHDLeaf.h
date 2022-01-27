@@ -209,7 +209,7 @@ namespace bs {
             ~XBTLeaf() override;
          };
 
-
+#if 0
          class AuthLeaf : public Leaf
          {
          public:
@@ -283,7 +283,7 @@ namespace bs {
             void createAddress(const CbAddress &, const AddrPoolKey &) override;
             void topUpAddressPool(bool extInt, const std::function<void()> &cb = nullptr) override;
          };
-
+#endif   //0
       }  //namespace hd
    }  //namespace sync
 }  //namespace bs

@@ -19,7 +19,6 @@
 #include <bdmenums.h>
 
 #include "ArmorySettings.h"
-#include "autheid_utils.h"
 #include "LogManager.h"
 
 // hasher to allow compile std::unordered_map with enum as key
@@ -32,7 +31,7 @@ struct EnumClassHash
     }
 };
 
-enum class AuthEidEnv : int;
+//enum class AuthEidEnv : int;
 
 class ApplicationSettings : public QObject
 {
@@ -192,12 +191,12 @@ public:
 
    std::vector<bs::LogConfig> GetLogsConfig() const;
 
-   std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
+   //std::pair<autheid::PrivateKey, autheid::PublicKey> GetAuthKeys();
    std::string GetBlocksettleSignAddress() const;
 
    void selectNetwork();
 
-   AuthEidEnv autheidEnv() const;
+   //AuthEidEnv autheidEnv() const;
 
    // Returns "prod", "uat", "staging" or "custom"
    static std::string envName(EnvConfiguration conf);
@@ -239,9 +238,6 @@ private:
    QString  dataDir_;
    QString  bitcoinsDir_;
    QString  dbDir_;
-
-   autheid::PrivateKey  authPrivKey_;
-   autheid::PublicKey   authPubKey_;
 };
 
 template<> QString ApplicationSettings::get<QString>(Setting s, bool getDefaultValue) const;

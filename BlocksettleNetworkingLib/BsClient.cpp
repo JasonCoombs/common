@@ -561,7 +561,7 @@ void BsClient::processAuthorize(const Response_Authorize &response)
 void BsClient::processGetLoginResult(const Response_GetLoginResult &response)
 {
    BsClientLoginResult result;
-   result.status = static_cast<AutheIDClient::ErrorType>(response.error().error_code());
+   //result.status = static_cast<AutheIDClient::ErrorType>(response.error().error_code());
    result.errorMsg = response.error().message();
    result.userType = static_cast<bs::network::UserType>(response.user_type());
    result.celerLogin = response.celer_login();

@@ -18,6 +18,7 @@
 
 #include <chrono>
 
+using namespace Armory::Wallets;
 using namespace bs::network;
 
 // A call resetting the encryption-related data for individual connections.
@@ -88,7 +89,7 @@ TransportBIP15xServer::TransportBIP15xServer(
       */
 
       authPeers_ = std::make_unique<AuthorizedPeers>(ownKeyFileDir, ownKeyFileName
-         , [] (const std::set<BinaryData> &) { return SecureBinaryData(); });
+         , [] (const std::set<Armory::Wallets::EncryptionKeyId>&) { return SecureBinaryData(); });
    }
 
    /*
@@ -160,7 +161,7 @@ void TransportBIP15xServer::rekey(const std::string &clientId)
    BinaryData rekeyData(BIP151PUBKEYSIZE);
    std::memset(rekeyData.getPtr(), 0, BIP151PUBKEYSIZE);
 
-   auto packet = bip15x::MessageBuilder(rekeyData, ArmoryAEAD::HandshakeSequence::Rekey)
+   auto packet = bip15x::MessageBuilder(rekeyData, ArmoryAEAD::BIP151_PayloadType::Rekey)
       .encryptIfNeeded(conn).build();
 
    logger_->debug("[TransportBIP15xServer::rekey] rekeying session for {} ({} {})"
@@ -195,7 +196,7 @@ std::unique_ptr<BIP15xPeer> TransportBIP15xServer::getClientKey(const std::strin
 
 void TransportBIP15xServer::startHandshake(const std::string &clientID)
 {
-   bip15x::MessageBuilder payload(ArmoryAEAD::HandshakeSequence::Start);
+   bip15x::MessageBuilder payload({}, ArmoryAEAD::BIP151_PayloadType::Start);
    const auto &msg = bip15x::Message::parse(payload.build());
    if (!processAEADHandshake(msg, clientID)) {
       SPDLOG_LOGGER_ERROR(logger_, "failed to start AEAD handshake");
@@ -283,7 +284,7 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
 {
    // Function used to actually send data to the client.
    auto writeToClient = [this, clientId]
-      (const BinaryData &msg, uint8_t type, bool encrypt) -> bool
+      (const BinaryData &msg, ArmoryAEAD::BIP151_PayloadType type, bool encrypt) -> bool
    {
       BIP151Connection* conn = nullptr;
       if (encrypt) {
@@ -314,13 +315,12 @@ bool TransportBIP15xServer::processAEADHandshake(const bip15x::Message &msgObj
 
    switch (msgObj.getAEADType())
    {
-   case ArmoryAEAD::HandshakeSequence::Start:
+   case ArmoryAEAD::BIP151_PayloadType::Start:
    {
       if (connection->encData_->isOneWayAuth())
       {
-         writeToClient(
-            connection->encData_->getOwnPubKey(),
-            ArmoryAEAD::HandshakeSequence::PresentPubKey,
+         writeToClient(connection->encData_->getOwnPubKey(),
+            ArmoryAEAD::BIP151_PayloadType::PresentPubKey,
             false);
       }
 
@@ -408,7 +408,7 @@ bool TransportBIP15xServer::sendData(const std::string &clientId, const std::str
    // Encrypt data here if the BIP 150 handshake is complete.
    if (connection->encData_ && connection->encData_->getBIP150State() == BIP150State::SUCCESS) {
       const auto &packet = bip15x::MessageBuilder(BinaryData::fromString(data)
-         , bip15x::MsgType::SinglePacket).encryptIfNeeded(connPtr).build();
+         , ArmoryAEAD::BIP151_PayloadType::SinglePacket).encryptIfNeeded(connPtr).build();
       return sendDataCb_(clientId, packet.toBinStr());
    }
 
