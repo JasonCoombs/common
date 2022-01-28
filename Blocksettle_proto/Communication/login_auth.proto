@@ -1,0 +1,27 @@
+/*
+
+***********************************************************************************
+* Copyright (C) 2021, BlockSettle AB
+* Distributed under the GNU Affero General Public License (AGPL v3)
+* See LICENSE or http://www.gnu.org/licenses/agpl.html
+*
+**********************************************************************************
+
+*/
+syntax = "proto3";
+
+package BlockSettle.LoginAuth;
+
+
+message Message
+{
+   message Empty {}
+
+   oneof data
+   {
+      Empty  renew_request = 1;
+      string renew_response = 2;
+      string refresh_request = 3;
+      string refresh_response = 4;
+   }
+}

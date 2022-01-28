@@ -136,16 +136,16 @@ bs::network::MDFields GetMDFields(const Blocksettle::Communication::BlocksettleM
    bs::network::MDFields result;
 
    if (!qFuzzyIsNull(productInfo.offer())) {
-      result.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, productInfo.offer(), QString()} );
+      result.emplace_back(bs::network::MDField{ bs::network::MDField::PriceOffer, productInfo.offer(), {} });
    }
    if (!qFuzzyIsNull(productInfo.bid())) {
-      result.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, productInfo.bid(), QString()} );
+      result.emplace_back(bs::network::MDField{ bs::network::MDField::PriceBid, productInfo.bid(), {} });
    }
    if (!qFuzzyIsNull(productInfo.last_price())) {
-      result.emplace_back( bs::network::MDField{ bs::network::MDField::PriceLast, productInfo.last_price(), QString()} );
+      result.emplace_back(bs::network::MDField{ bs::network::MDField::PriceLast, productInfo.last_price(), {} });
    }
 
-   result.emplace_back( bs::network::MDField{ bs::network::MDField::DailyVolume, productInfo.volume(), QString()} );
+   result.emplace_back(bs::network::MDField{ bs::network::MDField::DailyVolume, productInfo.volume(), {} });
 
    return result;
 }
@@ -228,15 +228,15 @@ void BSMarketDataProvider::OnPriceBookUpdate(const bs::network::Asset::Type& ass
    {
       bs::network::MDFields mdFields;
       for (const auto &price : priceBookInfo.prices()) {
-         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, price.ask(), QString::fromStdString(price.volume())} );
-         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, price.bid(), QString::fromStdString(price.volume())} );
+         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceOffer, price.ask(), price.volume()} );
+         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceBid, price.bid(), price.volume()} );
       }
 
       if (!qFuzzyIsNull(priceBookInfo.last_price())) {
-         mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::PriceLast, priceBookInfo.last_price(), QString()} );
+         mdFields.emplace_back(bs::network::MDField{ bs::network::MDField::PriceLast, priceBookInfo.last_price(), {} });
       }
 
-      mdFields.emplace_back( bs::network::MDField{ bs::network::MDField::DailyVolume, priceBookInfo.volume(), QString()} );
+      mdFields.emplace_back(bs::network::MDField{ bs::network::MDField::DailyVolume, priceBookInfo.volume(), {} });
       callbacks_->onMDUpdate(assetType, priceBookInfo.product_name(), mdFields);
    }
 

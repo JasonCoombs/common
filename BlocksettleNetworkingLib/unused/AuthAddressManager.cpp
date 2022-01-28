@@ -15,12 +15,12 @@
 #include "AddressVerificator.h"
 #include "ApplicationSettings.h"
 #include "ArmoryConnection.h"
-#include "BsClient.h"
 #include "CheckRecipSigner.h"
 #include "DBClientClasses.h"
 #include "FastLock.h"
 #include "HeadlessContainer.h"
 #include "RequestReplyCommand.h"
+#include "TradeSettings.h"
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
@@ -222,6 +222,7 @@ bool AuthAddressManager::RevokeAddress(const bs::Address &address)
    return true;
 }
 
+#if 0 // Auth eID and BsClient are deprecated
 void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address)
 {
    logger_->debug("[AuthAddressManager::ConfirmSubmitForVerification] confirm submission of {}", address.display());
@@ -261,6 +262,7 @@ void AuthAddressManager::ConfirmSubmitForVerification(const std::weak_ptr<BsClie
       });
    });
 }
+#endif
 
 void AuthAddressManager::submitToProxy(const bs::Address &address)
 {

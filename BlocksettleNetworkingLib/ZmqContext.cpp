@@ -47,6 +47,12 @@ ZmqContext::sock_ptr ZmqContext::CreateStreamSocket()
    return { zmq_socket(context_.get(), ZMQ_STREAM), zmq_close };
 }
 
+ZmqContext::sock_ptr ZmqContext::CreateSubSocket()
+{
+   FastLock lock(lockerFlag_);
+   return { zmq_socket(context_.get(), ZMQ_SUB), zmq_close };
+}
+
 ZmqContext::sock_ptr    ZmqContext::CreateServerSocket()
 {
    FastLock lock(lockerFlag_);

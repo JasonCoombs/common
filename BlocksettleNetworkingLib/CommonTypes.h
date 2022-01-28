@@ -11,9 +11,6 @@
 #ifndef __BS_COMMON_TYPES_H__
 #define __BS_COMMON_TYPES_H__
 
-#include <QDateTime>
-#include <QObject>
-#include <QString>
 #include "Address.h"
 
 #ifndef NDEBUG
@@ -117,7 +114,6 @@ namespace bs {
          bool isXbtBuy() const;
       };
 
-
       struct Quote
       {
          double price;
@@ -147,7 +143,7 @@ namespace bs {
          };
          QuotingType quotingType;
 
-         QDateTime   expirationTime;
+         std::chrono::system_clock::time_point   expirationTime;
          int         timeSkewMs;
          uint64_t    celerTimestamp;
       };
@@ -156,10 +152,10 @@ namespace bs {
       struct Order
       {
          std::string clOrderId;
-         QString exchOrderId;
+         std::string exchOrderId;
          std::string quoteId;
 
-         QDateTime dateTime;
+         std::chrono::system_clock::time_point dateTime;
          std::string security;
          std::string product;
          BinaryData  settlementId;
@@ -183,7 +179,6 @@ namespace bs {
          Status status{};
          std::string info;
       };
-
 
       struct FutureRequest
       {
@@ -294,7 +289,7 @@ namespace bs {
          };
          Type     type;
          double   value;
-         QString  levelQuantity;
+         std::string levelQuantity;
 
          static MDField get(const MDFields &fields, Type type);
          static MDInfo  get(const MDFields &fields);
@@ -348,19 +343,5 @@ namespace bs {
 
    }  //namespace network
 }  //namespace bs
-
-//TODO: remove below declarations (no Qt signals/slots in common)
-Q_DECLARE_METATYPE(bs::network::Asset::Type)
-Q_DECLARE_METATYPE(bs::network::Quote)
-Q_DECLARE_METATYPE(bs::network::Order)
-Q_DECLARE_METATYPE(bs::network::SecurityDef)
-Q_DECLARE_METATYPE(bs::network::QuoteReqNotification)
-Q_DECLARE_METATYPE(bs::network::QuoteNotification)
-Q_DECLARE_METATYPE(bs::network::MDField)
-Q_DECLARE_METATYPE(bs::network::MDFields)
-Q_DECLARE_METATYPE(bs::network::CCSecurityDef)
-Q_DECLARE_METATYPE(bs::network::NewTrade)
-Q_DECLARE_METATYPE(bs::network::NewPMTrade)
-Q_DECLARE_METATYPE(bs::network::UnsignedPayinData)
 
 #endif //__BS_COMMON_TYPES_H__
