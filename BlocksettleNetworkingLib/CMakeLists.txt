@@ -17,7 +17,6 @@ PROJECT( ${BS_NETWORK_LIB_NAME} )
 FILE(GLOB SOURCES
    *.cpp
    Wallets/*.cpp
-   ChatProtocol/*.cpp
    Encryption/*.cpp
    Adapters/*.cpp
    Message/*.cpp
@@ -26,11 +25,6 @@ FILE(GLOB SOURCES
 FILE(GLOB HEADERS
    *.h
    Wallets/*.h
-   ChatProtocol/*.h
-   ChatProtocol/DataObjects/*.h
-   ChatProtocol/RequestObjects/*.h
-   ChatProtocol/ResponseObjects/*.h
-   ChatClientTree/*.h
    Encryption/*.h
    Adapters/*.h
    Message/*.h
@@ -51,7 +45,8 @@ INCLUDE_DIRECTORIES( ${COMMON_LIB_INCLUDE_DIR} )
 
 INCLUDE_DIRECTORIES( ${BOTAN_INCLUDE_DIR} )
 
-LIST (APPEND SOURCES ${AUTHEID_UTILS})
+INCLUDE_DIRECTORIES(${JANSSON_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${CJOSE_INCLUDE_DIR})
 
 ADD_LIBRARY( ${BS_NETWORK_LIB_NAME} ${SOURCES} ${HEADERS})
 

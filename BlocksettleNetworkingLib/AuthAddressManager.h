@@ -21,7 +21,6 @@
 #include <QObject>
 #include "Address.h"
 #include "ArmoryConnection.h"
-#include "AutheIDClient.h"
 #include "BSErrorCode.h"
 #include "BSErrorCodeStrings.h"
 #include "CommonTypes.h"
@@ -46,7 +45,6 @@ namespace bs {
 class AddressVerificator;
 class ApplicationSettings;
 class ArmoryConnection;
-class BsClient;
 class HeadlessContainer;
 class RequestReplyCommand;
 class ResolverFeed_AuthAddress;
@@ -128,7 +126,7 @@ public:
    bool hasSettlementLeaf(const bs::Address &) const;
    void createSettlementLeaf(const bs::Address &, const std::function<void()> &);
 
-   void ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
+//   void ConfirmSubmitForVerification(const std::weak_ptr<BsClient> &bsClient, const bs::Address &address);
 
    bool RevokeAddress(const bs::Address &address);
 

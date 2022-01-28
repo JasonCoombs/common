@@ -19,7 +19,7 @@
 #include <QVariant>
 #include <QPointer>
 #include "Address.h"
-#include "BsClient.h"
+#include "CommonTypes.h"
 #include "Wallets/SyncWallet.h"
 
 class ApplicationSettings;
@@ -90,8 +90,6 @@ public:
    bool wasAddressSubmitted(const bs::Address &);
    void cancelActiveSign();
 
-   [[deprecated]] void setBsClient(const std::weak_ptr<BsClient> &);
-
    void SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions);
 
 signals:
@@ -124,7 +122,6 @@ private:
    CCCallbackTarget* cct_{ nullptr };
 
    std::shared_ptr<CCPubResolver>         resolver_;
-   std::weak_ptr<BsClient>                bsClient_;
 };
 
 #endif // __CC_FILE_MANAGER_H__

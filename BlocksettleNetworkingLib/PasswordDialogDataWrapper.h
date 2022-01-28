@@ -41,6 +41,7 @@ public:
    void insert(const bs::sync::dialog::keys::Key &key, const char *data, size_t size);
 
    auto mutable_valuesmap() { return data_.mutable_valuesmap(); }
+   auto data() const { return data_; }
 
 private:
    template<typename T>

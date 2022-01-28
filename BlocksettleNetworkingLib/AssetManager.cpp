@@ -40,7 +40,8 @@ void AssetManager::init()
    connect(walletsManager_.get(), &bs::sync::WalletsManager::blockchainEvent, this, &AssetManager::onWalletChanged);
 }
 
-double AssetManager::getBalance(const std::string& currency, bool includeZc, const std::shared_ptr<bs::sync::Wallet> &wallet) const
+double AssetManager::getBalance(const std::string& currency, bool includeZc
+   , const std::shared_ptr<bs::sync::Wallet> &wallet) const
 {
    if (walletsManager_ && (currency == bs::network::XbtCurrency)) {
       if (wallet == nullptr) {
@@ -103,7 +104,6 @@ bool AssetManager::checkBalance(const std::string &currency, double amount, bool
 std::vector<std::string> AssetManager::currencies()
 {
    if (balances_.size() != currencies_.size()) {
-      QMutexLocker lock(&mtxCurrencies_);
       currencies_.clear();
 
       for (const auto balance : balances_) {
@@ -334,7 +334,7 @@ void AssetManager::onMessageFromPB(const ProxyTerminalPb::Response &response)
 
 void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
 {
-   auto currentTime = QDateTime::currentDateTimeUtc();
+   const auto& currentTime = std::chrono::system_clock::now();
    bool emitUpdate = false;
 
    auto it = xbtPriceUpdateTimes_.find(ccy);
@@ -343,7 +343,8 @@ void AssetManager::sendUpdatesOnXBTPrice(const std::string& ccy)
       emitUpdate = true;
       xbtPriceUpdateTimes_.emplace(ccy, currentTime);
    } else {
-      if (it->second.secsTo(currentTime) >= 30) {
+      const auto diff = std::chrono::duration_cast<std::chrono::seconds>(currentTime - it->second);
+      if (diff.count() >= 30) {
          it->second = currentTime;
          emitUpdate = true;
       }
