@@ -116,7 +116,7 @@ message Request
         bs.types.Side   side                 = 2;
         string          product_type         = 3;
         string          user_expected_price  = 4;
-        bool            max_amount           = 5;
+        string          reference            = 5;
     }
 
     message LoadOrders
@@ -402,10 +402,8 @@ message Response
     message MarketOrder
     {
         bool   success     = 1;
-        // id is FS position ID
-        string id          = 2;
-        string error_msg   = 3;
-        string price       = 4;
+        string error_msg   = 2;
+        string reference   = 3;
     }
 
     message LoadOrders

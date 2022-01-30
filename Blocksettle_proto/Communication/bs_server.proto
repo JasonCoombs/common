@@ -2253,10 +2253,9 @@ message CashResMessage
    {
       uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
-      bool                    is_max_qty              = 3;
+      // bool                    is_max_qty              = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
-      string                  cl_ord_id               = 6;
       int64                   timestamp               = 7;
       bool                    is_rollover             = 8;
       bs.types.FXAmountValue  im                      = 9;
@@ -2416,42 +2415,57 @@ message CashResMessage
       PayoutChecksResult      payout_checks_result    = 6;
    }
 
+   message SubmitMarketOrder
+   {
+      uint32                  taker_entity_id   = 1;
+      bs.types.XBTAmountValue qty               = 2;
+      int32                   product_type      = 3;
+      bs.types.Side           side              = 4;
+      string                  reference         = 5;
+   }
+
+   message SubmitMarketOrderResponse
+   {
+      bool     accepted          = 1;
+      string   error_message     = 2;
+      uint32   taker_entity_id   = 3;
+      string   reference         = 4;
+   }
+
    oneof data {
-      EstimateImRequest          estimate_im_request     = 1;
-      EstimateImResponse         estimate_im_response    = 2;
+      EstimateImRequest          estimate_im_request           = 1;
+      EstimateImResponse         estimate_im_response          = 2;
 
-      MaxAmountRequest           max_amount_request      = 3;
-      MaxAmountResponse          max_amount_response     = 4;
+      MaxAmountRequest           max_amount_request            = 3;
+      MaxAmountResponse          max_amount_response           = 4;
 
-      string                     get_session_info        = 6; // product type for now
-      TradingSessionOpen         session_info_response   = 7;
+      string                     get_session_info              = 5; // product type for now
+      TradingSessionOpen         session_info_response         = 6;
 
-      Order                      append_order            = 8;
-      OrderResponse              order_response          = 9;
+      SubmitMarketOrder          submit_market_order_request   = 7;
+      SubmitMarketOrderResponse  submit_market_order_response  = 8;
 
-      Empty                      session_event           = 10;
+      Empty                      session_event                 = 9;
 
-      OrdersRequest              orders_request          = 11;
-      OrdersResponse             orders_response         = 12;
+      OrdersRequest              orders_request                = 10;
+      OrdersResponse             orders_response               = 11;
 
-      FeeRequest                 fee_request             = 13;
-      FeeResponse                fee_response            = 14;
+      FeeRequest                 fee_request                   = 12;
+      FeeResponse                fee_response                  = 13;
 
-      string                     process_next_order      = 15;
+      int64                      load_balances                 = 14; // entity id
+      LoadBalancesResponse       load_balances_response        = 15;
 
-      int64                      load_balances           = 16; // entity id
-      LoadBalancesResponse       load_balances_response  = 17;
+      TradeFeeForEntityRequest   trade_fee_request             = 16;
+      TradeFeeForEntityResponse  trade_fee_response            = 17;
 
-      TradeFeeForEntityRequest   trade_fee_request       = 18;
-      TradeFeeForEntityResponse  trade_fee_response      = 19;
+      Empty                      load_sessions_snapshot        = 18;
+      SessionInfoSnapshot        session_snapshot              = 19;
 
-      Empty                      load_sessions_snapshot  = 20;
-      SessionInfoSnapshot        session_snapshot        = 21;
+      RevertDamagedSessionRequest   revert_session_request     = 20;
+      RevertDamagedSessionResult    revert_session_response    = 21;
 
-      RevertDamagedSessionRequest   revert_session_request  = 22;
-      RevertDamagedSessionResult    revert_session_response = 23;
-
-      string                        session_name            = 24;
+      string                        session_name               = 22;
 
       InspectDamagedSessionRequest  inspect_damaged_session          = 25;
       InspectDamagedSessionResponse inspect_damaged_session_response = 26;

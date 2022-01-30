@@ -17,6 +17,15 @@ import "bs_api_server.proto";
 
 message Message
 {
+   message PendingOrderRequestInfo
+   {
+      uint64                  pending_order_id  = 1;
+      uint32                  taker_entity_id   = 2;
+      int32                   product_type      = 3;  // bs::fut::Product
+      bs.types.XBTAmountValue xbt_amount        = 4;
+      string                  reference         = 5;
+   }
+
    message Position
    {
       int64                   id                   = 1;
@@ -99,12 +108,11 @@ message Message
 
    message RegisterTradePositions
    {
-      uint32                  taker_entity_id   = 1;
-      uint32                  maker_entity_id   = 2;
+      uint32                  maker_entity_id   = 1;
+      uint64                  pending_order_id  = 2;
       uint64                  timestamp         = 3;
       int32                   product_type      = 4; // bs::fut::Product
-      bs.types.XBTAmountValue xbt_amount        = 5;
-      bs.types.XBTPrice       price             = 6;
+      bs.types.XBTPrice       price             = 5;
    }
 
    message RegisterTradePositionsResponse
@@ -320,6 +328,26 @@ message Message
       repeated PositionSummary   positions      = 3;
    }
 
+   message CloseSessionResponse
+   {
+      int32                            close_result               = 1; // FuturesTradesStorage::StatusCode
+      repeated PendingOrderRequestInfo cancelled_order_requests   = 2;
+   }
+
+   message AddPendingOrderRequest
+   {
+      uint32                  taker_entity_id   = 1;
+      int32                   product_type      = 2; // bs::fut::Product
+      bs.types.XBTAmountValue xbt_amount        = 3;
+      string                  reference         = 4;
+   }
+
+   message AddPendingOrderResponse
+   {
+      int32    result            = 1; // FuturesTradesStorage::StatusCode
+      uint64   pending_order_id  = 2;
+   }
+
    oneof data {
       int32                            get_session                         = 1;  // bs::fut::Product
       SessionInfo                      session_info                        = 2;
@@ -334,7 +362,7 @@ message Message
       SessionInfo                      activate_session_response           = 8;
 
       SessionRequest                   session_close                       = 9;
-      int32                            session_close_result                = 10;  // FuturesTradesStorage::StatusCode
+      CloseSessionResponse             session_close_response              = 10;
 
       MarkSessionCompleted             mark_session_completed_request      = 11;
       int32                            mark_session_completed_response     = 12; // FuturesTradesStorage::StatusCode
@@ -393,5 +421,8 @@ message Message
 
       LoadBuyTradesSummaryRequest      load_buy_positions_summary_request  = 48;
       LoadBuyTradesSummaryResponse     load_buy_positions_summary_response = 49;
+
+      AddPendingOrderRequest           add_pending_order_request           = 50;
+      AddPendingOrderResponse          add_pending_order_response          = 51;
    }
 }

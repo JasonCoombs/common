@@ -165,13 +165,7 @@ void BsClient::findEmailHash(const std::string &email)
 
 void BsClient::sendFutureRequest(const bs::network::FutureRequest &details)
 {
-   ProxyTerminalPb::Request request;
-   auto futureRequest = request.mutable_future_request();
-   futureRequest->set_side(bs::message::toBS(details.side));
-   futureRequest->set_price(details.price);
-   futureRequest->set_amount(details.amount.GetValue());
-   futureRequest->set_type(details.type);
-   sendPbMessage(request.SerializeAsString());
+   // not supported from terminal
 }
 
 void BsClient::cancelLogin()
