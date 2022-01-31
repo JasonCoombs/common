@@ -334,6 +334,12 @@ message Message
       repeated PendingOrderRequestInfo cancelled_order_requests   = 2;
    }
 
+   message MarkSessionDamagedResponse
+   {
+      int32                            result                     = 1; // FuturesTradesStorage::StatusCode
+      repeated PendingOrderRequestInfo cancelled_order_requests   = 2;
+   }
+
    message AddPendingOrderRequest
    {
       uint32                  taker_entity_id   = 1;
@@ -346,6 +352,17 @@ message Message
    {
       int32    result            = 1; // FuturesTradesStorage::StatusCode
       uint64   pending_order_id  = 2;
+   }
+
+   message LoadPendingOrderRequests
+   {
+      int64 session_id  = 1;
+   }
+
+   message LoadPendingOrderRequestsResponse
+   {
+      int32                            load_result            = 1; // FuturesTradesStorage::StatusCode
+      repeated PendingOrderRequestInfo pending_order_requests = 2;
    }
 
    oneof data {
@@ -368,7 +385,7 @@ message Message
       int32                            mark_session_completed_response     = 12; // FuturesTradesStorage::StatusCode
 
       MarkSessionDamaged               mark_session_damaged_request        = 13;
-      int32                            mark_session_damaged_response       = 14; // FuturesTradesStorage::StatusCode
+      MarkSessionDamagedResponse       mark_session_damaged_response       = 14;
 
       int32                            mark_damaged_as_resolved            = 15; // bs::fut::Product
       int32                            mark_damaged_as_resolved_result     = 16; // FuturesTradesStorage::StatusCode
@@ -424,5 +441,8 @@ message Message
 
       AddPendingOrderRequest           add_pending_order_request           = 50;
       AddPendingOrderResponse          add_pending_order_response          = 51;
+
+      LoadPendingOrderRequests         load_pending_orders_request         = 52;
+      LoadPendingOrderRequestsResponse load_pending_orders_response        = 53;
    }
 }
