@@ -21,7 +21,7 @@ class LibBTC(Configurator):
     def __init__(self, settings):
         Configurator.__init__(self, settings)
         self.mpir = MPIRSettings(settings)
-        self._version = '25e31fd32557db76fb28ce6b1ecf21ab133ffb24'
+        self._version = '792834f4f09c6116cceff43bac165d0f3294f398'
         self._package_name = 'libbtc'
         self._script_revision = '4'
 
