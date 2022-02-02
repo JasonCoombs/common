@@ -2000,8 +2000,6 @@ message PriceStreamManaging
       int64                   requesting_entity       = 2;
       bool                    get_ask_price           = 3;
       int32                   price_book              = 4;
-      uint32                  price_tolerance_ratio   = 5;
-      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
@@ -2115,24 +2113,23 @@ message PriceStreamManaging
       repeated ProductDealersInfo dealers_info = 1;
    }
 
-   MessageType   message_type = 1;
+   MessageType   type = 1;
 
    oneof data
    {
       GetBestOfferRequest        get_best_price_offer    = 2;
       GetBestOfferResponse       best_price_offer        = 3;
-      ClientData                 client_data             = 4;
-      PriceConsumedData          consumed_price          = 5;
-      uint32                     entity_id               = 6;
-      SubmitPricesRequest        submit_prices           = 7;
-      SubmitPricesResponse       submit_prices_response  = 8;
-      PullPricesRequest          pull_prices             = 9;
-      NetExposureChangedUpdate   net_exposure_update     = 10;
-      TradingStartedNotification trading_started         = 11;
-      TradingClosedNotification  trading_closed          = 12;
-      ActiveDealersInfoSnapshot  dealers_info            = 13;
-      GetBestOfferPackRequest    get_offers_request      = 14;
-      GetBestOfferPackResponse   get_offers_response     = 15;
+      PriceConsumedData          consumed_price          = 4;
+      uint32                     entity_id               = 5;
+      SubmitPricesRequest        submit_prices           = 6;
+      SubmitPricesResponse       submit_prices_response  = 7;
+      PullPricesRequest          pull_prices             = 8;
+      NetExposureChangedUpdate   net_exposure_update     = 9;
+      TradingStartedNotification trading_started         = 10;
+      TradingClosedNotification  trading_closed          = 11;
+      ActiveDealersInfoSnapshot  dealers_info            = 12;
+      GetBestOfferPackRequest    get_offers_request      = 13;
+      GetBestOfferPackResponse   get_offers_response     = 14;
    }
 }
 
