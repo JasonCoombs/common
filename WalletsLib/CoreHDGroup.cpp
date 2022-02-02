@@ -267,7 +267,11 @@ void hd::Group::initLeaf(
       pathInt.push_back(path.get(i));
    }
    //setup address account
-   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(0, { pathInt }); //FIXME
+   auto rootBip32 = std::dynamic_pointer_cast<AssetEntry_BIP32Root>(
+      walletPtr_->getRoot());
+   auto seedFingerprint = rootBip32->getSeedFingerprint(true);
+   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(
+      seedFingerprint, { pathInt });
 
    //account IDs and nodes
    if (!isExtOnly_) {
