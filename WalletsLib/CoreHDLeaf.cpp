@@ -35,7 +35,7 @@ hd::Leaf::~Leaf()
 
 void hd::Leaf::init(
    std::shared_ptr<AssetWallet_Single> walletPtr,
-   const Armory::Wallets::AccountKeyType& addrAccId)
+   const Armory::Wallets::AddressAccountId& addrAccId)
 {
    reset();
    auto accPtr = walletPtr->getAccountForID(addrAccId);
@@ -85,7 +85,7 @@ std::shared_ptr<IO::WalletIfaceTransaction> hd::Leaf::getDBReadTx()
 std::string hd::Leaf::walletId() const
 {
    if (walletId_.empty()) {
-      walletId_ = AddressAccountId(getRootId()).toHexStr();
+      walletId_ = getRootId().toHexStr();
    }
    return walletId_;
 }
@@ -108,9 +108,9 @@ bool hd::Leaf::containsHiddenAddress(const bs::Address &addr) const
    return false;
 }
 
-AccountKeyType hd::Leaf::getRootId() const
+AddressAccountId hd::Leaf::getRootId() const
 {
-   return accountPtr_->getID().getAddressAccountKey();
+   return accountPtr_->getID();
 }
 
 std::vector<bs::Address> hd::Leaf::getPooledAddressList() const
@@ -325,7 +325,7 @@ BinaryData hd::Leaf::serialize() const
    bw.put_uint32_t(LEAF_KEY);
 
    //address account id
-   bw.put_int32_t(getRootId());
+   getRootId().serializeValue(bw);
 
    //path
    bw.put_var_int(path_.length());
@@ -335,7 +335,7 @@ BinaryData hd::Leaf::serialize() const
    return bw.getData();
 }
 
-std::pair<std::shared_ptr<hd::Leaf>, AccountKeyType> hd::Leaf::deserialize(
+std::pair<std::shared_ptr<hd::Leaf>, AddressAccountId> hd::Leaf::deserialize(
    const BinaryData &ser, NetworkType netType, std::shared_ptr<spdlog::logger> logger)
 {
    BinaryRefReader brr(ser);
@@ -349,8 +349,7 @@ std::pair<std::shared_ptr<hd::Leaf>, AccountKeyType> hd::Leaf::deserialize(
    auto key = brr.get_uint32_t();
 
    //address account id
-   AccountKeyType id = brr.get_int32_t();
-
+   const auto id = AddressAccountId::deserializeValue(brr);
    //path
    auto count = brr.get_var_int();
    bs::hd::Path path;
@@ -717,7 +716,7 @@ BinaryData hd::AuthLeaf::serialize() const
    bw.put_uint32_t(AUTH_LEAF_KEY);
 
    //address account id
-   bw.put_int32_t(getRootId());
+   getRootId().serializeValue(bw);
 
    //path
    bw.put_var_int(path_.length());
@@ -758,7 +757,7 @@ BinaryData hd::SettlementLeaf::serialize() const
    bw.put_uint32_t(SETTLEMENT_LEAF_KEY);
 
    //address account id
-   bw.put_int32_t(getRootId());
+   getRootId().serializeValue(bw);
 
    //path
    bw.put_var_int(path_.length());

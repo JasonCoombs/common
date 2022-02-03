@@ -201,7 +201,6 @@ namespace bs {
             std::shared_ptr<hd::Leaf> createLeaf(const bs::Address&, const bs::hd::Path&);
             void deserialize(BinaryDataRef value) override;
          };
-
          ///////////////////////////////////////////////////////////////////////
 
          class HWGroup : public Group

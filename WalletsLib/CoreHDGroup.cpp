@@ -284,7 +284,6 @@ void hd::Group::initLeaf(
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
       accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
-      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeExternal_);
    }
 
    //address types
@@ -318,8 +317,14 @@ void bs::core::hd::HWGroup::initLeafXpub(
    BIP32_Node newPubNode;
    newPubNode.initFromBase58(SecureBinaryData::fromString(xpub));
 
+   std::vector<unsigned int> pathInt;
+   for (int i = 0; i < path.length(); ++i) {
+      pathInt.push_back(path.get(i));
+   }
+
    //no derivation path is passed to the account, it will use the pub root as is
-   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(0, { });  //FIXME: seed fp
+   const auto& fingerprint = newPubNode.getThisFingerprint();
+   auto accTypePtr = AccountType_BIP32::makeFromDerPaths(fingerprint, { pathInt });
 
    std::set<unsigned> nodes = { BIP32_OUTER_ACCOUNT_DERIVATIONID, BIP32_INNER_ACCOUNT_DERIVATIONID };
    accTypePtr->setNodes(nodes);
@@ -427,7 +432,6 @@ std::shared_ptr<hd::Group> hd::Group::getCopy(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-
 hd::AuthGroup::AuthGroup(std::shared_ptr<AssetWallet_Single> walletPtr
    , NetworkType netType, const std::shared_ptr<spdlog::logger>& logger) :
    Group(walletPtr, bs::hd::CoinType::BlockSettle_Auth, netType, true, logger)
@@ -448,7 +452,9 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    if (salt_.getSize() != 32) {
       throw AccountException("empty auth group salt");
    }
-   auto accTypePtr = AccountType_BIP32_Salted::makeFromDerPaths(0, { pathInt }, salt_);   //FIXME: seed fp
+   const auto rootBip32 = std::dynamic_pointer_cast<AssetEntry_BIP32Root>(walletPtr_->getRoot());
+   const auto fingerprint = rootBip32->getSeedFingerprint(true);
+   auto accTypePtr = AccountType_BIP32_Salted::makeFromDerPaths(fingerprint, { pathInt }, salt_);
 
    //account IDs and nodes
    if (!isExtOnly_) {
@@ -461,7 +467,6 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
       //inner chains
       accTypePtr->setNodes({ hd::Leaf::addrTypeExternal_ });
       accTypePtr->setOuterAccountID(hd::Leaf::addrTypeExternal_);
-      accTypePtr->setInnerAccountID(hd::Leaf::addrTypeExternal_);
    }
 
    //address types
@@ -482,7 +487,7 @@ void hd::AuthGroup::initLeaf(std::shared_ptr<hd::Leaf> &leaf
    auto accID = walletPtr_->createBIP32Account(accTypePtr);
 
    authLeafPtr->setPath(path);
-   authLeafPtr->init(walletPtr_, accID.getAddressAccountKey());
+   authLeafPtr->init(walletPtr_, accID);
    authLeafPtr->setSalt(salt_);
 }
 

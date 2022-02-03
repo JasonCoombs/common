@@ -49,7 +49,7 @@ namespace bs {
 
             virtual void init(
                std::shared_ptr<Armory::Wallets::AssetWallet_Single>,
-               const Armory::Wallets::AccountKeyType&);
+               const Armory::Wallets::AddressAccountId&);
             virtual std::shared_ptr<hd::Leaf> getCopy(
                std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const = 0;
 
@@ -64,7 +64,7 @@ namespace bs {
 
             bool containsAddress(const bs::Address &addr) override;
             bool containsHiddenAddress(const bs::Address &addr) const override;
-            Armory::Wallets::AccountKeyType getRootId() const override;
+            Armory::Wallets::AddressAccountId getRootId() const override;
 
             std::vector<bs::Address> getPooledAddressList() const override;
             std::vector<bs::Address> getExtAddressList() const override;
@@ -99,7 +99,7 @@ namespace bs {
             virtual AddressEntryType defaultAddressType() const = 0;
             virtual BinaryData serialize() const;
 
-            static std::pair<std::shared_ptr<hd::Leaf>, Armory::Wallets::AccountKeyType> deserialize(
+            static std::pair<std::shared_ptr<hd::Leaf>, Armory::Wallets::AddressAccountId> deserialize(
                const BinaryData &ser, NetworkType netType, std::shared_ptr<spdlog::logger> logger);
 
             void shutdown(void) override;

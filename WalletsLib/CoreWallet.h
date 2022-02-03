@@ -395,7 +395,7 @@ namespace bs {
 
          virtual bool containsAddress(const bs::Address &addr) = 0;
          virtual bool containsHiddenAddress(const bs::Address &) const { return false; }
-         virtual Armory::Wallets::AccountKeyType getRootId() const = 0;
+         virtual Armory::Wallets::AddressAccountId getRootId() const = 0;
          virtual NetworkType networkType(void) const = 0;
 
          virtual bool isWatchingOnly() const = 0;
