@@ -59,10 +59,12 @@ CCFileManager::CCFileManager(const std::shared_ptr<spdlog::logger>& logger
       , cbSecLoaded, cbLoadComplete);
 }
 
+#if 0
 void CCFileManager::setBsClient(const std::weak_ptr<BsClient> &bsClient)
 {
    bsClient_ = bsClient;
 }
+#endif
 
 bool CCFileManager::wasAddressSubmitted(const bs::Address &addr)
 {
@@ -71,10 +73,12 @@ bool CCFileManager::wasAddressSubmitted(const bs::Address &addr)
 
 void CCFileManager::cancelActiveSign()
 {
+#if 0    //FIXME: use another login client
    auto bsClient = bsClient_.lock();
    if (bsClient) {
       bsClient->cancelActiveSign();
    }
+#endif
 }
 
 void CCFileManager::SetLoadedDefinitions(const std::vector<bs::network::CCSecurityDef>& definitions)
@@ -84,6 +88,7 @@ void CCFileManager::SetLoadedDefinitions(const std::vector<bs::network::CCSecuri
 
 bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, const std::string &ccProduct)
 {
+#if 0    //FIXME: use another login client
    auto bsClient = bsClient_.lock();
 
    if (!bsClient) {
@@ -147,7 +152,7 @@ bool CCFileManager::submitAddress(const bs::Address &address, uint32_t seed, con
          });
       });
    });
-
+#endif   //0
    return true;
 }
 

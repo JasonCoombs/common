@@ -10,7 +10,6 @@
 */
 #include "QWalletInfo.h"
 #include <QFile>
-#include "AutheIDClient.h"
 #include "CoreHDWallet.h"
 #include "WalletEncryption.h"
 #include "WalletBackupFile.h"
@@ -243,7 +242,8 @@ QString WalletInfo::email() const
    if (encKeys_.isEmpty())
       return QString();
 
-   return QString::fromStdString(AutheIDClient::getDeviceInfo(encKeys_.at(0).toStdString()).userId);
+   return {};	//FIXME: use other source than AutheIDClient  
+//   return QString::fromStdString(AutheIDClient::getDeviceInfo(encKeys_.at(0).toStdString()).userId);
 }
 
 bool WalletInfo::isEidAuthOnly() const

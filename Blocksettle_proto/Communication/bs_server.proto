@@ -2822,6 +2822,58 @@ message UserControlMessage
       string error_text = 3;
    }
 
+   message WhitelistAddressRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+      string description = 3;
+   }
+
+   message AddressResponse
+   {
+      string address = 1;
+      bool   success = 2;
+      string error_text = 3;
+   }
+
+   message RevokeAddressRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+   }
+
+   message WithdrawLiquidRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+      bs.types.FXAmountValue amount = 3;
+      string currency = 4;
+      string tx_id = 5;
+      string unblinded_link = 6;
+   }
+
+   message WithdrawLiquidResponse
+   {
+      bool   success = 1;
+      string error_text = 2;
+   }
+
+   message ReportDepositRequest
+   {
+      string address = 1;
+      uint32 entity_id = 2;
+      bs.types.FXAmountValue amount = 3;
+      string currency = 4;
+      string tx_id = 5;
+      string unblinded_link = 6;
+   }
+
+   message ReportDepositResponse
+   {
+      bs.types.FXAmountValue aggr_amount = 1;
+      string account_type = 2;
+   }
+
    oneof data
    {
       RegisterAccountRequest         register_account_req            = 1;
@@ -2850,8 +2902,18 @@ message UserControlMessage
       ValidateSessionResponse        validate_user_token_response    = 24;
       RevokeTokenRequest             revoke_token_request            = 25;
       RevokeTokenResponse            revoke_token_response           = 26;
+      WhitelistAddressRequest        whitelist_address_request       = 27;
+      AddressResponse                whitelist_address_response      = 28;
+      WithdrawLiquidRequest          withdraw_liquid_request         = 29;
+      WithdrawLiquidResponse         withdraw_liquid_response        = 30;
+      WithdrawLiquidRequest          withdraw_liquid_report          = 31;
+      ReportDepositRequest           report_deposit_request          = 32;
+      ReportDepositResponse          report_deposit_response         = 33;
+      RevokeAddressRequest           revoke_address_request          = 34;
+      AddressResponse                revoke_address_response         = 35;
    }
 }
+
 
 message AdminApiMessage
 {
@@ -2912,6 +2974,16 @@ message AdminApiMessage
       uint32 counterpart2 = 5;
    }
 
+   message WalletBalances
+   {
+      message Balance {
+         string currency = 1;
+         double unconfirmed = 2;
+         double settled = 3;
+      }
+      repeated Balance balances = 1;
+   }
+
 
    oneof data
    {
@@ -2923,8 +2995,100 @@ message AdminApiMessage
 
       InfoIM                     im_updated           = 5;
       OpenInterest               open_interest        = 6;
+      WalletBalances             wallet_balances      = 7;
 
-      DealerOffer                dealer_offer         = 7;
-      Trade                      trade                = 8;
+      DealerOffer                dealer_offer         = 8;
+      Trade                      trade                = 9;
+   }
+}
+
+
+message LiquidMessage
+{
+   message WhitelistAddress
+   {
+      uint32 entity_id = 1;
+      string address = 2;
+      string description = 3;
+   }
+
+   message WithdrawRequest
+   {
+      uint32 entity_id = 1;
+      string address = 2;
+      string currency = 3;
+      bs.types.FXAmountValue amount = 4;
+   }
+
+   message Transaction
+   {
+      string tx_id = 1;
+      string recv_address = 2;
+      string unconf_address = 3;
+      uint32 nb_conf = 4;
+      string currency = 5;
+      double amount = 6;
+      uint64 timestamp = 7;
+      string unblinded_link = 8;
+      uint32 entity_id = 9;
+   }
+
+   message WithdrawResponse
+   {
+      Transaction tx = 1;
+      string error_msg = 2;
+   }
+
+   message RevokeRequest
+   {
+      uint32 entity_id = 1;
+      string address = 2;
+   }
+
+   message RevokeResponse
+   {
+      string address = 1;
+      bool   success = 2;
+      string error_msg = 3;
+   }
+
+   message TXupdate
+   {
+      uint32 entity_id = 1;
+      string tx_id = 2;
+      uint32 nb_conf = 3;
+      string currency = 4;
+      double amount = 5;
+      string unblinded_link = 6;
+   }
+
+   message DepositAddress
+   {
+      string address = 1;
+      repeated Transaction txs = 2;	// without entity_id filled
+   }
+
+   message Transactions
+   {
+      repeated Transaction deposit_txs = 1;
+      repeated Transaction withdraw_txs = 2;
+   }
+
+   oneof data
+   {
+      WhitelistAddress whitelist_addr = 1;
+      bool             whitelist_addr_success = 2;
+      WithdrawRequest  withdraw_request = 3;
+      WithdrawResponse withdraw_response = 4;
+      RevokeRequest    revoke_request = 5;
+      RevokeResponse   revoke_response = 6;
+      uint32           get_deposit_address = 7;   // entity_id
+      DepositAddress   deposit_address = 8;
+      Transaction      new_deposit_tx = 9;
+      Empty            poll_blocks = 10;
+      uint32           get_transactions = 11;
+      Transactions     transactions = 12;
+      TXupdate         tx_update = 13;
+      Empty            invoke_poll = 14;
    }
 }

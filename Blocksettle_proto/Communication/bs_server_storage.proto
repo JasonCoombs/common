@@ -556,6 +556,21 @@ message CCRegistrationOnCeler
 
 message StorageTradeHistMessage
 {
+   message LiquidWithdrawTX
+   {
+      uint32 entity_id = 1;
+      string tx_id = 2;
+      string address = 3;
+      string currency = 4;
+      string amount = 5;
+      uint64 timestamp = 6;
+   }
+
+   message LiquidWithdrawTXs
+   {
+      repeated LiquidWithdrawTX txs = 1;
+   }
+
    oneof data {
       bytes                                     fx_trade                = 1;
       bytes                                     xbt_trade               = 2;
@@ -592,8 +607,12 @@ message StorageTradeHistMessage
       double                                    last_eur_price_response = 33;
       CreateCcDefinition                        create_cc_definition    = 34;
       CCRegistrationOnCeler                     cc_celer_registration   = 35;
+      LiquidWithdrawTX                          add_liquid_withdraw_tx  = 36;
+      uint32                                    get_liquid_withdraw_txs = 37;
+      LiquidWithdrawTXs                         liquid_withdraw_txs     = 38;
    }
 }
+
 
 message UserScoreUpdateEvent
 {

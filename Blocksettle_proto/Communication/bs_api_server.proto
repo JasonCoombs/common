@@ -208,11 +208,11 @@ message Request
         string ccy          = 3;
     }
 
-    message WithdrawBitcoin
+    message WithdrawLiquid
     {
         string address = 1;
-        string eur_amount = 2;
-        string xbt_receive_amount = 3;
+        string currency = 2;
+        string amount = 3;
         string fee_amount = 4;
         string price = 5;
     }
@@ -358,9 +358,7 @@ message Request
         CreateExternalAccount       create_external_account         = 39;
         GetAllExternalAccounts      get_all_external_accounts       = 40;
         WithdrawToExternalAccount   withdraw_to_external_account    = 41;
-        WithdrawBitcoin             withdraw_bitcoin                = 42;
-        Empty                       subscribe_withdraw_prices       = 43;
-        Empty                       unsubscribe_withdraw_prices     = 44;
+        WithdrawLiquid              withdraw_liquid                 = 42;
         HistoricalPL                historical_profit_loss      = 45;
         TradeHistory                trade_history               = 46;
         TransactionsForEntity       transactions_for_entity     = 47;
@@ -379,11 +377,13 @@ message Request
         RegisterFcm                 register_fcm                = 64;
         UnregisterFcm               unregister_fcm              = 65;
         LoadPnLHistory              load_pnl_history            = 66;
-        Subscribe                   subscribe_dealer_offers     = 67;
-        Unsubscribe                 unsubscribe_dealer_offers   = 68;
-        AccountSummary              load_account_summary        = 69;
+        Empty                       liquid_transactions         = 67;
+        Subscribe                   subscribe_dealer_offers     = 68;
+        Unsubscribe                 unsubscribe_dealer_offers   = 69;
+        AccountSummary              load_account_summary        = 70;
     }
 }
+
 
 message Response
 {
@@ -555,9 +555,31 @@ message Response
         string  error_msg   = 3;
     }
 
+    message TXupdate
+    {
+        string tx_id = 1;
+        uint32 nb_conf = 2;
+        string currency = 3;
+        string amount = 4;
+        string unblinded_link = 5;
+    }
+
+    message Transaction
+    {
+        string tx_id = 1;
+        string recv_address = 2;
+        string unconf_address = 3;
+        uint32 nb_conf = 4;
+        string currency = 5;
+        string amount = 6;
+        double timestamp = 7;
+        string unblinded_link = 8;
+    }
+
     message LoadDepositAddress
     {
-        string  address  = 1;
+        string address  = 1;
+        repeated Transaction txs = 2;
     }
 
     message UserNotify
@@ -607,14 +629,6 @@ message Response
         string   amount         = 3;
         string   bs_address     = 4;
     }
-
-    message UpdateWithdrawPrices
-    {
-        string sell_price     = 1;
-        string buy_price      = 2;
-        string network_fee    = 3;
-        string min_xbt_amount = 4;
-   }
 
     message HistoricalPL
     {
@@ -792,6 +806,19 @@ message Response
         repeated Item   items       = 2;
     }
 
+    message LiquidTransactions
+    {
+        repeated Transaction deposit_txs = 1;
+        repeated Transaction withdraw_txs = 2;
+    }
+
+    message WithdrawLiquid
+    {
+        bool success = 1;
+        string error_msg = 2;
+        Transaction tx = 3;
+    }
+
     message DealerOffers
     {
        message PriceOffer {
@@ -842,17 +869,14 @@ message Response
         CreateExternalAccount   create_external_account     = 27;
         GetAllExternalAccounts  get_all_external_accounts   = 28;
         ResponseResult          withdraw_to_external_account= 29;
-        ResponseResult          withdraw_bitcoin            = 30;
+        WithdrawLiquid          withdraw_liquid             = 30;
         ObligationRequest       obligation_request          = 31;
-        ResponseResult          subscribe_withdraw_prices   = 32;
-        ResponseResult          unsubscribe_withdraw_prices = 33;
         MarketData              market_data                 = 34;
         Error                   fatal_error                 = 35;
         OrderUpdate             order_update                = 37;
         TradingClosed           trading_closed              = 38;
         Empty                   session_replaced            = 39;
         UserNotify              user_notify                 = 40;
-        UpdateWithdrawPrices    update_withdraw_prices      = 41;
         HistoricalPL            historical_profit_loss      = 42;
         TradeHistory            trade_history               = 43;
         TransactionsForEntity   transactions_for_entity     = 44;
@@ -873,9 +897,12 @@ message Response
         RegisterFcm             register_fcm                = 64;
         UnregisterFcm           unregister_fcm              = 65;
         LoadPnLHistory          load_pnl_history            = 66;
-        DealerOffers            dealer_offers               = 67;
-        ResponseResult          subscribe_dealer_offers     = 68;
-        ResponseResult          unsubscribe_dealer_offers   = 69;
-        AccountSummary          load_account_summary        = 70;
+        TXupdate                tx_update                   = 67;
+        LiquidTransactions      liquid_transactions         = 68;
+        Transaction             new_deposit_tx              = 69;
+        DealerOffers            dealer_offers               = 70;
+        ResponseResult          subscribe_dealer_offers     = 71;
+        ResponseResult          unsubscribe_dealer_offers   = 72;
+        AccountSummary          load_account_summary        = 73;
     }
 }
