@@ -365,6 +365,17 @@ message Message
       repeated PendingOrderRequestInfo pending_order_requests = 2;
    }
 
+   message CancelPendingOrderRequest
+   {
+      uint64   pending_order_id  = 1;
+   }
+
+   message CancelPendingOrderResponse
+   {
+      int32                   result               = 1; // FuturesTradesStorage::StatusCode
+      PendingOrderRequestInfo order_request_info   = 2;
+   }
+
    oneof data {
       int32                            get_session                         = 1;  // bs::fut::Product
       SessionInfo                      session_info                        = 2;
@@ -444,5 +455,8 @@ message Message
 
       LoadPendingOrderRequests         load_pending_orders_request         = 52;
       LoadPendingOrderRequestsResponse load_pending_orders_response        = 53;
+
+      CancelPendingOrderRequest        cancel_pending_order_request        = 54;
+      CancelPendingOrderResponse       cancel_pending_order_response       = 55;
    }
 }
