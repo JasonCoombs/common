@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-namespace sytem_time
+namespace system_time
 {
    using system_clock_t = std::chrono::system_clock;
    using time_point_t = system_clock_t::time_point;

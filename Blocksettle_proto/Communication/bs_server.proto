@@ -2000,8 +2000,6 @@ message PriceStreamManaging
       int64                   requesting_entity       = 2;
       bool                    get_ask_price           = 3;
       int32                   price_book              = 4;
-      uint32                  price_tolerance_ratio   = 5;
-      bs.types.XBTPrice       expected_price          = 6;
    }
 
    message GetBestOfferResponse
@@ -2115,24 +2113,23 @@ message PriceStreamManaging
       repeated ProductDealersInfo dealers_info = 1;
    }
 
-   MessageType   message_type = 1;
+   MessageType   type = 1;
 
    oneof data
    {
       GetBestOfferRequest        get_best_price_offer    = 2;
       GetBestOfferResponse       best_price_offer        = 3;
-      ClientData                 client_data             = 4;
-      PriceConsumedData          consumed_price          = 5;
-      uint32                     entity_id               = 6;
-      SubmitPricesRequest        submit_prices           = 7;
-      SubmitPricesResponse       submit_prices_response  = 8;
-      PullPricesRequest          pull_prices             = 9;
-      NetExposureChangedUpdate   net_exposure_update     = 10;
-      TradingStartedNotification trading_started         = 11;
-      TradingClosedNotification  trading_closed          = 12;
-      ActiveDealersInfoSnapshot  dealers_info            = 13;
-      GetBestOfferPackRequest    get_offers_request      = 14;
-      GetBestOfferPackResponse   get_offers_response     = 15;
+      PriceConsumedData          consumed_price          = 4;
+      uint32                     entity_id               = 5;
+      SubmitPricesRequest        submit_prices           = 6;
+      SubmitPricesResponse       submit_prices_response  = 7;
+      PullPricesRequest          pull_prices             = 8;
+      NetExposureChangedUpdate   net_exposure_update     = 9;
+      TradingStartedNotification trading_started         = 10;
+      TradingClosedNotification  trading_closed          = 11;
+      ActiveDealersInfoSnapshot  dealers_info            = 12;
+      GetBestOfferPackRequest    get_offers_request      = 13;
+      GetBestOfferPackResponse   get_offers_response     = 14;
    }
 }
 
@@ -2253,10 +2250,9 @@ message CashResMessage
    {
       uint32                  entity_id               = 1;
       bs.types.XBTAmountValue qty                     = 2;
-      bool                    is_max_qty              = 3;
+      // bool                    is_max_qty              = 3;
       bs.types.XBTPrice       price                   = 4;
       int32                   trade_type              = 5;
-      string                  cl_ord_id               = 6;
       int64                   timestamp               = 7;
       bool                    is_rollover             = 8;
       bs.types.FXAmountValue  im                      = 9;
@@ -2289,27 +2285,20 @@ message CashResMessage
 
    message MaxAmountRequest
    {
-      message Offer
-      {
-         bs.types.XBTPrice       offer_price       = 1;
-         bs.types.XBTAmountValue max_offer_amount  = 2;
-      }
-
-      uint32 entity_id = 1;
-      int32  prod_type = 2;
-      bs.types.Side side = 3;
-      repeated Offer offers = 4;
+      uint32         entity_id   = 1;
+      int32          prod_type   = 2;
+      bs.types.Side  side        = 3;
    }
 
    message MaxAmountResponse
    {
-      bool success = 6;
-      string error_msg = 7;
-      uint32 entity_id = 1;
-      int32  prod_type = 2;
-      bs.types.Side side = 3;
-      bs.types.XBTAmountValue max_amount = 4;
-      bs.types.FXAmountValue fee = 5;
+      uint32                  entity_id   = 1;
+      int32                   prod_type   = 2;
+      bs.types.Side           side        = 3;
+      bs.types.XBTAmountValue max_amount  = 4;
+      bs.types.FXAmountValue  fee         = 5;
+      bool                    success     = 6;
+      string                  error_msg   = 7;
    }
 
    message OrderResponse
@@ -2423,42 +2412,57 @@ message CashResMessage
       PayoutChecksResult      payout_checks_result    = 6;
    }
 
+   message SubmitMarketOrder
+   {
+      uint32                  taker_entity_id   = 1;
+      bs.types.XBTAmountValue qty               = 2;
+      int32                   product_type      = 3;
+      bs.types.Side           side              = 4;
+      string                  reference         = 5;
+   }
+
+   message SubmitMarketOrderResponse
+   {
+      bool     accepted          = 1;
+      string   error_message     = 2;
+      uint32   taker_entity_id   = 3;
+      string   reference         = 4;
+   }
+
    oneof data {
-      EstimateImRequest          estimate_im_request     = 1;
-      EstimateImResponse         estimate_im_response    = 2;
+      EstimateImRequest          estimate_im_request           = 1;
+      EstimateImResponse         estimate_im_response          = 2;
 
-      MaxAmountRequest           max_amount_request      = 3;
-      MaxAmountResponse          max_amount_response     = 4;
+      MaxAmountRequest           max_amount_request            = 3;
+      MaxAmountResponse          max_amount_response           = 4;
 
-      string                     get_session_info        = 6; // product type for now
-      TradingSessionOpen         session_info_response   = 7;
+      string                     get_session_info              = 5; // product type for now
+      TradingSessionOpen         session_info_response         = 6;
 
-      Order                      append_order            = 8;
-      OrderResponse              order_response          = 9;
+      SubmitMarketOrder          submit_market_order_request   = 7;
+      SubmitMarketOrderResponse  submit_market_order_response  = 8;
 
-      Empty                      session_event           = 10;
+      Empty                      session_event                 = 9;
 
-      OrdersRequest              orders_request          = 11;
-      OrdersResponse             orders_response         = 12;
+      OrdersRequest              orders_request                = 10;
+      OrdersResponse             orders_response               = 11;
 
-      FeeRequest                 fee_request             = 13;
-      FeeResponse                fee_response            = 14;
+      FeeRequest                 fee_request                   = 12;
+      FeeResponse                fee_response                  = 13;
 
-      string                     process_next_order      = 15;
+      int64                      load_balances                 = 14; // entity id
+      LoadBalancesResponse       load_balances_response        = 15;
 
-      int64                      load_balances           = 16; // entity id
-      LoadBalancesResponse       load_balances_response  = 17;
+      TradeFeeForEntityRequest   trade_fee_request             = 16;
+      TradeFeeForEntityResponse  trade_fee_response            = 17;
 
-      TradeFeeForEntityRequest   trade_fee_request       = 18;
-      TradeFeeForEntityResponse  trade_fee_response      = 19;
+      Empty                      load_sessions_snapshot        = 18;
+      SessionInfoSnapshot        session_snapshot              = 19;
 
-      Empty                      load_sessions_snapshot  = 20;
-      SessionInfoSnapshot        session_snapshot        = 21;
+      RevertDamagedSessionRequest   revert_session_request     = 20;
+      RevertDamagedSessionResult    revert_session_response    = 21;
 
-      RevertDamagedSessionRequest   revert_session_request  = 22;
-      RevertDamagedSessionResult    revert_session_response = 23;
-
-      string                        session_name            = 24;
+      string                        session_name               = 22;
 
       InspectDamagedSessionRequest  inspect_damaged_session          = 25;
       InspectDamagedSessionResponse inspect_damaged_session_response = 26;

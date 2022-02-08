@@ -175,30 +175,6 @@ message UserPropertiesSet
    repeated UserProperty properties = 3;
 }
 
-message RFSMarketOrder
-{
-   uint32                  entity_id           = 1;
-   // XBT/EUR
-   bs.types.XBTAmountValue xbt_amount          = 2;
-   bs.types.Side           side                = 3;
-
-   bs.types.XBTPrice       user_expected_price = 4;
-   int32                   type                = 5;
-   bool                    max_amount          = 6;
-}
-
-message RFSMarketOrderResponse
-{
-   uint32                  entity_id         = 1;
-   bs.types.XBTAmountValue xbt_amount        = 2;
-   bs.types.Side           side              = 3;
-   bs.types.XBTPrice       order_price       = 4;
-   bool                    matched           = 5;
-   string                  error_message     = 6;
-   string                  product           = 7;
-   int64                   taker_position_id = 8;
-}
-
 message MatchingMessage
 {
    oneof data {
@@ -222,15 +198,5 @@ message MatchingMessage
       CCTradeResponse            cc_trade_response = 26;
       CCCancelRequest            cc_cancel = 27;
       UserPropertiesSet          user_prop_set = 30;
-   }
-}
-
-
-message MatchingMarketMessage
-{
-   oneof data {
-      RFSMarketOrder             rfs_market_order = 1;
-      RFSMarketOrderResponse     rfs_market_order_response = 2;
-      string                     order_timeout = 3;
    }
 }
