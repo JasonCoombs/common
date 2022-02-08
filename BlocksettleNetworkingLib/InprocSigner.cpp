@@ -54,75 +54,6 @@ void InprocSigner::Start()
 // All signing code below doesn't include password request support for encrypted wallets - i.e.
 // a password should be passed directly to signing methods
 
-bs::signer::RequestId InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest &txSignReq,
-   TXSignMode mode, bool)
-{
-   if (!txSignReq.isValid()) {
-      logger_->error("[{}] Invalid TXSignRequest", __func__);
-      return 0;
-   }
-   std::vector<std::shared_ptr<bs::core::Wallet>> wallets;
-   for (const auto &walletId : txSignReq.walletIds) {
-      const auto wallet = walletsMgr_->getWalletById(walletId);
-      if (!wallet) {
-         logger_->error("[{}] failed to find wallet with id {}", __func__, walletId);
-         return 0;
-      }
-      wallets.push_back(wallet);
-   }
-   if (wallets.empty()) {
-      logger_->error("[{}] empty wallets list", __func__);
-      return 0;
-   }
-
-   const auto reqId = seqId_++;
-   try {
-      BinaryData signedTx;
-      if (mode == TXSignMode::Full) {
-         if (wallets.size() == 1) {
-            signedTx = wallets.front()->signTXRequest(txSignReq);
-         }
-         else {
-            bs::core::wallet::TXMultiSignRequest multiReq;
-            multiReq.armorySigner_.merge(txSignReq.armorySigner_);
-
-            bs::core::WalletMap wallets;
-            for (unsigned i=0; i<txSignReq.armorySigner_.getTxInCount(); i++) {
-               auto utxo = txSignReq.armorySigner_.getSpender(i)->getUtxo();
-               const auto addr = bs::Address::fromUTXO(utxo);
-               const auto wallet = walletsMgr_->getWalletByAddress(addr);
-               if (!wallet) {
-                  logger_->error("[{}] failed to find wallet for input address {}"
-                     , __func__, addr.display());
-                  return 0;
-               }
-               multiReq.addWalletId(wallet->walletId());
-               wallets[wallet->walletId()] = wallet;
-            }
-            multiReq.RBF = txSignReq.RBF;
-
-            signedTx = bs::core::SignMultiInputTX(multiReq, wallets);
-         }
-      } else {
-         if (wallets.size() != 1) {
-            logger_->error("[{}] can't sign partial request for more than 1 wallet", __func__);
-            return 0;
-         }
-         signedTx = BinaryData::fromString(wallets.front()->signPartialTXRequest(txSignReq).SerializeAsString());
-      }
-      if (sct_) {
-         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      }
-   }
-   catch (const std::exception &e) {
-      logger_->error("[{}] failed to sign: {}", __func__, e.what());
-      if (sct_) {
-         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
-      }
-   }
-   return reqId;
-}
-
 void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignReq
    , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode
       , const std::string& errorReason)>& cb
@@ -192,54 +123,6 @@ void InprocSigner::signTXRequest(const bs::core::wallet::TXSignRequest& txSignRe
    }
 }
 
-bs::signer::RequestId InprocSigner::signSettlementTXRequest(const bs::core::wallet::TXSignRequest &txReq
-   , const bs::sync::PasswordDialogData &, SignContainer::TXSignMode mode, bool keepDups
-   , const std::function<void (bs::error::ErrorCode, const BinaryData &)> &cb)
-{
-   const auto& cbWrap = [cb](BinaryData signedTX, bs::error::ErrorCode result, const std::string& errorReason)
-   {
-      cb(result, signedTX);
-   };
-   signTXRequest(txReq, cbWrap, mode, keepDups);
-   return seqId_++;
-}
-
-bs::signer::RequestId InprocSigner::signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &txReq
-   , const bs::core::wallet::SettlementData &sd, const bs::sync::PasswordDialogData &
-   , const std::function<void(bs::error::ErrorCode, const BinaryData &signedTX)> &cb)
-{
-   if (!txReq.isValid()) {
-      logger_->error("[{}] Invalid payout TX sign request", __func__);
-      return 0;
-   }
-   const auto wallet = walletsMgr_->getPrimaryWallet();
-   if (!wallet) {
-      logger_->error("[{}] failed to find primary wallet", __func__);
-      return 0;
-   }
-
-   const auto reqId = seqId_++;
-   try {
-      PasswordLock pwLock = pwLockCb_ ? std::move(pwLockCb_(wallet->walletId())) : nullptr;
-      const auto signedTx = wallet->signSettlementTXRequest(txReq, sd);
-      if (cb) {
-         cb(bs::error::ErrorCode::NoError, signedTx);
-      }
-      if (sct_) {
-         sct_->txSigned(reqId, signedTx, bs::error::ErrorCode::NoError);
-      }
-   } catch (const std::exception &e) {
-      logger_->error("[{}] {}", __func__, e.what());
-      if (cb) {
-         cb(bs::error::ErrorCode::InternalError, {});
-      }
-      if (sct_) {
-         sct_->txSigned(reqId, {}, bs::error::ErrorCode::InternalError, e.what());
-      }
-   }
-   return reqId;
-}
-
 bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet::TXSignRequest &txReq
    , const SignerStateCb &cb)
 {
@@ -257,7 +140,7 @@ bs::signer::RequestId InprocSigner::resolvePublicSpenders(const bs::core::wallet
       return 0;
    }
 
-   ArmorySigner::Signer signer(txReq.armorySigner_);
+   Armory::Signer::Signer signer(txReq.armorySigner_);
    const auto reqId = seqId_++;
    for (const auto &wallet : wallets) {
       signer.resetFeed();
@@ -328,19 +211,7 @@ bool InprocSigner::createHDLeaf(const std::string &rootWalletId, const bs::hd::P
    return false;
 }
 
-bool InprocSigner::enableTradingInHDWallet(const std::string &, const BinaryData &
-   , bs::sync::PasswordDialogData , const WalletSignerContainer::UpdateWalletStructureCB &)
-{
-   throw std::bad_function_call();
-}
-
-bool InprocSigner::promoteWalletToPrimary(const std::string&
-      , bs::sync::PasswordDialogData, const UpdateWalletStructureCB&)
-{
-   throw std::bad_function_call();
-}
-
-
+#if 0 // settlement is being removed
 void InprocSigner::createSettlementWallet(const bs::Address &authAddr
    , const std::function<void(const SecureBinaryData &)> &cb)
 {
@@ -367,19 +238,7 @@ void InprocSigner::createSettlementWallet(const bs::Address &authAddr
 
    getRootPubkey(priWallet->walletId(), cbWrap);
 }
-
-bs::signer::RequestId InprocSigner::setUserId(const BinaryData &userId, const std::string &walletId)
-{
-   //walletsMgr_->setChainCode(userId);
-   //TODO: add SetUserId implementation here
-   return seqId_++;
-}
-
-bs::signer::RequestId InprocSigner::syncCCNames(const std::vector<std::string> &ccNames)
-{
-   walletsMgr_->setCCLeaves(ccNames);
-   return seqId_++;
-}
+#endif   //0
 
 bs::signer::RequestId InprocSigner::DeleteHDRoot(const std::string &walletId)
 {
@@ -487,7 +346,7 @@ void InprocSigner::syncHDWallet(const std::string &id, const std::function<void(
                   throw std::runtime_error("unexpected leaf type");
                }
                const auto rootAsset = settlLeaf->getRootAsset();
-               const auto rootSingle = std::dynamic_pointer_cast<AssetEntry_Single>(rootAsset);
+               const auto rootSingle = std::dynamic_pointer_cast<Armory::Assets::AssetEntry_Single>(rootAsset);
                if (rootSingle == nullptr) {
                   throw std::runtime_error("invalid root asset");
                }
@@ -637,7 +496,7 @@ void InprocSigner::syncAddressBatch(
    try {
       parsedMap = wallet->indexPath(addrSet);
    }
-   catch (const AccountException &) {
+   catch (const Armory::Accounts::AccountException &) {
       //failure to find even one of the addresses means the wallet chain needs
       //extended further
       cb(bs::sync::SyncState::Failure);
@@ -670,6 +529,7 @@ void InprocSigner::syncAddressBatch(
    }
 }
 
+#if 0 // settlement is being removed
 void InprocSigner::setSettlementID(const std::string& wltId
    , const SecureBinaryData &settlId, const std::function<void(bool)> &cb)
 {  /***
@@ -715,13 +575,14 @@ void InprocSigner::getSettlementPayinAddress(const std::string& walletID
       cb(true, wltPtr->getSettlementPayinAddress(sd));
    }
 }
+#endif   //0
 
 void InprocSigner::getRootPubkey(const std::string& walletID
    , const std::function<void(bool, const SecureBinaryData &)> &cb)
 {
    auto leafPtr = walletsMgr_->getWalletById(walletID);
    auto rootPtr = leafPtr->getRootAsset();
-   auto rootSingle = std::dynamic_pointer_cast<AssetEntry_Single>(rootPtr);
+   auto rootSingle = std::dynamic_pointer_cast<Armory::Assets::AssetEntry_Single>(rootPtr);
    if (rootSingle == nullptr) {
       if (cb) {
          cb(false, {});
@@ -731,18 +592,6 @@ void InprocSigner::getRootPubkey(const std::string& walletID
    if (cb) {
       cb(true, rootSingle->getPubKey()->getCompressedKey());
    }
-}
-
-void InprocSigner::getChatNode(const std::string &walletID
-   , const std::function<void(const BIP32_Node &)> &cb)
-{
-   const auto hdWallet = walletsMgr_->getHDWalletById(walletID);
-   if (!hdWallet) {
-      cb({});
-      return;
-   }
-   const auto chatNode = hdWallet->getChatNode();
-   cb(chatNode);
 }
 
 std::shared_ptr<bs::core::hd::Leaf> InprocSigner::getAuthLeaf() const
@@ -758,6 +607,7 @@ std::shared_ptr<bs::core::hd::Leaf> InprocSigner::getAuthLeaf() const
    return nullptr;
 }
 
+#if 0 // settlement is being removed
 void InprocSigner::setSettlAuthAddr(const std::string &walletId, const BinaryData &settlId
    , const bs::Address &addr)
 {
@@ -800,3 +650,4 @@ void InprocSigner::getSettlCP(const std::string &walletId, const BinaryData &pay
       cb({}, {});
    }
 }
+#endif   //0

@@ -1036,7 +1036,7 @@ bool BlockchainAdapter::processLedgerEntries(const bs::message::Envelope &env
                return;
             }
             const auto &cbEntries = [this, env, filter, page, pageCnt, walletId, stopped]
-               (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
+               (ReturnMessage<std::vector<DBClientClasses::LedgerEntry>> entriesRet)
             {
                try {
                   auto le = entriesRet.get();
@@ -1563,7 +1563,7 @@ void BlockchainAdapter::singleAddrWalletRegistered(const AddressHistRequest& req
                return;
             }
             const auto& cbEntries = [this, request, page, pageCnt, itWallet, entries, stopped]
-               (ReturnMessage<std::vector<ClientClasses::LedgerEntry>> entriesRet)
+               (ReturnMessage<std::vector<DBClientClasses::LedgerEntry>> entriesRet)
             {
                try {
                   auto le = entriesRet.get();

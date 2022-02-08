@@ -14,9 +14,9 @@
 #include <functional>
 #include <unordered_map>
 #include <lmdbpp.h>
-#include "Accounts.h"
 #include "CoreWallet.h"
 #include "HDPath.h"
+#include "Wallets/WalletFileInterface.h"
 
 #define LEAF_KEY              0x00002001
 #define AUTH_LEAF_KEY         0x00002002
@@ -48,10 +48,10 @@ namespace bs {
             ~Leaf();
 
             virtual void init(
-               std::shared_ptr<AssetWallet_Single>,
-               const BinaryData& addrAccId);
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>,
+               const Armory::Wallets::AddressAccountId&);
             virtual std::shared_ptr<hd::Leaf> getCopy(
-               std::shared_ptr<AssetWallet_Single>) const = 0;
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const = 0;
 
             void setPath(const bs::hd::Path&);
 
@@ -64,7 +64,7 @@ namespace bs {
 
             bool containsAddress(const bs::Address &addr) override;
             bool containsHiddenAddress(const bs::Address &addr) const override;
-            BinaryData getRootId() const override;
+            Armory::Wallets::AddressAccountId getRootId() const override;
 
             std::vector<bs::Address> getPooledAddressList() const override;
             std::vector<bs::Address> getExtAddressList() const override;
@@ -86,11 +86,11 @@ namespace bs {
 
             std::pair<bs::Address, bool> synchronizeUsedAddressChain(const std::string&) override;
 
-            bs::Address getAddressByIndex(unsigned int index, bool ext) const;
+            bs::Address getAddressByIndex(int index, bool ext) const;
 
             SecureBinaryData getPublicKeyFor(const bs::Address &) override;
-            std::shared_ptr<ArmorySigner::ResolverFeed> getResolver(void) const override;
-            std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver(void) const override;
+            std::shared_ptr<Armory::Signer::ResolverFeed> getResolver(void) const override;
+            std::shared_ptr<Armory::Signer::ResolverFeed> getPublicResolver(void) const override;
             ReentrantLock lockDecryptedContainer() override;
 
             const bs::hd::Path &path() const { return path_; }
@@ -99,7 +99,7 @@ namespace bs {
             virtual AddressEntryType defaultAddressType() const = 0;
             virtual BinaryData serialize() const;
 
-            static std::pair<std::shared_ptr<hd::Leaf>, BinaryData> deserialize(
+            static std::pair<std::shared_ptr<hd::Leaf>, Armory::Wallets::AddressAccountId> deserialize(
                const BinaryData &ser, NetworkType netType, std::shared_ptr<spdlog::logger> logger);
 
             void shutdown(void) override;
@@ -107,12 +107,12 @@ namespace bs {
             std::vector<bs::Address> extendAddressChain(unsigned count, bool extInt) override;
 
             std::map<BinaryData, bs::hd::Path> indexPath(const std::set<BinaryData>&) override;
-            bool hasBip32Path(const ArmorySigner::BIP32_AssetPath&) const override;
+            bool hasBip32Path(const Armory::Signer::BIP32_AssetPath&) const override;
 
             bs::hd::Path::Elem getExtPath(void) const override { return addrTypeExternal_; }
             bs::hd::Path::Elem getIntPath(void) const override { return addrTypeInternal_; }
 
-            std::shared_ptr<AssetEntry> getRootAsset(void) const;
+            std::shared_ptr<Armory::Assets::AssetEntry> getRootAsset(void) const;
 
          public:
             static const bs::hd::Path::Elem  addrTypeExternal_ = 0u;
@@ -122,11 +122,11 @@ namespace bs {
             void reset();
 
             void readMetaData();
-            std::shared_ptr<DBIfaceTransaction> getDBWriteTx() override;
-            std::shared_ptr<DBIfaceTransaction> getDBReadTx() override;
+            std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> getDBWriteTx() override;
+            std::shared_ptr<Armory::Wallets::IO::WalletIfaceTransaction> getDBReadTx() override;
 
-            bs::Address newAddress();
-            bs::Address newInternalAddress();
+            bs::Address newAddress(const std::shared_ptr<Armory::Wallets::IO::WalletDBInterface>&);
+            bs::Address newInternalAddress(const std::shared_ptr<Armory::Wallets::IO::WalletDBInterface>&);
 
             bs::hd::Path getPathForAddress(const bs::Address &) const;
 
@@ -145,8 +145,8 @@ namespace bs {
             bs::hd::Path            path_;
             std::string             suffix_;
             const NetworkType       netType_;
-            std::shared_ptr<::AddressAccount> accountPtr_;
-            std::shared_ptr<AssetWallet_Single> walletPtr_;
+            std::shared_ptr<Armory::Accounts::AddressAccount>     accountPtr_;
+            std::shared_ptr<Armory::Wallets::AssetWallet_Single>  walletPtr_;
 
          private:
             void topUpAddressPool(size_t count, bool intExt);
@@ -161,7 +161,7 @@ namespace bs {
                wallet::Type type = wallet::Type::Bitcoin)
                : Leaf(netType, logger, type) {}
 
-            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
             std::set<AddressEntryType> addressTypes() const override { return {AddressEntryType_P2WPKH}; }
             AddressEntryType defaultAddressType() const override { return AddressEntryType_P2WPKH; }
@@ -174,7 +174,7 @@ namespace bs {
             LeafNested(NetworkType netType, std::shared_ptr<spdlog::logger> logger)
                : Leaf(netType, logger, wallet::Type::Bitcoin) {}
 
-            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
             std::set<AddressEntryType> addressTypes() const override {
                return { static_cast<AddressEntryType>(AddressEntryType_P2SH | AddressEntryType_P2WPKH) };
@@ -191,7 +191,7 @@ namespace bs {
             LeafNonSW(NetworkType netType, std::shared_ptr<spdlog::logger> logger)
                : Leaf(netType, logger, wallet::Type::Bitcoin) {}
 
-            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
             std::set<AddressEntryType> addressTypes() const override { return {AddressEntryType_P2PKH}; }
             AddressEntryType defaultAddressType() const override { return AddressEntryType_P2PKH; }
@@ -204,7 +204,7 @@ namespace bs {
             LeafArmoryWallet(NetworkType netType, std::shared_ptr<spdlog::logger> logger)
                : Leaf(netType, logger, wallet::Type::Bitcoin) {}
 
-            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<AssetWallet_Single>) const override;
+            std::shared_ptr<hd::Leaf> getCopy(std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
 
             std::set<AddressEntryType> addressTypes() const override;
             AddressEntryType defaultAddressType() const override;
@@ -226,7 +226,7 @@ namespace bs {
             AuthLeaf(NetworkType netType, std::shared_ptr<spdlog::logger> logger);
 
             std::shared_ptr<hd::Leaf> getCopy(
-               std::shared_ptr<AssetWallet_Single>) const override;
+               std::shared_ptr<Armory::Wallets::AssetWallet_Single>) const override;
             BinaryData serialize() const override;
 
             const SecureBinaryData& getSalt(void) const { return salt_; }
@@ -263,7 +263,7 @@ namespace bs {
                   use bs::core::hd::Wallet::signSettlementTXRequest");
             }
 
-            unsigned getIndexForSettlementID(const SecureBinaryData&) const;
+            Armory::Wallets::AssetKeyType getIndexForSettlementID(const SecureBinaryData&) const;
          };
 
       }  //namespace hd

@@ -10,7 +10,6 @@
 */
 #include "HeadlessContainerListener.h"
 
-#include "AuthAddressLogic.h"
 #include "CheckRecipSigner.h"
 #include "ConnectionManager.h"
 #include "CoreHDWallet.h"
@@ -186,41 +185,11 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
    case headless::AutoSignFullType:
       return onSignTxRequest(clientId, packet, packet.type());
 
-   case headless::SignSettlementPayoutTxType:
-      return onSignSettlementPayoutTxRequest(clientId, packet);
-
-   case headless::SignAuthAddrRevokeType:
-      return onSignAuthAddrRevokeRequest(clientId, packet);
-
    case headless::ResolvePublicSpendersType:
       return onResolvePubSpenders(clientId, packet);
 
    case headless::CreateHDLeafRequestType:
       return onCreateHDLeaf(clientId, packet);
-
-   case headless::EnableTradingInWalletType:
-      return onEnableTradingInWallet(clientId, packet);
-
-   case headless::PromoteWalletToPrimaryType:
-      return onPromoteWalletToPrimary(clientId, packet);
-
-   case headless::SetUserIdType:
-      return onSetUserId(clientId, packet);
-
-   case headless::SyncCCNamesType:
-      return onSyncCCNames(packet);
-
-   case headless::CreateSettlWalletType:
-      return onCreateSettlWallet(clientId, packet);
-
-   case headless::SetSettlementIdType:
-      return onSetSettlementId(clientId, packet);
-
-   case headless::GetSettlPayinAddrType:
-      return onGetPayinAddr(clientId, packet);
-
-   case headless::SettlGetRootPubkeyType:
-      return onSettlGetRootPubkey(clientId, packet);
 
    case headless::GetHDWalletInfoRequestType:
       return onGetHDWalletInfo(clientId, packet);
@@ -251,15 +220,6 @@ bool HeadlessContainerListener::onRequestPacket(const std::string &clientId, hea
 
    case headless::ExecCustomDialogRequestType:
       return onExecCustomDialog(clientId, packet);
-
-   case headless::ChatNodeRequestType:
-      return onChatNodeRequest(clientId, packet);
-
-   case headless::SettlementAuthType:
-      return onSettlAuthRequest(clientId, packet);
-
-   case headless::SettlementCPType:
-      return onSettlCPRequest(clientId, packet);
 
    default:
       logger_->error("[HeadlessContainerListener] unknown request type {}", packet.type());
@@ -615,6 +575,7 @@ bool HeadlessContainerListener::onUpdateDialogData(const std::string &clientId, 
    return true;
 }
 
+#if 0
 bool HeadlessContainerListener::onSignSettlementPayoutTxRequest(const std::string &clientId
    , const headless::RequestPacket &packet)
 {
@@ -722,7 +683,7 @@ bool HeadlessContainerListener::onSignAuthAddrRevokeRequest(const std::string &c
    UTXO utxo;
    utxo.unserialize(BinaryData::fromString(request.utxo()));
    if (utxo.isInitialized()) {
-      auto spender = std::make_shared<ArmorySigner::ScriptSpender>(utxo);
+      auto spender = std::make_shared<Armory::Signer::ScriptSpender>(utxo);
       txSignReq.armorySigner_.addSpender(spender);
    }
    else {
@@ -756,6 +717,7 @@ bool HeadlessContainerListener::onSignAuthAddrRevokeRequest(const std::string &c
    return RequestPasswordIfNeeded(clientId, txSignReq.walletIds.front(), txSignReq
       , packet.type(), dialogData, onPassword);
 }
+#endif   //0
 
 bool HeadlessContainerListener::onResolvePubSpenders(const std::string &clientId
    , const headless::RequestPacket &packet)
@@ -1052,6 +1014,7 @@ void HeadlessContainerListener::RunDeferredPwDialog()
    }
 }
 
+#if 0 // trading is being removed
 bool HeadlessContainerListener::onSetUserId(const std::string &clientId, headless::RequestPacket &packet)
 {
    headless::SetUserIdRequest request;
@@ -1167,6 +1130,7 @@ void HeadlessContainerListener::setUserIdResponse(const std::string &clientId, u
    packet.set_data(response.SerializeAsString());
    sendData(packet.SerializeAsString(), clientId);
 }
+#endif   //0
 
 bool HeadlessContainerListener::onCreateHDLeaf(const std::string &clientId
    , Blocksettle::Communication::headless::RequestPacket &packet)
@@ -1237,20 +1201,21 @@ bool HeadlessContainerListener::onCreateHDLeaf(const std::string &clientId
             if (callbacks_) {
                callbacks_->walletChanged(leaf->walletId());
             }
-
+#if 0 // XBT settlement is being removed
             if ((path.get(1) | bs::hd::hardFlag) == bs::hd::CoinType::BlockSettle_Auth) {
                for (int i = 0; i < 10; i++) {
                   leaf->getNewExtAddress();
                }
                createSettlementLeaves(hdWallet, leaf->getUsedAddressList());
             }
+#endif
          }
 
          auto assetPtr = leaf->getRootAsset();
 
-         auto rootPtr = std::dynamic_pointer_cast<AssetEntry_BIP32Root>(assetPtr);
+         auto rootPtr = std::dynamic_pointer_cast<Armory::Assets::AssetEntry_BIP32Root>(assetPtr);
          if (rootPtr == nullptr) {
-            throw AssetException("unexpected root asset type");
+            throw Armory::Assets::AssetException("unexpected root asset type");
          }
 
          CreateHDLeafResponse(clientId, id, ErrorCode::NoError, leaf);
@@ -1265,6 +1230,7 @@ bool HeadlessContainerListener::onCreateHDLeaf(const std::string &clientId
    return true;
 }
 
+#if 0 // XBT settlement is being removed
 bool HeadlessContainerListener::createSettlementLeaves(const std::shared_ptr<bs::core::hd::Wallet> &wallet
    , const std::vector<bs::Address> &authAddresses)
 {
@@ -1346,7 +1312,8 @@ bool HeadlessContainerListener::createAuthLeaf(const std::shared_ptr<bs::core::h
          for (int i = 0; i < 5; i++) {
             leaf->getNewExtAddress();
          }
-         return createSettlementLeaves(wallet, leaf->getUsedAddressList());
+         //return createSettlementLeaves(wallet, leaf->getUsedAddressList());
+         return true;
       } else {
          logger_->error("[HeadlessContainerListener::onSetUserId] failed to create auth leaf");
       }
@@ -1458,6 +1425,7 @@ bool HeadlessContainerListener::onPromoteWalletToPrimary(const std::string& clie
       , request.passworddialogdata(), onPassword);
    return true;
 }
+#endif   //0
 
 void HeadlessContainerListener::CreateHDLeafResponse(const std::string &clientId, unsigned int id
    , ErrorCode result, const std::shared_ptr<bs::core::hd::Leaf>& leaf)
@@ -1522,13 +1490,14 @@ void HeadlessContainerListener::CreatePromoteWalletResponse(const std::string& c
 static SecureBinaryData getPubKey(const std::shared_ptr<bs::core::hd::Leaf> &leaf)
 {
    auto rootPtr = leaf->getRootAsset();
-   auto rootSingle = std::dynamic_pointer_cast<AssetEntry_Single>(rootPtr);
+   auto rootSingle = std::dynamic_pointer_cast<Armory::Assets::AssetEntry_Single>(rootPtr);
    if (rootSingle == nullptr) {
       return {};
    }
    return rootSingle->getPubKey()->getCompressedKey();
 }
 
+#if 0 // settlement is being removed
 bool HeadlessContainerListener::onCreateSettlWallet(const std::string &clientId, headless::RequestPacket packet)
 {
    headless::CreateSettlWalletRequest request;
@@ -1717,6 +1686,7 @@ bool HeadlessContainerListener::onSettlGetRootPubkey(const std::string &clientId
    packet.set_data(response.SerializeAsString());
    return sendData(packet.SerializeAsString(), clientId);
 }
+#endif   //0
 
 bool HeadlessContainerListener::onGetHDWalletInfo(const std::string &clientId, headless::RequestPacket &packet)
 {
@@ -1987,7 +1957,7 @@ bool HeadlessContainerListener::onSyncHDWallet(const std::string &clientId, head
                   throw std::runtime_error("unexpected leaf type");
                }
                const auto rootAsset = settlLeaf->getRootAsset();
-               const auto rootSingle = std::dynamic_pointer_cast<AssetEntry_Single>(rootAsset);
+               const auto rootSingle = std::dynamic_pointer_cast<Armory::Assets::AssetEntry_Single>(rootAsset);
                if (rootSingle == nullptr) {
                   throw std::runtime_error("invalid root asset");
                }
@@ -2107,7 +2077,7 @@ bool HeadlessContainerListener::onSyncAddresses(const std::string &clientId, hea
    std::map<BinaryData, bs::hd::Path> parsedMap;
    try {
       parsedMap = std::move(wallet->indexPath(addrSet));
-   } catch (AccountException &e) {
+   } catch (Armory::Accounts::AccountException &e) {
       //failure to find even one of the addresses means the wallet chain needs
       //extended further
       SyncAddrsResponse(clientId, packet.id(), request.wallet_id(), bs::sync::SyncState::Failure);
@@ -2228,6 +2198,7 @@ bool HeadlessContainerListener::onSyncNewAddr(const std::string &clientId, headl
    return true;
 }
 
+#if 0 // chat and settlement are being removed
 bool HeadlessContainerListener::onChatNodeRequest(const std::string &clientId, headless::RequestPacket packet)
 {
    headless::ChatNodeRequest request;
@@ -2331,6 +2302,7 @@ bool HeadlessContainerListener::onSettlCPRequest(const std::string &clientId, he
    sendData(packet.SerializeAsString(), clientId);
    return true;
 }
+#endif   //0
 
 bool HeadlessContainerListener::onExecCustomDialog(const std::string &clientId, headless::RequestPacket packet)
 {

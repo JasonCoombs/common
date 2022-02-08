@@ -113,7 +113,7 @@ namespace bs {
          static BinaryData getOwnPubKey_FromKeyFile(
             const std::string &ownKeyFileDir, const std::string &ownKeyFileName);
          static BinaryData getOwnPubKey_FromAuthPeers(
-            const AuthorizedPeers &authPeers);
+            const Armory::Wallets::AuthorizedPeers &authPeers);
 
          static bool handshakeCompleted(const BIP151Connection*);
 
@@ -122,7 +122,7 @@ namespace bs {
 
          AuthPeersLambdas getAuthPeerLambda();
 
-         using WriteDataCb = std::function<bool(bip15x::MsgType, const BinaryData &
+         using WriteDataCb = std::function<bool(ArmoryAEAD::BIP151_PayloadType, const BinaryData &
             , bool encrypt)>;
          bool processAEAD(const bip15x::Message &, const std::unique_ptr<BIP151Connection> &
             , const WriteDataCb &, bool requesterSent);
@@ -132,7 +132,7 @@ namespace bs {
 
       protected:
          std::shared_ptr<spdlog::logger>  logger_;
-         std::unique_ptr<AuthorizedPeers> authPeers_;
+         std::unique_ptr<Armory::Wallets::AuthorizedPeers>  authPeers_;
          mutable std::mutex authPeersMutex_;
 
       private:

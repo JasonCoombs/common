@@ -9,10 +9,10 @@
 
 */
 #include "Address.h"
-#include "BlockDataManagerConfig.h"
+#include "BitcoinSettings.h"
 #include <bech32.h>
 
-using namespace ArmorySigner;
+using namespace Armory::Signer;
 
 bs::Address::Address(const BinaryDataRef& data) :
    BinaryData(data)
@@ -29,7 +29,7 @@ bs::Address::Address(const BinaryDataRef& data) :
       if (data.getSize() != 21)
          throw std::runtime_error("invalid data size");
 
-      if (getPtr()[0] != NetworkConfig::getPubkeyHashPrefix())
+      if (getPtr()[0] != Armory::Config::BitcoinSettings::getPubkeyHashPrefix())
          throw std::runtime_error("network mismatch!");
 
       aet_ = AddressEntryType_P2PKH;
@@ -41,7 +41,7 @@ bs::Address::Address(const BinaryDataRef& data) :
       if (data.getSize() != 21)
          throw std::runtime_error("invalid data size");
 
-      if (getPtr()[0] != NetworkConfig::getScriptHashPrefix())
+      if (getPtr()[0] != Armory::Config::BitcoinSettings::getScriptHashPrefix())
          throw std::runtime_error("network mismatch!");
 
       aet_ = AddressEntryType_P2SH;
@@ -115,7 +115,7 @@ bs::Address bs::Address::fromAddressString(const std::string& data)
    }
    const auto &prefix = data.substr(0, 2);
    if ((prefix == SEGWIT_ADDRESS_MAINNET_HEADER) || (prefix == SEGWIT_ADDRESS_TESTNET_HEADER)) {
-      auto&& scrAddr = BtcUtils::segWitAddressToScrAddr(data);
+      auto&& [scrAddr, ver] = BtcUtils::segWitAddressToScrAddr(data);
       if (scrAddr.getSize() == 20) {
          return bs::Address(scrAddr, AddressEntryType_P2WPKH);
       }
@@ -126,12 +126,12 @@ bs::Address bs::Address::fromAddressString(const std::string& data)
    else {
       auto&& scrAddr = BtcUtils::base58toScrAddr(data);
 
-      if (scrAddr.getPtr()[0] == NetworkConfig::getPubkeyHashPrefix())
+      if (scrAddr.getPtr()[0] == Armory::Config::BitcoinSettings::getPubkeyHashPrefix())
       {
          return bs::Address(
             scrAddr.getSliceRef(1, scrAddr.getSize() - 1), AddressEntryType_P2PKH);
       }
-      else if (scrAddr.getPtr()[0] == NetworkConfig::getScriptHashPrefix())
+      else if (scrAddr.getPtr()[0] == Armory::Config::BitcoinSettings::getScriptHashPrefix())
       {
          return bs::Address(
             scrAddr.getSliceRef(1, scrAddr.getSize() - 1), AddressEntryType_P2SH);

@@ -242,8 +242,7 @@ QString WalletInfo::email() const
    if (encKeys_.isEmpty())
       return QString();
 
-   return {};	//FIXME: use other source than AutheIDClient  
-//   return QString::fromStdString(AutheIDClient::getDeviceInfo(encKeys_.at(0).toStdString()).userId);
+   return {};  //FIXME: QString::fromStdString(AutheIDClient::getDeviceInfo(encKeys_.at(0).toStdString()).userId);
 }
 
 bool WalletInfo::isEidAuthOnly() const

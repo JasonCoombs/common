@@ -15,7 +15,13 @@
 #include <string>
 
 class BinaryData;
-struct KeyDerivationFunction;
+namespace Armory {
+   namespace Wallets {
+      namespace Encryption {
+         class KeyDerivationFunction;
+      }
+   }
+}
 
 class UserHasher {
 public:
@@ -24,11 +30,11 @@ public:
    UserHasher();
    UserHasher(const BinaryData& iv);
 
-   std::shared_ptr<KeyDerivationFunction> getKDF() const { return kdf_; }
+   std::shared_ptr<Armory::Wallets::Encryption::KeyDerivationFunction> getKDF() const { return kdf_; }
 
    std::string deriveKey(const std::string& rawData) const;
 private:
-   std::shared_ptr<KeyDerivationFunction> kdf_;
+   std::shared_ptr<Armory::Wallets::Encryption::KeyDerivationFunction> kdf_;
 };
 
 using UserHasherPtr = std::shared_ptr<UserHasher>;

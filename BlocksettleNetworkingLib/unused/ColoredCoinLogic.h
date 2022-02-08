@@ -193,7 +193,7 @@ private:
    };
 
 private:
-   ArmoryThreading::BlockingQueue<std::shared_ptr<DBNotificationStruct>> notifQueue_;
+   Armory::Threading::BlockingQueue<std::shared_ptr<DBNotificationStruct>> notifQueue_;
    std::thread processThr_;
 
    ColoredCoinTracker* ccPtr_ = nullptr;
@@ -275,7 +275,7 @@ private:
    std::set<BinaryData> revocationAddresses_;
 
    std::shared_ptr<ArmoryConnection> connPtr_;
-   ArmoryThreading::BlockingQueue<BinaryData> refreshQueue_;
+   Armory::Threading::BlockingQueue<BinaryData> refreshQueue_;
 
    std::shared_ptr<ColoredCoinSnapshot> snapshot_ = nullptr;
    std::shared_ptr<ColoredCoinZCSnapshot> zcSnapshot_ = nullptr;

@@ -15,55 +15,64 @@ PROJECT(${CRYPTO_LIB_NAME})
 SET(CPP_FOR_SWIG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../ArmoryDB/cppForSwig)
 
 SET (SOURCES
-   ${CPP_FOR_SWIG_ROOT}/Accounts.cpp
-   ${CPP_FOR_SWIG_ROOT}/Addresses.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AccountTypes.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AddressAccounts.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/AssetAccounts.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Accounts/MetaAccounts.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Addresses.cpp
    ${CPP_FOR_SWIG_ROOT}/ArmoryBackups.cpp
-   ${CPP_FOR_SWIG_ROOT}/AssetEncryption.cpp
-   ${CPP_FOR_SWIG_ROOT}/Assets.cpp
+   ${CPP_FOR_SWIG_ROOT}/ArmoryConfig.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/AssetEncryption.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Assets.cpp
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.cpp
-   ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/AuthorizedPeers.cpp
    ${CPP_FOR_SWIG_ROOT}/BinaryData.cpp
    ${CPP_FOR_SWIG_ROOT}/BIP150_151.cpp
    ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.cpp
-   ${CPP_FOR_SWIG_ROOT}/BIP32_Node.cpp
-   ${CPP_FOR_SWIG_ROOT}/BlockDataManagerConfig.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/BIP32_Node.cpp
+   ${CPP_FOR_SWIG_ROOT}/BitcoinSettings.cpp
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.cpp
-   ${CPP_FOR_SWIG_ROOT}/ClientClasses.cpp
    ${CPP_FOR_SWIG_ROOT}/CoinSelection.cpp
+   ${CPP_FOR_SWIG_ROOT}/DBClientClasses.cpp
    ${CPP_FOR_SWIG_ROOT}/DBUtils.cpp
-   ${CPP_FOR_SWIG_ROOT}/DecryptedDataContainer.cpp
-   ${CPP_FOR_SWIG_ROOT}/DerivationScheme.cpp
-   ${CPP_FOR_SWIG_ROOT}/EncryptionUtils_libbtc.cpp
-   ${CPP_FOR_SWIG_ROOT}/hkdf.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/EncryptedDB.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/DecryptedDataContainer.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/DerivationScheme.cpp
+   ${CPP_FOR_SWIG_ROOT}/EncryptionUtils.cpp
    ${CPP_FOR_SWIG_ROOT}/HttpMessage.cpp
    ${CPP_FOR_SWIG_ROOT}/JSON_codec.cpp
    ${CPP_FOR_SWIG_ROOT}/KDF.cpp
    ${CPP_FOR_SWIG_ROOT}/lmdb_wrapper.cpp
    ${CPP_FOR_SWIG_ROOT}/log.cpp
-   ${CPP_FOR_SWIG_ROOT}/NetworkConfig.cpp
    ${CPP_FOR_SWIG_ROOT}/ReentrantLock.cpp
-   ${CPP_FOR_SWIG_ROOT}/ResolverFeed.cpp
-   ${CPP_FOR_SWIG_ROOT}/Script.cpp
-   ${CPP_FOR_SWIG_ROOT}/ScriptRecipient.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/ResolverFeed.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/ResolverFeed_Wallets.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/Script.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/ScriptRecipient.cpp
    ${CPP_FOR_SWIG_ROOT}/SecureBinaryData.cpp
-   ${CPP_FOR_SWIG_ROOT}/Signer.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/Signer.cpp
    ${CPP_FOR_SWIG_ROOT}/SocketObject.cpp
    ${CPP_FOR_SWIG_ROOT}/StringSockets.cpp
    ${CPP_FOR_SWIG_ROOT}/TerminalPassphrasePrompt.cpp
-   ${CPP_FOR_SWIG_ROOT}/Transactions.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/Transactions.cpp
    ${CPP_FOR_SWIG_ROOT}/TxClasses.cpp
-   ${CPP_FOR_SWIG_ROOT}/TxEvalState.cpp
+   ${CPP_FOR_SWIG_ROOT}/Signer/TxEvalState.cpp
+   ${CPP_FOR_SWIG_ROOT}/TxHashFilters.cpp
+   ${CPP_FOR_SWIG_ROOT}/TxOutScrRef.cpp
    ${CPP_FOR_SWIG_ROOT}/UniversalTimer.cpp
-   ${CPP_FOR_SWIG_ROOT}/WalletFileInterface.cpp
-   ${CPP_FOR_SWIG_ROOT}/WalletHeader.cpp
-   ${CPP_FOR_SWIG_ROOT}/WalletManager.cpp
-   ${CPP_FOR_SWIG_ROOT}/Wallets.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletFileInterface.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletHeader.cpp
+   ${CPP_FOR_SWIG_ROOT}/BridgeAPI/WalletManager.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Wallets.cpp
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletIdTypes.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketClient.cpp
    ${CPP_FOR_SWIG_ROOT}/WebSocketMessage.cpp
    ${CPP_FOR_SWIG_ROOT}/ZeroConfNotifications.cpp
+   ${CPP_FOR_SWIG_ROOT}/ZeroConfUtils.cpp
+   ${CPP_FOR_SWIG_ROOT}/hkdf/hkdf.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/mdb.c
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/midl.c
-   ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdbpp.cpp
+   ${CPP_FOR_SWIG_ROOT}/lmdbpp/lmdbpp.cpp
    ${CPP_FOR_SWIG_ROOT}/chacha20poly1305/chacha.c
    ${CPP_FOR_SWIG_ROOT}/chacha20poly1305/chachapoly_aead.c
    ${CPP_FOR_SWIG_ROOT}/chacha20poly1305/poly1305.c
@@ -106,54 +115,51 @@ ELSE (WIN32)
 ENDIF (WIN32)
 
 SET (HEADERS
-   ${CPP_FOR_SWIG_ROOT}/Accounts.h
-   ${CPP_FOR_SWIG_ROOT}/Addresses.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Addresses.h
    ${CPP_FOR_SWIG_ROOT}/ArmoryBackups.h
-   ${CPP_FOR_SWIG_ROOT}/AssetEncryption.h
-   ${CPP_FOR_SWIG_ROOT}/Assets.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/AssetEncryption.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Assets.h
    ${CPP_FOR_SWIG_ROOT}/AsyncClient.h
-   ${CPP_FOR_SWIG_ROOT}/AuthorizedPeers.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/AuthorizedPeers.h
    ${CPP_FOR_SWIG_ROOT}/BDVCodec.h
    ${CPP_FOR_SWIG_ROOT}/BinaryData.h
    ${CPP_FOR_SWIG_ROOT}/BIP150_151.h
    ${CPP_FOR_SWIG_ROOT}/BIP15x_Handshake.h
-   ${CPP_FOR_SWIG_ROOT}/BIP32_Node.h
-   ${CPP_FOR_SWIG_ROOT}/BlockDataManagerConfig.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/BIP32_Node.h
+   ${CPP_FOR_SWIG_ROOT}/BitcoinSettings.h
    ${CPP_FOR_SWIG_ROOT}/BtcUtils.h
-   ${CPP_FOR_SWIG_ROOT}/ClientClasses.h
    ${CPP_FOR_SWIG_ROOT}/CoinSelection.h
    ${CPP_FOR_SWIG_ROOT}/DBUtils.h
-   ${CPP_FOR_SWIG_ROOT}/DecryptedDataContainer.h
-   ${CPP_FOR_SWIG_ROOT}/DerivationScheme.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/DecryptedDataContainer.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/DerivationScheme.h
    ${CPP_FOR_SWIG_ROOT}/EncryptionUtils.h
-   ${CPP_FOR_SWIG_ROOT}/hkdf.h
    ${CPP_FOR_SWIG_ROOT}/HttpMessage.h
    ${CPP_FOR_SWIG_ROOT}/JSON_codec.h
    ${CPP_FOR_SWIG_ROOT}/lmdb_wrapper.h
-   ${CPP_FOR_SWIG_ROOT}/NetworkConfig.h
    ${CPP_FOR_SWIG_ROOT}/ReentrantLock.h
-   ${CPP_FOR_SWIG_ROOT}/ResolverFeed.h
-   ${CPP_FOR_SWIG_ROOT}/Script.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/ResolverFeed.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/Script.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/ScriptRecipient.h
    ${CPP_FOR_SWIG_ROOT}/SecureBinaryData.h
-   ${CPP_FOR_SWIG_ROOT}/Signer.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/Signer.h
    ${CPP_FOR_SWIG_ROOT}/SocketObject.h
    ${CPP_FOR_SWIG_ROOT}/SocketService.h
    ${CPP_FOR_SWIG_ROOT}/StringSockets.h
    ${CPP_FOR_SWIG_ROOT}/TerminalPassphrasePrompt.h
-   ${CPP_FOR_SWIG_ROOT}/Transactions.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/Transactions.h
    ${CPP_FOR_SWIG_ROOT}/TxClasses.h
-   ${CPP_FOR_SWIG_ROOT}/TxEvalState.h
+   ${CPP_FOR_SWIG_ROOT}/Signer/TxEvalState.h
    ${CPP_FOR_SWIG_ROOT}/UniversalTimer.h
-   ${CPP_FOR_SWIG_ROOT}/WalletFileInterface.h
-   ${CPP_FOR_SWIG_ROOT}/WalletHeader.h
-   ${CPP_FOR_SWIG_ROOT}/WalletManager.h
-   ${CPP_FOR_SWIG_ROOT}/Wallets.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletFileInterface.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/WalletHeader.h
+   ${CPP_FOR_SWIG_ROOT}/BridgeAPI/WalletManager.h
+   ${CPP_FOR_SWIG_ROOT}/Wallets/Wallets.h
    ${CPP_FOR_SWIG_ROOT}/WebSocketClient.h
    ${CPP_FOR_SWIG_ROOT}/WebSocketMessage.h
    ${CPP_FOR_SWIG_ROOT}/ZeroConfNotifications.h
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdb.h
    ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/midl.h
-   ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb/lmdbpp.h
+   ${CPP_FOR_SWIG_ROOT}/lmdbpp/lmdbpp.h
    )
 
 IF (BUILD_TEST_TOOLS)
@@ -254,6 +260,10 @@ ENDIF(NOT WIN32)
 
 TARGET_INCLUDE_DIRECTORIES(${CRYPTO_LIB_NAME}
    PUBLIC ${CPP_FOR_SWIG_ROOT}
+   PUBLIC ${CPP_FOR_SWIG_ROOT}/Wallets
+   PUBLIC ${CPP_FOR_SWIG_ROOT}/Signer
+   PUBLIC ${CPP_FOR_SWIG_ROOT}/hkdf
+   PUBLIC ${CPP_FOR_SWIG_ROOT}/lmdbpp
    PUBLIC ${CPP_FOR_SWIG_ROOT}/lmdb/libraries/liblmdb
 )
 

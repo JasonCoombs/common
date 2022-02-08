@@ -23,8 +23,6 @@
 
 #include "Address.h"
 
-#include "autheid_utils.h"
-#include "AutheIDClient.h"
 #include "BSErrorCode.h"
 #include "CommonTypes.h"
 #include "DataConnection.h"
@@ -72,7 +70,7 @@ namespace bs {
 
 struct BsClientLoginResult
 {
-   AutheIDClient::ErrorType   status{};
+   //AutheIDClient::ErrorType   status{};
    std::string                errorMsg;
    bs::network::UserType      userType{};
    std::string                login;

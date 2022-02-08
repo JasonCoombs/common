@@ -20,10 +20,11 @@
 #include "Wallets/SyncHDWallet.h"
 #include "Wallets/SyncWalletsManager.h"
 
-using namespace ArmorySigner;
+using namespace Armory::Signer;
+using namespace Armory::CoinSelection;
 
 namespace {
-
+#if 0
    std::shared_ptr<bs::sync::hd::SettlementLeaf> findSettlementLeaf(const std::shared_ptr<bs::sync::WalletsManager> &walletsMgr, const bs::Address &ourAuthAddress)
    {
       auto wallet = walletsMgr->getPrimaryWallet();
@@ -38,7 +39,7 @@ namespace {
 
       return group->getLeaf(ourAuthAddress);
    }
-
+#endif   //0
 } // namespace
 
 bool bs::tradeutils::getSpendableTxOutList(const std::vector<std::shared_ptr<bs::sync::Wallet>> &wallets
@@ -92,18 +93,21 @@ bs::tradeutils::Result bs::tradeutils::Result::error(std::string msg)
    return result;
 }
 
+#if 0
 bs::tradeutils::PayinResult bs::tradeutils::PayinResult::error(std::string msg)
 {
    bs::tradeutils::PayinResult result;
    result.errorMsg = std::move(msg);
    return result;
 }
+#endif
 
 unsigned bs::tradeutils::feeTargetBlockCount()
 {
    return 2;
 }
 
+#if 0
 uint64_t bs::tradeutils::estimatePayinFeeWithoutChange(const std::vector<UTXO> &inputs, float feePerByte)
 {
    // add workaround for computeSizeAndFee (it can't compute exact v-size before signing,
@@ -315,6 +319,7 @@ void bs::tradeutils::createPayin(bs::tradeutils::PayinArgs args, bs::tradeutils:
       args.armory->estimateFee(feeTargetBlockCount(), cbFee);
    });
 }
+#endif
 
 uint64_t bs::tradeutils::getEstimatedFeeFor(UTXO input, const bs::Address &recvAddr
    , float feePerByte, unsigned int topBlock)
@@ -346,6 +351,7 @@ bs::XBTAmount bs::tradeutils::minXbtAmount(float feePerByte)
    return bs::XBTAmount(static_cast<bs::XBTAmount::satoshi_type>(networkFee + bs::Address::getNestedSegwitDustAmount()));
 }
 
+#if 0
 bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    , const bs::Address &recvAddr, float feePerByte, unsigned int topBlock)
 {
@@ -366,6 +372,7 @@ bs::core::wallet::TXSignRequest bs::tradeutils::createPayoutTXRequest(UTXO input
    txReq.armorySigner_.addRecipient(recvAddr.getRecipient(bs::XBTAmount{ static_cast<bs::XBTAmount::satoshi_type>(value) }));
    return txReq;
 }
+#endif   //0
 
 UTXO bs::tradeutils::getInputFromTX(const bs::Address &addr
    , const BinaryData &payinHash, unsigned txOutIndex, const bs::XBTAmount& amount)
@@ -376,6 +383,7 @@ UTXO bs::tradeutils::getInputFromTX(const bs::Address &addr
       , BtcUtils::getP2WSHOutputScript(addr.unprefixed()));
 }
 
+#if 0
 void bs::tradeutils::createPayout(bs::tradeutils::PayoutArgs args
    , bs::tradeutils::PayoutResultCb cb, bool myKeyFirst)
 {
@@ -456,7 +464,7 @@ bs::tradeutils::PayoutVerifyResult bs::tradeutils::verifySignedPayout(bs::tradeu
       std::map<BinaryData, std::map<unsigned, UTXO>> utxoMap;
       utxoMap[utxo.getTxHash()][0] = utxo;
 
-      TransactionVerifier tsv(*bctx, utxoMap);
+      Armory::Signer::TransactionVerifier tsv(*bctx, utxoMap);
 
       auto tsvFlags = tsv.getFlags();
       tsvFlags |= SCRIPT_VERIFY_P2SH_SHA256 | SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_SEGWIT;
@@ -481,6 +489,7 @@ bs::tradeutils::PayoutVerifyResult bs::tradeutils::verifySignedPayout(bs::tradeu
       return result;
    }
 }
+#endif   //0
 
 double bs::tradeutils::reservationQuantityMultiplier()
 {

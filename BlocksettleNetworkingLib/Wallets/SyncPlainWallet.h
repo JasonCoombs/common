@@ -58,7 +58,7 @@ namespace bs {
          size_t getUsedAddressCount() const override { return usedAddresses_.size(); }
          std::string getAddressIndex(const bs::Address &) override;
 
-         std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const override { return nullptr; }   // not needed, yet
+         std::shared_ptr<Armory::Signer::ResolverFeed> getPublicResolver() const override { return nullptr; }   // not needed, yet
 
          bool deleteRemotely() override;
 

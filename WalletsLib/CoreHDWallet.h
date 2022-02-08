@@ -31,15 +31,16 @@ namespace bs {
          private:
             Wallet(void) {}
 
+#if 0 // disabled since no settlement atm
             std::shared_ptr<AddressEntry_P2WSH> getAddressPtrForSettlement(
                const SecureBinaryData& settlementID,
                const SecureBinaryData& counterPartyPubKey,
                bool isMyKeyFirst) const;
-
             std::shared_ptr<hd::SettlementLeaf> getLeafForSettlementID(
                const SecureBinaryData &settlementID) const;
+#endif
 
-            std::shared_ptr<AssetEntry> getAssetForAddress(const bs::Address &);
+            std::shared_ptr<Armory::Assets::AssetEntry> getAssetForAddress(const bs::Address &);
 
          public:
             //init from seed
@@ -132,15 +133,16 @@ namespace bs {
             std::shared_ptr<hd::Leaf> createSettlementLeaf(const bs::Address&);
             std::shared_ptr<hd::Leaf> getSettlementLeaf(const bs::Address&);
 
+#if 0 // disabled due to no settlement
             bs::Address getSettlementPayinAddress(const wallet::SettlementData &) const;
 
             BinaryData signSettlementTXRequest(const wallet::TXSignRequest &
                , const wallet::SettlementData &);
-
+#endif
             BinaryData signTXRequestWithWallet(const bs::core::wallet::TXSignRequest &request);
 
-            bool HaveArmoryAccount(const std::shared_ptr<AssetWallet_Single>& wallet);
-            bool HaveBlocksettleDBStructure(const std::shared_ptr<AssetWallet_Single>& wallet);
+            bool HaveArmoryAccount(const std::shared_ptr<Armory::Wallets::AssetWallet_Single>&);
+            bool HaveBlocksettleDBStructure(const std::shared_ptr<Armory::Wallets::AssetWallet_Single>&);
 
          protected:
             std::string    name_, desc_;
@@ -150,13 +152,13 @@ namespace bs {
             std::shared_ptr<spdlog::logger>     logger_;
             bool extOnlyFlag_ = false;
 
-            std::shared_ptr<AssetWallet_Single> walletPtr_;
+            std::shared_ptr<Armory::Wallets::AssetWallet_Single>  walletPtr_;
             PassphraseLambda  lbdControlPassphrase_;
             std::string       filePathName_;
 
             mutable BIP32_Node   chatNode_;
 
-            std::deque<std::function<SecureBinaryData(const std::set<BinaryData> &)>>  lbdPwdPrompts_;
+            std::deque<PassphraseLambda>  lbdPwdPrompts_;
 
          protected:
             void initNew(const wallet::Seed &, const bs::wallet::PasswordData &

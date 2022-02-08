@@ -21,7 +21,9 @@ if ((logger)) { \
    logger->method(__VA_ARGS__); \
 }
 
-
+using namespace Armory::Accounts;
+using namespace Armory::Assets;
+using namespace Armory::Wallets;
 using namespace bs::core;
 
 hd::Wallet::Wallet(const std::string &name, const std::string &desc
@@ -63,13 +65,12 @@ bs::core::hd::Wallet::Wallet(const std::string &name, const std::string &desc,
    , netType_(netType)
    , logger_(logger)
 {
-   walletPtr_ = AssetWallet_Single::createSeedless_WatchingOnly(
-      folder, walletID, pd.controlPassword);
+   walletPtr_ = AssetWallet_Single::createBlank(folder, walletID, pd.controlPassword);
    filePathName_ = folder;
    DBUtils::appendPath(filePathName_, walletPtr_->getDbFilename());
 
    lbdControlPassphrase_ = [controlPassphrase = pd.controlPassword]
-   (const std::set<BinaryData>&)->SecureBinaryData
+      (const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
    {
       return controlPassphrase;
    };
@@ -109,7 +110,7 @@ void hd::Wallet::initNew(const wallet::Seed &seed
    DBUtils::appendPath(filePathName_, walletPtr_->getDbFilename());
 
    lbdControlPassphrase_ = [controlPassphrase = pd.controlPassword]
-      (const std::set<BinaryData>&) -> SecureBinaryData
+      (const std::set<Armory::Wallets::EncryptionKeyId>&) -> SecureBinaryData
    {
       return controlPassphrase;
    };
@@ -134,7 +135,7 @@ void hd::Wallet::loadFromFile(const std::string &filename,
 
    auto nbTries = std::make_shared<int>(0);
    lbdControlPassphrase_ = [controlPassphrase, nbTries]
-      (const std::set<BinaryData>&)->SecureBinaryData
+      (const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
    {
       if (++(*nbTries) > 1) {
          return {};
@@ -171,12 +172,12 @@ void hd::Wallet::loadFromFile(const std::string &filename,
 
 bool hd::Wallet::HaveArmoryAccount(const std::shared_ptr<AssetWallet_Single>& wallet)
 {
-   if (wallet->getMainAccountID() == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+   if (wallet->getMainAccountID() == ARMORY_LEGACY_ACCOUNTID) {
       return true;
    }
 
    for (const auto& accountId : wallet->getAccountIDs()) {
-      if (accountId == WRITE_UINT32_BE(ARMORY_LEGACY_ACCOUNTID)) {
+      if (accountId == ARMORY_LEGACY_ACCOUNTID) {
          return true;
       }
    }
@@ -326,7 +327,7 @@ void hd::Wallet::changeControlPassword(const SecureBinaryData &oldPass, const Se
 {
    auto nbTries = std::make_shared<int>(0);
    lbdControlPassphrase_ = [oldPass, nbTries]
-      (const std::set<BinaryData>&)->SecureBinaryData
+      (const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
    {
       if (++(*nbTries) > 1) {
          return {};
@@ -364,7 +365,7 @@ void bs::core::hd::Wallet::eraseControlPassword(const SecureBinaryData &oldPass)
 {
    auto nbTries = std::make_shared<int>(0);
    lbdControlPassphrase_ = [oldPass, nbTries]
-   (const std::set<BinaryData>&)->SecureBinaryData
+      (const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
    {
       if (++(*nbTries) > 1) {
          return {};
@@ -416,8 +417,7 @@ BinaryData bs::core::hd::Wallet::signTXRequestWithWallet(const bs::core::wallet:
          throw std::logic_error("password lambda not set");
       }
 
-      std::set<BinaryData> binaryData;
-      auto signedDeviceSigs = lbdPwdPrompts_.back()(binaryData);
+      auto signedDeviceSigs = lbdPwdPrompts_.back()({});
 
       if (hwEncKey.deviceType() == bs::wallet::HardwareEncKey::WalletType::Trezor) {
          signedTx = signedDeviceSigs;
@@ -621,7 +621,7 @@ void hd::Wallet::initializeDB()
    }
 }
 
-static BinaryDataRef getDataRefForKey(const std::shared_ptr<DBIfaceTransaction> &tx
+static BinaryDataRef getDataRefForKey(const std::shared_ptr<IO::DBIfaceTransaction> &tx
    , uint32_t key)
 {
    BinaryWriter bwKey;
@@ -869,7 +869,8 @@ void hd::Wallet::pushPasswordPrompt(const std::function<SecureBinaryData()> &lbd
    if (!walletPtr_) {
       return;
    }
-   const auto lbdWrap = [lbd, this](const std::set<BinaryData> &)->SecureBinaryData {
+   const auto lbdWrap = [lbd, this](const std::set<Armory::Wallets::EncryptionKeyId>&)->SecureBinaryData
+   {
       return lbd();
    };
    walletPtr_->setPassphrasePromptLambda(lbdWrap);
@@ -945,8 +946,8 @@ SecureBinaryData hd::Wallet::getDecryptedRootXpriv(void) const
       throw WalletException("wallet is watching only");
    }
 
-   auto root = walletPtr_->getRoot();
-   if(!root->hasPrivateKey()) {
+   auto root = std::dynamic_pointer_cast<AssetEntry_Single>(walletPtr_->getRoot());
+   if(!root || !root->hasPrivateKey()) {
       throw WalletException("wallet is missing root private key, this shouldnt happen");
    }
 
@@ -1044,6 +1045,7 @@ std::shared_ptr<AssetEntry> hd::Wallet::getAssetForAddress(
    return walletPtr_->getAssetForID(idPair.first);
 }
 
+#if 0 // disabled due to no settlement
 bs::Address hd::Wallet::getSettlementPayinAddress(
    const bs::core::wallet::SettlementData &sd) const
 {
@@ -1065,11 +1067,11 @@ std::shared_ptr<AddressEntry_P2WSH> hd::Wallet::getAddressPtrForSettlement(
 
    //grab settlement asset from leaf
    auto index = leafPtr->getIndexForSettlementID(settlementID);
-   if (index == UINT32_MAX) {
+   if (index == -1) {
       throw AssetException("settlement id " + settlementID.toHexStr()
          + " not found in " + leafPtr->walletId());
    }
-   auto myAssetPtr = leafPtr->accountPtr_->getAssetForID(index, true);
+   auto myAssetPtr = leafPtr->accountPtr_->getAssetForID(index);  //FIXME: other way to get asset now
    auto myAssetSingle = std::dynamic_pointer_cast<AssetEntry_Single>(myAssetPtr);
    if (myAssetSingle == nullptr) {
       throw AssetException("unexpected asset type");
@@ -1142,7 +1144,7 @@ BinaryData hd::Wallet::signSettlementTXRequest(const wallet::TXSignRequest &txRe
    signer.sign();
    return signer.serializeSignedTx();
 }
-
+#endif   //0
 
 WalletPasswordScoped::WalletPasswordScoped(const std::shared_ptr<hd::Wallet> &wallet
    , const SecureBinaryData &passphrase) : wallet_(wallet)

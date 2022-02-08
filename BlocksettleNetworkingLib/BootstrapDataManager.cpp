@@ -20,6 +20,7 @@
 
 #include "bs_communication.pb.h"
 
+using namespace Armory::Signer;
 using namespace Blocksettle::Communication;
 
 
@@ -94,7 +95,7 @@ bool BootstrapDataManager::loadData(const std::string& data)
    const auto signature = BinaryData::fromString(response.datasignature());
    try {
       const auto signAddress = bs::Address::fromAddressString(appSettings_->GetBlocksettleSignAddress()).prefixed();
-      if (!ArmorySigner::Signer::verifyMessageSignature(payload, signAddress, signature)) {
+      if (!Signer::verifyMessageSignature(payload, signAddress, signature)) {
          logger_->error("[BootstrapDataManager::loadData] signature invalid");
          return false;
       }

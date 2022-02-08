@@ -12,7 +12,6 @@
 
 #include "ArmoryConnection.h"
 #include "BTCNumericTypes.h"
-#include "CoinSelection.h"
 #include "SelectedTransactionInputs.h"
 #include "ScriptRecipient.h"
 #include "RecipientContainer.h"
@@ -24,7 +23,7 @@
 #include <map>
 #include <spdlog/spdlog.h>
 
-using namespace ArmorySigner;
+using namespace Armory::Signer;
 
 static const size_t kMaxTxStdWeight = 400000;
 
@@ -73,7 +72,7 @@ bool TransactionData::setWallet(const std::shared_ptr<bs::sync::Wallet> &wallet
          InvalidateTransactionData();
       }, cbInputsReset);
 
-      coinSelection_ = std::make_shared<CoinSelection>([this](uint64_t) {
+      coinSelection_ = std::make_shared<Armory::CoinSelection::CoinSelection>([this](uint64_t) {
          return selectedInputs_->GetSelectedTransactions();
       }
          , std::vector<AddressBookEntry>{}
@@ -118,7 +117,7 @@ bool TransactionData::setUTXOs(const std::vector<std::string>& walletsId
          InvalidateTransactionData();
       });
 
-      coinSelection_ = std::make_shared<CoinSelection>([this](uint64_t) {
+      coinSelection_ = std::make_shared<Armory::CoinSelection::CoinSelection>([this](uint64_t) {
          return selectedInputs_->GetSelectedTransactions();
       }
          , std::vector<AddressBookEntry>{}, UINT64_MAX, topBlock);
@@ -177,7 +176,7 @@ bool TransactionData::setGroup(const std::shared_ptr<bs::sync::hd::Group> &group
          InvalidateTransactionData();
       }, cbInputsReset);
 
-      coinSelection_ = std::make_shared<CoinSelection>([this](uint64_t) {
+      coinSelection_ = std::make_shared<Armory::CoinSelection::CoinSelection>([this](uint64_t) {
          return selectedInputs_->GetSelectedTransactions();
       }
          , std::vector<AddressBookEntry>{}
@@ -223,7 +222,7 @@ bool TransactionData::setWalletAndInputs(const std::shared_ptr<bs::sync::Wallet>
    selectedInputs_ = std::make_shared<SelectedTransactionInputs>(
       utxos, [this] { InvalidateTransactionData(); });
 
-   coinSelection_ = std::make_shared<CoinSelection>([this](uint64_t) {
+   coinSelection_ = std::make_shared<Armory::CoinSelection::CoinSelection>([this](uint64_t) {
       return selectedInputs_->GetSelectedTransactions();
    }
       , std::vector<AddressBookEntry>{}
@@ -289,16 +288,16 @@ bool TransactionData::UpdateTransactionData()
    }
 
    const auto totalFee = totalFee_ ? totalFee_ : minTotalFee_;
-   PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
-      ? PaymentStruct(recipientsMap, 0, feePerByte_, 0)
-      : PaymentStruct(recipientsMap, totalFee, 0, 0);
+   Armory::CoinSelection::PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
+      ? Armory::CoinSelection::PaymentStruct(recipientsMap, 0, feePerByte_, 0)
+      : Armory::CoinSelection::PaymentStruct(recipientsMap, totalFee, 0, 0);
    summary_.balanceToSpend = payment.spendVal() / BTCNumericTypes::BalanceDivider;
 
    if (summary_.fixedInputs) {
       if (!summary_.txVirtSize && !usedUTXO_.empty()) {
          transactions = usedUTXO_;
          bs::Address::decorateUTXOs(transactions);
-         UtxoSelection selection(transactions);
+         Armory::CoinSelection::UtxoSelection selection(transactions);
          selection.computeSizeAndFee(payment);
          summary_.txVirtSize = getVirtSize(selection);
          if (summary_.txVirtSize > kMaxTxStdWeight) {
@@ -316,7 +315,7 @@ bool TransactionData::UpdateTransactionData()
    }
    else if (payment.spendVal() <= availableBalance) {
       if (maxAmount) {
-         const UtxoSelection selection = computeSizeAndFee(transactions, payment);
+         const Armory::CoinSelection::UtxoSelection selection = computeSizeAndFee(transactions, payment);
          summary_.txVirtSize = getVirtSize(selection);
          if (summary_.txVirtSize > kMaxTxStdWeight) {
             if (logger_) {
@@ -330,7 +329,7 @@ bool TransactionData::UpdateTransactionData()
          summary_.hasChange = false;
          summary_.selectedBalance = availableBalance / BTCNumericTypes::BalanceDivider;
       } else if (selectedInputs_->UseAutoSel()) {
-         UtxoSelection selection;
+         Armory::CoinSelection::UtxoSelection selection;
          try {
             selection = coinSelection_->getUtxoSelectionForRecipients(payment
                , transactions);
@@ -354,7 +353,7 @@ bool TransactionData::UpdateTransactionData()
          summary_.hasChange = selection.hasChange_;
          summary_.selectedBalance = selection.value_ / BTCNumericTypes::BalanceDivider;
       } else {
-         UtxoSelection selection = computeSizeAndFee(transactions, payment);
+         Armory::CoinSelection::UtxoSelection selection = computeSizeAndFee(transactions, payment);
          summary_.txVirtSize = getVirtSize(selection);
          if (summary_.txVirtSize > kMaxTxStdWeight) {
             if (logger_) {
@@ -432,9 +431,9 @@ bs::XBTAmount TransactionData::CalculateMaxAmount(const bs::Address &recipient, 
          return {};
       }
 
-      const PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
-         ? PaymentStruct(recipientsMap, 0, feePerByte_, 0)
-         : PaymentStruct(recipientsMap, totalFee_, feePerByte_, 0);
+      const Armory::CoinSelection::PaymentStruct payment = (!totalFee_ && !qFuzzyIsNull(feePerByte_))
+         ? Armory::CoinSelection::PaymentStruct(recipientsMap, 0, feePerByte_, 0)
+         : Armory::CoinSelection::PaymentStruct(recipientsMap, totalFee_, feePerByte_, 0);
 
       // Accept the fee returned by Armory. The fee returned may be a few
       // satoshis higher than is strictly required by Core but that's okay.
@@ -540,15 +539,15 @@ std::vector<UTXO> TransactionData::decorateUTXOs() const
 // IN:  UTXO vector used to initialize UtxoSelection. (std::vector<UTXO>)
 // OUT: None
 // RET: A fully initialized UtxoSelection object, with size and fee data.
-UtxoSelection TransactionData::computeSizeAndFee(const std::vector<UTXO>& inUTXOs
-   , const PaymentStruct& inPS) const
+Armory::CoinSelection::UtxoSelection TransactionData::computeSizeAndFee(const std::vector<UTXO>& inUTXOs
+   , const Armory::CoinSelection::PaymentStruct& inPS) const
 {
    // When creating UtxoSelection object, initialize it with a copy of the
    // UTXO vector. Armory will "move" the data behind-the-scenes, and we
    // still need the data.
    usedUTXO_ = inUTXOs;
    auto usedUTXOCopy{ usedUTXO_ };
-   UtxoSelection selection{ usedUTXOCopy };
+   Armory::CoinSelection::UtxoSelection selection{ usedUTXOCopy };
 
    try {
       selection.computeSizeAndFee(inPS);
@@ -573,7 +572,7 @@ UtxoSelection TransactionData::computeSizeAndFee(const std::vector<UTXO>& inUTXO
 // (https://github.com/goatpig/BitcoinArmory/pull/538) is accepted upstream.
 // Note that this function assumes SegWit will be used. It's fine for our
 // purposes but it's a bad assumption in general.
-size_t TransactionData::getVirtSize(const UtxoSelection& inUTXOSel) const
+size_t TransactionData::getVirtSize(const Armory::CoinSelection::UtxoSelection& inUTXOSel) const
 {
    size_t nonWitSize = inUTXOSel.size_ - inUTXOSel.witnessSize_;
    return std::ceil(static_cast<float>(3 * nonWitSize + inUTXOSel.size_) / 4.0f);

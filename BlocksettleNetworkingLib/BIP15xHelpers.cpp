@@ -15,6 +15,7 @@
 #include "FutureValue.h"
 
 using namespace bs::network;
+using namespace Armory::Wallets;
 
 BIP15xPeer::BIP15xPeer(const std::string &name, const BinaryData &pubKey)
    : name_(name)

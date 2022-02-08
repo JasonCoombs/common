@@ -12,7 +12,6 @@
 
 #include "ArmoryConnection.h"
 #include "BinaryData.h"
-#include "BlockDataManagerConfig.h"
 #include "FastLock.h"
 
 #include <cassert>

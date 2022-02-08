@@ -181,7 +181,7 @@ void hd::Group::initLeaf(std::shared_ptr<hd::Leaf> &leaf, const bs::hd::Path &pa
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#if 0
 hd::AuthGroup::AuthGroup(const std::string &name, const std::string &desc
    , WalletSignerContainer *container, WalletCallbackTarget *wct
    , const std::shared_ptr<spdlog::logger>& logger, bool extOnlyAddresses)
@@ -249,3 +249,4 @@ std::shared_ptr<hd::SettlementLeaf> hd::SettlementGroup::getLeaf(const bs::Addre
    }
    return std::dynamic_pointer_cast<hd::SettlementLeaf>(hd::Group::getLeaf(it->second));
 }
+#endif   //0

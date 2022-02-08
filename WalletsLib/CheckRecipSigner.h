@@ -43,7 +43,7 @@ namespace bs {
    };
 
 
-   class CheckRecipSigner : public ArmorySigner::Signer
+   class CheckRecipSigner : public Armory::Signer::Signer
    {
    public:
       CheckRecipSigner(const std::shared_ptr<ArmoryConnection> &armory = nullptr)
@@ -63,12 +63,12 @@ namespace bs {
       void hasInputAddress(const Address &, std::function<void(bool)>, uint64_t lotsize = 1);
       uint64_t estimateFee(float &feePerByte, uint64_t fixedFee = 0) const;
 
-      std::vector<std::shared_ptr<ArmorySigner::ScriptSpender>> spenders() const { return spenders_; }
+      std::vector<std::shared_ptr<Armory::Signer::ScriptSpender>> spenders() const { return spenders_; }
       bool isRBF() const;
 
       bool GetInputAddressList(const std::shared_ptr<spdlog::logger> &logger, std::function<void(std::vector<bs::Address>)>);
 
-      static bs::Address getRecipientAddress(const std::shared_ptr<ArmorySigner::ScriptRecipient> &recip) {
+      static bs::Address getRecipientAddress(const std::shared_ptr<Armory::Signer::ScriptRecipient> &recip) {
          return bs::Address::fromScript(getRecipientOutputScript(recip));
       }
 
@@ -77,7 +77,8 @@ namespace bs {
       void reset();
 
    private:
-      static BinaryData getRecipientOutputScript(const std::shared_ptr<ArmorySigner::ScriptRecipient> &recip) {
+      static BinaryData getRecipientOutputScript(const std::shared_ptr<Armory::Signer::ScriptRecipient> &recip)
+      {
          const auto &recipScr = recip->getSerializedScript();
          const auto scr = recipScr.getSliceRef(8, (uint32_t)recipScr.getSize() - 8);
          if (scr.getSize() != (size_t)(scr[0] + 1)) {
@@ -112,7 +113,7 @@ namespace bs {
       const Tx tx_;
    };
 
-   uint64_t estimateVSize(const ArmorySigner::Signer &signer);
+   uint64_t estimateVSize(const Armory::Signer::Signer &signer);
 
 
 }  //namespace bs

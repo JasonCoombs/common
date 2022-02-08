@@ -22,7 +22,6 @@
 #include "Assets.h"
 #include "AsyncClient.h"
 #include "BtcDefinitions.h"
-#include "ClientClasses.h"
 #include "CoreWallet.h"
 #include "LedgerEntry.h"
 #include "UtxoReservation.h"
@@ -80,22 +79,22 @@ namespace bs {
          // inputIndices required for HW wallets only.
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::string> &walletsIds
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const std::string &changeIndex = {}
             , const uint64_t fee = 0, bool isRBF = false);
 
-         [[deprecated]] bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*> &wallets
-            , const std::vector<UTXO> &inputs
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
+         bs::core::wallet::TXSignRequest createTXRequest(const std::vector<Wallet*>& wallets
+            , const std::vector<UTXO>& inputs
+            , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>>& recipients
             , bool allowBroadcasts
-            , const bs::Address &changeAddr = {}
-            , const uint64_t fee = 0, bool isRBF = false);
+            , const bs::Address& changeAddr
+            , const uint64_t fee, bool isRBF);
 
          bs::core::wallet::TXSignRequest createTXRequest(const std::vector<std::shared_ptr<Wallet>> &wallets
             , const std::vector<UTXO> &inputs
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &
             , bool allowBroadcasts
             , const bs::Address &changeAddr = {}
             , const uint64_t fee = 0, bool isRBF = false);
@@ -105,7 +104,7 @@ namespace bs {
       class WalletACT;
       class WalletCallbackTarget;
 
-      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>>;
+      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>>>;
 
       class Wallet
       {
@@ -140,10 +139,6 @@ namespace bs {
 
          virtual bool containsAddress(const bs::Address &addr) = 0;
          virtual bool containsHiddenAddress(const bs::Address &) const { return false; }
-
-         [[deprecated]] virtual std::vector<std::string> registerWallet(
-            const std::shared_ptr<ArmoryConnection> &armory = nullptr, bool asNew = false);
-         [[deprecated]] virtual void unregisterWallet();
 
          using WalletRegData = std::unordered_map<std::string, std::vector<BinaryData>>;
          virtual WalletRegData regData() const;
@@ -192,15 +187,10 @@ namespace bs {
          virtual std::string getAddressIndex(const bs::Address &) = 0;
          virtual std::string getWalletIdForAddress(const bs::Address &) const { return walletId(); }
 
-         virtual std::shared_ptr<ArmorySigner::ResolverFeed> getPublicResolver() const = 0;
+         virtual std::shared_ptr<Armory::Signer::ResolverFeed> getPublicResolver() const = 0;
 
          //Adds an arbitrary address identified by index
          virtual int addAddress(const bs::Address &, const std::string &index, bool sync = true);
-
-         [[deprecated]] void syncAddresses();
-
-         [[deprecated]] virtual bool getLedgerDelegateForAddress(const bs::Address &
-            , const std::function<void(const std::shared_ptr<AsyncClient::LedgerDelegate> &)> &);
 
          virtual BTCNumericTypes::balance_type getTxBalance(int64_t val) const { return val / BTCNumericTypes::BalanceDivider; }
          virtual QString displayTxValue(int64_t val) const;
@@ -209,7 +199,7 @@ namespace bs {
 
          // changeAddress must be set if there is change
          virtual core::wallet::TXSignRequest createTXRequest(const std::vector<UTXO> &
-            , const std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> &
+            , const std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> &
             , bool allowBroadcasts
             , const uint64_t fee = 0, bool isRBF = false
             , const bs::Address &changeAddress = {});
@@ -273,7 +263,7 @@ namespace bs {
 
          bool getHistoryPage(const std::shared_ptr<AsyncClient::BtcWallet> &
             , uint32_t id, std::function<void(const Wallet *wallet
-               , std::vector<ClientClasses::LedgerEntry>)>, bool onlyNew = false) const;
+               , std::vector<DBClientClasses::LedgerEntry>)>, bool onlyNew = false) const;
 
       public:
          enum class Registered
@@ -310,7 +300,7 @@ namespace bs {
 
       private:
          std::string regId_;
-         mutable std::map<uint32_t, std::vector<ClientClasses::LedgerEntry>>  historyCache_;
+         mutable std::map<uint32_t, std::vector<DBClientClasses::LedgerEntry>>   historyCache_;
          mutable std::atomic_bool         balThreadRunning_{ false };
          mutable std::condition_variable  balThrCV_;
          mutable std::mutex               balThrMutex_;

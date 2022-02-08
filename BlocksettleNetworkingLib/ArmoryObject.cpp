@@ -20,7 +20,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "ClientClasses.h"
+#include "DBClientClasses.h"
 #include "DbHeader.h"
 #include "EncryptionUtils.h"
 #include "FastLock.h"
@@ -108,7 +108,7 @@ void ArmoryObject::setupConnection(const ArmorySettings &settings, const BIP151C
 
 bool ArmoryObject::getWalletsHistory(const std::vector<std::string> &walletIDs, const WalletsHistoryCb &cb)
 {
-   const auto &cbWrap = [this, cb](std::vector<ClientClasses::LedgerEntry> le) {
+   const auto &cbWrap = [this, cb](std::vector<DBClientClasses::LedgerEntry> le) {
       if (!cb) {
          return;
       }

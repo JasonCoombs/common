@@ -76,6 +76,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
          auto group = getGroup(grpData.type);
          if (!group) {
             group = createGroup(grpData.type, grpData.extOnly);
+#if 0
             if (grpData.type == bs::hd::CoinType::BlockSettle_Auth &&
                grpData.salt.getSize() == 32) {
                auto authGroupPtr =
@@ -85,6 +86,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
 
                authGroupPtr->setUserId(grpData.salt);
             }
+#endif
          }
          if (!group) {
             LOG(logger_, error, "[hd::Wallet::synchronize] failed to create group {}", (uint32_t)grpData.type);
@@ -106,6 +108,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
                   , (uint32_t)grpData.type, leafData.path.toString(), *leafData.ids.cbegin());
                continue;
             }
+#if 0
             if (grpData.type == bs::hd::CoinType::BlockSettle_Settlement) {
                if (leafData.extraData.empty()) {
                   throw std::runtime_error("no extra data for settlement leaf " + *leafData.ids.cbegin());
@@ -116,6 +119,7 @@ void hd::Wallet::synchronize(const std::function<void()> &cbDone)
                }
                settlGroup->addMap(leafData.extraData, leafData.path);
             }
+#endif
          }
       }
 
@@ -222,6 +226,7 @@ std::shared_ptr<hd::Group> hd::Wallet::createGroup(bs::hd::CoinType ct, bool isE
    }
 
    switch (ct) {
+#if 0
    case bs::hd::CoinType::BlockSettle_Auth:
       result = std::make_shared<hd::AuthGroup>(name_, desc_, signContainer_
          , this, logger_, isExtOnly);
@@ -236,7 +241,7 @@ std::shared_ptr<hd::Group> hd::Wallet::createGroup(bs::hd::CoinType ct, bool isE
       result = std::make_shared<hd::SettlementGroup>(name_, desc_
          , signContainer_, this, logger_);
       break;
-
+#endif
    default:
       result = std::make_shared<hd::Group>(ct, name_, hd::Group::nameForType(ct)
          , desc_, signContainer_, this, logger_, isExtOnly);
@@ -307,38 +312,6 @@ void hd::Wallet::setArmory(const std::shared_ptr<ArmoryConnection> &armory)
    for (const auto &leaf : getLeaves()) {
       leaf->setArmory(armory);
    }
-}
-
-std::vector<std::string> hd::Wallet::registerWallet(
-   const std::shared_ptr<ArmoryConnection> &armory, bool asNew)
-{
-   std::vector<std::string> result;
-   for (const auto &leaf : getLeaves()) {
-      //settlement leaves are not registered
-      if (leaf->type() == bs::core::wallet::Type::Settlement) {
-         continue;
-      }
-      const auto &regIDs = leaf->registerWallet(armory, asNew);
-      result.insert(result.end(), regIDs.begin(), regIDs.end());
-   }
-
-   return result;
-}
-
-std::vector<std::string> hd::Wallet::setUnconfirmedTargets()
-{
-   std::vector<std::string> result;
-   for (const auto &leaf : getLeaves())
-   {
-      auto hdLeafPtr = std::dynamic_pointer_cast<hd::Leaf>(leaf);
-      if (hdLeafPtr == nullptr)
-         continue;
-
-      auto&& regIDs = hdLeafPtr->setUnconfirmedTarget();
-      result.insert(result.end(), regIDs.begin(), regIDs.end());
-   }
-
-   return result;
 }
 
 void hd::Wallet::scan(const std::function<void(bs::sync::SyncState)> &cb)
@@ -441,23 +414,6 @@ void hd::Wallet::setWCT(WalletCallbackTarget *wct)
    for (const auto &leaf : getLeaves()) {
       leaf->setWCT(wct);
    }
-}
-
-void hd::Wallet::getSettlementPayinAddress(const SecureBinaryData &settlementID
-   , const SecureBinaryData &counterPartyPubKey, const bs::sync::Wallet::CbAddress &cb
-   , bool isMyKeyFirst) const
-{
-   if (!signContainer_) {
-      if (cb)
-         cb({});
-      return;
-   }
-   const auto &cbWrap = [cb](bool, const bs::Address &addr) {
-      if (cb)
-         cb(addr);
-   };
-   signContainer_->getSettlementPayinAddress(walletId(), { settlementID
-      , counterPartyPubKey, isMyKeyFirst }, cbWrap);
 }
 
 bool bs::sync::hd::Wallet::isHardwareWallet() const

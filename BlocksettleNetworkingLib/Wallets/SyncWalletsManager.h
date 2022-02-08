@@ -40,8 +40,6 @@ namespace spdlog {
    class logger;
 }
 class ApplicationSettings;
-class ColoredCoinTrackerClient;
-class CcTrackerClient;
 class WalletSignerContainer;
 
 namespace bs {
@@ -58,7 +56,7 @@ namespace bs {
       }
       class Wallet;
 
-      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>>>;
+      using RecipientMap = std::map<unsigned, std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>>>;
 
       class WalletsManager : public QObject, public ArmoryCallbackTarget, public WalletCallbackTarget
       {
@@ -69,9 +67,8 @@ namespace bs {
          using HDWalletPtr = std::shared_ptr<hd::Wallet>;
          using GroupPtr = std::shared_ptr<hd::Group>;
 
-         // trackerClient is optional, if not set armory connection is used
          WalletsManager(const std::shared_ptr<spdlog::logger> &, const std::shared_ptr<ApplicationSettings>& appSettings
-            , const std::shared_ptr<ArmoryConnection> &, const std::shared_ptr<CcTrackerClient> &trackerClient = nullptr);
+            , const std::shared_ptr<ArmoryConnection> &);
          ~WalletsManager() noexcept override;
 
          WalletsManager(const WalletsManager&) = delete;
@@ -99,23 +96,6 @@ namespace bs {
          WalletPtr getDefaultWallet() const;
          GroupPtr getGroupByWalletId(const std::string &walletId) const;
 
-         bool PromoteWalletToPrimary(const std::string& walletId);
-
-         bool EnableXBTTradingInWallet(const std::string& walletId
-            , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
-         bool CreateCCLeaf(const std::string &cc
-            , const std::function<void(bs::error::ErrorCode result)> &cb = nullptr);
-         bool createAuthLeaf(const std::function<void()> &);
-
-         WalletPtr getCCWallet(const std::string &cc);
-         bool isValidCCOutpoint(const std::string &cc, const BinaryData &txHash
-            , uint32_t txOutIndex, uint64_t value) const;
-
-         const WalletPtr getAuthWallet() const { return authAddressWallet_; }
-
-         void createSettlementLeaf(const bs::Address &authAddr
-            , const std::function<void(const SecureBinaryData &)> &);
-
          std::vector<HDWalletPtr> hdWallets() const { return hdWallets_; }
          HDWalletPtr getHDWalletById(const std::string &walletId) const;
          HDWalletPtr getHDRootForLeaf(const std::string &walletId) const;
@@ -126,9 +106,8 @@ namespace bs {
          bool deleteWallet(WalletPtr, bool deleteRemotely);
          bool deleteWallet(HDWalletPtr, bool deleteRemotely);
 
-         void setUserId(const BinaryData &userId);
-         bool isUserIdSet() const { return !userId_.empty(); }
-         std::shared_ptr<CCDataResolver> ccResolver() const { return ccResolver_; }
+         //void setUserId(const BinaryData &userId);
+         //bool isUserIdSet() const { return !userId_.empty(); }
 
          bool isArmoryReady() const;
          bool isReadyForTrading() const;
@@ -170,18 +149,9 @@ namespace bs {
             , unsigned assumedRecipientCount = UINT32_MAX
             , const std::shared_ptr<spdlog::logger> &logger = nullptr);
 
-         std::shared_ptr<ColoredCoinTrackerClient> tracker(const std::string &cc) const;
-
          std::string getDefaultSpendWalletId() const;
 
       signals:
-         void CCLeafCreated(const std::string& ccName);
-         void CCLeafCreateFailed(const std::string& ccName, bs::error::ErrorCode result);
-
-         void AuthLeafCreated();
-
-         void walletPromotedToPrimary(const std::string& walletId);
-
          void walletChanged(const std::string &walletId);
          void walletDeleted(const std::string &walletId);
          void walletAdded(const std::string &walletId);
@@ -192,7 +162,6 @@ namespace bs {
          void walletMetaChanged(const std::string &walletId);
          void walletIsReady(const std::string &walletId);
          void newWalletAdded(const std::string &walletId);
-         void authWalletChanged();
          void blockchainEvent();
          void info(const QString &title, const QString &text) const;
          void error(const QString &title, const QString &text) const;
@@ -200,12 +169,7 @@ namespace bs {
          void walletImportFinished(const std::string &walletId);
          void newTransactions(std::vector<bs::TXEntry>) const;
          void invalidatedZCs(const std::set<BinaryData> &ids) const;
-         void ccTrackerReady(const std::string &cc);
          void settlementLeavesLoaded(unsigned int);
-
-      public slots:
-         void onCCSecurityInfo(QString ccProd, unsigned long nbSatoshis, QString genesisAddr);
-         void onCCInfoLoaded();
 
       private:
          void onZCReceived(const std::string& requestId, const std::vector<bs::TXEntry>&) override;
@@ -217,7 +181,6 @@ namespace bs {
 
       private slots:
          void onWalletsListUpdated();
-         void onAuthLeafAdded(const std::string &walletId);
 
       private:
          void addressAdded(const std::string &) override;
@@ -261,10 +224,6 @@ namespace bs {
          void processEnableTrading(bs::error::ErrorCode result, const std::string& walletId);
          void processPromoteWallet(bs::error::ErrorCode result, const std::string& walletId);
 
-         void startTracker(const std::string &cc);
-         void updateTracker(const std::shared_ptr<bs::sync::hd::CCLeaf> &ccLeaf);
-         void checkTrackerUpdate(const std::string &cc);
-
       private:
          std::shared_ptr<WalletSignerContainer> signContainer_;
          std::shared_ptr<spdlog::logger>        logger_;
@@ -281,11 +240,11 @@ namespace bs {
          mutable QMutex                      mtxWallets_;
          std::set<std::string>               readyWallets_;
          bool     isReady_ = false;
-         WalletPtr                           authAddressWallet_;
-         BinaryData                          userId_;
+         //BinaryData                          userId_;
          std::set<std::string>               newWallets_;
          mutable std::unordered_map<std::string, GroupPtr>  groupsByWalletId_;
 
+#if 0
          class CCResolver : public CCDataResolver
          {
          public:
@@ -305,8 +264,8 @@ namespace bs {
             std::unordered_map<bs::hd::Path::Elem, std::string>   walletIdxMap_;
          };
          std::shared_ptr<CCResolver>   ccResolver_;
-
          std::map<std::string, std::shared_ptr<ColoredCoinTrackerClient>>  trackers_;
+#endif   //0
 
          std::unordered_map<std::string, std::pair<Transaction::Direction, std::vector<bs::Address>>> txDirections_;
          mutable std::atomic_flag      txDirLock_ = ATOMIC_FLAG_INIT;
@@ -333,20 +292,10 @@ namespace bs {
          std::condition_variable    queueCv_;
          std::mutex                 mutex_;
 
-         std::shared_ptr<CcTrackerClient> trackerClient_;
-
          bool walletsRegistered_{};
-         bool trackersStarted_{};
-
-         // Cached CC outpoint maps from CC tracker.
-         // Used to detect CC balance changes.
-         std::map<std::string, std::map<BinaryData, std::set<unsigned>>> ccOutpointMapsFromTracker_;
-         std::map<std::string, std::map<BinaryData, std::set<unsigned>>> ccOutpointMapsFromTrackerZc_;
-         std::mutex ccOutpointMapsFromTrackerMutex_;
 
          ValidityFlag   validityFlag_;
       };
-
    }  //namespace sync
 }  //namespace bs
 

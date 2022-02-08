@@ -50,43 +50,27 @@ public:
    bool isOffline() const override { return false; }
    bool isWalletOffline(const std::string &) const override { return false; }
 
-   [[deprecated]] bs::signer::RequestId signTXRequest(const bs::core::wallet::TXSignRequest &
-      , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
    void signTXRequest(const bs::core::wallet::TXSignRequest&
       , const std::function<void(const BinaryData &signedTX, bs::error::ErrorCode, const std::string& errorReason)>&
       , TXSignMode mode = TXSignMode::Full, bool keepDuplicatedRecipients = false) override;
 
-   bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &, TXSignMode, bool
-      , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> &) override;
+   //bs::signer::RequestId signSettlementTXRequest(const bs::core::wallet::TXSignRequest &
+   //   , const bs::sync::PasswordDialogData &, TXSignMode, bool
+   //   , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> &) override;
 
-   bs::signer::RequestId signSettlementPartialTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::sync::PasswordDialogData &
-      , const std::function<void(bs::error::ErrorCode result, const BinaryData &signedTX)> & ) override { return 0; }
-
-   bs::signer::RequestId signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &
-      , const bs::core::wallet::SettlementData &, const bs::sync::PasswordDialogData &
-      , const std::function<void(bs::error::ErrorCode, const BinaryData &signedTX)> &) override;
-
-   bs::signer::RequestId signAuthRevocation(const std::string &walletId, const bs::Address &authAddr
-      , const UTXO &, const bs::Address &bsAddr, const SignTxCb &cb = nullptr) override { return 0; }
+   //bs::signer::RequestId signSettlementPayoutTXRequest(const bs::core::wallet::TXSignRequest &
+   //   , const bs::core::wallet::SettlementData &, const bs::sync::PasswordDialogData &
+   //   , const std::function<void(bs::error::ErrorCode, const BinaryData &signedTX)> &) override;
 
    bs::signer::RequestId resolvePublicSpenders(const bs::core::wallet::TXSignRequest &
       , const SignerStateCb &cb) override;
 
    bs::signer::RequestId CancelSignTx(const BinaryData &tx) override { return 0; }
 
-   bs::signer::RequestId setUserId(const BinaryData &, const std::string &walletId) override;
-   bs::signer::RequestId syncCCNames(const std::vector<std::string> &) override;
-
    // cb is ignored in inproc signer
    bool createHDLeaf(const std::string &rootWalletId, const bs::hd::Path &path
       , const std::vector<bs::wallet::PasswordData> &pwdData = {}
       , bs::sync::PasswordDialogData dialogData = {}, const CreateHDLeafCb &cb = nullptr) override;
-   bool enableTradingInHDWallet(const std::string &, const BinaryData &, bs::sync::PasswordDialogData = {}
-      , const UpdateWalletStructureCB& = nullptr) override;
-   bool promoteWalletToPrimary(const std::string& rootWalletId
-      , bs::sync::PasswordDialogData dialogData = {}, const UpdateWalletStructureCB& cb = nullptr) override;
    bs::signer::RequestId DeleteHDRoot(const std::string &) override;
    bs::signer::RequestId DeleteHDLeaf(const std::string &) override;
    bs::signer::RequestId GetInfo(const std::string &) override;
@@ -107,25 +91,23 @@ public:
    void syncNewAddresses(const std::string &walletId, const std::vector<std::string> &
       , const std::function<void(const std::vector<std::pair<bs::Address, std::string>> &)> &) override;
 
-   void createSettlementWallet(const bs::Address &authAddr
-      , const std::function<void(const SecureBinaryData &)> &) override;
-   void setSettlementID(const std::string &walletId, const SecureBinaryData &id
-      , const std::function<void(bool)> &) override;
-   void getSettlementPayinAddress(const std::string &walletId
-      , const bs::core::wallet::SettlementData &
-      , const std::function<void(bool, bs::Address)> &) override;
+   //void createSettlementWallet(const bs::Address &authAddr
+   //   , const std::function<void(const SecureBinaryData &)> &) override;
+   //void setSettlementID(const std::string &walletId, const SecureBinaryData &id
+   //   , const std::function<void(bool)> &) override;
+   //void getSettlementPayinAddress(const std::string &walletId
+   //   , const bs::core::wallet::SettlementData &
+   //   , const std::function<void(bool, bs::Address)> &) override;
    void getRootPubkey(const std::string &walletID
       , const std::function<void(bool, const SecureBinaryData &)> &) override;
-   void getChatNode(const std::string &walletID
-      , const std::function<void(const BIP32_Node &)> &) override;
 
-   void setSettlAuthAddr(const std::string &walletId, const BinaryData &, const bs::Address &addr) override;
-   void getSettlAuthAddr(const std::string &walletId, const BinaryData &
-      , const std::function<void(const bs::Address &)> &) override;
-   void setSettlCP(const std::string &walletId, const BinaryData &payinHash, const BinaryData &settlId
-      , const BinaryData &cpPubKey) override;
-   void getSettlCP(const std::string &walletId, const BinaryData &payinHash
-      , const std::function<void(const BinaryData &, const BinaryData &)> &) override;
+   //void setSettlAuthAddr(const std::string &walletId, const BinaryData &, const bs::Address &addr) override;
+   //void getSettlAuthAddr(const std::string &walletId, const BinaryData &
+   //   , const std::function<void(const bs::Address &)> &) override;
+   //void setSettlCP(const std::string &walletId, const BinaryData &payinHash, const BinaryData &settlId
+   //   , const BinaryData &cpPubKey) override;
+   //void getSettlCP(const std::string &walletId, const BinaryData &payinHash
+   //   , const std::function<void(const BinaryData &, const BinaryData &)> &) override;
 
    bool isReady() const override { return inited_; }
 

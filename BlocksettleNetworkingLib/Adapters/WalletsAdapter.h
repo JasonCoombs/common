@@ -91,7 +91,7 @@ private:
    void sendWalletChanged(const std::string &walletId);
    void sendWalletReady(const std::string &walletId);
    void sendWalletError(const std::string &walletId, const std::string &errMsg);
-   void authLeafAdded(const std::string& walletId);
+   //void authLeafAdded(const std::string& walletId);
 
    void loadWallet(const bs::sync::WalletInfo &);
    void saveWallet(const std::shared_ptr<bs::sync::hd::Wallet> &);
@@ -155,19 +155,11 @@ private:
       , const std::shared_ptr<bs::sync::Wallet> &, const std::map<BinaryData, Tx> &) const;
    bool processUTXOs(uint64_t msgId, const BlockSettle::Common::ArmoryMessage_UTXOs&);
 
-   bool processSetUserId(const std::string&);
-   bool processAuthKey(const bs::message::Envelope&, const std::string& address);
-
    bool processReserveUTXOs(const bs::message::Envelope&
       , const BlockSettle::Common::WalletsMessage_ReserveUTXOs&);
    bool processGetReservedUTXOs(const bs::message::Envelope&
       , const BlockSettle::Common::WalletsMessage_ReservationKey&);
    bool processUnreserveUTXOs(const BlockSettle::Common::WalletsMessage_ReservationKey&);
-
-   bool processPayin(const bs::message::Envelope&
-      , const BlockSettle::Common::WalletsMessage_PayinRequest&);
-   bool processPayout(const bs::message::Envelope&
-      , const BlockSettle::Common::WalletsMessage_PayoutRequest&);
 
 private:
    std::shared_ptr<spdlog::logger>        logger_;

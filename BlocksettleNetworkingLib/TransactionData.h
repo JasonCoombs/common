@@ -12,6 +12,7 @@
 #define __TRANSACTION_DATA_H__
 
 #include "Address.h"
+#include "CoinSelection.h"
 #include "CoreWallet.h"
 #include "UtxoReservation.h"
 #include "ValidityFlag.h"
@@ -126,7 +127,7 @@ public:
    void ClearAllRecipients();
 
    bs::Address GetRecipientAddress(unsigned int recipientId) const;
-   std::shared_ptr<ArmorySigner::ScriptRecipient> GetScriptRecipient(unsigned int recipientId) const;
+   std::shared_ptr<Armory::Signer::ScriptRecipient> GetScriptRecipient(unsigned int recipientId) const;
    bs::XBTAmount GetRecipientAmount(unsigned int recipientId) const;
    bs::XBTAmount  GetTotalRecipientsAmount() const;
    bool IsMaxAmount(unsigned int recipientId) const;
@@ -157,13 +158,13 @@ private:
    bool UpdateTransactionData();
    bool RecipientsReady() const;
    std::vector<UTXO> decorateUTXOs() const;
-   UtxoSelection computeSizeAndFee(const std::vector<UTXO>& inUTXOs
-      , const PaymentStruct& inPS) const;
+   Armory::CoinSelection::UtxoSelection computeSizeAndFee(const std::vector<UTXO>& inUTXOs
+      , const Armory::CoinSelection::PaymentStruct& inPS) const;
 
    // Temporary function until some Armory changes are accepted upstream.
-   size_t getVirtSize(const UtxoSelection& inUTXOSel) const;
+   size_t getVirtSize(const Armory::CoinSelection::UtxoSelection& inUTXOSel) const;
 
-   std::vector<std::shared_ptr<ArmorySigner::ScriptRecipient>> GetRecipientList() const;
+   std::vector<std::shared_ptr<Armory::Signer::ScriptRecipient>> GetRecipientList() const;
 
 private:
    onTransactionChanged             changedCallback_;
@@ -181,7 +182,7 @@ private:
    // recipients
    unsigned int nextId_;
    std::unordered_map<unsigned int, std::shared_ptr<RecipientContainer>> recipients_;
-   std::shared_ptr<CoinSelection>   coinSelection_;
+   std::shared_ptr<Armory::CoinSelection::CoinSelection> coinSelection_;
 
    mutable std::vector<UTXO>  usedUTXO_;
    TransactionSummary   summary_;

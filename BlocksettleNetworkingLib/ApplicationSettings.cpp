@@ -12,7 +12,7 @@
 
 #include "ArmoryConnection.h"
 #include "ArmoryServersProvider.h"
-#include "BlockDataManagerConfig.h"
+#include "BitcoinSettings.h"
 #include "EncryptionUtils.h"
 #include "FastLock.h"
 
@@ -660,7 +660,7 @@ QString ApplicationSettings::bootstrapFilePath() const
    return AppendToWritableDir(QString::fromStdString(fileName));
 }
 
-#if 0 // seems to be deprecated
+#if 0 // no client-side Auth eID direct usage
 std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthKeys()
 {
    if (!authPrivKey_.empty() && !authPubKey_.empty()) {
@@ -680,34 +680,33 @@ std::pair<autheid::PrivateKey, autheid::PublicKey> ApplicationSettings::GetAuthK
    authPubKey_ = autheid::getPublicKey(authPrivKey_);
    return { authPrivKey_, authPubKey_ };
 }
-#endif
+#endif   //0
 
 void ApplicationSettings::selectNetwork()
 {
    // Set up Armory as needed. Even though the BDMC object isn't used, it sets
    // global values that are used later.
-   BlockDataManagerConfig config;
 
+   std::map<std::string, std::string> args;
    switch (get<NetworkType>(netType)) {
-   case NetworkType::MainNet:
-      config.selectNetwork(NETWORK_MODE_MAINNET);
-      break;
+   case NetworkType::MainNet: break;   // empty args means mainnet
 
    case NetworkType::TestNet:
-      config.selectNetwork(NETWORK_MODE_TESTNET);
+      args = { {"testnet", {}} };
       break;
 
    case NetworkType::RegTest:
-      config.selectNetwork(NETWORK_MODE_REGTEST);
+      args = { {"regtest", {}} };
       break;
 
    default:
       assert(false);
       break;
    }
+   Armory::Config::BitcoinSettings::processArgs(args);
 }
 
-#if 0
+#if 0 // no client-side Auth eID direct usage
 AuthEidEnv ApplicationSettings::autheidEnv() const
 {
    auto conf = ApplicationSettings::EnvConfiguration(get<int>(ApplicationSettings::envConfiguration));
@@ -724,7 +723,7 @@ AuthEidEnv ApplicationSettings::autheidEnv() const
    }
    return AuthEidEnv::Prod;
 }
-#endif
+#endif   //0
 
 // static
 std::string ApplicationSettings::envName(ApplicationSettings::EnvConfiguration conf)

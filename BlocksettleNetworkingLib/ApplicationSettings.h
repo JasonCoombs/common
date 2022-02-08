@@ -31,7 +31,7 @@ struct EnumClassHash
     }
 };
 
-enum class AuthEidEnv : int;
+//enum class AuthEidEnv : int;
 
 class ApplicationSettings : public QObject
 {
@@ -238,9 +238,6 @@ private:
    QString  dataDir_;
    QString  bitcoinsDir_;
    QString  dbDir_;
-
-   //autheid::PrivateKey  authPrivKey_;
-   //autheid::PublicKey   authPubKey_;
 };
 
 template<> QString ApplicationSettings::get<QString>(Setting s, bool getDefaultValue) const;
