@@ -38,6 +38,7 @@ message AdministrativeMessage
       int32   component_ready = 6;
       RouteTo attach_queue = 7;
       RouteTo queue_routing = 8;
+      string  lock_id = 9;
    }
 }
 
