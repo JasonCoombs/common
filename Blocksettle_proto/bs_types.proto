@@ -75,6 +75,9 @@ message Order
    FXAmountValue  trade_im             = 12;
    bool           is_rollover          = 13;
    XBTAmountValue reference_exposure   = 14;
+
+   // set only for completed orders
+   XBTAmountValue trade_pnl            = 15;
 }
 
 message ChatToken

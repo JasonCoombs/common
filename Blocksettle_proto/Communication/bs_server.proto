@@ -2257,7 +2257,7 @@ message CashResMessage
       bool                    is_rollover             = 8;
       bs.types.FXAmountValue  im                      = 9;
       bool                    is_LP                   = 10;
-      // cut_off_price going to be deprectaed
+      // cut_off_price going to be deprecated
       // used by genoa adapter when creating response on loading orders
       // positions history for futures should come from FS
       bs.types.XBTPrice       cut_off_price           = 11;
