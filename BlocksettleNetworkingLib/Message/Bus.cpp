@@ -95,6 +95,9 @@ std::vector<std::shared_ptr<bs::message::Adapter>> Router::process(const bs::mes
       logger_->info("[Router::process] msg #{} seized by supervisor", env.id());
       return {};
    }
+   if (env.sender->isSystem() && env.receiver && env.receiver->isSystem()) {
+      return {};  // skip system messages - they're only passed to supervisor
+   }
    if (!env.receiver || env.receiver->isBroadcast()) {
       std::lock_guard<std::mutex> lock(mutex_);
       for (const auto &adapter : adapters_) {
@@ -258,8 +261,10 @@ void Queue_Locking::process()
          }
 
          if (env.receiver && env.sender->isSystem() && env.receiver->isSystem()) {
+            router_->process(env);
             if (env.message == kQuitMessage) {
-               logger_->info("[Queue::process] {} detected quit system message", name_);
+               logger_->info("[Queue::process] {} detected quit system message #{}"
+                  , name_, env.foreignId());
                running_ = false;
                break;
             } else if (env.message == kAccResetMessage) {
