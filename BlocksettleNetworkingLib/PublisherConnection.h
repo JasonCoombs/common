@@ -17,6 +17,7 @@
 #include <deque>
 #include <string>
 #include <thread>
+#include <vector>
 
 class PublisherConnection
 {
@@ -42,6 +43,7 @@ public:
    bool BindPublishingConnection(const std::string& endpoint_name);
 
    bool PublishData(const std::string& data);
+   bool PublishData(const std::string& topic, const std::vector<std::string>&);
 
 private:
    void stopServer();

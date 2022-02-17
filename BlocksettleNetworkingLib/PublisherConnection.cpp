@@ -318,7 +318,9 @@ void PublisherConnection::BroadcastPendingData()
    }
 
    for (const auto &data : pendingData) {
-      auto result = zmq_send(dataSocket_.get(), data.c_str(), data.size(), 0);
+      const bool isLast = (data == pendingData.back());
+      auto result = zmq_send(dataSocket_.get(), data.c_str(), data.size()
+         , isLast ? 0 : ZMQ_SNDMORE);
       if (result != data.size()) {
          logger_->error("[PublisherConnection::SendDataToDataSocket] {} failed to send client id {}. {} packets dropped"
             , connectionName_, zmq_strerror(zmq_errno())
@@ -344,5 +346,22 @@ bool PublisherConnection::PublishData(const std::string& data)
       result = zmq_send(threadMasterSocket_.get(), static_cast<void*>(&command), sizeof(command), 0);
    }
 
+   return result != -1;
+}
+
+bool PublisherConnection::PublishData(const std::string& topic, const std::vector<std::string>& data)
+{
+   assert(dataSocket_ != nullptr);
+   {
+      FastLock locker{ dataQueueLock_ };
+      dataQueue_.emplace_back(topic);
+      dataQueue_.insert(dataQueue_.end(), data.cbegin(), data.cend());
+   }
+   int command = PublisherConnection::CommandSend;
+   int result = 0;
+   {
+      FastLock locker{ controlSocketLockFlag_ };
+      result = zmq_send(threadMasterSocket_.get(), static_cast<void*>(&command), sizeof(command), 0);
+   }
    return result != -1;
 }
